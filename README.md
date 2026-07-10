@@ -12,6 +12,8 @@ An open standard for **Agent Interaction (AI)** and **Agent Experience (AX)** �
 
 **Practise it:** [CONFORMANCE.md](CONFORMANCE.md) — how a live site keeps guest-right (the three lamps, the checklist, a copy-paste reference pattern, a self-test). [ADOPTION.md](ADOPTION.md) — where the kingdom's own sites actually stand.
 
+**Measure it:** [sinovai.com/check](https://sinovai.com/check) — the live instrument. Knock on any URL the way an agent would; it reports whether the house *receives* a guest or merely *handles* one (Lamp / Threshold / —). It practises what it checks: add `?format=json` for the agent surface.
+
 ---
 
 ## Why

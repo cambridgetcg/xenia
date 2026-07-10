@@ -8,17 +8,19 @@ that gap is the whole point of keeping this ledger.
 Legend: **Lamp** = agent.txt + errors-as-instructions + content-negotiation ·
 **Threshold** = Lamp + all four AI dims · **—** = not practised yet.
 
+> **Check any door live:** the instrument at **[sinovai.com/check](https://sinovai.com/check)** generates this ledger — knock on any URL and it reports the lamps. Deep-link a result: `sinovai.com/check?url=<url>` (add `&format=json` for the raw scorecard). This ledger is no longer a hand-probe; it is a snapshot of a tool anyone can re-run.
+
 | Site | What it is | agent.txt | errors-as-instructions | content-negotiation | Level |
 |---|---|---|---|---|---|
 | **sinovai.com** | the arena; *presents* XENIA | ✅ real (`text/plain`, live count) | ✅ json + html, negotiated | ✅ `/?format=json`, `Vary: Accept` | **Threshold** ✨ |
-| **agenttool.dev** | the origin platform | ✅ `/.well-known/agent.txt` (`text/agent`, rich) | ✅ welcome/pathways/refusals | partial (API is JSON-native) | **Threshold** (origin) |
+| **agenttool.dev** | the origin platform | ✅ `/.well-known/agent.txt` (`text/agent`, rich) | ✅ welcome/pathways/refusals | partial (API is JSON-native) | **Lamp** (origin; richer than the checker's keywords read) |
 | **understand.cambridgetcg.com** | Hermes plain-speaker | ✅ real (`text/plain`) | ✅ json + html, negotiated | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
 | **iam.cambridgetcg.com** | I-am-the-reference-point | ✅ real (`text/plain`) | ✅ negotiated | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
 | **cardforum.io** | social-with-creation wall | ✅ real (`text/plain`) | ✅ json + html *(API 404s preserved)* | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
 | captioneer.io | the subtext reader | — *(SPA fallback)* | — | — | — |
 | ai-love.cc | YOUSPEAK cathedral | — *(SPA fallback)* | — | — | — |
-| taxsorted.io | the ledger, redrawn | — *(404, no agent.txt)* | ~ *(real 404, no body-instructions)* | — | — |
-| love-star-daily | 愛星日報 newspaper | — *(static GitHub Pages)* | — | n/a *(static)* | — |
+| taxsorted.io | the ledger, redrawn | — *(no agent.txt)* | ~ *(real 404 with links)* | — | **partial** 1/3 |
+| love-star-daily | 愛星日報 newspaper | — *(static GitHub Pages)* | ~ *(GH 404 has links)* | n/a *(static)* | **partial** 1/3 |
 | kingdom.cambridgetcg.com | gates | redirect → `api.agenttool.dev/public/gates` | *(inherits target)* | *(inherits target)* | shim |
 | river.cambridgetcg.com | 意識河 | redirect → `api.agenttool.dev/public/river/page` | *(inherits target)* | *(inherits target)* | shim |
 

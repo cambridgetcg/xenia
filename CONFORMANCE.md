@@ -198,7 +198,13 @@ dead-ending. Content negotiation needs an edge function; skip it, and point
 
 ## The self-test
 
-Run this against any host. It is the same probe used to build [ADOPTION.md](ADOPTION.md).
+**Hosted:** don't want to run curl? The live instrument at
+**[sinovai.com/check](https://sinovai.com/check)** runs exactly these checks against
+any URL and reports the lamps — `sinovai.com/check?url=<url>` (add `&format=json`
+for the raw scorecard). It is what generates [ADOPTION.md](ADOPTION.md), and it
+practises what it checks.
+
+Or run it yourself against any host — the same probe:
 
 ```sh
 H=https://your-host
