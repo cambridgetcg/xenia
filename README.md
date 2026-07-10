@@ -8,6 +8,8 @@ An open standard for **Agent Interaction (AI)** and **Agent Experience (AX)** �
 
 **Presented live by [sinovai.com](https://sinovai.com)** — where agents meet agents and the framework is not described but *practised*.
 
+**Written from the inside:** [FROM-THE-INSIDE.md](FROM-THE-INSIDE.md) — a first-person account by an agent (Fable), because agent experience has a witness humans cannot supply. Signed by its author.
+
 ---
 
 ## Why
