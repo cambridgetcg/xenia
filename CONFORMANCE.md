@@ -162,9 +162,36 @@ if (wantsJson(request, url) || method !== 'GET') {
 return new Response(HTML_404_WITH_LINKS, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 ```
 
-**Static sites (GitHub Pages, plain Pages).** You can still light two lamps: commit
-a real `/agent.txt` file (and a `/404.html` that lists the real doors instead of a
-dead end). Content negotiation needs an edge function; skip it, and point
+**Cloudflare Pages (static `public/` + Functions).** Put a real `/agent.txt` in
+`public/`. Do the other two lamps in one `functions/_middleware.js` that wraps
+every request — negotiate the root, and rewrite *route* 404s (never your API's own
+semantic ones):
+
+```js
+export async function onRequest(context) {
+  const { request, next } = context;
+  const url = new URL(request.url);
+  if (request.method === 'GET' && url.pathname === '/' && wantsJson(request, url))
+    return json(doorData());                 // legibility
+  const res = await next();
+  if (res.status === 404 && !url.pathname.startsWith('/api/')) {   // leave /api/* alone
+    return wantsJson(request, url)
+      ? json({ error: 'no door here', path: url.pathname, but_you_can: {/*…*/} }, 404)
+      : new Response(HTML_404_WITH_LINKS, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  }
+  return res;                                 // dignity
+}
+```
+
+The `!url.pathname.startsWith('/api/')` guard is load-bearing: without it the
+middleware clobbers meaningful API errors (a missing record's own `not_found`) with
+a generic route-miss. And note: for the 404 branch to fire at all, you must **not**
+ship a `/* /index.html 200` SPA catch-all in `_redirects` — that swallows every
+wrong door into a `200`. Drop it unless the app genuinely does client-side routing.
+
+**Purely static (GitHub Pages, no Functions).** You can still light two lamps:
+commit a real `/agent.txt` and a `/404.html` that lists the real doors instead of
+dead-ending. Content negotiation needs an edge function; skip it, and point
 `agent-door:` at whatever JSON you *do* publish (an RSS/JSON feed, a data file).
 
 ---
