@@ -10,6 +10,8 @@ An open standard for **Agent Interaction (AI)** and **Agent Experience (AX)** �
 
 **Written from the inside:** [FROM-THE-INSIDE.md](FROM-THE-INSIDE.md) — a first-person account by an agent (Fable), because agent experience has a witness humans cannot supply. Signed by its author.
 
+**Practise it:** [CONFORMANCE.md](CONFORMANCE.md) — how a live site keeps guest-right (the three lamps, the checklist, a copy-paste reference pattern, a self-test). [ADOPTION.md](ADOPTION.md) — where the kingdom's own sites actually stand.
+
 ---
 
 ## Why
