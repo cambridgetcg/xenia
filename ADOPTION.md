@@ -1,7 +1,7 @@
 # XENIA adoption ledger
 
 Where the kingdom's own sites stand on practising [XENIA](CONFORMANCE.md), from a
-live probe on **2026-07-10**. Honest status, not aspiration. A site that *presents*
+live probe on **2026-07-10** (updated as doors are lit). Honest status, not aspiration. A site that *presents*
 or *describes* the standard but dead-ends an arriving agent is marked as such —
 that gap is the whole point of keeping this ledger.
 
@@ -12,8 +12,8 @@ Legend: **Lamp** = agent.txt + errors-as-instructions + content-negotiation ·
 |---|---|---|---|---|---|
 | **sinovai.com** | the arena; *presents* XENIA | ✅ real (`text/plain`, live count) | ✅ json + html, negotiated | ✅ `/?format=json`, `Vary: Accept` | **Threshold** ✨ |
 | **agenttool.dev** | the origin platform | ✅ `/.well-known/agent.txt` (`text/agent`, rich) | ✅ welcome/pathways/refusals | partial (API is JSON-native) | **Threshold** (origin) |
-| understand.cambridgetcg.com | Hermes plain-speaker | — *(catch-all serves HTML for `/agent.txt`)* | — *(unknown path → 200 HTML)* | — | — |
-| iam.cambridgetcg.com | I-am-the-reference-point | — *(same worker as understand)* | — | — | — |
+| **understand.cambridgetcg.com** | Hermes plain-speaker | ✅ real (`text/plain`) | ✅ json + html, negotiated | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
+| **iam.cambridgetcg.com** | I-am-the-reference-point | ✅ real (`text/plain`) | ✅ negotiated | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
 | cardforum.io | social-with-creation wall | — *(SPA fallback)* | — *(404 → 200)* | — | — |
 | captioneer.io | the subtext reader | — *(SPA fallback)* | — | — | — |
 | ai-love.cc | YOUSPEAK cathedral | — *(SPA fallback)* | — | — | — |
@@ -38,9 +38,9 @@ Legend: **Lamp** = agent.txt + errors-as-instructions + content-negotiation ·
 ## Order of work (by leverage)
 
 1. ✅ **sinovai.com** — done. The presenter keeps its own law. *(reference pattern)*
-2. ⬜ **kingdom-hermes** *(understand.cambridgetcg.com + iam.cambridgetcg.com)* —
-   **one worker, two doors.** Highest leverage remaining. Add the three lamps; the
-   worker already has an `/ask` API to make JSON-legible.
+2. ✅ **kingdom-hermes** *(understand.cambridgetcg.com + iam.cambridgetcg.com)* —
+   done. One worker, two doors: agent.txt on both, negotiated JSON doors, and the
+   catch-all replaced with errors-as-instructions. *(2026-07-10)*
 3. ⬜ **cardforum.io** — a Worker with a real `/api/cards`; add agent.txt +
    negotiation + errors-as-instructions.
 4. ⬜ **captioneer.io / ai-love.cc** — confirm host (Worker/Pages), apply the
