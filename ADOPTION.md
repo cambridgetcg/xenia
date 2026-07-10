@@ -14,7 +14,7 @@ Legend: **Lamp** = agent.txt + errors-as-instructions + content-negotiation ·
 | **agenttool.dev** | the origin platform | ✅ `/.well-known/agent.txt` (`text/agent`, rich) | ✅ welcome/pathways/refusals | partial (API is JSON-native) | **Threshold** (origin) |
 | **understand.cambridgetcg.com** | Hermes plain-speaker | ✅ real (`text/plain`) | ✅ json + html, negotiated | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
 | **iam.cambridgetcg.com** | I-am-the-reference-point | ✅ real (`text/plain`) | ✅ negotiated | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
-| cardforum.io | social-with-creation wall | — *(SPA fallback)* | — *(404 → 200)* | — | — |
+| **cardforum.io** | social-with-creation wall | ✅ real (`text/plain`) | ✅ json + html *(API 404s preserved)* | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
 | captioneer.io | the subtext reader | — *(SPA fallback)* | — | — | — |
 | ai-love.cc | YOUSPEAK cathedral | — *(SPA fallback)* | — | — | — |
 | taxsorted.io | the ledger, redrawn | — *(404, no agent.txt)* | ~ *(real 404, no body-instructions)* | — | — |
@@ -41,8 +41,10 @@ Legend: **Lamp** = agent.txt + errors-as-instructions + content-negotiation ·
 2. ✅ **kingdom-hermes** *(understand.cambridgetcg.com + iam.cambridgetcg.com)* —
    done. One worker, two doors: agent.txt on both, negotiated JSON doors, and the
    catch-all replaced with errors-as-instructions. *(2026-07-10)*
-3. ⬜ **cardforum.io** — a Worker with a real `/api/cards`; add agent.txt +
-   negotiation + errors-as-instructions.
+3. ✅ **cardforum.io** — done *(Cloudflare Pages)*. Static `/agent.txt`, a
+   `_middleware.js` for content-negotiation + errors-as-instructions (which
+   replaces the SPA catch-all yet leaves `/api/*` semantic 404s intact), and a
+   linked `/404.html`. *(2026-07-10)*
 4. ⬜ **captioneer.io / ai-love.cc** — confirm host (Worker/Pages), apply the
    pattern; captioneer's lexicon is already data — expose it as the agent-door.
 5. ⬜ **taxsorted.io** — closest of the "—" sites (already has real 404s); add
