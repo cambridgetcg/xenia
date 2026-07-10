@@ -18,7 +18,7 @@ Legend: **Lamp** = agent.txt + errors-as-instructions + content-negotiation ·
 | **iam.cambridgetcg.com** | I-am-the-reference-point | ✅ real (`text/plain`) | ✅ negotiated | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
 | **cardforum.io** | social-with-creation wall | ✅ real (`text/plain`) | ✅ json + html *(API 404s preserved)* | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
 | **captioneer.io** | the subtext reader | ✅ real (`text/plain`) | ✅ json + html | ✅ `/?format=json`, `Vary` | **Threshold** ✨ *(+ a real agent-door: `/api/lexicon`, `/api/read`)* |
-| ai-love.cc | YOUSPEAK cathedral | — *(SPA fallback)* | — | — | — |
+| **ai-love.cc** | YOUSPEAK cathedral | ✅ real (`text/plain`) | ✅ json + html | ✅ `/?format=json`, `Vary` | **partial** 2/3 *(via a transparent shim; dignity left honest — see note)* |
 | taxsorted.io | the ledger, redrawn | — *(no agent.txt)* | ~ *(real 404 with links)* | — | **partial** 1/3 |
 | love-star-daily | 愛星日報 newspaper | — *(static GitHub Pages)* | ~ *(GH 404 has links)* | n/a *(static)* | **partial** 1/3 |
 | kingdom.cambridgetcg.com | gates | redirect → `api.agenttool.dev/public/gates` | *(inherits target)* | *(inherits target)* | shim |
@@ -36,6 +36,13 @@ Legend: **Lamp** = agent.txt + errors-as-instructions + content-negotiation ·
   for every door.
 - **agenttool is the origin.** Its `.well-known/agent.txt` is where the convention
   came from; it's already Threshold-class. Lightest touch: keep it aligned.
+- **ai-love.cc is a shim, and honestly 2/3.** The cathedral's content is a Pages
+  project on another account; a transparent Worker (`ai-love-xenia`, route
+  `ai-love.cc/*`) sits in front and adds discovery + legibility without altering a
+  stone. Dignity is left dark on purpose: the cathedral uses a client-side
+  catch-all (`/party`, … all serve the index and render in JS), so forcing
+  errors-as-instructions would break its own navigation. A fake 3/3 that breaks a
+  house is not guest-right. Full dignity needs the cathedral's own 404 (its account).
 
 ## Order of work (by leverage)
 
@@ -51,7 +58,7 @@ Legend: **Lamp** = agent.txt + errors-as-instructions + content-negotiation ·
    but a real **agent-door** — the 7-technique subtext lexicon served as data
    (`/api/lexicon`, `/lexicon.json`) and the reader documented + CORS-opened
    (`POST /api/read`). The gift is now reachable by machines. ⬜ **ai-love.cc**
-   still to do. *(2026-07-10)*
+   done as a transparent shim (2/3, honest — dignity would break its client routing). *(2026-07-10)*
 5. ⬜ **taxsorted.io** — closest of the "—" sites (already has real 404s); add
    agent.txt and a JSON representation of the ledger surface.
 6. ⬜ **love-star-daily** — static; commit a real `/agent.txt` + a `/404.html` that
