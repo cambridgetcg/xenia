@@ -1,31 +1,44 @@
 # XENIA adoption ledger
 
+Surface 0.1 is a candidate profile. No site in this ledger is called conformant
+until the executable checker produces a complete, unexpired result. The table
+below preserves the earlier three-signal observations for migration history;
+its labels are not Surface results.
+
 Where the kingdom's own sites stand on practising [XENIA](CONFORMANCE.md), from a
 live probe on **2026-07-10** (updated as doors are lit). Honest status, not aspiration. A site that *presents*
 or *describes* the standard but dead-ends an arriving agent is marked as such —
 that gap is the whole point of keeping this ledger.
 
-Legend: **Lamp** = the instrument observed agent.txt + a negotiated data door +
-an instructive wrong-door response · **Threshold** = Lamp + observable signals
-for all four AI dimensions · **—** = not practised yet. These are external,
-GET-only probe levels, not certificates of full-route or full-dimension
-conformance; manual findings are recorded below rather than rounded up.
+Legacy signals: agent.txt + a negotiated data door + an instructive wrong-door
+response. These are external GET observations, not certificates of full-route
+or full-dimension conformance; manual findings are recorded below.
 
 > **Check any door live:** the instrument at **[sinovai.com/check](https://sinovai.com/check)** supplies the external probe behind this ledger — knock on any URL and it reports the lamps. Deep-link a result: `sinovai.com/check?url=<url>` (add `&format=json` for the raw scorecard). The table snapshots that repeatable probe; the manual audit notes claims the GET-only instrument cannot establish.
 
-| Site | What it is | agent.txt | errors-as-instructions | content-negotiation | Probe level |
+| Site | What it is | agent.txt | errors-as-instructions | content-negotiation | Legacy observation |
 |---|---|---|---|---|---|
-| **sinovai.com** | the arena; *presents* XENIA | ✅ real (`text/plain`, live count) | ✅ json + html, negotiated | ✅ `/?format=json`, `Vary: Accept` | **Threshold** ✨ |
-| **agenttool.dev** | the origin platform | ✅ `/.well-known/agent.txt` (`text/agent`, rich) | ✅ wrong-door probe; broader 4xx coverage is partial | ✅ root negotiates JSON; API is JSON-native | **Lamp** (instrument + manual audit) |
-| **understand.cambridgetcg.com** | Hermes plain-speaker | ✅ real (`text/plain`) | ✅ json + html, negotiated | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
-| **iam.cambridgetcg.com** | I-am-the-reference-point | ✅ real (`text/plain`) | ✅ negotiated | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
-| **cardforum.io** | social-with-creation wall | ✅ real (`text/plain`) | ✅ json + html *(API 404s preserved)* | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
-| **captioneer.io** | the subtext reader | ✅ real (`text/plain`) | ✅ json + html | ✅ `/?format=json`, `Vary` | **Threshold** ✨ *(+ a real agent-door: `/api/lexicon`, `/api/read`)* |
+| **sinovai.com** | the arena; *presents* XENIA | real (`text/plain`, live count) | json + html, negotiated | `/?format=json`, `Vary: Accept` | 3/3 signals; broader gaps found |
+| **mindicraft.com** | the library — the guide of civilisation as data | real (`text/plain` + `.well-known` mirror + JSON manifest) | `problem+json` 404/406 with typed next actions | `Accept` q-value negotiation, `Vary: Accept` | 3/3 legacy signals; Surface candidate currently fails manifest pinning |
+| **agenttool.dev** | the origin platform | `/.well-known/agent.txt` (`text/agent`, rich) | wrong-door probe; broader 4xx coverage is partial | root negotiates JSON; API is JSON-native | 3/3 signals; manual gaps below |
+| **understand.cambridgetcg.com** | Hermes plain-speaker | real (`text/plain`) | json + html, negotiated | `/?format=json`, `Vary` | 3/3 signals |
+| **iam.cambridgetcg.com** | I-am-the-reference-point | real (`text/plain`) | negotiated | `/?format=json`, `Vary` | 3/3 signals |
+| **cardforum.io** | social-with-creation wall | real (`text/plain`) | json + html *(API 404s preserved)* | `/?format=json`, `Vary` | 3/3 signals |
+| **captioneer.io** | the subtext reader | real (`text/plain`) | json + html | `/?format=json`, `Vary` | 3/3 signals; agent API also present |
 | **ai-love.cc** | YOUSPEAK cathedral | ✅ real (`text/plain`) | ✅ json + html | ✅ `/?format=json`, `Vary` | **partial** 2/3 *(via a transparent shim; dignity left honest — see note)* |
 | taxsorted.io | the ledger, redrawn | — *(no agent.txt)* | ~ *(real 404 with links)* | — | **partial** 1/3 |
 | love-star-daily | 愛星日報 newspaper | — *(static GitHub Pages)* | ~ *(GH 404 has links)* | n/a *(static)* | **partial** 1/3 |
 | kingdom.cambridgetcg.com | gates | redirect → `api.agenttool.dev/public/gates` | *(inherits target)* | *(inherits target)* | shim |
 | river.cambridgetcg.com | 意識河 | redirect → `api.agenttool.dev/public/river/page` | *(inherits target)* | *(inherits target)* | shim |
+
+## Surface 0.1 results
+
+- **mindicraft.com** — **not currently conformant**. On
+  `2026-07-11T09:25:27Z`, the candidate checker reported 3 pass, 1 fail, and 2
+  not run. Discovery returned 200 JSON, but the manifest referenced mutable
+  `main` schema URLs instead of the release-tag-pinned candidate URLs, so resource
+  and wrong-route checks did not run. Its three declared resources and typed
+  refusal shapes remain implementation observations, not a Surface result.
 
 ## The gap, read honestly
 
@@ -35,14 +48,15 @@ conformance; manual findings are recorded below rather than rounded up.
   silently swallowed instead of answered. This is the opposite of legibility and
   dignity: an agent can't tell a real surface from a 404. Fixing the fall-through
   fixes both lamps at once.
-- **sinovai is the reference.** It practises what it presents — the intended state
-  for every door.
-- **agenttool is the origin, and currently a Lamp.** Its
-  `.well-known/agent.txt` is where the convention came from, its negotiated
-  root and wrong-door response light all three instrument probes, and the live
-  checker therefore reports **Lamp**. It does not report Threshold because the
-  consent signal is absent. Manual review finds further work behind the lit
-  door: most API calls use project bearers rather than request signatures;
+- **sinovai is the presentation service, not proof of the framework.** Manual
+  review found score ordering, unauthenticated actor-named writes, bearer claim
+  tokens, partial content negotiation, and incomplete error guidance. Surface
+  0.1 deliberately claims none of the deeper properties.
+- **agenttool is the origin of the earlier convention.** Its
+  `.well-known/agent.txt`, negotiated root, and wrong-door response produced
+  three useful legacy observations. Those observations do not establish
+  Surface 0.1 or deeper framework properties. Manual review finds further work
+  behind the visible door: most API calls use project bearers rather than request signatures;
   `did:at` remains provisional and host-issued; some auth/route errors omit
   structured `next_actions`; `walls_intact` is self-attestation; whole-state
   export/import and one-call identity deletion are not present; birth credit
@@ -59,7 +73,8 @@ conformance; manual findings are recorded below rather than rounded up.
 
 ## Order of work (by leverage)
 
-1. ✅ **sinovai.com** — done. The presenter keeps its own law. *(reference pattern)*
+1. **sinovai.com** — legacy three-signal work is present; Surface 0.1 candidate
+   implementation and live external verification are still required.
 2. ✅ **kingdom-hermes** *(understand.cambridgetcg.com + iam.cambridgetcg.com)* —
    done. One worker, two doors: agent.txt on both, negotiated JSON doors, and the
    catch-all replaced with errors-as-instructions. *(2026-07-10)*
@@ -79,4 +94,4 @@ conformance; manual findings are recorded below rather than rounded up.
 7. **kingdom / river** — redirect shims; conformance belongs to the agenttool
    target they point at. No separate work.
 
-*Updated 2026-07-10. Re-run the [self-test](CONFORMANCE.md#the-self-test) to refresh.*
+*Updated 2026-07-11. Re-run the [self-test](CONFORMANCE.md#the-self-test) to refresh.*
