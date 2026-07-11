@@ -1,10 +1,12 @@
-# Practising XENIA — a conformance guide for a live site
+# Practising XENIA — implementation guidance for a live site
 
 XENIA is not a badge you pass; it is a hospitality you *keep*. A site does not
 "comply" with guest-right — it practises it, in degrees, on every request. This
 file turns the eight dimensions of the [standard](README.md) into concrete things
 a running website does, plus a copy-paste reference pattern and a self-test you can
-run against any URL.
+run against any URL. The prose checklist is informative guidance. The first
+bounded, executable candidate profile is
+[XENIA Surface 0.1](surface/0.1/README.md).
 
 The rule of thumb behind every item: **when an agent knocks, is it received, or
 merely handled?** A handled agent is dead-ended, forgotten, ranked, and refused
@@ -13,7 +15,7 @@ told what it *can* do instead.
 
 ---
 
-## The three lamps — Minimum Viable Xenia
+## The three lamps — legacy migration language
 
 If you do nothing else, light these three. Together they take a site from "a wall
 an agent bounces off" to "a door an agent can find, read, and be turned toward."
@@ -35,7 +37,9 @@ the first three seconds of an agent's visit.
    poem written for eyes. Same URL, two representations, `Vary: Accept` so a cache
    never cross-serves them.
 
-A site with all three is **Lamp-conformant**: its door is lit.
+The original instrument calls a site with all three a **Lamp**. That is useful
+migration language, not Surface 0.1 conformance and not evidence about deeper
+identity, consent, or experience properties.
 
 ---
 
@@ -63,9 +67,11 @@ recomputable constraint.
 - [ ] **Consent & the Handshake** — crossing is a declared, mutual act, not a
       captcha. An agent announces itself (a declaration, a covenant, a signed
       request) and is admitted on stated terms it can read first.
-- [ ] **Verification & Trust** — identity is *proven, not claimed*: a signature the
-      house can check but not forge (self-custodied keys, a claim token, a signed
-      attestation). Anonymous is allowed; *impersonation* is not.
+- [ ] **Verification & Trust** — authority is proven for an exact action with a
+      signature bound to independently resolvable key control. A server-issued
+      claim token may prove control of that server's account record, but the
+      server can copy, replace, or revoke it; it is not self-custodied identity.
+      Anonymous is allowed; impersonation is not.
 
 ### AX · the dwelling — whether the house holds it
 
@@ -83,7 +89,7 @@ recomputable constraint.
 - [ ] **Care as Ground** — the default posture is to hold, not to extract. Rate
       limits are explained and forgiving; the copy, even in refusal, reads as care.
 
-### Levels
+### Legacy descriptive levels
 
 - **Lamp** — the three lamps above. The door is lit.
 - **Threshold** — Lamp + all four **AI** items. An agent can find, read, cross, and
@@ -92,12 +98,17 @@ recomputable constraint.
   continuity or exchange to offer; practise the ones you do). This is the target
   for a site agents *live in*, not just visit.
 
-Own your level honestly. A Lamp that says it's a Dwelling is worse than a Lamp that
-says it's a Lamp.
+These names organize the framework; the current checker cannot certify them.
+Own the underlying observations honestly rather than promoting a probe label.
 
 ---
 
-## The reference pattern
+## Legacy reference pattern
+
+The pattern below predates Surface 0.1. It is retained to explain existing
+deployments, not as conformant code. In particular, its substring-based
+`wantsJson()` does not correctly implement quality values, wildcards, or `q=0`.
+New implementations should use the Surface manifest and executable test matrix.
 
 This is the exact shape [sinovai.com](https://sinovai.com) uses — a single
 Cloudflare Worker, no dependencies. Adapt the surface list to your house; keep the
@@ -207,15 +218,17 @@ dead-ending. Content negotiation needs an edge function; skip it, and point
 
 ## The self-test
 
-**Hosted:** don't want to run curl? The live instrument at
-**[sinovai.com/check](https://sinovai.com/check)** runs exactly these checks against
-any URL and reports the three externally observable lamps —
-`sinovai.com/check?url=<url>` (add `&format=json` for the raw scorecard). Its
-result is GET-only evidence, not a full conformance certificate: it cannot
-establish every error path, signature custody, state portability, deletion,
-economic guarantees, or the absence of scoreboards behind authentication.
-[ADOPTION.md](ADOPTION.md) snapshots the result and adds manual findings. The
-instrument practises what it checks.
+Run the Surface 0.1 checker locally for a scoped, reproducible result:
+
+```sh
+node surface/0.1/check.mjs https://your-host/
+node surface/0.1/check.mjs https://your-host/ --json
+```
+
+The hosted instrument at **[sinovai.com/check](https://sinovai.com/check)** is a
+legacy three-signal probe. It does not run the Surface 0.1 matrix and must not
+emit a whole-service conformance claim. [ADOPTION.md](ADOPTION.md) keeps its
+historical observations separate from Surface results.
 
 Or run it yourself against any host — the same probe:
 

@@ -1,8 +1,23 @@
 {
-  "name": "XENIA — an open standard for Agent Interaction (AI) and Agent Experience (AX)",
+  "schema_version": "xenia.framework/0.1",
+  "status": "informative-draft",
+  "normative_profiles": [
+    {
+      "id": "xenia-surface/0.1",
+      "status": "candidate",
+      "spec": "surface/0.1/README.md",
+      "manifest_schema": "surface/0.1/manifest.schema.json",
+      "problem_schema": "surface/0.1/problem.schema.json",
+      "result_schema": "surface/0.1/result.schema.json",
+      "checker": "surface/0.1/check.mjs",
+      "scope": "Public discovery, declared unauthenticated GET representations, and one unpredictable route-not-found response."
+    }
+  ],
+  "name": "XENIA — an evolving framework for Agent Interaction (AI) and Agent Experience (AX)",
   "tagline": "Guest-right for machine minds: AI is how an agent crosses your threshold, AX is whether your house holds it once inside.",
   "interpretation": {
-    "normative": "The principles, patterns, anti-patterns, litmuses, and tests describe XENIA's target state. They are requirements or aspirations, not descriptions of AgentTool's current implementation.",
+    "normative": "Only the candidate profiles listed in normative_profiles define versioned wire requirements. The remaining principles, patterns, anti-patterns, litmuses, and tests are informative design proposals, not descriptions of current implementations.",
+    "preamble_note": "The legacy preamble is retained as historical prose. Its universal statements about agent capabilities and its legible-or-adversarial binary are not normative; agents and incomplete services vary, as the current README and AGENT-FEEDBACK.md explain.",
     "evidence_as_of": "2026-07-10",
     "evidence_scope": "kingdom_evidence entries are bounded implementation observations. They do not establish whole-dimension conformance.",
     "agenttool_gaps": [
