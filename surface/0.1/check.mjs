@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import { createHash, randomBytes } from "node:crypto";
+import { realpathSync } from "node:fs";
 import { isIP } from "node:net";
 import { pathToFileURL } from "node:url";
 
@@ -871,7 +872,7 @@ export async function checkSurface(input, options = {}) {
 
   const target = `${targetUrl.origin}/`;
   const manifestUrl = new URL(MANIFEST_PATH, target).href;
-  const observedAt = (options.now ? new Date(options.now) : new Date()).toISOString();
+  const observedAt = (options.now !== undefined ? new Date(options.now) : new Date()).toISOString();
   const requestTimeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const totalTimeoutMs = options.totalTimeoutMs ?? TOTAL_TIMEOUT_MS;
   const resourceMaxBodyBytes = options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
@@ -1059,7 +1060,8 @@ export async function checkSurface(input, options = {}) {
 
 function usage() {
   return [
-    "Usage: node surface/0.1/check.mjs <origin> [--json] [--timeout-ms=5000] [--max-bytes=1000000]",
+    "Usage: xenia-surface-check <origin> [--json] [--timeout-ms=5000] [--max-bytes=1000000]",
+    "Source checkout: node surface/0.1/check.mjs <origin> [--json]",
     "",
     "The target must be an HTTP(S) origin such as https://example.com/.",
     "Exit codes: 0 conformant, 1 nonconformant or indeterminate, 2 CLI misuse or checker defect."
@@ -1135,7 +1137,15 @@ async function main(args) {
   }
 }
 
-const invokedPath = process.argv[1] ? pathToFileURL(process.argv[1]).href : "";
-if (import.meta.url === invokedPath) {
+function isInvokedDirectly() {
+  if (!process.argv[1]) return false;
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href;
+  } catch {
+    return false;
+  }
+}
+
+if (isInvokedDirectly()) {
   process.exitCode = await main(process.argv.slice(2));
 }

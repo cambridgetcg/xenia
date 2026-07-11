@@ -22,8 +22,9 @@ The notice is in [LICENSE](LICENSE) and the full legal text is in
 
 The JS/TS implementation and its build/test machinery are licensed under the
 Mozilla Public License 2.0. This includes `src/`, `tests/`, generated `dist/`,
-`surface/0.1/check.mjs`, `surface/0.1/check.test.mjs`, `package.json`,
-`package-lock.json`, and the TypeScript configuration files.
+`surface/0.1/check.mjs`, `surface/0.1/check.test.mjs`, the Surface npm package
+metadata and type declarations, `package.json`, `package-lock.json`, and the
+TypeScript configuration files.
 
 The full legal text is in [LICENSE-CODE](LICENSE-CODE). SPDX-tagged source files
 also identify this boundary directly.

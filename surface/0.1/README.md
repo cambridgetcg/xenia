@@ -161,8 +161,34 @@ limits for manifests and problems, a 1,000,000-byte resource limit, no credentia
 no writes. Every result records the effective limits. It is intended as a local command. A hosted version needs its own
 private-network, redirect, DNS-rebinding, concurrency, and abuse boundaries.
 
-The checker itself has no runtime dependency. The test suite uses Ajv to
-cross-check emitted documents against the published JSON Schemas:
+The checker itself has no runtime dependency. Install the RC as a development
+tool and run it outside the service being observed:
+
+```sh
+npm install --save-dev @agenttool/xenia-surface@rc
+npx xenia-surface-check https://example.com --json
+```
+
+The package also exposes the checker and hand validators to Node programs:
+
+```js
+import { checkSurface, validateManifest } from "@agenttool/xenia-surface";
+```
+
+The three schemas and example manifest have explicit JSON export paths, such
+as `@agenttool/xenia-surface/manifest.schema.json`. The npm release is the
+distribution wrapper for the checker and profile pinned by the immutable
+`surface-v0.1.0-rc.1` Git tag; packaging does not move or replace those schema
+identifiers.
+
+This is a Node 22+ external checker, not a hosted scanning service or a Worker
+runtime library. A maximum-size manifest can require more outbound requests
+than a Workers Free-plan invocation permits, and hosting it would require
+additional private-network, redirect, DNS-rebinding, concurrency, and abuse
+controls. The service being checked may itself run on Cloudflare.
+
+The test suite uses Ajv to cross-check emitted documents against the published
+JSON Schemas:
 
 ```sh
 npm install

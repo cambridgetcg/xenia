@@ -1,0 +1,58 @@
+name: Publish XENIA Surface
+run-name: Publish @agenttool/xenia-surface@${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact immutable npm version to publish
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-xenia-surface
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main' && inputs.version == '0.1.0-rc.1'
+    runs-on: ubuntu-latest
+    environment: npm-bootstrap
+    timeout-minutes: 10
+    steps:
+      - name: Check out audited source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node and npm registry
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Pin npm
+        run: npm install --global npm@11.18.0
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Verify immutable Surface profile bytes
+        run: npm run verify:surface-profile
+
+      - name: Test source and exact packed consumer
+        run: |
+          npm test
+          npm run verify:surface-package
+          npm audit signatures
+
+      - name: Publish the RC with provenance
+        run: npm publish --workspace @agenttool/xenia-surface --access public --tag rc --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
