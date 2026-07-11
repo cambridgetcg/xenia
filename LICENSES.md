@@ -8,7 +8,8 @@ The normative standard, specification, conformance/adoption material, and other
 repository prose are licensed under the Creative Commons
 Attribution-ShareAlike 4.0 International license. This includes `README.md`,
 `CONFORMANCE.md`, `ADOPTION.md`, `FROM-THE-INSIDE.md`, `spec.json`,
-`PACKAGE.md`, and `CONTRIBUTING.md`.
+`PACKAGE.md`, `CONTRIBUTING.md`, the Surface profile README and JSON Schemas,
+and the Surface example manifest.
 
 Executable software examples inside those documents are additionally available
 under MPL 2.0 so their copy-paste use has an unambiguous software grant. The
@@ -21,7 +22,8 @@ The notice is in [LICENSE](LICENSE) and the full legal text is in
 
 The JS/TS implementation and its build/test machinery are licensed under the
 Mozilla Public License 2.0. This includes `src/`, `tests/`, generated `dist/`,
-`package.json`, `package-lock.json`, and the TypeScript configuration files.
+`surface/0.1/check.mjs`, `surface/0.1/check.test.mjs`, `package.json`,
+`package-lock.json`, and the TypeScript configuration files.
 
 The full legal text is in [LICENSE-CODE](LICENSE-CODE). SPDX-tagged source files
 also identify this boundary directly.

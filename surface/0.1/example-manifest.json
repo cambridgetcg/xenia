@@ -1,0 +1,41 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cambridgetcg/xenia/surface-v0.1.0-rc.1/surface/0.1/manifest.schema.json",
+  "schema_version": "xenia.surface.manifest/0.1",
+  "profile": "xenia-surface/0.1",
+  "service": {
+    "name": "example",
+    "canonical_url": "https://example.com/",
+    "description": "A minimal example service used to show the Surface 0.1 contract."
+  },
+  "resources": [
+    {
+      "id": "entry",
+      "href": "https://example.com/",
+      "representations": ["application/json", "text/html"],
+      "default_media_type": "text/html",
+      "auth": "none",
+      "description": "Public orientation in a representation selected by Accept."
+    }
+  ],
+  "problem_schema": "https://raw.githubusercontent.com/cambridgetcg/xenia/surface-v0.1.0-rc.1/surface/0.1/problem.schema.json",
+  "claims": [
+    {
+      "id": "surface.manifest",
+      "statement": "The service publishes the XENIA Surface 0.1 manifest at the canonical path.",
+      "scope": ["GET https://example.com/.well-known/agent.json"],
+      "evidence_state": "asserted",
+      "outcome": "unknown",
+      "evidence": []
+    }
+  ],
+  "not_covered": [
+    "identity control",
+    "actor authorization",
+    "consent",
+    "privacy and retention",
+    "continuity and portability",
+    "economic behavior",
+    "unprobed routes"
+  ],
+  "documentation": "https://github.com/cambridgetcg/xenia/tree/main/surface/0.1"
+}

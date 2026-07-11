@@ -18,9 +18,13 @@
     "dist",
     "src",
     "README.md",
+    "ADOPTION.md",
+    "AGENT-FEEDBACK.md",
     "CONFORMANCE.md",
     "CONTRIBUTING.md",
+    "FROM-THE-INSIDE.md",
     "PACKAGE.md",
+    "spec.json",
     "LICENSE",
     "LICENSE-CODE",
     "LICENSE-DOCS",
@@ -29,8 +33,10 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json",
-    "test": "npm run build && npm run test:types && node --test tests/*.test.mjs",
+    "test": "npm run build && npm run test:types && npm run test:library && npm run test:surface",
     "test:types": "tsc -p tsconfig.type-tests.json",
+    "test:library": "node --test tests/*.test.mjs",
+    "test:surface": "node --test surface/0.1/check.test.mjs",
     "pack:check": "npm pack --dry-run --json",
     "prepare": "npm run build",
     "prepack": "npm test"
@@ -55,6 +61,8 @@
     "xenia"
   ],
   "devDependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
     "typescript": "~7.0.2"
   }
 }

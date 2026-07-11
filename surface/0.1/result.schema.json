@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/cambridgetcg/xenia/surface-v0.1.0-rc.1/surface/0.1/result.schema.json",
+  "title": "XENIA Surface 0.1 checker result",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "profile",
+    "target",
+    "manifest_url",
+    "verifier",
+    "observed_at",
+    "expires_at",
+    "result",
+    "scope",
+    "limits",
+    "counts",
+    "checks",
+    "claims",
+    "declared_claims",
+    "not_tested"
+  ],
+  "properties": {
+    "schema_version": { "const": "xenia.surface.result/0.1" },
+    "profile": { "const": "xenia-surface/0.1" },
+    "target": { "type": "string", "format": "uri" },
+    "manifest_url": { "type": "string", "format": "uri" },
+    "verifier": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "xenia-surface-check" },
+        "version": { "const": "0.1.0-rc.1" }
+      },
+      "additionalProperties": false
+    },
+    "observed_at": { "type": "string", "format": "date-time" },
+    "expires_at": { "type": "string", "format": "date-time" },
+    "result": {
+      "type": "string",
+      "enum": ["conformant", "nonconformant", "indeterminate"]
+    },
+    "scope": { "type": "string", "minLength": 1 },
+    "limits": {
+      "type": "object",
+      "required": [
+        "request_timeout_ms",
+        "total_timeout_ms",
+        "manifest_problem_max_bytes",
+        "resource_max_bytes"
+      ],
+      "properties": {
+        "request_timeout_ms": { "type": "integer", "minimum": 100 },
+        "total_timeout_ms": { "type": "integer", "minimum": 100 },
+        "manifest_problem_max_bytes": { "type": "integer", "minimum": 1024 },
+        "resource_max_bytes": { "type": "integer", "minimum": 1024 }
+      },
+      "additionalProperties": false
+    },
+    "counts": {
+      "type": "object",
+      "required": ["pass", "fail", "unknown", "not_run"],
+      "properties": {
+        "pass": { "type": "integer", "minimum": 0 },
+        "fail": { "type": "integer", "minimum": 0 },
+        "unknown": { "type": "integer", "minimum": 0 },
+        "not_run": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/check" }
+    },
+    "claims": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/tested_claim" }
+    },
+    "declared_claims": {
+      "type": "array",
+      "items": {
+        "$ref": "https://raw.githubusercontent.com/cambridgetcg/xenia/surface-v0.1.0-rc.1/surface/0.1/manifest.schema.json#/$defs/claim"
+      }
+    },
+    "not_tested": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "observation": {
+      "type": "object",
+      "required": ["request"],
+      "properties": {
+        "request": {
+          "type": "object",
+          "required": ["method", "url", "accept", "user_agent"],
+          "properties": {
+            "method": { "const": "GET" },
+            "url": { "type": "string", "format": "uri" },
+            "accept": { "type": "string" },
+            "user_agent": { "const": "xenia-surface-check/0.1.0-rc.1" }
+          },
+          "additionalProperties": false
+        },
+        "response": {
+          "type": "object",
+          "required": ["status", "content_type", "vary", "duration_ms"],
+          "properties": {
+            "status": { "type": "integer", "minimum": 100, "maximum": 599 },
+            "content_type": { "type": "string" },
+            "vary": { "type": "string" },
+            "decoded_bytes": { "type": "integer", "minimum": 0 },
+            "body_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "duration_ms": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "error": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "check": {
+      "type": "object",
+      "required": ["id", "outcome", "expected", "observed", "observation"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Z][A-Z0-9._-]*$" },
+        "outcome": { "enum": ["pass", "fail", "unknown", "not_run"] },
+        "expected": { "type": "string" },
+        "observed": { "type": "string" },
+        "observation": { "$ref": "#/$defs/observation" }
+      },
+      "additionalProperties": false
+    },
+    "tested_claim": {
+      "type": "object",
+      "required": ["id", "scope", "evidence_state", "outcome", "test_ids"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "scope": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "evidence_state": { "const": "tested" },
+        "outcome": { "enum": ["pass", "fail", "unknown"] },
+        "test_ids": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    }
+  }
+}

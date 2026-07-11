@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/cambridgetcg/xenia/surface-v0.1.0-rc.1/surface/0.1/manifest.schema.json",
+  "title": "XENIA Surface 0.1 manifest",
+  "type": "object",
+  "required": [
+    "$schema",
+    "schema_version",
+    "profile",
+    "service",
+    "resources",
+    "problem_schema",
+    "claims",
+    "not_covered"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri",
+      "const": "https://raw.githubusercontent.com/cambridgetcg/xenia/surface-v0.1.0-rc.1/surface/0.1/manifest.schema.json"
+    },
+    "schema_version": { "const": "xenia.surface.manifest/0.1" },
+    "profile": { "const": "xenia-surface/0.1" },
+    "service": {
+      "type": "object",
+      "required": ["name", "canonical_url", "description"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "canonical_url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^(https://(?![^/?#]*@)|http://(?:localhost|127(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|\\[::1\\])(?::[0-9]+)?(?:/|$))"
+        },
+        "description": { "type": "string", "minLength": 1, "maxLength": 500 }
+      },
+      "additionalProperties": false
+    },
+    "resources": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": ["id", "href", "representations", "default_media_type", "auth"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+          "href": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^(?!.*[?#])(https://(?![^/?#]*@)|http://(?:localhost|127(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|\\[::1\\])(?::[0-9]+)?(?:/|$))"
+          },
+          "representations": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 2,
+            "uniqueItems": true,
+            "contains": { "const": "application/json" },
+            "items": {
+              "type": "string",
+              "enum": ["application/json", "text/html"]
+            }
+          },
+          "default_media_type": {
+            "type": "string",
+            "enum": ["application/json", "text/html"]
+          },
+          "auth": { "const": "none" },
+          "description": { "type": "string", "maxLength": 500 }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": { "default_media_type": { "const": "text/html" } },
+              "required": ["default_media_type"]
+            },
+            "then": {
+              "properties": {
+                "representations": {
+                  "type": "array",
+                  "contains": { "const": "text/html" }
+                }
+              }
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    "problem_schema": {
+      "type": "string",
+      "format": "uri",
+      "const": "https://raw.githubusercontent.com/cambridgetcg/xenia/surface-v0.1.0-rc.1/surface/0.1/problem.schema.json"
+    },
+    "claims": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/claim" }
+    },
+    "not_covered": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 300 }
+    },
+    "documentation": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^(https://(?![^/?#]*@)|http://(?:localhost|127(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|\\[::1\\])(?::[0-9]+)?(?:/|$))"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "required": [
+        "id",
+        "statement",
+        "scope",
+        "evidence_state",
+        "outcome",
+        "evidence"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "statement": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "scope": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 300 }
+        },
+        "evidence_state": {
+          "type": "string",
+          "enum": ["asserted", "tested", "attested"]
+        },
+        "outcome": {
+          "type": "string",
+          "enum": ["pass", "fail", "unknown"]
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/evidence" }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "evidence_state": { "const": "asserted" } },
+            "required": ["evidence_state"]
+          },
+          "then": {
+            "properties": {
+              "evidence": { "type": "array", "maxItems": 0 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "evidence_state": { "const": "tested" } },
+            "required": ["evidence_state"]
+          },
+          "then": {
+            "properties": {
+              "evidence": {
+                "type": "array",
+                "minItems": 1,
+                "contains": {
+                  "type": "object",
+                  "properties": { "kind": { "enum": ["probe", "audit"] } },
+                  "required": ["kind"]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "evidence_state": { "const": "attested" } },
+            "required": ["evidence_state"]
+          },
+          "then": {
+            "properties": {
+              "evidence": {
+                "type": "array",
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "kind": { "enum": ["signature", "receipt"] }
+                  },
+                  "required": ["kind"]
+                }
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "kind",
+        "uri",
+        "observed_at",
+        "expires_at",
+        "digest",
+        "verifier"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["probe", "source", "audit", "signature", "receipt"]
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^(https://(?![^/?#]*@)|http://(?:localhost|127(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|\\[::1\\])(?::[0-9]+)?(?:/|$))"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T(?:(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]+)?|23:59:60(?:\\.[0-9]+)?)Z$"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T(?:(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]+)?|23:59:60(?:\\.[0-9]+)?)Z$"
+        },
+        "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "verifier": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^(https://(?![^/?#]*@)|http://(?:localhost|127(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|\\[::1\\])(?::[0-9]+)?(?:/|$))"
+        },
+        "algorithm": { "type": "string", "enum": ["ed25519", "receipt"] },
+        "key_id": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^(https://(?![^/?#]*@)|http://(?:localhost|127(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|\\[::1\\])(?::[0-9]+)?(?:/|$))"
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]{86}==$"
+        },
+        "issuer": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^(https://(?![^/?#]*@)|http://(?:localhost|127(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|\\[::1\\])(?::[0-9]+)?(?:/|$))"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "kind": { "const": "signature" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "algorithm": { "const": "ed25519" },
+              "key_id": {},
+              "signature": {}
+            },
+            "required": ["algorithm", "key_id", "signature"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "kind": { "const": "receipt" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "algorithm": { "const": "receipt" },
+              "issuer": {}
+            },
+            "required": ["algorithm", "issuer"]
+          }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

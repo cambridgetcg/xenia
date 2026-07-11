@@ -67,18 +67,20 @@ It deliberately does not:
   strips the target down to an HTTP(S) origin and never returns sampled bodies.
 
 For local development, `npm test` builds declarations, compiles TypeScript
-consumer-contract fixtures, and runs the runtime suite. `npm run pack:check`
-also invokes those tests through `prepack`, then inspects a tarball without
-publishing it; it does rebuild the ignored `dist/` directory.
+consumer-contract fixtures, runs the library runtime suite, and then runs the
+independently versioned Surface checker suite. `npm run pack:check` also invokes
+those tests through `prepack`, then inspects a tarball without publishing it; it
+does rebuild the ignored `dist/` directory.
 
 ## Why the evaluator is pure
 
-Sinovai's live checker is valuable evidence, but its transport accepts arbitrary
-targets and buffers complete bodies before slicing them. Packaging that fetcher
-for server use would create an unsafe default. This prototype accepts already
-collected observations and returns no raw response bodies. A later network
-adapter needs an explicit target policy, redirect and DNS revalidation, bounded
-streaming reads, timeouts, and runtime-specific tests.
+An earlier Sinovai hosted checker provided useful evidence, but its transport
+accepted arbitrary targets and buffered complete bodies before slicing them.
+That hosted probe is now retired. Packaging the same fetcher for server use
+would create an unsafe default. This prototype accepts already collected
+observations and returns no raw response bodies. A later network adapter needs
+an explicit target policy, redirect and DNS revalidation, bounded streaming
+reads, timeouts, and runtime-specific tests.
 
 The current Sinovai `agent.txt` also contains bare `GET`/`POST` route lines that
 are prose rather than `key: value` fields. A fixture keeps that incompatibility

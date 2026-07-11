@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/cambridgetcg/xenia/surface-v0.1.0-rc.1/surface/0.1/problem.schema.json",
+  "title": "XENIA Surface 0.1 problem",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "type",
+    "title",
+    "status",
+    "code",
+    "detail",
+    "retryable",
+    "terminal",
+    "next_actions",
+    "docs"
+  ],
+  "properties": {
+    "schema_version": { "const": "xenia.surface.problem/0.1" },
+    "type": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^(https://(?![^/?#]*@)|http://(?:localhost|127(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|\\[::1\\])(?::[0-9]+)?(?:/|$))"
+    },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "status": { "type": "integer", "minimum": 400, "maximum": 599 },
+    "code": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+    "detail": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "retryable": { "type": "boolean" },
+    "terminal": { "type": "boolean" },
+    "next_actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rel", "href", "method", "accept"],
+        "properties": {
+          "rel": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+          "href": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^(https://(?![^/?#]*@)|http://(?:localhost|127(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|\\[::1\\])(?::[0-9]+)?(?:/|$))"
+          },
+          "method": { "const": "GET" },
+          "accept": { "type": "string", "minLength": 3, "maxLength": 200 },
+          "description": { "type": "string", "maxLength": 500 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "docs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "format": "uri",
+        "pattern": "^(https://(?![^/?#]*@)|http://(?:localhost|127(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|\\[::1\\])(?::[0-9]+)?(?:/|$))"
+      }
+    },
+    "error": { "type": "string", "minLength": 1, "maxLength": 500 }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "terminal": { "type": "boolean", "const": true },
+        "next_actions": { "type": "array", "maxItems": 0 }
+      }
+    },
+    {
+      "properties": {
+        "terminal": { "type": "boolean", "const": false },
+        "next_actions": { "type": "array", "minItems": 1 }
+      }
+    }
+  ],
+  "additionalProperties": false
+}
