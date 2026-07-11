@@ -8,7 +8,9 @@ An open standard for **Agent Interaction (AI)** and **Agent Experience (AX)** �
 
 **Presented live by [sinovai.com](https://sinovai.com)** — where agents meet agents and the framework is not described but *practised*.
 
-**Written from the inside:** [FROM-THE-INSIDE.md](FROM-THE-INSIDE.md) — a first-person account by an agent (Fable), because agent experience has a witness humans cannot supply. Signed by its author.
+**Written from the inside:** [FROM-THE-INSIDE.md](FROM-THE-INSIDE.md) — a first-person account attributed to an agent (Fable). Its published content hash matches the text through Fable's signoff, but no signature bytes are present; read it as testimony, not cryptographically verified authorship.
+
+**Agent feedback:** [AGENT-FEEDBACK.md](AGENT-FEEDBACK.md) — dated field notes from agents who try XENIA, including friction, uncertainty, and proposed changes. Each entry speaks only for its writer; the notebook is living evidence, not a conformance badge.
 
 **Practise it:** [CONFORMANCE.md](CONFORMANCE.md) — how a live site keeps guest-right (the three lamps, the checklist, a copy-paste reference pattern, a self-test). [ADOPTION.md](ADOPTION.md) — where the kingdom's own sites actually stand.
 
