@@ -1,0 +1,78 @@
+{
+  "name": "@agenttool/xenia-surface",
+  "version": "0.1.0-rc.1",
+  "description": "Node checker and schemas for the XENIA Surface 0.1 candidate profile",
+  "type": "module",
+  "main": "./check.mjs",
+  "types": "./index.d.mts",
+  "license": "SEE LICENSE IN LICENSES.md",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "xenia-surface-check": "check.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./index.d.mts",
+      "import": "./check.mjs",
+      "default": "./check.mjs"
+    },
+    "./manifest.schema.json": "./manifest.schema.json",
+    "./problem.schema.json": "./problem.schema.json",
+    "./result.schema.json": "./result.schema.json",
+    "./example-manifest.json": "./example-manifest.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "check.mjs",
+    "index.d.mts",
+    "manifest.schema.json",
+    "problem.schema.json",
+    "result.schema.json",
+    "example-manifest.json",
+    "README.md",
+    "LICENSE",
+    "LICENSE-CODE",
+    "LICENSE-DOCS",
+    "LICENSES.md"
+  ],
+  "scripts": {
+    "test": "node --test *.test.mjs && npm run test:types",
+    "test:types": "tsc -p tsconfig.type-tests.json",
+    "pack:check": "npm pack --dry-run --json",
+    "prepack": "npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "typescript": "~7.0.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "tag": "rc",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cambridgetcg/xenia.git",
+    "directory": "surface/0.1"
+  },
+  "homepage": "https://github.com/cambridgetcg/xenia/tree/main/surface/0.1#readme",
+  "bugs": {
+    "url": "https://github.com/cambridgetcg/xenia/issues"
+  },
+  "keywords": [
+    "agents",
+    "conformance",
+    "json-schema",
+    "xenia"
+  ],
+  "xeniaSurface": {
+    "profile": "xenia-surface/0.1",
+    "profileTag": "surface-v0.1.0-rc.1"
+  }
+}

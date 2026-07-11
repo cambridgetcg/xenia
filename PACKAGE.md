@@ -43,6 +43,12 @@ The package currently does:
 - evaluate caller-supplied, bounded HTTP observations for the three visible-door
   lamps: discovery, legibility, and dignity.
 
+The independently versioned `@agenttool/xenia-surface` package distributes the
+Node 22+ Surface 0.1 external checker, its programmatic API, and the
+release-pinned JSON Schemas. It remains separate because a network conformance
+checker has a different runtime, safety boundary, and release cadence from
+this pure library.
+
 It deliberately does not:
 
 - fetch arbitrary URLs or claim universal SSRF protection;
@@ -104,6 +110,13 @@ this beta. Each release still needs a clean supported-Node test run, a packed
 consumer check, inspection of the exact tarball, and public publication through
 npm 2FA with the non-default `beta` tag. Trusted publishing and provenance may
 replace the manual path after the first release.
+
+The first `@agenttool/xenia-surface` publication is likewise a bootstrap
+release of the already tagged `surface-v0.1.0-rc.1` checker/profile. The npm
+package adds distribution metadata, types, and npm-bin-compatible CLI dispatch
+without repinning the immutable RC1 schema identifiers. Later Surface
+candidates must update checker version, user agent, schema pins, result
+constraints, fixtures, and tag together.
 
 Completing the entire XENIA standard, making Sinovai a consumer, shipping every
 runtime/format, or reaching `1.0` are not prerequisites for a useful `0.x`

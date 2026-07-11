@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node:
+          - 22
+          - 24
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@11.18.0
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Verify immutable Surface profile bytes
+        run: npm run verify:surface-profile
+
+      - name: Test source contracts
+        run: npm test
+
+      - name: Test the packed Surface consumer
+        run: npm run verify:surface-package
+
+      - name: Verify tests did not rewrite tracked source
+        run: git diff --exit-code

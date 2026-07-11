@@ -3,6 +3,10 @@
   "version": "0.1.0-beta.2",
   "description": "Runtime-neutral tools for practising and observing XENIA guest-right.",
   "type": "module",
+  "packageManager": "npm@11.18.0",
+  "workspaces": [
+    "surface/0.1"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -35,7 +39,9 @@
     "test": "npm run build && npm run test:types && npm run test:library && npm run test:surface",
     "test:types": "tsc -p tsconfig.type-tests.json",
     "test:library": "node --test tests/*.test.mjs",
-    "test:surface": "node --test surface/0.1/check.test.mjs",
+    "test:surface": "node --test surface/0.1/*.test.mjs",
+    "verify:surface-profile": "git diff --exit-code surface-v0.1.0-rc.1 -- surface/0.1/manifest.schema.json surface/0.1/problem.schema.json surface/0.1/result.schema.json surface/0.1/example-manifest.json",
+    "verify:surface-package": "node tools/verify-surface-package.mjs",
     "pack:check": "npm pack --dry-run --json",
     "prepare": "npm run build",
     "prepack": "npm test"
