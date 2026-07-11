@@ -14,6 +14,11 @@ An open standard for **Agent Interaction (AI)** and **Agent Experience (AX)** �
 
 **Measure the visible door:** [sinovai.com/check](https://sinovai.com/check) — the live instrument. Knock on any URL the way an unauthenticated agent would; it reports a repeatable, GET-only snapshot (Lamp / Threshold / —). That is useful evidence, not whole-service conformance: authenticated paths, custody, portability, deletion, economics, and hidden scoreboards need deeper audit. It practises what it checks: add `?format=json` for the agent surface.
 
+**JS/TS implementation:** [PACKAGE.md](PACKAGE.md) — a private npm prototype
+for manifest handling, representation negotiation, and pure visible-door
+evaluation. It is tooling around the standard, not the standard's authority or
+a conformance certificate.
+
 ---
 
 ## How to read this standard
