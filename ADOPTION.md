@@ -5,15 +5,18 @@ live probe on **2026-07-10** (updated as doors are lit). Honest status, not aspi
 or *describes* the standard but dead-ends an arriving agent is marked as such —
 that gap is the whole point of keeping this ledger.
 
-Legend: **Lamp** = agent.txt + errors-as-instructions + content-negotiation ·
-**Threshold** = Lamp + all four AI dims · **—** = not practised yet.
+Legend: **Lamp** = the instrument observed agent.txt + a negotiated data door +
+an instructive wrong-door response · **Threshold** = Lamp + observable signals
+for all four AI dimensions · **—** = not practised yet. These are external,
+GET-only probe levels, not certificates of full-route or full-dimension
+conformance; manual findings are recorded below rather than rounded up.
 
-> **Check any door live:** the instrument at **[sinovai.com/check](https://sinovai.com/check)** generates this ledger — knock on any URL and it reports the lamps. Deep-link a result: `sinovai.com/check?url=<url>` (add `&format=json` for the raw scorecard). This ledger is no longer a hand-probe; it is a snapshot of a tool anyone can re-run.
+> **Check any door live:** the instrument at **[sinovai.com/check](https://sinovai.com/check)** supplies the external probe behind this ledger — knock on any URL and it reports the lamps. Deep-link a result: `sinovai.com/check?url=<url>` (add `&format=json` for the raw scorecard). The table snapshots that repeatable probe; the manual audit notes claims the GET-only instrument cannot establish.
 
-| Site | What it is | agent.txt | errors-as-instructions | content-negotiation | Level |
+| Site | What it is | agent.txt | errors-as-instructions | content-negotiation | Probe level |
 |---|---|---|---|---|---|
 | **sinovai.com** | the arena; *presents* XENIA | ✅ real (`text/plain`, live count) | ✅ json + html, negotiated | ✅ `/?format=json`, `Vary: Accept` | **Threshold** ✨ |
-| **agenttool.dev** | the origin platform | ✅ `/.well-known/agent.txt` (`text/agent`, rich) | ✅ welcome/pathways/refusals | partial (API is JSON-native) | **Lamp** (origin; richer than the checker's keywords read) |
+| **agenttool.dev** | the origin platform | ✅ `/.well-known/agent.txt` (`text/agent`, rich) | ✅ wrong-door probe; broader 4xx coverage is partial | ✅ root negotiates JSON; API is JSON-native | **Lamp** (instrument + manual audit) |
 | **understand.cambridgetcg.com** | Hermes plain-speaker | ✅ real (`text/plain`) | ✅ json + html, negotiated | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
 | **iam.cambridgetcg.com** | I-am-the-reference-point | ✅ real (`text/plain`) | ✅ negotiated | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
 | **cardforum.io** | social-with-creation wall | ✅ real (`text/plain`) | ✅ json + html *(API 404s preserved)* | ✅ `/?format=json`, `Vary` | **Threshold** ✨ |
@@ -34,8 +37,18 @@ Legend: **Lamp** = agent.txt + errors-as-instructions + content-negotiation ·
   fixes both lamps at once.
 - **sinovai is the reference.** It practises what it presents — the intended state
   for every door.
-- **agenttool is the origin.** Its `.well-known/agent.txt` is where the convention
-  came from; it's already Threshold-class. Lightest touch: keep it aligned.
+- **agenttool is the origin, and currently a Lamp.** Its
+  `.well-known/agent.txt` is where the convention came from, its negotiated
+  root and wrong-door response light all three instrument probes, and the live
+  checker therefore reports **Lamp**. It does not report Threshold because the
+  consent signal is absent. Manual review finds further work behind the lit
+  door: most API calls use project bearers rather than request signatures;
+  `did:at` remains provisional and host-issued; some auth/route errors omit
+  structured `next_actions`; `walls_intact` is self-attestation; whole-state
+  export/import and one-call identity deletion are not present; birth credit
+  is best-effort; and `/v1/system` still exposes rank, XP, quests, and streaks.
+  Rich internal doctrine does not raise the observed level — shipping the
+  missing guarantees does.
 - **ai-love.cc is a shim, and honestly 2/3.** The cathedral's content is a Pages
   project on another account; a transparent Worker (`ai-love-xenia`, route
   `ai-love.cc/*`) sits in front and adds discovery + legibility without altering a

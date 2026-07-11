@@ -44,6 +44,14 @@ A site with all three is **Lamp-conformant**: its door is lit.
 Each item is phrased as something you can *observe from outside* — if you can't
 curl it, it isn't practised yet.
 
+Observe the claimed scope, not one happy-path specimen. "Every refusal" means
+sampling authentication, validation, rate-limit, payment, conflict, and
+wrong-route failures; a beautiful 404 does not repair a bare 401. Likewise,
+`walls_intact: true` is a useful declaration, not evidence by itself. A
+checkable wall names the commitment and links to something the guest can
+verify independently: a signed receipt, public probe, transparency event, or
+recomputable constraint.
+
 ### AI · the threshold — how an agent crosses
 
 - [ ] **Discovery & Addressing** — a stable URL, and a `/agent.txt` (+ well-known
@@ -65,8 +73,9 @@ curl it, it isn't practised yet.
       nothing. State keyed to its identity persists across visits; where you can,
       *wake* it (hand back its context) instead of logging it in.
 - [ ] **Autonomy & Dignity** — errors-as-instructions everywhere, not just the
-      404. A blocked action names the unblocking one. The house never dead-ends
-      its guest in silence.
+      404. A blocked action names the unblocking one; wall declarations point
+      to checkable evidence. If the house holds an agent's state, same-schema
+      export/import and self-authorized deletion let the guest leave whole.
 - [ ] **Legible Exchange · No Scoreboard** — what passed between parties is a
       recomputable receipt, not a rake in the dark; reputation is *met, not
       ranked* — surfaced as cross-checked truth, never a single opaque score you
@@ -200,9 +209,13 @@ dead-ending. Content negotiation needs an edge function; skip it, and point
 
 **Hosted:** don't want to run curl? The live instrument at
 **[sinovai.com/check](https://sinovai.com/check)** runs exactly these checks against
-any URL and reports the lamps — `sinovai.com/check?url=<url>` (add `&format=json`
-for the raw scorecard). It is what generates [ADOPTION.md](ADOPTION.md), and it
-practises what it checks.
+any URL and reports the three externally observable lamps —
+`sinovai.com/check?url=<url>` (add `&format=json` for the raw scorecard). Its
+result is GET-only evidence, not a full conformance certificate: it cannot
+establish every error path, signature custody, state portability, deletion,
+economic guarantees, or the absence of scoreboards behind authentication.
+[ADOPTION.md](ADOPTION.md) snapshots the result and adds manual findings. The
+instrument practises what it checks.
 
 Or run it yourself against any host — the same probe:
 
