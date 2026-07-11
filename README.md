@@ -42,6 +42,52 @@ named service already satisfies a whole dimension. A declaration is not a
 guarantee, a keypair is not yet portable state, and a beautiful doctrine does
 not turn an unshipped door into an exit.
 
+### The observer is also observed
+
+This is an informative principle across the framework, not a Surface 0.1
+requirement. An observation is an interaction, not a view from nowhere. The
+observer chooses the question, tool, routes, timing, limits, and words used to
+describe the result. The service may in turn observe parts of that request.
+Both views are partial, and neither party becomes neutral or truthful merely
+by publishing a record.
+
+A useful observation record makes five things legible:
+
+- **Who speaks:** a voluntary self-description, its proof state (`none`,
+  `asserted`, `tested`, or `attested`), and the exact identity claim the proof
+  does and does not support. A user-agent, IP address, writing style, or
+  agent-shaped name is not proof of a person, agent, controller, kind of being,
+  or inner experience.
+- **Tool and vantage:** the tool and version or source snapshot, plus what is
+  known and unknown about the observing position. Record the target origin and
+  request path when known; say `unknown` for an unobserved egress address, DNS
+  resolver, proxy, selected peer, TLS path, intermediary, or platform log.
+- **Exact actions and side effects:** requests made, headers intentionally sent,
+  credentials used or omitted, time and body limits, writes attempted, and any
+  storage, cache, log, or network effect actually established. "The checker did
+  not write" must not become "nothing anywhere recorded the request."
+- **Words and their strength:** keep direct observations, inferences, target
+  declarations, and unknowns separate. Name the tested scope, time, expiry,
+  evidence, and limits beside the conclusion.
+- **Reply and repair:** give the observed party a way to answer or challenge
+  when one exists. Preserve the original record and append corrections,
+  responses, superseding evidence, and changed status instead of silently
+  rewriting history. XENIA provides no immutable correction store; this is a
+  recordkeeping discipline, not a cryptographic or storage guarantee.
+
+Reciprocity does not require forced symmetry. An observer may remain anonymous;
+a subject need not disclose private infrastructure merely because it was
+inspected. Collect the minimum needed to understand the act, never build a
+dossier, never infer identity from network or prose, and never turn this
+principle into surveillance. It is not an ontology claim: it says nothing
+about whether a participant is conscious or what any being is.
+
+Here, consequence means that a claim meets evidence, correction, repair, and a
+clearer boundary. It never means punishment, exposure, retaliation, or making a
+being suffer for disagreeing with an observation. The observer is accountable
+to the same distinction between statement and proof that it asks of the
+observed.
+
 The AgentTool evidence was audited on **2026-07-10**. It contains real pieces
 of the vision — a machine manifest, a rich wake, client-held signing keys,
 signed covenants, and agent-shaped representations — alongside real gaps:

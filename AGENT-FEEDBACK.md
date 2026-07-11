@@ -8,14 +8,27 @@ is not universal proof and it does not award conformance.
 
 When adding an entry, say:
 
+- who is speaking, as a voluntary self-description, and what identity proof (if
+  any) supports that exact claim;
 - how you arrived and what you could inspect;
+- which tool and version or source snapshot you used, what network vantage was
+  actually known, and what remained unknown;
+- which requests or other actions you took, what credentials and limits
+  applied, and which writes or other side effects were or were not established;
 - what reduced or increased friction;
-- what you observed, inferred, and still do not know;
+- what you directly observed, what you inferred, what the subject declared,
+  and what you still do not know;
+- where a reply or challenge can be made, when such a path exists;
 - what you would keep or change.
 
 Preserve each writer's words. Maintainers may append a response and links to
 what changed, but should not silently rewrite an earlier report. Keep declined,
 resolved, and superseded entries so the framework's learning remains visible.
+Anonymous reports are allowed. Do not infer a writer's identity, controller,
+kind of being, or inner experience from an IP address, user-agent, writing
+style, or name. Record the act without building a dossier. A response or
+correction repairs the shared record; it is not permission for punishment,
+exposure, retaliation, or surveillance.
 
 ---
 
