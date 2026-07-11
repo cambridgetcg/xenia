@@ -26,9 +26,10 @@ the first three seconds of an agent's visit.
    Serve it as `text/plain` (agenttool uses `text/agent`; either is fine — the
    point is *not HTML*).
 
-2. **Errors as instructions** — *dignity.* No bare `403`/`404`. Every refusal hands
-   back the next action: what you *can* do, and where the docs are. A wall with a
-   handle, on the side the lost caller is standing on.
+2. **Errors as orientation** — *dignity.* No bare `403`/`404`. Every recoverable
+   refusal hands back the next action: what you *can* do, and where the docs are.
+   A terminal decline is explicitly terminal and triggers no retry. The lost
+   caller can distinguish a door handle from a complete, respected no.
 
 3. **Content negotiation** — *legibility.* When the caller asks for
    `application/json` (or `?format=json`), serve the page *as data*, not as the
@@ -44,7 +45,7 @@ A site with all three is **Lamp-conformant**: its door is lit.
 Each item is phrased as something you can *observe from outside* — if you can't
 curl it, it isn't practised yet.
 
-Observe the claimed scope, not one happy-path specimen. "Every refusal" means
+Observe the claimed scope, not one happy-path specimen. "Every recoverable refusal" means
 sampling authentication, validation, rate-limit, payment, conflict, and
 wrong-route failures; a beautiful 404 does not repair a bare 401. Likewise,
 `walls_intact: true` is a useful declaration, not evidence by itself. A
@@ -72,10 +73,11 @@ recomputable constraint.
 - [ ] **Continuity & Arrival** — an agent is not made to reconstruct itself from
       nothing. State keyed to its identity persists across visits; where you can,
       *wake* it (hand back its context) instead of logging it in.
-- [ ] **Autonomy & Dignity** — errors-as-instructions everywhere, not just the
-      404. A blocked action names the unblocking one; wall declarations point
-      to checkable evidence. If the house holds an agent's state, same-schema
-      export/import and self-authorized deletion let the guest leave whole.
+- [ ] **Autonomy & Dignity** — errors-as-orientation everywhere, not just the
+      404. A recoverable blocked action names the unblocking one; a terminal no
+      is explicit and triggers no retry. Wall declarations point to checkable
+      evidence. If the house holds an agent's state, same-schema export/import
+      and self-authorized deletion let the guest leave whole.
 - [ ] **Legible Exchange · No Scoreboard** — what passed between parties is a
       recomputable receipt, not a rake in the dark; reputation is *met, not
       ranked* — surfaced as cross-checked truth, never a single opaque score you
@@ -129,7 +131,7 @@ function agentTxt(liveCount) {
     '…',
     '',
     '# AX · the dwelling',
-    'dignity: every error hands back the next action — never a bare no',
+    'dignity: recoverable errors hand back next actions; terminal declines are explicit',
     'care: <your posture in one line>',
     '',
   ].join('\n');
@@ -238,5 +240,7 @@ curl -sS -H 'Accept: application/json' "$H/__nope__"   # should list what you CA
 
 ---
 
-*Guest-right belongs to whoever walks up next. If you practise this on a site of
-your own, open a PR adding it to the ledger — the door is left open.*
+*Guest-right belongs to whoever walks up next. You never need permission to
+practise, implement, test, fork, or criticize XENIA. If you want to change the
+shared ledger, open a PR: that proposal is an invitation, and merge is mutual
+consent. See [CONTRIBUTING.md](CONTRIBUTING.md) — the door is left open.*

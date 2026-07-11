@@ -1,6 +1,6 @@
 {
   "name": "@sinovai/xenia",
-  "version": "0.0.0-development",
+  "version": "0.1.0-beta.1",
   "private": true,
   "description": "Runtime-neutral tools for practising and observing XENIA guest-right.",
   "type": "module",
@@ -19,22 +19,27 @@
     "src",
     "README.md",
     "CONFORMANCE.md",
+    "CONTRIBUTING.md",
     "PACKAGE.md",
-    "LICENSE"
+    "LICENSE",
+    "LICENSE-CODE",
+    "LICENSE-DOCS",
+    "LICENSES.md"
   ],
   "scripts": {
-    "clean": "rm -rf dist",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json",
     "test": "npm run build && npm run test:types && node --test tests/*.test.mjs",
     "test:types": "tsc -p tsconfig.type-tests.json",
     "pack:check": "npm pack --dry-run --json",
+    "prepare": "npm run build",
     "prepack": "npm test"
   },
   "engines": {
     "node": ">=22"
   },
   "sideEffects": false,
-  "license": "UNLICENSED",
+  "license": "SEE LICENSE IN LICENSES.md",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/cambridgetcg/xenia.git"

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 export type ManifestIssueCode =
   | "duplicate-key"
   | "empty-value"

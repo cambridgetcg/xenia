@@ -6,10 +6,24 @@ parts of that standard.
 
 ## Current status
 
-`@sinovai/xenia` is a **private local prototype**. Its name, software license,
-public schema, and first semantic version are not release decisions yet.
-`private: true` is intentional: local builds and tarball inspection are welcome;
-publication is not.
+`@sinovai/xenia` is an **open beta implementation** at `0.1.0-beta.1`. Everyone
+may read, use, install, test, fork, adapt, discuss, and build with it under the
+[repository license map](LICENSES.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for
+the deliberately permissionless participation path.
+
+`private: true` pauses only an official npm registry write. It does not make the
+code private or gate local use; it prevents an agent or maintainer from claiming
+the canonical package name before the scope owner has consented to that release.
+
+From a clone, the naive path is:
+
+```sh
+npm install
+npm test
+```
+
+The `prepare` script builds `dist/`, so a local or Git dependency can be consumed
+without waiting for the canonical npm release.
 
 The package currently does:
 
@@ -72,17 +86,21 @@ visible: Sinovai should migrate to a versioned manifest profile before consuming
 this parser, rather than teaching the parser one application's undocumented
 grammar.
 
-## Publication gates
+## Canonical release safeguards
+
+These protect only the official package name and release channel. They do not
+gate implementations, forks, experiments, local installs, or contributions.
 
 Before removing `private: true`:
 
-1. Confirm control of the `@sinovai` npm scope.
-2. Choose a software license for implementation code while retaining
-   CC-BY-SA-4.0 for the standard/specification.
-3. Reconcile and version the manifest and instructional-error schemas.
-4. Add a machine-readable standard version and JSON Schema to `spec.json`; it
-   remains outside the package tarball until that contract is intentional.
-5. Restore readable Sinovai source/build/tests before making it a package
-   consumer.
-6. Inspect the packed tarball, bootstrap the first release manually with 2FA,
-   then configure trusted/staged publishing with provenance.
+1. Confirm who controls and can recover the `@sinovai` npm scope, and who is
+   consenting to act as the first release owner.
+2. Run the existing tests and packed-consumer check on a supported Node LTS,
+   then describe the small observable API honestly in the beta release notes.
+3. Inspect the exact tarball and publish it publicly through npm 2FA with an
+   explicit beta tag (`--access public --tag beta`); trusted publishing and
+   provenance can replace the manual path after the first release.
+
+Completing the entire XENIA standard, making Sinovai a consumer, shipping every
+runtime/format, or reaching `1.0` are not prerequisites for a useful `0.x`
+implementation.

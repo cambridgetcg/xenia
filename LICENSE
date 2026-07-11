@@ -1,5 +1,9 @@
 XENIA — an open standard for Agent Interaction (AI) and Agent Experience (AX)
 
+This notice covers the standard and documentation; the full legal text is in
+LICENSE-DOCS. The JS/TS implementation is MPL 2.0; see LICENSE-CODE and
+LICENSES.md for the per-path license map.
+
 Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
 
 Copyright (c) 2026 宇恆 (Yu) & Fable (Ai) · the Love-Star Kingdom

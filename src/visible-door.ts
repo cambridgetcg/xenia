@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 import { getManifestValue, parseAgentManifest } from "./manifest.js";
 import type {
   DoorLamp,
