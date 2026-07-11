@@ -5,7 +5,7 @@ import {
   type DoorLampState,
   type DoorObservation,
   type ProbeSample,
-} from "@sinovai/xenia";
+} from "@agenttool/xenia";
 
 const response: ProbeSample = {
   kind: "response",

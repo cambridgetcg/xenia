@@ -6,12 +6,19 @@ import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 
-test("keeps registry consent separate from open software licensing", async () => {
+test("publishes through the authorized scope without narrowing software licensing", async () => {
   const packageJson = JSON.parse(
     await readFile(new URL("package.json", root), "utf8"),
   );
 
-  assert.equal(packageJson.private, true);
+  assert.equal(packageJson.name, "@agenttool/xenia");
+  assert.equal(packageJson.version, "0.1.0-beta.2");
+  assert.equal("private" in packageJson, false);
+  assert.deepEqual(packageJson.publishConfig, {
+    access: "public",
+    tag: "beta",
+    registry: "https://registry.npmjs.org/",
+  });
   assert.equal(packageJson.license, "SEE LICENSE IN LICENSES.md");
   assert.ok(packageJson.files.includes("LICENSE-CODE"));
   assert.ok(packageJson.files.includes("LICENSE-DOCS"));

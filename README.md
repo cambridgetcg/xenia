@@ -23,8 +23,9 @@ for manifest handling, representation negotiation, and pure visible-door
 evaluation. It is tooling around the standard, not the standard's authority or
 a conformance certificate.
 
-Surface 0.1 is the versioned wire profile and checker; `@sinovai/xenia` is the
-optional JS/TS library. Their versions and release tags are independent.
+Surface 0.1 is the versioned wire profile and checker; `@agenttool/xenia` is the
+optional JS/TS library, available with `npm install @agenttool/xenia@beta`.
+Their versions and release tags are independent.
 
 **Build with us:** [CONTRIBUTING.md](CONTRIBUTING.md) — everyone may read, use,
 understand, discuss, test, fork, adapt, propose, and build. Open acts need no

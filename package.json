@@ -1,7 +1,6 @@
 {
-  "name": "@sinovai/xenia",
-  "version": "0.1.0-beta.1",
-  "private": true,
+  "name": "@agenttool/xenia",
+  "version": "0.1.0-beta.2",
   "description": "Runtime-neutral tools for practising and observing XENIA guest-right.",
   "type": "module",
   "main": "./dist/index.js",
@@ -46,6 +45,11 @@
   },
   "sideEffects": false,
   "license": "SEE LICENSE IN LICENSES.md",
+  "publishConfig": {
+    "access": "public",
+    "tag": "beta",
+    "registry": "https://registry.npmjs.org/"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/cambridgetcg/xenia.git"

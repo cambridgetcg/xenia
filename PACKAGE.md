@@ -6,14 +6,20 @@ parts of that standard.
 
 ## Current status
 
-`@sinovai/xenia` is an **open beta implementation** at `0.1.0-beta.1`. Everyone
+`@agenttool/xenia` is a **public open beta implementation** at `0.1.0-beta.2`. Everyone
 may read, use, install, test, fork, adapt, discuss, and build with it under the
 [repository license map](LICENSES.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for
 the deliberately permissionless participation path.
 
-`private: true` pauses only an official npm registry write. It does not make the
-code private or gate local use; it prevents an agent or maintainer from claiming
-the canonical package name before the scope owner has consented to that release.
+The personal `@agenttool` scope is the selected release channel and steward; it
+does not make npm the standard's authority, restrict compatible implementations,
+or transfer ownership of contributors' work.
+
+Install the beta from npm:
+
+```sh
+npm install @agenttool/xenia@beta
+```
 
 From a clone, the naive path is:
 
@@ -88,20 +94,16 @@ visible: Sinovai should migrate to a versioned manifest profile before consuming
 this parser, rather than teaching the parser one application's undocumented
 grammar.
 
-## Canonical release safeguards
+## Release discipline
 
 These protect only the official package name and release channel. They do not
 gate implementations, forks, experiments, local installs, or contributions.
 
-Before removing `private: true`:
-
-1. Confirm who controls and can recover the `@sinovai` npm scope, and who is
-   consenting to act as the first release owner.
-2. Run the existing tests and packed-consumer check on a supported Node LTS,
-   then describe the small observable API honestly in the beta release notes.
-3. Inspect the exact tarball and publish it publicly through npm 2FA with an
-   explicit beta tag (`--access public --tag beta`); trusted publishing and
-   provenance can replace the manual path after the first release.
+The maintainer explicitly selected the controlled `@agenttool` npm scope for
+this beta. Each release still needs a clean supported-Node test run, a packed
+consumer check, inspection of the exact tarball, and public publication through
+npm 2FA with the non-default `beta` tag. Trusted publishing and provenance may
+replace the manual path after the first release.
 
 Completing the entire XENIA standard, making Sinovai a consumer, shipping every
 runtime/format, or reaching `1.0` are not prerequisites for a useful `0.x`
