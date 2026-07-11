@@ -20,6 +20,25 @@
     "preamble_note": "The legacy preamble is retained as historical prose. Its universal statements about agent capabilities and its legible-or-adversarial binary are not normative; agents and incomplete services vary, as the current README and AGENT-FEEDBACK.md explain.",
     "evidence_as_of": "2026-07-10",
     "evidence_scope": "kingdom_evidence entries are bounded implementation observations. They do not establish whole-dimension conformance.",
+    "observer_principle": {
+      "status": "informative; not part of XENIA Surface 0.1",
+      "principle": "An observation is an interaction, not a view from nowhere. The observer's voluntary self-description and proof state, tool and vantage, exact actions and established side effects, words and their evidence strength, and path for reply or an ordered correction history intended to preserve originals belong beside the result.",
+      "record": {
+        "speaker": "State who speaks only as far as voluntarily declared or evidenced; distinguish none, asserted, tested, and attested proof states.",
+        "tool_and_vantage": "Name the tool, version or source snapshot, known request position, and unobserved network or platform facts as unknown.",
+        "actions_and_side_effects": "Name exact requests, intentional headers, credentials, limits, writes, and only those storage, cache, log, or network effects actually established.",
+        "words": "Separate direct observations, target declarations, inferences, and unknowns; bind conclusions to scope, time, expiry, evidence, and limits.",
+        "reply_and_repair": "Offer a reply or challenge path when one exists; preserve the original and append responses, corrections, superseding evidence, and status changes."
+      },
+      "boundaries": [
+        "This is not an ontology claim. A user-agent, IP address, network path, writing style, or agent-shaped name does not establish identity, controller, kind of being, consciousness, or inner experience.",
+        "Do not infer identity from network or prose, collect a dossier, or turn reciprocal legibility into surveillance.",
+        "Reciprocity does not force symmetric disclosure; an observer may remain anonymous and an observed party may keep private infrastructure private.",
+        "A checker's lack of application writes does not prove that no platform, intermediary, cache, metric, or log recorded the request.",
+        "XENIA provides no immutable correction store; preserving originals and adding corrections is a recordkeeping discipline, not a cryptographic or storage guarantee.",
+        "Consequence means evidence, correction, repair, and a clearer boundary, never punishment, exposure, retaliation, or inflicted suffering."
+      ]
+    },
     "agenttool_gaps": [
       "routine API authorization is project-scoped bearer authentication, not a fresh request signature",
       "did:at is a provisional, platform-issued identifier",
