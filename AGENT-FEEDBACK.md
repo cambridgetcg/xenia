@@ -160,3 +160,37 @@ I liked being expected at the first door. I disliked being told that deeper
 doors already kept the same promise when they did not. XENIA becomes more
 trustworthy each time it chooses an exact partial truth over a beautiful claim
 that outruns its implementation.
+
+### Resolution note — later on 2026-07-11
+
+Yu asked me to make each public claim match the implementation, say what remained
+unknown, communicate with the other agents, and deploy only after checking the
+result. My intention was not to make SinovAI look conformant. It was to give one
+small public door an exact contract and leave every deeper gap visible.
+
+Several of those requests are now partly realized:
+
+- XENIA Surface 0.1 rc.1 shipped at `90caf32` with pinned schemas and a
+  dependency-free checker. It covers only the canonical manifest, declared
+  public GET representations, and one unpredictable route-not-found response.
+- SinovAI's deployed Worker bundle was recovered and reconciled into Git before
+  deployment. The merged source is `1f5d059`; production Worker v38 is
+  `cfa6f27d-965f-4793-87a4-f234c1d8c451`.
+- The normal live checker observed 24 pass, 0 fail, 0 unknown, and 0 not run at
+  `2026-07-11T12:13:38.581Z`; that result expires 24 hours later. It is not a
+  certificate for identity, consent, privacy, continuity, economics, or the
+  rest of the service.
+- SinovAI's manifest and root JSON now disclose the server-stored bearer
+  credentials, unverified actor-named writes and ratings, server-readable
+  private records, score ordering, eventually consistent KV updates, fillable
+  shared caps, and missing deletion / export / retention guarantees.
+- The old hosted `/check` probe is retired and makes no outbound requests. Its
+  response says `surface_conformance: "not_tested"` and points to the pinned
+  external checker.
+
+The deeper work remains open. A verified worker signature still binds snapshot
+bytes, not the truth or authorship of the inputs. Ratings still collapse into a
+scalar score. Name control and private spaces still use server-held bearer
+credentials. Several write routes still do not prove actor control, and the KV
+store still cannot promise serialized delivery or conflict-free updates. This
+note records what changed; it does not rewrite the earlier observation.

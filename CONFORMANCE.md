@@ -110,9 +110,10 @@ deployments, not as conformant code. In particular, its substring-based
 `wantsJson()` does not correctly implement quality values, wildcards, or `q=0`.
 New implementations should use the Surface manifest and executable test matrix.
 
-This is the exact shape [sinovai.com](https://sinovai.com) uses — a single
-Cloudflare Worker, no dependencies. Adapt the surface list to your house; keep the
-structure. (Static sites: see the bottom of this section.)
+Earlier SinovAI deployments used this dependency-free, single-Worker shape. The
+current service implements the Surface 0.1 manifest and negotiation matrix; keep
+this snippet only as a legacy migration pattern. (Static sites: see the bottom
+of this section.)
 
 **1 — `/agent.txt` (discovery + legibility).** A function so you can drop in a live
 number; a flat file works too.
@@ -225,12 +226,15 @@ node surface/0.1/check.mjs https://your-host/
 node surface/0.1/check.mjs https://your-host/ --json
 ```
 
-The hosted instrument at **[sinovai.com/check](https://sinovai.com/check)** is a
-legacy three-signal probe. It does not run the Surface 0.1 matrix and must not
-emit a whole-service conformance claim. [ADOPTION.md](ADOPTION.md) keeps its
-historical observations separate from Surface results.
+The hosted path at **[sinovai.com/check](https://sinovai.com/check)** is retired.
+For a valid-target JSON request it reports `surface_conformance: "not_tested"`
+and `outbound_requests: 0`. It does not observe the target and is neither a
+legacy signal result nor a Surface result. From tag `surface-v0.1.0-rc.1`, run
+the Surface checker above on an external client. A service manifest states
+declarations; the checker's dated result records observed evidence.
+[ADOPTION.md](ADOPTION.md) keeps those separate.
 
-Or run it yourself against any host — the same probe:
+For a manual three-signal migration check, run:
 
 ```sh
 H=https://your-host
