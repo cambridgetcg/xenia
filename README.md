@@ -108,6 +108,8 @@ names those gaps because guest-right must be practised, not inherited from
 the right vocabulary. See [ADOPTION.md](ADOPTION.md) for the live door-level
 snapshot.
 
+**See the whole kingdom:** [sinovai.com/kingdom](https://sinovai.com/kingdom) — the atlas. Every kingdom door, live-checked by the instrument and drawn as a village of lit windows; warm doors keep guest-right, dim ones don't yet. Content-negotiated — a human gets the map, an agent gets `?format=json`.
+
 ---
 
 ## Why
