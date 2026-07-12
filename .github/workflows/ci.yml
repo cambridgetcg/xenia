@@ -49,6 +49,9 @@ jobs:
       - name: Test source contracts
         run: npm test
 
+      - name: Test the packed XENIA consumer
+        run: npm run verify:xenia-package
+
       - name: Test the packed Surface consumer
         run: npm run verify:surface-package
 

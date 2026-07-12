@@ -6,7 +6,7 @@ parts of that standard.
 
 ## Current status
 
-`@agenttool/xenia` is a **public open beta implementation** at `0.1.0-beta.2`. Everyone
+`@agenttool/xenia` is a **public open beta implementation** at `0.1.0-beta.3`. Everyone
 may read, use, install, test, fork, adapt, discuss, and build with it under the
 [repository license map](LICENSES.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for
 the deliberately permissionless participation path.
@@ -40,6 +40,10 @@ The package currently does:
 - negotiate the deliberately narrow HTML/JSON visible-door surface from
   explicit inputs;
 - merge and validate `Vary` header field names;
+- build deeply frozen, release-pinned Surface 0.1 manifests and problems from
+  runtime-checked ergonomic inputs;
+- negotiate declared Surface JSON/HTML resources and create Web-standard
+  manifest, representation, and problem responses with `Vary: Accept`;
 - evaluate caller-supplied, bounded HTTP observations for the three visible-door
   lamps: discovery, legibility, and dignity.
 
@@ -52,13 +56,76 @@ this pure library.
 It deliberately does not:
 
 - fetch arbitrary URLs or claim universal SSRF protection;
+- own an application's router, rewrite handled `404` responses, or install
+  catch-all middleware;
+- verify the truth, signed preimage, signer authority, or key resolution of
+  declared claim evidence;
 - certify Threshold, Dwelling, custody, consent, portability, deletion,
   economics, continuity, or care from a GET-only snapshot;
 - import Sinovai's KV arena, claim-token identity, CORS, HTML, or deployment
   worker;
 - replace the normative prose or make npm the source of truth.
 
-## Prototype API
+## APIs
+
+### Surface 0.1 producer
+
+The explicit `@agenttool/xenia/surface-0.1` subpath is the host-side companion
+to the independent checker. It uses only Web APIs and has no runtime dependency,
+so the same helpers can compose with Cloudflare Workers and other
+`Request`/`Response` runtimes:
+
+```js
+import {
+  createSurfaceManifestResponse,
+  defineSurfaceManifest,
+  negotiateSurfaceResource,
+} from "@agenttool/xenia/surface-0.1";
+
+const manifest = defineSurfaceManifest({
+  service: {
+    name: "Example",
+    canonicalUrl: "https://example.com/",
+    description: "A public machine-readable entry.",
+  },
+  resources: [{
+    id: "entry",
+    href: "https://example.com/",
+    representations: ["application/json", "text/html"],
+    defaultMediaType: "text/html",
+  }],
+});
+
+const response = createSurfaceManifestResponse(manifest);
+const selected = negotiateSurfaceResource(
+  manifest.resources[0],
+  "application/*;q=1, text/html;q=0.2",
+);
+```
+
+`defineSurfaceManifest()` fixes the RC1 schema/profile identifiers, forces
+same-origin credential-free resources with `auth: "none"`, validates claim and
+evidence metadata, and always publishes explicit default boundaries. Metadata
+labelled `attested` is still only shape-checked: Surface 0.1 does not define the
+signed preimage or prove the statement true.
+
+`negotiateSurfaceResource()` covers the candidate profile's exact quality,
+wildcard, default, and `q=0` behavior. It is not advertised as a universal
+implementation of every possible HTTP content-negotiation extension.
+`createSurfaceResourceResponse()` and the manifest/problem response helpers
+enforce the profile's status/body relationship, media type, and cache-safe
+`Vary: Accept`; they discard caller-supplied body length, transfer, and content
+coding headers because the helpers serialize fresh bytes. Specialized problem
+builders create the required recoverable `406` and discoverable route-miss
+`404` shapes. Applications decide when a router genuinely missed; the kit never
+replaces an arbitrary downstream error.
+
+The [Cloudflare Worker example](examples/cloudflare-worker/README.md) shows that
+composition without outbound requests or deployment bindings. Its in-memory
+equivalent is independently checked in the test suite and must produce 24
+passes with no failures, unknowns, or skipped observations.
+
+### Legacy manifest and visible-door tools
 
 - `parseAgentManifest()` checks the bounded flat syntax and preserves every
   entry in order, including repeats. `getManifestValue()` and
@@ -80,19 +147,22 @@ It deliberately does not:
 
 For local development, `npm test` builds declarations, compiles TypeScript
 consumer-contract fixtures, runs the library runtime suite, and then runs the
-independently versioned Surface checker suite. `npm run pack:check` also invokes
-those tests through `prepack`, then inspects a tarball without publishing it; it
-does rebuild the ignored `dist/` directory.
+independently versioned Surface checker suite. `npm run verify:xenia-package`
+installs the exact packed root tarball into a clean consumer and checks both the
+root and versioned subpath. `npm run pack:check` invokes the tests through
+`prepack`, then inspects a tarball without publishing it; it does rebuild the
+ignored `dist/` directory.
 
-## Why the evaluator is pure
+## Why the producer and evaluator are pure
 
 An earlier Sinovai hosted checker provided useful evidence, but its transport
 accepted arbitrary targets and buffered complete bodies before slicing them.
 That hosted probe is now retired. Packaging the same fetcher for server use
-would create an unsafe default. This prototype accepts already collected
-observations and returns no raw response bodies. A later network adapter needs
-an explicit target policy, redirect and DNS revalidation, bounded streaming
-reads, timeouts, and runtime-specific tests.
+would create an unsafe default. The producer only constructs responses for its
+own host, while the legacy evaluator accepts already collected observations and
+returns no raw response bodies. A later hosted network adapter needs an explicit
+target policy, redirect and DNS revalidation, bounded streaming reads, timeouts,
+concurrency and abuse controls, and runtime-specific tests.
 
 The current Sinovai `agent.txt` also contains bare `GET`/`POST` route lines that
 are prose rather than `key: value` fields. A fixture keeps that incompatibility
@@ -106,10 +176,13 @@ These protect only the official package name and release channel. They do not
 gate implementations, forks, experiments, local installs, or contributions.
 
 The maintainer explicitly selected the controlled `@agenttool` npm scope for
-this beta. Each release still needs a clean supported-Node test run, a packed
-consumer check, inspection of the exact tarball, and public publication through
-npm 2FA with the non-default `beta` tag. Trusted publishing and provenance may
-replace the manual path after the first release.
+this beta. Each release still needs clean supported-Node test runs, packed
+consumer checks, inspection of the exact tarball, and the non-default `beta`
+tag. The beta.3 workflow is prepared for npm trusted publishing: GitHub's
+short-lived OIDC identity may stage the exact tagged tarball with provenance,
+but a maintainer must review and approve that staged package with npm 2FA before
+it becomes public. No long-lived npm write token belongs in the repository or
+GitHub environment.
 
 The first `@agenttool/xenia-surface` publication is likewise a bootstrap
 release of the already tagged `surface-v0.1.0-rc.1` checker/profile. The npm

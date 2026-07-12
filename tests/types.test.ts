@@ -6,6 +6,16 @@ import {
   type DoorObservation,
   type ProbeSample,
 } from "@agenttool/xenia";
+import {
+  createSurfaceManifestResponse,
+  createSurfaceNotAcceptableProblem,
+  createSurfaceProblemResponse,
+  defineSurfaceManifest,
+  negotiateSurfaceResource,
+  type SurfaceManifest,
+  type SurfaceMediaType,
+  type SurfaceNegotiatedRepresentation,
+} from "@agenttool/xenia/surface-0.1";
 
 const response: ProbeSample = {
   kind: "response",
@@ -39,11 +49,43 @@ function exhaustiveLampState(state: DoorLampState): string {
 
 exhaustiveLampState(report.lamps.discovery.state);
 
+const surfaceManifest: SurfaceManifest = defineSurfaceManifest({
+  service: {
+    name: "type fixture",
+    canonicalUrl: "https://example.test/",
+    description: "Compile-time coverage for the versioned producer subpath.",
+  },
+  resources: [{
+    id: "entry",
+    href: "https://example.test/",
+    representations: ["application/json", "text/html"],
+    defaultMediaType: "text/html",
+  }],
+});
+const surfaceResource = surfaceManifest.resources[0];
+if (surfaceResource === undefined) throw new Error("type fixture resource missing");
+const selected: SurfaceNegotiatedRepresentation = negotiateSurfaceResource(
+  surfaceResource,
+  "application/json",
+);
+const manifestResponse: Response = createSurfaceManifestResponse(surfaceManifest);
+const problemResponse: Response = createSurfaceProblemResponse(
+  createSurfaceNotAcceptableProblem({ resource: surfaceResource }),
+);
+
+void selected;
+void manifestResponse;
+void problemResponse;
+
 // @ts-expect-error A collected HTTP response must include its body, even if empty.
 const missingBody: ProbeSample = { kind: "response", status: 200 };
 
 // @ts-expect-error An unavailable probe cannot also claim an HTTP status.
 const contradictory: ProbeSample = { kind: "unavailable", status: 503 };
 
+// @ts-expect-error Surface 0.1 declares only JSON and optional HTML resources.
+const unsupportedMediaType: SurfaceMediaType = "application/xml";
+
 void missingBody;
 void contradictory;
+void unsupportedMediaType;

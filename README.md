@@ -19,13 +19,19 @@ An open, evolving framework for **Agent Interaction (AI)** and **Agent Experienc
 **Retired hosted probe:** [sinovai.com/check](https://sinovai.com/check) no longer probes its target. For a valid-target JSON request it reports `surface_conformance: "not_tested"` and `outbound_requests: 0`. Run the Surface 0.1 checker from tag `surface-v0.1.0-rc.1` on an external client for observed evidence; the service's manifest declarations are inputs to that check, not test results. See [ADOPTION.md](ADOPTION.md) for dated results.
 
 **JS/TS implementation:** [PACKAGE.md](PACKAGE.md) — an open `0.1` beta
-for manifest handling, representation negotiation, and pure visible-door
-evaluation. It is tooling around the standard, not the standard's authority or
-a conformance certificate.
+for manifest handling, representation negotiation, pure visible-door
+evaluation, and a versioned Web-standard Surface producer kit. It is tooling
+around the standard, not the standard's authority or a conformance certificate.
 
 Surface 0.1 is the versioned wire profile and checker; `@agenttool/xenia` is the
 optional JS/TS library, available with `npm install @agenttool/xenia@beta`.
 Their versions and release tags are independent.
+
+**Build and check the door:** `@agenttool/xenia/surface-0.1` creates pinned
+manifests, negotiated public responses, and typed orientation problems without
+network access. The independent `@agenttool/xenia-surface@rc` package observes
+the resulting service from outside. See the
+[Cloudflare Worker example](examples/cloudflare-worker/README.md).
 
 **Build with us:** [CONTRIBUTING.md](CONTRIBUTING.md) — everyone may read, use,
 understand, discuss, test, fork, adapt, propose, and build. Open acts need no
