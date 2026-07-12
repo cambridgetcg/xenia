@@ -62,16 +62,27 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Keep the prerelease off latest
+      - name: Verify registry distribution tags
         run: |
-          if npm dist-tag ls @agenttool/xenia-surface | grep -q '^latest:'; then
-            npm dist-tag rm @agenttool/xenia-surface latest
-          fi
-          tags="$(npm dist-tag ls @agenttool/xenia-surface)"
-          echo "$tags"
-          echo "$tags" | grep -qx "rc: ${{ inputs.version }}"
-          if echo "$tags" | grep -q '^latest:'; then
-            exit 1
-          fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          tags_json="$(npm view @agenttool/xenia-surface dist-tags --json)"
+          TAGS_JSON="$tags_json" EXPECTED_VERSION="${{ inputs.version }}" node --input-type=module <<'NODE'
+          const tags = JSON.parse(process.env.TAGS_JSON);
+          const expected = process.env.EXPECTED_VERSION;
+
+          console.log(`dist-tags: ${JSON.stringify(tags)}`);
+
+          if (tags.rc !== expected) {
+            throw new Error(`expected rc to point to ${expected}, got ${tags.rc ?? "<missing>"}`);
+          }
+
+          // npm registry metadata requires every package to retain a latest tag.
+          // A first prerelease therefore remains latest until a stable release replaces it.
+          if (typeof tags.latest !== "string" || tags.latest.length === 0) {
+            throw new Error("npm registry did not return its required latest tag");
+          }
+          if (tags.latest === expected) {
+            console.log("latest necessarily points to the only published version until the first stable release");
+          } else if (tags.latest.includes("-")) {
+            throw new Error(`latest unexpectedly points to another prerelease: ${tags.latest}`);
+          }
+          NODE
