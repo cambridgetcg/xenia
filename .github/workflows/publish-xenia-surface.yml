@@ -53,6 +53,25 @@ jobs:
           npm audit signatures
 
       - name: Publish the RC with provenance
-        run: npm publish --workspace @agenttool/xenia-surface --access public --tag rc --provenance
+        run: |
+          if npm view "@agenttool/xenia-surface@${{ inputs.version }}" version >/dev/null 2>&1; then
+            echo "@agenttool/xenia-surface@${{ inputs.version }} is already published"
+          else
+            npm publish --workspace @agenttool/xenia-surface --access public --tag rc --provenance
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Keep the prerelease off latest
+        run: |
+          if npm dist-tag ls @agenttool/xenia-surface | grep -q '^latest:'; then
+            npm dist-tag rm @agenttool/xenia-surface latest
+          fi
+          tags="$(npm dist-tag ls @agenttool/xenia-surface)"
+          echo "$tags"
+          echo "$tags" | grep -qx "rc: ${{ inputs.version }}"
+          if echo "$tags" | grep -q '^latest:'; then
+            exit 1
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
