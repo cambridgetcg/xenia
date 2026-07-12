@@ -12,18 +12,25 @@ test("publishes through the authorized scope without narrowing software licensin
   );
 
   assert.equal(packageJson.name, "@agenttool/xenia");
-  assert.equal(packageJson.version, "0.1.0-beta.2");
+  assert.equal(packageJson.version, "0.1.0-beta.3");
   assert.equal("private" in packageJson, false);
   assert.deepEqual(packageJson.publishConfig, {
     access: "public",
+    provenance: true,
     tag: "beta",
     registry: "https://registry.npmjs.org/",
+  });
+  assert.deepEqual(packageJson.exports["./surface-0.1"], {
+    types: "./dist/surface-0.1.d.ts",
+    import: "./dist/surface-0.1.js",
+    default: "./dist/surface-0.1.js",
   });
   assert.equal(packageJson.license, "SEE LICENSE IN LICENSES.md");
   assert.ok(packageJson.files.includes("LICENSE-CODE"));
   assert.ok(packageJson.files.includes("LICENSE-DOCS"));
   assert.ok(packageJson.files.includes("LICENSES.md"));
   assert.ok(packageJson.files.includes("CONTRIBUTING.md"));
+  assert.ok(packageJson.files.includes("examples/cloudflare-worker"));
   assert.equal(packageJson.license.includes("UNLICENSED"), false);
   assert.match(packageJson.scripts.clean, /node:fs/);
   assert.equal(packageJson.scripts.clean.includes("rm -rf"), false);
@@ -50,4 +57,20 @@ test("marks implementation sources with their software license", async () => {
     const source = await readFile(new URL(name, sourceDirectory), "utf8");
     assert.match(source, /^\/\/ SPDX-License-Identifier: MPL-2\.0\n/);
   }
+});
+
+test("stages beta.3 through tokenless trusted publishing", async () => {
+  const workflow = await readFile(
+    new URL(".github/workflows/stage-xenia.yml", root),
+    "utf8",
+  );
+
+  assert.match(workflow, /id-token: write/);
+  assert.match(workflow, /environment: npm-bootstrap/);
+  assert.match(workflow, /npm@11\.18\.0/);
+  assert.match(
+    workflow,
+    /npm stage publish \. --access public --tag beta --provenance/,
+  );
+  assert.doesNotMatch(workflow, /NPM_TOKEN|NODE_AUTH_TOKEN/);
 });

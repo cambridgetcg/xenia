@@ -1,6 +1,6 @@
 {
   "name": "@agenttool/xenia",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.3",
   "description": "Runtime-neutral tools for practising and observing XENIA guest-right.",
   "type": "module",
   "packageManager": "npm@11.18.0",
@@ -15,11 +15,17 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./surface-0.1": {
+      "types": "./dist/surface-0.1.d.ts",
+      "import": "./dist/surface-0.1.js",
+      "default": "./dist/surface-0.1.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
     "dist",
     "src",
+    "examples/cloudflare-worker",
     "README.md",
     "ADOPTION.md",
     "AGENT-FEEDBACK.md",
@@ -36,11 +42,13 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json",
-    "test": "npm run build && npm run test:types && npm run test:library && npm run test:surface",
+    "test": "npm run build && npm run test:types && npm run test:examples && npm run test:library && npm run test:surface",
     "test:types": "tsc -p tsconfig.type-tests.json",
+    "test:examples": "tsc -p examples/cloudflare-worker/tsconfig.json",
     "test:library": "node --test tests/*.test.mjs",
     "test:surface": "node --test surface/0.1/*.test.mjs",
     "verify:surface-profile": "git diff --exit-code surface-v0.1.0-rc.1 -- surface/0.1/manifest.schema.json surface/0.1/problem.schema.json surface/0.1/result.schema.json surface/0.1/example-manifest.json",
+    "verify:xenia-package": "node tools/verify-xenia-package.mjs",
     "verify:surface-package": "node tools/verify-surface-package.mjs",
     "pack:check": "npm pack --dry-run --json",
     "prepare": "npm run build",
@@ -53,6 +61,7 @@
   "license": "SEE LICENSE IN LICENSES.md",
   "publishConfig": {
     "access": "public",
+    "provenance": true,
     "tag": "beta",
     "registry": "https://registry.npmjs.org/"
   },

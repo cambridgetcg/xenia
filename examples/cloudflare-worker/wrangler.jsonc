@@ -1,0 +1,6 @@
+// SPDX-License-Identifier: MPL-2.0
+{
+  "name": "xenia-surface-producer-example",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-01-20"
+}

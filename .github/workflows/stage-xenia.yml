@@ -1,0 +1,74 @@
+name: Stage XENIA package
+run-name: Stage @agenttool/xenia@${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact immutable npm version to stage
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: stage-xenia
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    if: github.ref == 'refs/heads/main' && inputs.version == '0.1.0-beta.3'
+    runs-on: ubuntu-latest
+    environment: npm-bootstrap
+    timeout-minutes: 15
+    steps:
+      - name: Check out audited source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node and npm registry
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+
+      - name: Pin npm
+        run: npm install --global npm@11.18.0
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Verify source and packed consumers
+        run: |
+          npm run verify:surface-profile
+          npm test
+          npm run verify:xenia-package
+          npm run verify:surface-package
+
+      - name: Verify exact tagged release
+        env:
+          EXPECTED_VERSION: ${{ inputs.version }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from "node:fs/promises";
+
+          const packageJson = JSON.parse(await readFile("package.json", "utf8"));
+          if (packageJson.version !== process.env.EXPECTED_VERSION) {
+            throw new Error(`expected ${process.env.EXPECTED_VERSION}, got ${packageJson.version}`);
+          }
+          NODE
+          expected_tag="npm-xenia-v${EXPECTED_VERSION}"
+          tagged_commit="$(git rev-list -n 1 "$expected_tag")"
+          test "$tagged_commit" = "$GITHUB_SHA"
+          if npm view "@agenttool/xenia@${EXPECTED_VERSION}" version >/dev/null 2>&1; then
+            echo "@agenttool/xenia@${EXPECTED_VERSION} is already published" >&2
+            exit 1
+          fi
+
+      - name: Stage the beta with provenance
+        run: npm stage publish . --access public --tag beta --provenance
