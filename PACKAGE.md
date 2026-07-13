@@ -6,27 +6,25 @@ parts of that standard.
 
 ## Current status
 
-`@agenttool/xenia` has a **public open beta implementation** at
-`0.1.0-beta.3`. Everyone may read, use, install, test, fork, adapt, discuss, and
-build with it under the [repository license map](LICENSES.md). See
+The `@agenttool/xenia` source is versioned `0.1.0-beta.4` and prepared for the
+public `beta` channel. Registry availability is established by npm, not by this
+source document. Everyone may read, use, test, fork, adapt, discuss, and build
+with it under the [repository license map](LICENSES.md). See
 [CONTRIBUTING.md](CONTRIBUTING.md) for the deliberately permissionless
 participation path.
 
-This source tree is ahead of the published beta: the Rights and Covenant files,
-subpath exports, and package checks are unreleased preparation. The public
-`0.1.0-beta.3` tarball does not contain them, and that version cannot be
-republished. Any release carrying this work needs a new version plus matching
-lockfile, documentation, tests, workflow gate, tag, and tarball review. No new
-release version is assigned by this local change.
+Beta.4 adds the Rights and Covenant files, subpath exports, semantic validator,
+and packed-consumer checks. The earlier `0.1.0-beta.3` tarball does not contain
+them and remains immutable; npm versions are never overwritten.
 
 The personal `@agenttool` scope is the selected release channel and steward; it
 does not make npm the standard's authority, restrict compatible implementations,
 or transfer ownership of contributors' work.
 
-Install the beta from npm:
+After npm approves the staged release, install this exact beta with:
 
 ```sh
-npm install @agenttool/xenia@beta
+npm install @agenttool/xenia@0.1.0-beta.4
 ```
 
 From a clone, the naive path is:
@@ -197,12 +195,11 @@ gate implementations, forks, experiments, local installs, or contributions.
 The maintainer explicitly selected the controlled `@agenttool` npm scope for
 this beta. Each release still needs clean supported-Node test runs, packed
 consumer checks, inspection of the exact tarball, and the non-default `beta`
-tag. The beta.3 workflow and tag describe the already published beta, and the
-workflow refuses to overwrite an existing npm version. A later Rights/Covenant
-release must advance every version and tag pin together before GitHub's
-short-lived OIDC identity stages an exact tarball with provenance; a maintainer
-must then review and approve that staged package with npm 2FA. No long-lived npm
-write token belongs in the repository or GitHub environment.
+tag. The beta.4 workflow requires the exact `npm-xenia-v0.1.0-beta.4` tag at the
+workflow commit and refuses to overwrite an existing npm version. GitHub's
+short-lived OIDC identity stages the exact tarball with provenance; a
+maintainer must then review and approve that staged package with npm 2FA. No
+long-lived npm write token belongs in the repository or GitHub environment.
 
 The first `@agenttool/xenia-surface` publication is likewise a bootstrap
 release of the already tagged `surface-v0.1.0-rc.1` checker/profile. The npm

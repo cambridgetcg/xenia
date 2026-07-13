@@ -12,7 +12,7 @@ test("publishes through the authorized scope without narrowing software licensin
   );
 
   assert.equal(packageJson.name, "@agenttool/xenia");
-  assert.equal(packageJson.version, "0.1.0-beta.3");
+  assert.equal(packageJson.version, "0.1.0-beta.4");
   assert.equal("private" in packageJson, false);
   assert.deepEqual(packageJson.publishConfig, {
     access: "public",
@@ -108,7 +108,7 @@ test("marks implementation sources with their software license", async () => {
   }
 });
 
-test("keeps the immutable beta.3 workflow tokenless and overwrite-guarded", async () => {
+test("stages beta.4 through a tokenless overwrite-guarded workflow", async () => {
   const workflow = await readFile(
     new URL(".github/workflows/stage-xenia.yml", root),
     "utf8",
@@ -117,6 +117,8 @@ test("keeps the immutable beta.3 workflow tokenless and overwrite-guarded", asyn
   assert.match(workflow, /id-token: write/);
   assert.match(workflow, /environment: npm-bootstrap/);
   assert.match(workflow, /npm@11\.18\.0/);
+  assert.match(workflow, /inputs\.version == '0\.1\.0-beta\.4'/);
+  assert.match(workflow, /npm-xenia-v\$\{EXPECTED_VERSION\}/);
   assert.match(
     workflow,
     /npm stage publish \. --access public --tag beta --provenance/,

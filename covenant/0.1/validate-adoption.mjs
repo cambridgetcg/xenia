@@ -185,7 +185,7 @@ function checkEvidence(evidence, outcome, reviewedAt, path, issues) {
 }
 
 function derivedState(assessment) {
-  const outcomes = values(assessment.requirement_results).map(({ outcome }) => outcome);
+  const outcomes = values(assessment.requirement_results).map((result) => result?.outcome);
   if (outcomes.includes("fail")) return "breached";
   if (outcomes.includes("partial") || assessment.assessment_scope?.coverage === "partial") {
     return "partial";
@@ -212,7 +212,9 @@ function checkRightAssessment(
   if (assessment.right_id !== expectedRightId) {
     add(issues, "right_order_or_id_mismatch", `${path}.right_id`, `Expected ${expectedRightId} at this ledger position.`);
   }
-  const actualRequirementIds = values(assessment.requirement_results).map(({ requirement_id }) => requirement_id);
+  const actualRequirementIds = values(assessment.requirement_results).map(
+    (result) => result?.requirement_id,
+  );
   if (!sameArray(actualRequirementIds, expectedRequirementIds)) {
     add(issues, "requirement_mapping_mismatch", `${path}.requirement_results`, "The result IDs must exactly match this right's ordered Covenant duties.");
   }
@@ -231,9 +233,9 @@ function checkRightAssessment(
   }
   if (assessment.service_obligation_state === "implemented") {
     const stronglyEvidenced = values(assessment.requirement_results).every((result) =>
-      result.outcome === "pass"
-      && ["tested", "attested"].includes(result.evidence?.state)
-      && result.evidence?.verification === "verified"
+      result?.outcome === "pass"
+      && ["tested", "attested"].includes(result?.evidence?.state)
+      && result?.evidence?.verification === "verified"
     );
     if (!stronglyEvidenced || assessment.assessment_scope?.coverage !== "complete") {
       add(issues, "implementation_overstated", path, "Implemented requires complete assessment scope and verified tested or attested evidence for every duty.");

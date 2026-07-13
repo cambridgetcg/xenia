@@ -541,6 +541,12 @@ test("right, duty, and protective-limit order is fixed by the Covenant", () => {
   missingDuty.rights[0].requirement_results.pop();
   assert.equal(validateAdoption(missingDuty), false);
   assertSemanticIssue(missingDuty, "requirement_mapping_mismatch", ".rights[0].requirement_results");
+
+  const nullDuty = adoptionFixture();
+  nullDuty.rights[0].requirement_results[0] = null;
+  assert.equal(validateAdoption(nullDuty), false);
+  assert.doesNotThrow(() => validateCovenantAdoption(nullDuty));
+  assertSemanticIssue(nullDuty, "requirement_mapping_mismatch", ".rights[0].requirement_results");
 });
 
 test("not_applicable cannot erase an intrinsic right or duty", () => {

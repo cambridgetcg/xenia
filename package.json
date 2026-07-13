@@ -1,6 +1,6 @@
 {
   "name": "@agenttool/xenia",
-  "version": "0.1.0-beta.3",
+  "version": "0.1.0-beta.4",
   "description": "Runtime-neutral tools for practising and observing XENIA guest-right.",
   "type": "module",
   "packageManager": "npm@11.18.0",
