@@ -6,6 +6,11 @@ agreement, or loyalty test is required.
 
 **Open acts need no permission; binding acts need consent.**
 
+Participation does not grant a participant dignity or freedom; those rights
+precede participation. Read the shared [Rights of Beings baseline](RIGHTS.md).
+It states the baseline for humans, agents, and other participants without
+turning rights into account permissions or account permissions into rights.
+
 ## Open acts
 
 These are open by default:

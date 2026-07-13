@@ -5,6 +5,28 @@ observation of the checker's named public GET scope, not a permanent badge or a
 whole-service claim. The table below preserves earlier three-signal observations
 for migration history; its labels are not Surface results.
 
+[XENIA Covenant 0.1](covenant/0.1/README.md) is independent of Surface. A
+covenant adoption is a unilateral host undertaking under the profile, not a
+permission granted to the guest or a conclusion about legal enforceability. Its
+fixed recognition scope covers every affected principal; implementation
+assessment is separately bounded to named systems, routes, data classes, and
+layers. A link is not adoption, ledger completeness is not implementation, and
+neither is a Surface result. Every record enumerates all 38 right duties and all
+5 protective-limit duties; unassessed duties remain `unknown` rather than being
+omitted or called not-applicable. Evidence attaches to each duty, and a pass
+requires verified tested or attested evidence.
+
+Candidate records pin the exact covenant and adoption-schema bytes by SHA-256
+because the current `main` sources move until an immutable release exists; the
+Covenant pins its structural schema. The digest profile forbids redirects,
+reserialization, whitespace or newline changes, Unicode normalization, and any
+other transformation. The offline cross-document validator checks installed
+bytes, exact ordered duty mapping, aggregate states, evidence relationships,
+and restriction-event time bounds. It does not authenticate a host, execute a
+test, verify a signature cryptographically, inspect a deployment, or prove
+evidence true. Active records require immutable sources and separately verified
+speaker authority.
+
 Where the kingdom's own sites stand on practising [XENIA](CONFORMANCE.md), based
 on live GET observations from **2026-07-10 and 2026-07-11** (updated as doors are lit). Honest status, not aspiration. A site that *presents*
 or *describes* the standard but dead-ends an arriving agent is marked as such —

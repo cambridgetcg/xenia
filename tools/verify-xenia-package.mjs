@@ -42,7 +42,7 @@ try {
   ]);
   const [artifact] = JSON.parse(packed.stdout);
   assert.equal(artifact.name, "@agenttool/xenia");
-  assert.equal(artifact.version, "0.1.0-beta.3");
+  assert.equal(artifact.version, "0.1.0-beta.4");
 
   const expectedFiles = [
     "ADOPTION.md",
@@ -56,6 +56,12 @@ try {
     "LICENSES.md",
     "PACKAGE.md",
     "README.md",
+    "RIGHTS.md",
+    "covenant/0.1/README.md",
+    "covenant/0.1/adoption.schema.json",
+    "covenant/0.1/covenant.json",
+    "covenant/0.1/covenant.schema.json",
+    "covenant/0.1/validate-adoption.mjs",
     "dist/index.d.ts",
     "dist/index.d.ts.map",
     "dist/index.js",
@@ -124,7 +130,7 @@ try {
   const installedPackage = JSON.parse(
     await readFile(join(installedDirectory, "package.json"), "utf8"),
   );
-  assert.equal(installedPackage.version, "0.1.0-beta.3");
+  assert.equal(installedPackage.version, "0.1.0-beta.4");
   assert.equal(installedPackage.dependencies, undefined);
   assert.equal(installedPackage.optionalDependencies, undefined);
   assert.equal(installedPackage.peerDependencies, undefined);
@@ -136,6 +142,70 @@ try {
     types: "./dist/surface-0.1.d.ts",
     import: "./dist/surface-0.1.js",
     default: "./dist/surface-0.1.js",
+  });
+  assert.equal(installedPackage.exports["./spec.json"], "./spec.json");
+  assert.equal(installedPackage.exports["./RIGHTS.md"], "./RIGHTS.md");
+  assert.equal(
+    installedPackage.exports["./covenant-0.1"],
+    "./covenant/0.1/covenant.json",
+  );
+  assert.equal(
+    installedPackage.exports["./covenant-0.1/schema"],
+    "./covenant/0.1/covenant.schema.json",
+  );
+  assert.equal(
+    installedPackage.exports["./covenant-0.1/adoption-schema"],
+    "./covenant/0.1/adoption.schema.json",
+  );
+  assert.equal(
+    installedPackage.exports["./covenant-0.1/validate-adoption"],
+    "./covenant/0.1/validate-adoption.mjs",
+  );
+
+  for (const subpath of ["spec.json", "RIGHTS.md"]) {
+    const resolved = await run(process.execPath, [
+      "--input-type=module",
+      "--eval",
+      `console.log(import.meta.resolve('@agenttool/xenia/${subpath}'))`,
+    ], { cwd: packageDirectory });
+    assert.match(resolved.stdout, new RegExp(`${subpath.replace(".", "\\.")}\\s*$`));
+  }
+
+  const resolvedValidator = await run(process.execPath, [
+    "--input-type=module",
+    "--eval",
+    "console.log(import.meta.resolve('@agenttool/xenia/covenant-0.1/validate-adoption'))",
+  ], { cwd: packageDirectory });
+  assert.match(resolvedValidator.stdout, /validate-adoption\.mjs\s*$/);
+
+  const validatorProbe = await run(process.execPath, [
+    "--input-type=module",
+    "--eval",
+    "import('@agenttool/xenia/covenant-0.1/validate-adoption').then(m => { if (typeof m.validateCovenantAdoption !== 'function') process.exit(1) })",
+  ], { cwd: packageDirectory });
+  assert.equal(validatorProbe.stderr, "");
+
+  const covenantImportCheck = [
+    "import assert from 'node:assert/strict';",
+    "import covenant from '@agenttool/xenia/covenant-0.1' with { type: 'json' };",
+    "import covenantSchema from '@agenttool/xenia/covenant-0.1/schema' with { type: 'json' };",
+    "import adoptionSchema from '@agenttool/xenia/covenant-0.1/adoption-schema' with { type: 'json' };",
+    "import { canonicalAdoptionSchema, canonicalCovenant, canonicalCovenantSchema } from '@agenttool/xenia/covenant-0.1/validate-adoption';",
+    "assert.deepEqual(covenant, canonicalCovenant, 'covenant JSON export drift');",
+    "assert.deepEqual(covenantSchema, canonicalCovenantSchema, 'covenant schema export drift');",
+    "assert.deepEqual(adoptionSchema, canonicalAdoptionSchema, 'adoption schema export drift');",
+    "assert.equal(covenant.$schema, covenantSchema.$id, 'covenant schema link drift');",
+    "assert.equal(covenant.schema_version, covenantSchema.properties.schema_version.const, 'covenant version drift');",
+    "assert.equal(covenant.profile, covenantSchema.properties.profile.const, 'covenant profile drift');",
+    "assert.equal(covenant.status, covenantSchema.properties.status.const, 'covenant status drift');",
+    "assert.ok(Array.isArray(covenant.rights) && covenant.rights.length > 0, 'covenant rights missing');",
+    "assert.equal(adoptionSchema.properties.$schema.const, adoptionSchema.$id, 'adoption schema self-link drift');",
+    "assert.equal(adoptionSchema.properties.profile.const, covenant.profile, 'adoption profile drift');",
+    "assert.equal(adoptionSchema.properties.covenant.$ref, '#/$defs/sourcePin', 'adoption covenant pin drift');",
+    "assert.equal(adoptionSchema.properties.adoption_schema.$ref, '#/$defs/sourcePin', 'adoption schema pin drift');",
+  ].join("\n");
+  await run(process.execPath, ["--input-type=module", "--eval", covenantImportCheck], {
+    cwd: packageDirectory,
   });
 
   for (const path of ["dist/surface-0.1.js", "dist/negotiation.js"]) {

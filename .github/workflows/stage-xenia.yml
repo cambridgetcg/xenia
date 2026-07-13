@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   stage:
-    if: github.ref == 'refs/heads/main' && inputs.version == '0.1.0-beta.3'
+    if: github.ref == 'refs/heads/main' && inputs.version == '0.1.0-beta.4'
     runs-on: ubuntu-latest
     environment: npm-bootstrap
     timeout-minutes: 15

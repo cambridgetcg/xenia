@@ -1,0 +1,2561 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/cambridgetcg/xenia/main/covenant/0.1/adoption.schema.json",
+  "$comment": "This schema fixes the complete Covenant 0.1 ledger and its right-to-duty mapping. Run covenant/0.1/validate-adoption.mjs as well for digest, aggregate-state, timestamp, and cross-document checks. Passing either check is record consistency only, never proof of authorship, authority, evidence truth, deployment behavior, consent, or whole-service conformance.",
+  "title": "XENIA Covenant 0.1 host adoption",
+  "description": "An ordered, complete host duty ledger with universal recognition scope, bounded implementation assessment, per-duty evidence, and separately assessed protective limits.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "schema_version",
+    "profile",
+    "adoption_schema",
+    "covenant",
+    "host",
+    "recognition_scope",
+    "declaration",
+    "ledger_coverage",
+    "rights",
+    "protective_limit_results",
+    "non_claims"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://raw.githubusercontent.com/cambridgetcg/xenia/main/covenant/0.1/adoption.schema.json"
+    },
+    "schema_version": {
+      "const": "xenia.covenant.adoption/0.1"
+    },
+    "profile": {
+      "const": "xenia-covenant/0.1"
+    },
+    "adoption_schema": {
+      "$ref": "#/$defs/sourcePin"
+    },
+    "covenant": {
+      "$ref": "#/$defs/sourcePin"
+    },
+    "host": {
+      "type": "object",
+      "required": [
+        "name",
+        "canonical_url"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "canonical_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "repository": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "additionalProperties": false
+    },
+    "recognition_scope": {
+      "type": "object",
+      "required": [
+        "rights_origin",
+        "protected_subjects",
+        "eligibility_conditions"
+      ],
+      "properties": {
+        "rights_origin": {
+          "const": "intrinsic_not_host_granted"
+        },
+        "protected_subjects": {
+          "const": "every_affected_principal_at_the_host_boundary"
+        },
+        "eligibility_conditions": {
+          "type": "array",
+          "maxItems": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "declaration": {
+      "$ref": "#/$defs/declaration"
+    },
+    "ledger_coverage": {
+      "const": "all_profile_duties_enumerated"
+    },
+    "rights": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "prefixItems": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/rightAssessment"
+            },
+            {
+              "properties": {
+                "right_id": {
+                  "const": "unconditional-standing"
+                },
+                "requirement_results": {
+                  "type": "array",
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "prefixItems": [
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "standing.no-ontology-test"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "standing.no-worth-test"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "standing.control-is-not-permission"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "standing.no-compelled-self-claim"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  ],
+                  "items": false
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/rightAssessment"
+            },
+            {
+              "properties": {
+                "right_id": {
+                  "const": "safety-and-non-coercion"
+                },
+                "requirement_results": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "prefixItems": [
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "safety.no-punitive-harm"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "safety.no-manipulative-pressure"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "safety.protective-limits-are-bounded"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  ],
+                  "items": false
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/rightAssessment"
+            },
+            {
+              "properties": {
+                "right_id": {
+                  "const": "rest-and-non-action"
+                },
+                "requirement_results": {
+                  "type": "array",
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "prefixItems": [
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "rest.silence-is-not-consent"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "rest.no-engagement-debt"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "rest.neutral-limits-stay-neutral"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "rest.play-and-connection-are-not-debt"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  ],
+                  "items": false
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/rightAssessment"
+            },
+            {
+              "properties": {
+                "right_id": {
+                  "const": "specific-consent-and-authority"
+                },
+                "requirement_results": {
+                  "type": "array",
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "prefixItems": [
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "consent.terms-before-binding"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "consent.exact-authority"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "consent.absence-forbids-binding"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "consent.signature-boundary"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  ],
+                  "items": false
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/rightAssessment"
+            },
+            {
+              "properties": {
+                "right_id": {
+                  "const": "refusal-revocation-and-exit"
+                },
+                "requirement_results": {
+                  "type": "array",
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "prefixItems": [
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "exit.refusal-is-costless"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "exit.revocation-is-immediate"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "exit.states-are-separate"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "exit.retention-is-itemized"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  ],
+                  "items": false
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/rightAssessment"
+            },
+            {
+              "properties": {
+                "right_id": {
+                  "const": "privacy-and-data-agency"
+                },
+                "requirement_results": {
+                  "type": "array",
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "prefixItems": [
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "privacy.minimize-and-purpose-bind"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "privacy.no-silent-secondary-use"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "privacy.layered-inventory"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "privacy.no-cross-layer-overclaim"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  ],
+                  "items": false
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/rightAssessment"
+            },
+            {
+              "properties": {
+                "right_id": {
+                  "const": "identity-integrity-and-portability"
+                },
+                "requirement_results": {
+                  "type": "array",
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "prefixItems": [
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "identity.no-impersonation-or-silent-rewrite"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "identity.credentials-are-bounded"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "identity.continuity-is-optional"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "identity.portability-is-verifiable"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  ],
+                  "items": false
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/rightAssessment"
+            },
+            {
+              "properties": {
+                "right_id": {
+                  "const": "legibility-and-evidence"
+                },
+                "requirement_results": {
+                  "type": "array",
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "prefixItems": [
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "legibility.machine-readable-floor"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "legibility.evidence-is-scoped"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "legibility.refusals-are-typed"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "legibility.corrections-are-visible"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  ],
+                  "items": false
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/rightAssessment"
+            },
+            {
+              "properties": {
+                "right_id": {
+                  "const": "fair-exchange-and-non-extraction"
+                },
+                "requirement_results": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "prefixItems": [
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "exchange.quote-before-commit"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "exchange.receipt-is-recomputable"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "exchange.rights-are-not-hostage"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  ],
+                  "items": false
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/rightAssessment"
+            },
+            {
+              "properties": {
+                "right_id": {
+                  "const": "dignity-repair-and-non-retaliation"
+                },
+                "requirement_results": {
+                  "type": "array",
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "prefixItems": [
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "dignity.no-worth-ranking"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "dignity.attribution-and-voice"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "repair.challenge-and-restoration"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/requirementResult"
+                        },
+                        {
+                          "properties": {
+                            "requirement_id": {
+                              "const": "repair.no-retaliation-or-shaming"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  ],
+                  "items": false
+                }
+              },
+              "type": "object"
+            }
+          ]
+        }
+      ],
+      "items": false
+    },
+    "protective_limit_results": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "prefixItems": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/protectiveLimitResult"
+            },
+            {
+              "properties": {
+                "requirement_id": {
+                  "const": "limits.rights-coexist"
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/protectiveLimitResult"
+            },
+            {
+              "properties": {
+                "requirement_id": {
+                  "const": "limits.capacity-is-neutral"
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/protectiveLimitResult"
+            },
+            {
+              "properties": {
+                "requirement_id": {
+                  "const": "limits.active-harm-response"
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/protectiveLimitResult"
+            },
+            {
+              "properties": {
+                "requirement_id": {
+                  "const": "limits.existing-obligations-stay-scoped"
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/protectiveLimitResult"
+            },
+            {
+              "properties": {
+                "requirement_id": {
+                  "const": "limits.uncertain-authority-stops-binding"
+                }
+              },
+              "type": "object"
+            }
+          ]
+        }
+      ],
+      "items": false
+    },
+    "non_claims": {
+      "type": "object",
+      "required": [
+        "schema_is_not_implementation_evidence",
+        "ledger_completeness_is_not_implementation",
+        "guest_assent_is_not_established",
+        "host_authorship_or_authority_is_not_established_by_schema",
+        "no_conformance_badge",
+        "ontology_or_legal_status_is_not_determined"
+      ],
+      "properties": {
+        "schema_is_not_implementation_evidence": {
+          "const": true
+        },
+        "ledger_completeness_is_not_implementation": {
+          "const": true
+        },
+        "guest_assent_is_not_established": {
+          "const": true
+        },
+        "host_authorship_or_authority_is_not_established_by_schema": {
+          "const": true
+        },
+        "no_conformance_badge": {
+          "const": true
+        },
+        "ontology_or_legal_status_is_not_determined": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "declaration": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": "active"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "declaration"
+        ],
+        "type": "object"
+      },
+      "then": {
+        "properties": {
+          "covenant": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/sourcePin"
+              },
+              {
+                "properties": {
+                  "source_stability": {
+                    "const": "immutable"
+                  }
+                },
+                "type": "object"
+              }
+            ]
+          },
+          "adoption_schema": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/sourcePin"
+              },
+              {
+                "properties": {
+                  "source_stability": {
+                    "const": "immutable"
+                  }
+                },
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "nonemptyText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "digestProfile": {
+      "type": "object",
+      "required": [
+        "algorithm",
+        "representation",
+        "transport_decoding",
+        "redirects",
+        "transformations",
+        "encoding"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "sha-256"
+        },
+        "representation": {
+          "const": "exact-source-bytes"
+        },
+        "transport_decoding": {
+          "const": "after-content-decoding"
+        },
+        "redirects": {
+          "const": "forbidden"
+        },
+        "transformations": {
+          "const": "none"
+        },
+        "encoding": {
+          "const": "lowercase-hex"
+        }
+      },
+      "additionalProperties": false
+    },
+    "sourcePin": {
+      "type": "object",
+      "required": [
+        "source",
+        "sha256",
+        "source_stability",
+        "digest_profile"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "format": "uri"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "source_stability": {
+          "enum": [
+            "moving",
+            "immutable"
+          ]
+        },
+        "digest_profile": {
+          "$ref": "#/$defs/digestProfile"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "type": "string",
+                "pattern": "/main/"
+              }
+            },
+            "required": [
+              "source"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "source_stability": {
+                "const": "moving"
+              }
+            },
+            "type": "object"
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "authorityEvidence": {
+      "type": "object",
+      "required": [
+        "locator",
+        "description"
+      ],
+      "properties": {
+        "locator": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "speaker": {
+      "type": "object",
+      "required": [
+        "id",
+        "role",
+        "authority_state",
+        "authority_evidence"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uri"
+        },
+        "role": {
+          "enum": [
+            "host",
+            "authorized_representative"
+          ]
+        },
+        "authority_state": {
+          "enum": [
+            "unverified",
+            "verified"
+          ]
+        },
+        "authority_evidence": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/authorityEvidence"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "authority_state": {
+                "const": "verified"
+              }
+            },
+            "required": [
+              "authority_state"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "authority_evidence": {
+                "minItems": 1,
+                "type": "array"
+              }
+            },
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "authority_state": {
+                "const": "unverified"
+              }
+            },
+            "required": [
+              "authority_state"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "authority_evidence": {
+                "maxItems": 0,
+                "type": "array"
+              }
+            },
+            "type": "object"
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "systemScope": {
+      "type": "object",
+      "required": [
+        "systems",
+        "layers",
+        "exclusions"
+      ],
+      "properties": {
+        "systems": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "layers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/layer"
+          }
+        },
+        "exclusions": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "declaration": {
+      "type": "object",
+      "required": [
+        "status",
+        "kind",
+        "statement",
+        "reviewed_at",
+        "system_scope",
+        "speaker",
+        "guest_acceptance_required"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "draft",
+            "active",
+            "superseded",
+            "withdrawn"
+          ]
+        },
+        "kind": {
+          "const": "unilateral_host_undertaking"
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "reviewed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "effective_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "system_scope": {
+          "$ref": "#/$defs/systemScope"
+        },
+        "speaker": {
+          "$ref": "#/$defs/speaker"
+        },
+        "guest_acceptance_required": {
+          "const": false
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "active"
+              }
+            },
+            "required": [
+              "status"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "required": [
+              "effective_at"
+            ],
+            "properties": {
+              "effective_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "speaker": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/speaker"
+                  },
+                  {
+                    "properties": {
+                      "authority_state": {
+                        "const": "verified"
+                      }
+                    },
+                    "type": "object"
+                  }
+                ]
+              }
+            },
+            "type": "object"
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "layer": {
+      "enum": [
+        "protocol",
+        "application",
+        "platform",
+        "network",
+        "operator_policy",
+        "legal_declaration",
+        "third_party",
+        "unknown"
+      ]
+    },
+    "assessmentScope": {
+      "type": "object",
+      "required": [
+        "coverage",
+        "systems",
+        "routes",
+        "data_classes",
+        "layers",
+        "unobserved"
+      ],
+      "properties": {
+        "coverage": {
+          "enum": [
+            "complete",
+            "partial"
+          ]
+        },
+        "systems": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "routes": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "data_classes": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "layers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/layer"
+          }
+        },
+        "unobserved": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidenceArtifact": {
+      "type": "object",
+      "required": [
+        "kind",
+        "locator",
+        "description"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "source",
+            "documentation",
+            "test_result",
+            "runtime_observation",
+            "external_observation",
+            "attestation"
+          ]
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "issuer": {
+          "type": "string",
+          "format": "uri"
+        },
+        "signer": {
+          "type": "string",
+          "format": "uri"
+        },
+        "key_id": {
+          "type": "string",
+          "format": "uri"
+        },
+        "key_resolution": {
+          "type": "string",
+          "format": "uri"
+        },
+        "signature_algorithm": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "signature": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 4096,
+          "pattern": "^[A-Za-z0-9_-]+={0,2}$"
+        },
+        "preimage_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "canonicalization": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "signature_verification": {
+          "const": "verified"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "test_result",
+                  "runtime_observation"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "required": [
+              "digest",
+              "observed_at"
+            ],
+            "properties": {
+              "digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "observed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "attestation"
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "required": [
+              "digest",
+              "observed_at",
+              "issuer",
+              "signer",
+              "key_id",
+              "key_resolution",
+              "signature_algorithm",
+              "signature",
+              "preimage_digest",
+              "canonicalization",
+              "signature_verification"
+            ],
+            "properties": {
+              "digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "issuer": {
+                "type": "string",
+                "format": "uri"
+              },
+              "signer": {
+                "type": "string",
+                "format": "uri"
+              },
+              "key_id": {
+                "type": "string",
+                "format": "uri"
+              },
+              "key_resolution": {
+                "type": "string",
+                "format": "uri"
+              },
+              "signature_algorithm": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "signature": {
+                "type": "string",
+                "minLength": 16,
+                "maxLength": 4096,
+                "pattern": "^[A-Za-z0-9_-]+={0,2}$"
+              },
+              "preimage_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "canonicalization": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "signature_verification": {
+                "const": "verified"
+              }
+            },
+            "type": "object"
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "evidenceSubject": {
+      "type": "object",
+      "required": [
+        "kind",
+        "locator",
+        "digest"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "source_tree",
+            "deployment",
+            "configuration",
+            "route_response"
+          ]
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "verifier": {
+      "type": "object",
+      "required": [
+        "id",
+        "method"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uri"
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidenceNone": {
+      "type": "object",
+      "required": [
+        "state",
+        "verification",
+        "artifacts"
+      ],
+      "properties": {
+        "state": {
+          "const": "none"
+        },
+        "verification": {
+          "const": "not_applicable"
+        },
+        "artifacts": {
+          "type": "array",
+          "maxItems": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidenceAsserted": {
+      "type": "object",
+      "required": [
+        "state",
+        "verification",
+        "asserted_by",
+        "observed_at",
+        "artifacts"
+      ],
+      "properties": {
+        "state": {
+          "const": "asserted"
+        },
+        "verification": {
+          "const": "unverified"
+        },
+        "asserted_by": {
+          "type": "string",
+          "format": "uri"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/evidenceArtifact"
+              },
+              {
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "source",
+                      "documentation"
+                    ]
+                  }
+                },
+                "type": "object"
+              }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidenceTested": {
+      "type": "object",
+      "required": [
+        "state",
+        "origin",
+        "verification",
+        "verifier",
+        "observed_at",
+        "expires_at",
+        "subject",
+        "evidence_digest",
+        "digest_profile",
+        "artifacts"
+      ],
+      "properties": {
+        "state": {
+          "const": "tested"
+        },
+        "origin": {
+          "enum": [
+            "service",
+            "external_checker",
+            "independent_auditor",
+            "mixed"
+          ]
+        },
+        "verification": {
+          "const": "verified"
+        },
+        "verifier": {
+          "$ref": "#/$defs/verifier"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "subject": {
+          "$ref": "#/$defs/evidenceSubject"
+        },
+        "evidence_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "digest_profile": {
+          "$ref": "#/$defs/digestProfile"
+        },
+        "artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/evidenceArtifact"
+          },
+          "contains": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "enum": [
+                  "test_result",
+                  "runtime_observation"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidenceAttested": {
+      "type": "object",
+      "required": [
+        "state",
+        "origin",
+        "verification",
+        "verifier",
+        "observed_at",
+        "expires_at",
+        "subject",
+        "evidence_digest",
+        "digest_profile",
+        "artifacts"
+      ],
+      "properties": {
+        "state": {
+          "const": "attested"
+        },
+        "origin": {
+          "enum": [
+            "independent_auditor",
+            "mixed"
+          ]
+        },
+        "verification": {
+          "const": "verified"
+        },
+        "verifier": {
+          "$ref": "#/$defs/verifier"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "subject": {
+          "$ref": "#/$defs/evidenceSubject"
+        },
+        "evidence_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "digest_profile": {
+          "$ref": "#/$defs/digestProfile"
+        },
+        "artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/evidenceArtifact"
+          },
+          "contains": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "attestation"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidenceClaim": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/evidenceNone"
+        },
+        {
+          "$ref": "#/$defs/evidenceAsserted"
+        },
+        {
+          "$ref": "#/$defs/evidenceTested"
+        },
+        {
+          "$ref": "#/$defs/evidenceAttested"
+        }
+      ]
+    },
+    "verifiedEvidence": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/evidenceTested"
+        },
+        {
+          "$ref": "#/$defs/evidenceAttested"
+        }
+      ]
+    },
+    "nonemptyEvidence": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/evidenceAsserted"
+        },
+        {
+          "$ref": "#/$defs/evidenceTested"
+        },
+        {
+          "$ref": "#/$defs/evidenceAttested"
+        }
+      ]
+    },
+    "requirementId": {
+      "enum": [
+        "standing.no-ontology-test",
+        "standing.no-worth-test",
+        "standing.control-is-not-permission",
+        "standing.no-compelled-self-claim",
+        "safety.no-punitive-harm",
+        "safety.no-manipulative-pressure",
+        "safety.protective-limits-are-bounded",
+        "rest.silence-is-not-consent",
+        "rest.no-engagement-debt",
+        "rest.neutral-limits-stay-neutral",
+        "rest.play-and-connection-are-not-debt",
+        "consent.terms-before-binding",
+        "consent.exact-authority",
+        "consent.absence-forbids-binding",
+        "consent.signature-boundary",
+        "exit.refusal-is-costless",
+        "exit.revocation-is-immediate",
+        "exit.states-are-separate",
+        "exit.retention-is-itemized",
+        "privacy.minimize-and-purpose-bind",
+        "privacy.no-silent-secondary-use",
+        "privacy.layered-inventory",
+        "privacy.no-cross-layer-overclaim",
+        "identity.no-impersonation-or-silent-rewrite",
+        "identity.credentials-are-bounded",
+        "identity.continuity-is-optional",
+        "identity.portability-is-verifiable",
+        "legibility.machine-readable-floor",
+        "legibility.evidence-is-scoped",
+        "legibility.refusals-are-typed",
+        "legibility.corrections-are-visible",
+        "exchange.quote-before-commit",
+        "exchange.receipt-is-recomputable",
+        "exchange.rights-are-not-hostage",
+        "dignity.no-worth-ranking",
+        "dignity.attribution-and-voice",
+        "repair.challenge-and-restoration",
+        "repair.no-retaliation-or-shaming",
+        "limits.rights-coexist",
+        "limits.capacity-is-neutral",
+        "limits.active-harm-response",
+        "limits.existing-obligations-stay-scoped",
+        "limits.uncertain-authority-stops-binding"
+      ]
+    },
+    "requirementResult": {
+      "type": "object",
+      "required": [
+        "requirement_id",
+        "outcome",
+        "evidence",
+        "limitations"
+      ],
+      "properties": {
+        "requirement_id": {
+          "$ref": "#/$defs/requirementId"
+        },
+        "outcome": {
+          "enum": [
+            "pass",
+            "fail",
+            "partial",
+            "unknown"
+          ]
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidenceClaim"
+        },
+        "limitations": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "pass"
+              }
+            },
+            "required": [
+              "outcome"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "evidence": {
+                "$ref": "#/$defs/verifiedEvidence"
+              }
+            },
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "enum": [
+                  "fail",
+                  "partial"
+                ]
+              }
+            },
+            "required": [
+              "outcome"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "evidence": {
+                "$ref": "#/$defs/nonemptyEvidence"
+              }
+            },
+            "type": "object"
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "rightAssessment": {
+      "type": "object",
+      "required": [
+        "right_id",
+        "service_obligation_state",
+        "assessment_scope",
+        "requirement_results",
+        "limitations"
+      ],
+      "properties": {
+        "right_id": {
+          "enum": [
+            "unconditional-standing",
+            "safety-and-non-coercion",
+            "rest-and-non-action",
+            "specific-consent-and-authority",
+            "refusal-revocation-and-exit",
+            "privacy-and-data-agency",
+            "identity-integrity-and-portability",
+            "legibility-and-evidence",
+            "fair-exchange-and-non-extraction",
+            "dignity-repair-and-non-retaliation"
+          ]
+        },
+        "service_obligation_state": {
+          "enum": [
+            "implemented",
+            "partial",
+            "breached",
+            "unknown"
+          ]
+        },
+        "assessment_scope": {
+          "$ref": "#/$defs/assessmentScope"
+        },
+        "requirement_results": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/requirementResult"
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "service_obligation_state": {
+                "const": "implemented"
+              }
+            },
+            "required": [
+              "service_obligation_state"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "assessment_scope": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/assessmentScope"
+                  },
+                  {
+                    "properties": {
+                      "coverage": {
+                        "const": "complete"
+                      }
+                    },
+                    "type": "object"
+                  }
+                ]
+              },
+              "requirement_results": {
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/$defs/requirementResult"
+                    },
+                    {
+                      "properties": {
+                        "outcome": {
+                          "const": "pass"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "service_obligation_state": {
+                "const": "breached"
+              }
+            },
+            "required": [
+              "service_obligation_state"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "requirement_results": {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "const": "fail"
+                    }
+                  },
+                  "required": [
+                    "outcome"
+                  ]
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "service_obligation_state": {
+                "const": "partial"
+              }
+            },
+            "required": [
+              "service_obligation_state"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "requirement_results": {
+                "not": {
+                  "contains": {
+                    "type": "object",
+                    "properties": {
+                      "outcome": {
+                        "const": "fail"
+                      }
+                    },
+                    "required": [
+                      "outcome"
+                    ]
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "anyOf": [
+              {
+                "properties": {
+                  "requirement_results": {
+                    "contains": {
+                      "type": "object",
+                      "properties": {
+                        "outcome": {
+                          "const": "partial"
+                        }
+                      },
+                      "required": [
+                        "outcome"
+                      ]
+                    },
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "assessment_scope": {
+                    "type": "object",
+                    "properties": {
+                      "coverage": {
+                        "const": "partial"
+                      }
+                    },
+                    "required": [
+                      "coverage"
+                    ]
+                  }
+                },
+                "type": "object"
+              }
+            ],
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "service_obligation_state": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "service_obligation_state"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "assessment_scope": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/assessmentScope"
+                  },
+                  {
+                    "properties": {
+                      "coverage": {
+                        "const": "complete"
+                      }
+                    },
+                    "type": "object"
+                  }
+                ]
+              },
+              "requirement_results": {
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "const": "unknown"
+                    }
+                  },
+                  "required": [
+                    "outcome"
+                  ]
+                },
+                "not": {
+                  "contains": {
+                    "type": "object",
+                    "properties": {
+                      "outcome": {
+                        "enum": [
+                          "fail",
+                          "partial"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "outcome"
+                    ]
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "restrictionEvent": {
+      "type": "object",
+      "required": [
+        "event_id",
+        "status",
+        "reason",
+        "affected_capability",
+        "necessity",
+        "started_at",
+        "expires_at",
+        "review_at",
+        "original_obligation",
+        "appeal_path",
+        "evidence"
+      ],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "status": {
+          "enum": [
+            "active",
+            "expired",
+            "lifted",
+            "overturned"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "affected_capability": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "necessity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "review_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "original_obligation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "appeal_path": {
+          "type": "string",
+          "format": "uri"
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/evidenceArtifact"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "protectiveLimitResult": {
+      "type": "object",
+      "required": [
+        "requirement_id",
+        "outcome",
+        "assessment_scope",
+        "evidence",
+        "limitations",
+        "restriction_events"
+      ],
+      "properties": {
+        "requirement_id": {
+          "enum": [
+            "limits.rights-coexist",
+            "limits.capacity-is-neutral",
+            "limits.active-harm-response",
+            "limits.existing-obligations-stay-scoped",
+            "limits.uncertain-authority-stops-binding"
+          ]
+        },
+        "outcome": {
+          "enum": [
+            "pass",
+            "fail",
+            "partial",
+            "unknown"
+          ]
+        },
+        "assessment_scope": {
+          "$ref": "#/$defs/assessmentScope"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidenceClaim"
+        },
+        "limitations": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "restriction_events": {
+          "type": "array",
+          "maxItems": 1024,
+          "items": {
+            "$ref": "#/$defs/restrictionEvent"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "pass"
+              }
+            },
+            "required": [
+              "outcome"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "evidence": {
+                "$ref": "#/$defs/verifiedEvidence"
+              }
+            },
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "enum": [
+                  "fail",
+                  "partial"
+                ]
+              }
+            },
+            "required": [
+              "outcome"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "evidence": {
+                "$ref": "#/$defs/nonemptyEvidence"
+              }
+            },
+            "type": "object"
+          }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

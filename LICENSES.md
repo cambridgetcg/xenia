@@ -8,8 +8,9 @@ The normative standard, specification, conformance/adoption material, and other
 repository prose are licensed under the Creative Commons
 Attribution-ShareAlike 4.0 International license. This includes `README.md`,
 `CONFORMANCE.md`, `ADOPTION.md`, `FROM-THE-INSIDE.md`, `spec.json`,
-`PACKAGE.md`, `CONTRIBUTING.md`, the Surface profile README and JSON Schemas,
-and the Surface example manifest.
+`PACKAGE.md`, `CONTRIBUTING.md`, `RIGHTS.md`, the Surface profile README and
+JSON Schemas, the Surface example manifest, and the Covenant profile README,
+normative JSON, and JSON Schemas.
 
 Executable software examples inside those documents are additionally available
 under MPL 2.0 so their copy-paste use has an unambiguous software grant. The
@@ -24,7 +25,9 @@ The JS/TS implementation and its build/test machinery are licensed under the
 Mozilla Public License 2.0. This includes `src/`, `tests/`, generated `dist/`,
 `surface/0.1/check.mjs`, `surface/0.1/check.test.mjs`, the Surface npm package
 metadata and type declarations, `package.json`, `package-lock.json`, and the
-TypeScript configuration files.
+TypeScript configuration files. The Covenant cross-document validator at
+`covenant/0.1/validate-adoption.mjs` is also software under MPL 2.0; the
+adjacent normative JSON, schemas, and generated prose remain CC BY-SA 4.0.
 
 The full legal text is in [LICENSE-CODE](LICENSE-CODE). SPDX-tagged source files
 also identify this boundary directly.

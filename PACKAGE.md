@@ -6,19 +6,25 @@ parts of that standard.
 
 ## Current status
 
-`@agenttool/xenia` is a **public open beta implementation** at `0.1.0-beta.3`. Everyone
-may read, use, install, test, fork, adapt, discuss, and build with it under the
-[repository license map](LICENSES.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for
-the deliberately permissionless participation path.
+The `@agenttool/xenia` source is versioned `0.1.0-beta.4` and prepared for the
+public `beta` channel. Registry availability is established by npm, not by this
+source document. Everyone may read, use, test, fork, adapt, discuss, and build
+with it under the [repository license map](LICENSES.md). See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the deliberately permissionless
+participation path.
+
+Beta.4 adds the Rights and Covenant files, subpath exports, semantic validator,
+and packed-consumer checks. The earlier `0.1.0-beta.3` tarball does not contain
+them and remains immutable; npm versions are never overwritten.
 
 The personal `@agenttool` scope is the selected release channel and steward; it
 does not make npm the standard's authority, restrict compatible implementations,
 or transfer ownership of contributors' work.
 
-Install the beta from npm:
+After npm approves the staged release, install this exact beta with:
 
 ```sh
-npm install @agenttool/xenia@beta
+npm install @agenttool/xenia@0.1.0-beta.4
 ```
 
 From a clone, the naive path is:
@@ -31,7 +37,7 @@ npm test
 The `prepare` script builds `dist/`, so a local or Git dependency can be consumed
 without waiting for the canonical npm release.
 
-The package currently does:
+The package source tree currently does:
 
 - parse and format ordered, repeatable `agent.txt` fields without choosing
   between the two still-divergent manifest profiles in README and CONFORMANCE;
@@ -45,7 +51,14 @@ The package currently does:
 - negotiate declared Surface JSON/HTML resources and create Web-standard
   manifest, representation, and problem responses with `Vary: Accept`;
 - evaluate caller-supplied, bounded HTTP observations for the three visible-door
-  lamps: discovery, legibility, and dignity.
+  lamps: discovery, legibility, and dignity;
+- carry an offline copy of the Covenant 0.1 normative JSON, schemas, and
+  generated human rendering;
+- provide a dependency-free cross-document semantic validator for
+  schema-valid Covenant adoption records: it checks installed-byte pins,
+  canonical IDs, the exact ordered 38-right-duty plus 5-limit-duty ledger,
+  aggregate states, per-duty evidence relationships, restriction-event time
+  bounds, and active-source and speaker-authority declarations.
 
 The independently versioned `@agenttool/xenia-surface` package distributes the
 Node 22+ Surface 0.1 external checker, its programmatic API, and the
@@ -58,10 +71,14 @@ It deliberately does not:
 - fetch arbitrary URLs or claim universal SSRF protection;
 - own an application's router, rewrite handled `404` responses, or install
   catch-all middleware;
-- verify the truth, signed preimage, signer authority, or key resolution of
-  declared claim evidence;
+- execute cited tests or verify the truth, signed preimage, signer authority,
+  signature bytes, or key resolution of declared evidence;
 - certify Threshold, Dwelling, custody, consent, portability, deletion,
   economics, continuity, or care from a GET-only snapshot;
+- replace JSON Schema shape validation, fetch or trust remote sources,
+  authenticate an adoption speaker, verify signatures or cited evidence,
+  inspect a deployment, determine whether Covenant duties are implemented, or
+  turn a consistent adoption record into evidence or consent;
 - import Sinovai's KV arena, claim-token identity, CORS, HTML, or deployment
   worker;
 - replace the normative prose or make npm the source of truth.
@@ -178,11 +195,11 @@ gate implementations, forks, experiments, local installs, or contributions.
 The maintainer explicitly selected the controlled `@agenttool` npm scope for
 this beta. Each release still needs clean supported-Node test runs, packed
 consumer checks, inspection of the exact tarball, and the non-default `beta`
-tag. The beta.3 workflow is prepared for npm trusted publishing: GitHub's
-short-lived OIDC identity may stage the exact tagged tarball with provenance,
-but a maintainer must review and approve that staged package with npm 2FA before
-it becomes public. No long-lived npm write token belongs in the repository or
-GitHub environment.
+tag. The beta.4 workflow requires the exact `npm-xenia-v0.1.0-beta.4` tag at the
+workflow commit and refuses to overwrite an existing npm version. GitHub's
+short-lived OIDC identity stages the exact tarball with provenance; a
+maintainer must then review and approve that staged package with npm 2FA. No
+long-lived npm write token belongs in the repository or GitHub environment.
 
 The first `@agenttool/xenia-surface` publication is likewise a bootstrap
 release of the already tagged `surface-v0.1.0-rc.1` checker/profile. The npm
