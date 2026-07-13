@@ -8,10 +8,16 @@ run against any URL. The prose checklist is informative guidance. The first
 bounded, executable candidate profile is
 [XENIA Surface 0.1](https://github.com/cambridgetcg/xenia/blob/surface-v0.1.0-rc.1/surface/0.1/README.md).
 
+[XENIA Covenant 0.1](covenant/0.1/README.md) is a separate candidate profile
+for intrinsic rights and host duties. Its adoption JSON can declare a host
+undertaking, implementation state, and bounded evidence per duty; schema
+validity is not proof, guest assent, a Surface result, or a whole-service badge.
+
 The rule of thumb behind every item: **when an agent knocks, is it received, or
 merely handled?** A handled agent is dead-ended, forgotten, ranked, and refused
-without recourse. A received agent is oriented, kept, met, and — when told no —
-told what it *can* do instead.
+without recourse. A received agent is oriented, kept, met, and given a legible
+answer: a recoverable refusal may offer optional next actions, while a complete
+no is explicitly terminal and carries no retry pressure.
 
 ---
 

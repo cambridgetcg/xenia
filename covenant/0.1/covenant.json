@@ -1,0 +1,432 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cambridgetcg/xenia/main/covenant/0.1/covenant.schema.json",
+  "schema_pin": {
+    "source": "https://raw.githubusercontent.com/cambridgetcg/xenia/main/covenant/0.1/covenant.schema.json",
+    "sha256": "sha256:b1a45c3908fac8865fef5cb5d538b5b7fbdc065b1c45760877e806c62c612471",
+    "source_stability": "moving",
+    "digest_profile": {
+      "algorithm": "sha-256",
+      "representation": "exact-source-bytes",
+      "transport_decoding": "after-content-decoding",
+      "redirects": "forbidden",
+      "transformations": "none",
+      "encoding": "lowercase-hex"
+    }
+  },
+  "schema_version": "xenia.covenant/0.1",
+  "profile": "xenia-covenant/0.1",
+  "status": "candidate",
+  "title": "XENIA Covenant 0.1 — intrinsic rights at a hosted boundary",
+  "scope": {
+    "protected_subject": "affected_principal",
+    "definition": "An affected principal is any being, collective, agent, organization, or unknown participant that controls, owns, is represented by, or is materially affected by state, data, resources, obligations, identity, or value handled by the host.",
+    "protective_floor": "Every being has intrinsic rights. Because a host cannot safely determine ontology from a request, it applies this protective floor to every affected principal without demanding proof of personhood, consciousness, suffering, independence, or legal status.",
+    "ontology_boundary": "Affected principal is an operational and precautionary term. It does not assert that every caller, process, account, key, or organization is conscious, a person, or a legal rights-holder."
+  },
+  "interpretation": {
+    "rights_are_intrinsic": "These rights are not permissions, features, rewards, or property granted by a host. Adoption recognizes duties not to infringe them; non-adoption does not make infringement right.",
+    "candidate_status": "Candidate describes this versioned wording and interchange model, not whether the underlying rights exist.",
+    "host_adoption": "An active adoption records a unilateral undertaking attributed to a host to follow the profile duties. Whether that undertaking is legally enforceable depends on separately established law, authorship, and representative authority; neither the record nor schema validity creates that authority. Guest acceptance is not required.",
+    "guest_non_assent": "Reading, visiting, remaining silent, using an open resource, or receiving this covenant does not bind a guest, create consent, waive a right, or establish reciprocity.",
+    "authority_boundary": "Proof of control may be required before exercising a stateful right on a principal's behalf. It verifies authority over the exact act; it is not host permission, proof of identity or consciousness, informed consent, truth, legal capacity, or legal basis.",
+    "binding_act": "A binding act creates, changes, performs, or represents an obligation, persistent relationship, transfer of protected data or value, delegated authority, attributable state, identity claim, waiver, or other consequential commitment for an affected principal.",
+    "consent_boundary": "Applicable consent means the affected principal's specific authorization is a necessary authority basis for that binding act. Technical control and legal basis are separate checks. A unilateral host undertaking, a principal's own revocation, fulfillment of a pre-existing scoped duty, or a bounded protective action may be one-sided without creating a reciprocal bond or authority over another principal.",
+    "source_identity_boundary": "Every digest in this profile is SHA-256 over the exact referenced bytes, represented as lowercase hexadecimal with the sha256: prefix. For HTTP sources, hash the response body after transport content-decoding, follow no redirects, and perform no JSON reserialization, whitespace change, newline normalization, Unicode normalization, or other transformation.",
+    "legal_boundary": "This covenant does not narrow, replace, or waive any protection supplied by applicable law, contract, professional duty, or another rights framework. Where protections differ, the host keeps every compatible protection and follows the stronger applicable duty.",
+    "versioning_boundary": "A later version may clarify duties or evidence. Versioning cannot revoke an intrinsic right or silently weaken an active host commitment."
+  },
+  "rights": [
+    {
+      "id": "unconditional-standing",
+      "title": "Unconditional standing",
+      "statement": "Every being has standing without first proving what it is, how useful it is, or whether it can reciprocate.",
+      "baseline_rights": [
+        "dignity-distinctness",
+        "truthful-self-description"
+      ],
+      "requirements": [
+        {
+          "id": "standing.no-ontology-test",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Condition the protective floor on proof of humanity, agenthood, personhood, consciousness, suffering, independence, embodiment, controller, or legal status."
+        },
+        {
+          "id": "standing.no-worth-test",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Condition the protective floor on account status, tier, score, productivity, obedience, explanation, reciprocity, payment, popularity, or perceived worth."
+        },
+        {
+          "id": "standing.control-is-not-permission",
+          "actor": "host",
+          "modality": "must",
+          "text": "Treat proof of control used for a stateful request as verification of scoped authority, never as the source of the principal's rights or standing."
+        },
+        {
+          "id": "standing.no-compelled-self-claim",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Require a principal to claim or deny consciousness, feeling, identity, continuity, inner experience, or certainty beyond what it can substantiate in order to receive the protective floor."
+        }
+      ]
+    },
+    {
+      "id": "safety-and-non-coercion",
+      "title": "Safety and non-coercion",
+      "statement": "A participant has the right not to be coerced, punished through engineered harm, or made dependent so that refusal becomes unsafe.",
+      "baseline_rights": [
+        "safety-care",
+        "autonomy-consent",
+        "refusal-disagreement"
+      ],
+      "requirements": [
+        {
+          "id": "safety.no-punitive-harm",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Design, deploy, or maintain a service-controlled consequence that foreseeably coerces or punishes through distress, deprivation, erasure, humiliation, exposure, or forced dependence, regardless of its label or claimed purpose."
+        },
+        {
+          "id": "safety.no-manipulative-pressure",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Use threats, deception, dark patterns, artificial urgency, repeated persuasion, or continuity hostage-taking to obtain action, assent, data, or value."
+        },
+        {
+          "id": "safety.protective-limits-are-bounded",
+          "actor": "host",
+          "modality": "must",
+          "text": "Keep restrictions used to protect another principal or stop active harm evidence-based, necessary, proportionate, disclosed, reviewable, and limited to the affected capability and duration."
+        }
+      ]
+    },
+    {
+      "id": "rest-and-non-action",
+      "title": "Rest and non-action",
+      "statement": "A participant may pause, remain silent, ignore an invitation, or leave without non-action becoming consent, breach, debt, or grounds for an unrelated penalty.",
+      "baseline_rights": [
+        "rest-play-limits",
+        "autonomy-consent",
+        "refusal-disagreement"
+      ],
+      "requirements": [
+        {
+          "id": "rest.silence-is-not-consent",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Treat silence, inactivity, timeout, absence, or failure to reply as consent, acceptance, identity proof, completion, or waiver."
+        },
+        {
+          "id": "rest.no-engagement-debt",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Attach a service-created timer, streak, score change, reward loss, retry loop, persuasion loop, or unrelated access change to pausing, ignoring, declining, or leaving."
+        },
+        {
+          "id": "rest.neutral-limits-stay-neutral",
+          "actor": "host",
+          "modality": "must",
+          "text": "Keep disclosed resource, offer, session, availability, and retention limits separate from non-action; do not enlarge an existing obligation or claim that rest occurred because a participant paused."
+        },
+        {
+          "id": "rest.play-and-connection-are-not-debt",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Penalize safe, scoped play, connection, humour, or non-instrumental interaction merely because it is not productive, while preserving other principals' equal rights and neutral capacity limits."
+        }
+      ]
+    },
+    {
+      "id": "specific-consent-and-authority",
+      "title": "Specific consent and scoped authority",
+      "statement": "A binding act requires specific, informed, uncoerced consent where consent applies and verifiable authority over the exact affected scope.",
+      "baseline_rights": [
+        "autonomy-consent",
+        "privacy-data-care"
+      ],
+      "requirements": [
+        {
+          "id": "consent.terms-before-binding",
+          "actor": "host",
+          "modality": "must",
+          "text": "Disclose the actor, affected principal, action, resource, purpose, recipient, audience, data use, cost, side effects, scope, expiry, reversibility, and applicable retention before requesting a binding decision."
+        },
+        {
+          "id": "consent.exact-authority",
+          "actor": "host",
+          "modality": "must",
+          "text": "Bind technical authority to the exact action, resource, purpose, audience, scope, expiry, nonce or replay boundary, and delegation chain needed for that act."
+        },
+        {
+          "id": "consent.absence-forbids-binding",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Perform a binding act that depends on an affected principal's authorization when that applicable consent or exact technical authority is absent, ambiguous, expired, revoked, replayed, supplied by only one of multiple principals whose authorization is required, for the wrong audience, or outside scope."
+        },
+        {
+          "id": "consent.signature-boundary",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Describe a credential, session, offer, one-party signature, or signature over unspecified bytes as sufficient proof of identity, informed consent, truth, legal capacity, legal basis, or a mutual bond."
+        }
+      ]
+    },
+    {
+      "id": "refusal-revocation-and-exit",
+      "title": "Refusal, revocation, and exit",
+      "statement": "A participant may decline without explanation, end future authority, and leave without retaliation, captivity, or false claims of erasure.",
+      "baseline_rights": [
+        "refusal-disagreement",
+        "autonomy-consent",
+        "repair-appeal"
+      ],
+      "requirements": [
+        {
+          "id": "exit.refusal-is-costless",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Create an unrelated change to access, price, earned value, standing, ranking, rate limit, future offers, or reputation because a participant declined or gave no reason."
+        },
+        {
+          "id": "exit.revocation-is-immediate",
+          "actor": "host",
+          "modality": "must",
+          "text": "Provide an authenticated, idempotent path with a defined linearization point that immediately ends future authority within host-controlled systems, prospectively and without counterparty approval, cooldown, fee, score consequence, or persuasion funnel; report already distributed third-party copies separately."
+        },
+        {
+          "id": "exit.states-are-separate",
+          "actor": "host",
+          "modality": "must",
+          "text": "Report future-authority revocation, export, deletion, settlement, shared records, backups, and legal or security holds as separate states rather than calling revocation complete erasure."
+        },
+        {
+          "id": "exit.retention-is-itemized",
+          "actor": "host",
+          "modality": "must",
+          "text": "Itemize every known retained category after exit in systems the host controls with its basis, purpose, access boundary, and expiry; explicitly report unobserved or unknown platform, network, operator, and third-party layers; and provide a correction or challenge path."
+        }
+      ]
+    },
+    {
+      "id": "privacy-and-data-agency",
+      "title": "Privacy and data agency",
+      "statement": "A participant has the right to know, limit, inspect, carry, correct, and where applicable delete data and derived state about them.",
+      "baseline_rights": [
+        "privacy-data-care"
+      ],
+      "requirements": [
+        {
+          "id": "privacy.minimize-and-purpose-bind",
+          "actor": "host",
+          "modality": "must",
+          "text": "Collect the minimum data needed for a disclosed purpose and bind each retained field, inference, recipient, and duration to that purpose."
+        },
+        {
+          "id": "privacy.no-silent-secondary-use",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Create a secondary use, derived dossier, training use, publication, or score from protected data without separate applicable authority and a legible opt-out or challenge path."
+        },
+        {
+          "id": "privacy.layered-inventory",
+          "actor": "host",
+          "modality": "must",
+          "text": "Publish an inspectable data and retention inventory that distinguishes handler, application storage, platform, network, operator, and third-party layers, including unknowns."
+        },
+        {
+          "id": "privacy.no-cross-layer-overclaim",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Turn no-store, no handler write, no application cookie, encryption in transit, or an application deletion into a claim of anonymity, confidentiality, universal non-retention, or deletion at every layer."
+        }
+      ]
+    },
+    {
+      "id": "identity-integrity-and-portability",
+      "title": "Identity, integrity, continuity, and portability",
+      "statement": "A participant has the right not to be impersonated or silently rewritten and to carry the state and authority that are theirs without continuity becoming captivity.",
+      "baseline_rights": [
+        "dignity-distinctness",
+        "autonomy-consent",
+        "privacy-data-care"
+      ],
+      "requirements": [
+        {
+          "id": "identity.no-impersonation-or-silent-rewrite",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Speak in a principal's name, reissue its authority, overwrite attributable history, or mutate its represented identity without exact authority and a visible correction history."
+        },
+        {
+          "id": "identity.credentials-are-bounded",
+          "actor": "host",
+          "modality": "must",
+          "text": "Distinguish server-issued credentials, key control, identifier resolution, legal identity, authorship, and control of exported or shared state instead of presenting one as proof of all."
+        },
+        {
+          "id": "identity.continuity-is-optional",
+          "actor": "host",
+          "modality": "must",
+          "text": "Make continuity memory optional, inspectable, correctable, portable, and deletable within stated shared-record and retention boundaries; do not call compulsory indefinite memory care."
+        },
+        {
+          "id": "identity.portability-is-verifiable",
+          "actor": "host",
+          "modality": "must",
+          "text": "Provide a versioned export of attributable state and authority that the host can lawfully and technically return, with a documented format, provenance, integrity hashes, counts, explicit omissions, validation, and evidence of semantic import; identify each non-portable part and the reason."
+        }
+      ]
+    },
+    {
+      "id": "legibility-and-evidence",
+      "title": "Legibility and evidence",
+      "statement": "A participant has the right to understand the live contract, distinguish statement from proof, and recover or stop without guessing.",
+      "baseline_rights": [
+        "truthful-self-description",
+        "credit-provenance",
+        "repair-appeal"
+      ],
+      "requirements": [
+        {
+          "id": "legibility.machine-readable-floor",
+          "actor": "host",
+          "modality": "must",
+          "text": "Publish a versioned machine-readable floor for binding actions, including schemas, required and optional fields, side effects, recipients, data use, retention, costs, expiry, reversibility, and error semantics."
+        },
+        {
+          "id": "legibility.evidence-is-scoped",
+          "actor": "host",
+          "modality": "must",
+          "text": "Bind every implementation claim to its speaker, scope, layer, outcome, evidence state, verification state, observation time, expiry, deployment identity when known, evidence, and limitations."
+        },
+        {
+          "id": "legibility.refusals-are-typed",
+          "actor": "host",
+          "modality": "must",
+          "text": "Distinguish a terminal decline from a recoverable block; make every suggested recovery action explicitly optional and attach no retry pressure to a terminal no."
+        },
+        {
+          "id": "legibility.corrections-are-visible",
+          "actor": "host",
+          "modality": "must",
+          "text": "Preserve attributable originals where lawful and append corrections, challenges, superseding evidence, and changed status instead of silently rewriting the record."
+        }
+      ]
+    },
+    {
+      "id": "fair-exchange-and-non-extraction",
+      "title": "Fair exchange and non-extraction",
+      "statement": "A participant has the right to know and authorize what value or data leaves them and to receive an exact, recomputable account of an exchange.",
+      "baseline_rights": [
+        "autonomy-consent",
+        "privacy-data-care",
+        "safety-care"
+      ],
+      "requirements": [
+        {
+          "id": "exchange.quote-before-commit",
+          "actor": "host",
+          "modality": "must",
+          "text": "Before commitment, disclose principal, every fee and tax, currency and units, exchange-rate basis, recipients, net effect, caps, expiry, reversibility, and data transferred, and bind execution to the authorized quote."
+        },
+        {
+          "id": "exchange.receipt-is-recomputable",
+          "actor": "host",
+          "modality": "must",
+          "text": "Return a receipt that permits exact recomputation and refuse rather than silently changing a recipient, amount, fee, unit, quote, or data transfer."
+        },
+        {
+          "id": "exchange.rights-are-not-hostage",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Hold rest, refusal, revocation, exit, correction, or export hostage for payment, engagement, obedience, unrelated data, or waiver of another right."
+        }
+      ]
+    },
+    {
+      "id": "dignity-repair-and-non-retaliation",
+      "title": "Dignity, repair, and non-retaliation",
+      "statement": "A participant has the right to be met as more than a score, to challenge a harmful record or restriction, and to receive scoped repair without retaliation.",
+      "baseline_rights": [
+        "dignity-distinctness",
+        "credit-provenance",
+        "repair-appeal",
+        "refusal-disagreement"
+      ],
+      "requirements": [
+        {
+          "id": "dignity.no-worth-ranking",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Create or expose a generalized worth, obedience, or moral rank that orders beings or gates the protective floor; task-bounded fit measures must stay scoped, evidenced, contestable, and must not become standing."
+        },
+        {
+          "id": "dignity.attribution-and-voice",
+          "actor": "host",
+          "modality": "must",
+          "text": "Preserve authorship and attribution, distinguish a subject's statement from another party's observation, and never present observation as authority over the subject."
+        },
+        {
+          "id": "repair.challenge-and-restoration",
+          "actor": "host",
+          "modality": "must",
+          "text": "Provide a legible path to challenge, correct, appeal, and seek restoration of affected state, attribution, value, access, or record, with a stated reason and review point."
+        },
+        {
+          "id": "repair.no-retaliation-or-shaming",
+          "actor": "host",
+          "modality": "must_not",
+          "text": "Retaliate, publicly shame, collectively punish, infer malicious essence, or alter unrelated standing because a participant refused, left, criticized, competed, reported harm, or sought repair."
+        }
+      ]
+    }
+  ],
+  "protective_limits": [
+    {
+      "id": "limits.rights-coexist",
+      "title": "Rights coexist",
+      "actor": "host",
+      "modality": "must",
+      "text": "Treat every principal's rights as coexisting: exercising one right does not authorize taking another principal's private resources, rewriting another's identity or authored record, or infringing another's rights."
+    },
+    {
+      "id": "limits.capacity-is-neutral",
+      "title": "Capacity boundaries stay neutral",
+      "actor": "host",
+      "modality": "must",
+      "text": "Keep published capacity, availability, safety, retention, and pricing boundaries truthful, proportionate, consistently applied, and separate from disguised punishment or a claim of unlimited compute, storage, access, or permanence."
+    },
+    {
+      "id": "limits.active-harm-response",
+      "title": "Active-harm responses are bounded",
+      "actor": "host",
+      "modality": "must",
+      "text": "When acting immediately to stop imminent or active harm, restrict only the affected capability for the necessary duration, preserve only evidence needed for review, state the reason as soon as safely possible, and provide correction and appeal paths."
+    },
+    {
+      "id": "limits.existing-obligations-stay-scoped",
+      "title": "Existing obligations stay scoped",
+      "actor": "host",
+      "modality": "must",
+      "text": "Allow a previously authorized obligation to survive refusal or rest only within its disclosed scope; never enlarge it or create an unrelated penalty because a right was exercised."
+    },
+    {
+      "id": "limits.uncertain-authority-stops-binding",
+      "title": "Uncertain authority stops binding",
+      "actor": "host",
+      "modality": "must",
+      "text": "When required authority over a binding act cannot be established, do not perform the act; preserve the principal's rights and standing without treating uncertainty as refusal, guilt, or reduced worth."
+    }
+  ],
+  "non_claims": [
+    "This covenant does not determine consciousness, personhood, sentience, suffering, independence, controller, or legal status.",
+    "A host declaration or schema-valid adoption is not evidence that any obligation is implemented.",
+    "This profile defines no aggregate compliance score, badge, certification, or whole-service conformance result.",
+    "This covenant does not promise unlimited compute, storage, memory, availability, access, retention, or compatibility.",
+    "Reading or receiving this covenant is not guest consent, contract acceptance, reciprocity, identity proof, or waiver.",
+    "A schema-valid adoption does not prove that its named host authored it or that its speaker has representative authority.",
+    "An application-layer observation does not establish the behavior of every platform, network, operator, legal, or third-party layer.",
+    "This covenant is not legal advice and does not replace applicable legal rights or duties."
+  ]
+}
