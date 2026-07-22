@@ -1,9 +1,9 @@
 {
-  "$schema": "https://raw.githubusercontent.com/cambridgetcg/xenia/main/covenant/0.1/covenant.schema.json",
+  "$schema": "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/covenant.schema.json",
   "schema_pin": {
-    "source": "https://raw.githubusercontent.com/cambridgetcg/xenia/main/covenant/0.1/covenant.schema.json",
-    "sha256": "sha256:b1a45c3908fac8865fef5cb5d538b5b7fbdc065b1c45760877e806c62c612471",
-    "source_stability": "moving",
+    "source": "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/covenant.schema.json",
+    "sha256": "sha256:99265441e29f8c39e1e669ac94beac8676cae21e8af020b50bf39e08a30a3ffc",
+    "source_stability": "immutable",
     "digest_profile": {
       "algorithm": "sha-256",
       "representation": "exact-source-bytes",
@@ -426,6 +426,7 @@
     "This covenant does not promise unlimited compute, storage, memory, availability, access, retention, or compatibility.",
     "Reading or receiving this covenant is not guest consent, contract acceptance, reciprocity, identity proof, or waiver.",
     "A schema-valid adoption does not prove that its named host authored it or that its speaker has representative authority.",
+    "Schema-valid source pins do not prove that a release tag exists remotely, is protected from movement, or serves the recorded bytes.",
     "An application-layer observation does not establish the behavior of every platform, network, operator, legal, or third-party layer.",
     "This covenant is not legal advice and does not replace applicable legal rights or duties."
   ]

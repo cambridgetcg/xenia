@@ -25,6 +25,11 @@ test("publishes through the authorized scope without narrowing software licensin
     import: "./dist/surface-0.1.js",
     default: "./dist/surface-0.1.js",
   });
+  assert.deepEqual(packageJson.exports["./rights-0.1"], {
+    types: "./dist/rights-0.1.d.ts",
+    import: "./dist/rights-0.1.js",
+    default: "./dist/rights-0.1.js",
+  });
   assert.equal(packageJson.exports["./spec.json"], "./spec.json");
   assert.equal(packageJson.exports["./RIGHTS.md"], "./RIGHTS.md");
   assert.equal(
@@ -104,7 +109,10 @@ test("marks implementation sources with their software license", async () => {
 
   for (const name of sourceFiles) {
     const source = await readFile(new URL(name, sourceDirectory), "utf8");
-    assert.match(source, /^\/\/ SPDX-License-Identifier: MPL-2\.0\n/);
+    const expected = name === "rights-0.1-data.ts"
+      ? "CC-BY-SA-4.0"
+      : "MPL-2.0";
+    assert.match(source, new RegExp(`^// SPDX-License-Identifier: ${expected}\\n`));
   }
 });
 

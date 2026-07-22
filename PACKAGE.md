@@ -17,6 +17,12 @@ Beta.4 adds the Rights and Covenant files, subpath exports, semantic validator,
 and packed-consumer checks. The earlier `0.1.0-beta.3` tarball does not contain
 them and remains immutable; npm versions are never overwritten.
 
+The current feature source also prepares an unreleased `rights-0.1` runtime
+subpath, a reserved Covenant RC identity, and a private Observe workbench.
+Those additions are not part of the registry's immutable beta.4 bytes. Their
+package version, release tags, and publication require a separate release act;
+do not infer registry availability from this checkout.
+
 The personal `@agenttool` scope is the selected release channel and steward; it
 does not make npm the standard's authority, restrict compatible implementations,
 or transfer ownership of contributors' work.
@@ -58,7 +64,10 @@ The package source tree currently does:
   schema-valid Covenant adoption records: it checks installed-byte pins,
   canonical IDs, the exact ordered 38-right-duty plus 5-limit-duty ledger,
   aggregate states, per-duty evidence relationships, restriction-event time
-  bounds, and active-source and speaker-authority declarations.
+  bounds, and active-source and speaker-authority declarations;
+- expose a deeply frozen informative rights index from the explicit
+  `@agenttool/xenia/rights-0.1` subpath, plus exact installed-snapshot drift
+  checks and ID lookup without adding that data to the root import.
 
 The independently versioned `@agenttool/xenia-surface` package distributes the
 Node 22+ Surface 0.1 external checker, its programmatic API, and the
@@ -81,7 +90,31 @@ It deliberately does not:
   turn a consistent adoption record into evidence or consent;
 - import Sinovai's KV arena, claim-token identity, CORS, HTML, or deployment
   worker;
-- replace the normative prose or make npm the source of truth.
+- replace the normative prose or make npm the source of truth;
+- authenticate a candidate rights object, prove adoption or practice, or turn
+  equality with the installed informative index into evidence.
+
+## Rights baseline snapshot
+
+The development subpath keeps the canonical prose and executable helper
+separate:
+
+```js
+import {
+  RIGHTS_BASELINE,
+  getRightsBaselineRight,
+  verifyRightsBaseline,
+} from "@agenttool/xenia/rights-0.1";
+
+const repair = getRightsBaselineRight("repair-appeal");
+const drift = verifyRightsBaseline(JSON.parse(receivedBytes));
+```
+
+`RIGHTS_BASELINE` is recursively frozen and exactly mirrors
+`spec.json#rights`; `RIGHTS.md` remains the canonical prose. The verifier
+compares an unknown value with the installed snapshot, including closed keys
+and ordered arrays. It does not authenticate where bytes came from, accept
+extensions inside the baseline, or claim that matching words are practised.
 
 ## APIs
 

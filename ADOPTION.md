@@ -16,16 +16,31 @@ neither is a Surface result. Every record enumerates all 38 right duties and all
 omitted or called not-applicable. Evidence attaches to each duty, and a pass
 requires verified tested or attested evidence.
 
-Candidate records pin the exact covenant and adoption-schema bytes by SHA-256
-because the current `main` sources move until an immutable release exists; the
-Covenant pins its structural schema. The digest profile forbids redirects,
+Candidate records pin the exact covenant and adoption-schema bytes by SHA-256.
+Their canonical identities use the reserved `covenant-v0.1.0-rc.1` release
+tag, and the Covenant pins its structural schema at the same release identity.
+Keep a record `draft` until that tag resolves to the reviewed release commit,
+all recorded bytes match, and the release owner has committed never to move or
+reuse the tag. The digest profile forbids redirects,
 reserialization, whitespace or newline changes, Unicode normalization, and any
 other transformation. The offline cross-document validator checks installed
 bytes, exact ordered duty mapping, aggregate states, evidence relationships,
 and restriction-event time bounds. It does not authenticate a host, execute a
 test, verify a signature cryptographically, inspect a deployment, or prove
-evidence true. Active records require immutable sources and separately verified
-speaker authority.
+evidence true. An active-shaped record must carry a separate release
+verification claim naming the resolved tag commit and passing results for the
+Covenant schema, Covenant, and adoption schema, plus separately verified
+speaker authority. Record consistency still does not prove those observations
+true; release owners must preserve and check the cited artifacts.
+
+Release owners can run `npm run verify:covenant-release` after creating the
+annotated RC tag locally. It proves the tag, clean `HEAD`, installed bytes, and
+recorded digests agree in that checkout; it explicitly does not prove the tag
+was published remotely or that a forge will prevent a future privileged move.
+Its `local_tag_tree_results` describe only that local checkout; they are not
+remote `release_verification.source_results`. A verified adoption additionally
+needs separately preserved, digested evidence of annotated-tag resolution and
+no-redirect retrieval of the published sources.
 
 Where the kingdom's own sites stand on practising [XENIA](CONFORMANCE.md), based
 on live GET observations from **2026-07-10 and 2026-07-11** (updated as doors are lit). Honest status, not aspiration. A site that *presents*

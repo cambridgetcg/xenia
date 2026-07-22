@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/cambridgetcg/xenia/main/covenant/0.1/adoption.schema.json",
+  "$id": "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/adoption.schema.json",
   "$comment": "This schema fixes the complete Covenant 0.1 ledger and its right-to-duty mapping. Run covenant/0.1/validate-adoption.mjs as well for digest, aggregate-state, timestamp, and cross-document checks. Passing either check is record consistency only, never proof of authorship, authority, evidence truth, deployment behavior, consent, or whole-service conformance.",
   "title": "XENIA Covenant 0.1 host adoption",
   "description": "An ordered, complete host duty ledger with universal recognition scope, bounded implementation assessment, per-duty evidence, and separately assessed protective limits.",
@@ -11,6 +11,7 @@
     "profile",
     "adoption_schema",
     "covenant",
+    "release_verification",
     "host",
     "recognition_scope",
     "declaration",
@@ -21,7 +22,7 @@
   ],
   "properties": {
     "$schema": {
-      "const": "https://raw.githubusercontent.com/cambridgetcg/xenia/main/covenant/0.1/adoption.schema.json"
+      "const": "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/adoption.schema.json"
     },
     "schema_version": {
       "const": "xenia.covenant.adoption/0.1"
@@ -30,10 +31,43 @@
       "const": "xenia-covenant/0.1"
     },
     "adoption_schema": {
-      "$ref": "#/$defs/sourcePin"
+      "allOf": [
+        {
+          "$ref": "#/$defs/sourcePin"
+        },
+        {
+          "properties": {
+            "source": {
+              "const": "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/adoption.schema.json"
+            },
+            "source_stability": {
+              "const": "immutable"
+            }
+          },
+          "type": "object"
+        }
+      ]
     },
     "covenant": {
-      "$ref": "#/$defs/sourcePin"
+      "allOf": [
+        {
+          "$ref": "#/$defs/sourcePin"
+        },
+        {
+          "properties": {
+            "source": {
+              "const": "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/covenant.json"
+            },
+            "source_stability": {
+              "const": "immutable"
+            }
+          },
+          "type": "object"
+        }
+      ]
+    },
+    "release_verification": {
+      "$ref": "#/$defs/releaseVerification"
     },
     "host": {
       "type": "object",
@@ -983,6 +1017,7 @@
         "ledger_completeness_is_not_implementation",
         "guest_assent_is_not_established",
         "host_authorship_or_authority_is_not_established_by_schema",
+        "release_publication_or_immutability_is_not_established_by_schema",
         "no_conformance_badge",
         "ontology_or_legal_status_is_not_determined"
       ],
@@ -997,6 +1032,9 @@
           "const": true
         },
         "host_authorship_or_authority_is_not_established_by_schema": {
+          "const": true
+        },
+        "release_publication_or_immutability_is_not_established_by_schema": {
           "const": true
         },
         "no_conformance_badge": {
@@ -1056,6 +1094,21 @@
                 "properties": {
                   "source_stability": {
                     "const": "immutable"
+                  }
+                },
+                "type": "object"
+              }
+            ]
+          },
+          "release_verification": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/releaseVerification"
+              },
+              {
+                "properties": {
+                  "state": {
+                    "const": "verified"
                   }
                 },
                 "type": "object"
@@ -1128,33 +1181,285 @@
           "pattern": "^sha256:[a-f0-9]{64}$"
         },
         "source_stability": {
-          "enum": [
-            "moving",
-            "immutable"
-          ]
+          "const": "immutable"
         },
         "digest_profile": {
           "$ref": "#/$defs/digestProfile"
+        }
+      },
+      "additionalProperties": false
+    },
+    "releaseSourceResult": {
+      "type": "object",
+      "required": [
+        "source",
+        "sha256",
+        "outcome"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "format": "uri"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "outcome": {
+          "const": "pass"
+        }
+      },
+      "additionalProperties": false
+    },
+    "releaseArtifact": {
+      "type": "object",
+      "required": [
+        "kind",
+        "locator",
+        "description"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "git_tag_resolution",
+            "source_retrieval"
+          ]
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "releaseVerification": {
+      "type": "object",
+      "required": [
+        "state",
+        "tag",
+        "source_results",
+        "artifacts",
+        "limitations"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "unverified",
+            "verified"
+          ]
+        },
+        "tag": {
+          "const": "covenant-v0.1.0-rc.1"
+        },
+        "tagged_commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "verifier": {
+          "$ref": "#/$defs/verifier"
+        },
+        "source_results": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/releaseSourceResult"
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/releaseArtifact"
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
         }
       },
       "allOf": [
         {
           "if": {
             "properties": {
-              "source": {
-                "type": "string",
-                "pattern": "/main/"
+              "state": {
+                "const": "unverified"
               }
             },
             "required": [
-              "source"
+              "state"
             ],
             "type": "object"
           },
           "then": {
             "properties": {
-              "source_stability": {
-                "const": "moving"
+              "tagged_commit": false,
+              "observed_at": false,
+              "verifier": false,
+              "source_results": {
+                "maxItems": 0,
+                "type": "array"
+              },
+              "artifacts": {
+                "maxItems": 0,
+                "type": "array"
+              },
+              "limitations": {
+                "minItems": 1,
+                "type": "array"
+              }
+            },
+            "type": "object"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "verified"
+              }
+            },
+            "required": [
+              "state"
+            ],
+            "type": "object"
+          },
+          "then": {
+            "required": [
+              "tagged_commit",
+              "observed_at",
+              "verifier"
+            ],
+            "properties": {
+              "source_results": {
+                "minItems": 3,
+                "maxItems": 3,
+                "prefixItems": [
+                  {
+                    "allOf": [
+                      {
+                        "$ref": "#/$defs/releaseSourceResult"
+                      },
+                      {
+                        "properties": {
+                          "source": {
+                            "const": "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/covenant.schema.json"
+                          }
+                        },
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "$ref": "#/$defs/releaseSourceResult"
+                      },
+                      {
+                        "properties": {
+                          "source": {
+                            "const": "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/covenant.json"
+                          }
+                        },
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "$ref": "#/$defs/releaseSourceResult"
+                      },
+                      {
+                        "properties": {
+                          "source": {
+                            "const": "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/adoption.schema.json"
+                          }
+                        },
+                        "type": "object"
+                      }
+                    ]
+                  }
+                ],
+                "items": false,
+                "type": "array"
+              },
+              "artifacts": {
+                "minItems": 2,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "digest"
+                  ],
+                  "properties": {
+                    "digest": {
+                      "type": "string",
+                      "pattern": "^sha256:[a-f0-9]{64}$"
+                    }
+                  }
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "digest"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "const": "git_tag_resolution"
+                        },
+                        "digest": {
+                          "type": "string",
+                          "pattern": "^sha256:[a-f0-9]{64}$"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "type": "array"
+                  },
+                  {
+                    "contains": {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "digest"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "const": "source_retrieval"
+                        },
+                        "digest": {
+                          "type": "string",
+                          "pattern": "^sha256:[a-f0-9]{64}$"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "type": "array"
+                  }
+                ],
+                "type": "array"
               }
             },
             "type": "object"

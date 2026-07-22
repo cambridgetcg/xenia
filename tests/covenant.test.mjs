@@ -13,6 +13,8 @@ import addFormats from "ajv-formats";
 import {
   canonicalDigestProfile,
   canonicalPins,
+  canonicalRelease,
+  canonicalSources,
   validateCovenantAdoption,
 } from "../covenant/0.1/validate-adoption.mjs";
 
@@ -239,16 +241,23 @@ function adoptionFixture(overrides = {}) {
     schema_version: "xenia.covenant.adoption/0.1",
     profile: "xenia-covenant/0.1",
     adoption_schema: {
-      source: adoptionSchema.$id,
+      source: canonicalSources.adoptionSchema,
       sha256: canonicalPins.adoptionSchema,
-      source_stability: "moving",
+      source_stability: "immutable",
       digest_profile: digestProfile(),
     },
     covenant: {
-      source: "https://raw.githubusercontent.com/cambridgetcg/xenia/main/covenant/0.1/covenant.json",
+      source: canonicalSources.covenant,
       sha256: canonicalPins.covenant,
-      source_stability: "moving",
+      source_stability: "immutable",
       digest_profile: digestProfile(),
+    },
+    release_verification: {
+      state: "unverified",
+      tag: canonicalRelease.tag,
+      source_results: [],
+      artifacts: [],
+      limitations: ["The reserved release tag and source bytes have not been observed."],
     },
     host: {
       name: "Example host",
@@ -285,6 +294,7 @@ function adoptionFixture(overrides = {}) {
       ledger_completeness_is_not_implementation: true,
       guest_assent_is_not_established: true,
       host_authorship_or_authority_is_not_established_by_schema: true,
+      release_publication_or_immutability_is_not_established_by_schema: true,
       no_conformance_badge: true,
       ontology_or_legal_status_is_not_determined: true,
     },
@@ -389,6 +399,15 @@ test("the normative covenant is structurally valid and keeps stable unique ident
     false,
   );
   assert.equal(covenant.schema_pin.sha256, canonicalPins.covenantSchema);
+  assert.deepEqual(canonicalSources, {
+    covenantSchema: "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/covenant.schema.json",
+    adoptionSchema: "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/adoption.schema.json",
+    covenant: "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/covenant.json",
+  });
+  assert.equal(covenant.$schema, canonicalSources.covenantSchema);
+  assert.equal(covenant.schema_pin.source, canonicalSources.covenantSchema);
+  assert.equal(covenant.schema_pin.source_stability, "immutable");
+  assert.equal(Object.values(canonicalSources).some((source) => source.includes("/main/")), false);
   assert.deepEqual(
     [...new Set(covenant.rights.flatMap(({ baseline_rights }) => baseline_rights))].sort(),
     spec.rights.baseline.map(({ id }) => id).sort(),
@@ -407,6 +426,7 @@ test("rights are intrinsic while authority, ontology, consent, and evidence rema
   assert.ok(covenant.non_claims.some((claim) => /not evidence/i.test(claim)));
   assert.ok(covenant.non_claims.some((claim) => /no aggregate compliance score/i.test(claim)));
   assert.ok(covenant.non_claims.some((claim) => /does not prove.*host authored/i.test(claim)));
+  assert.ok(covenant.non_claims.some((claim) => /do not prove that a release tag exists remotely/i.test(claim)));
 });
 
 test("the framework registers Covenant separately from Surface and the informative baseline", () => {
@@ -715,7 +735,7 @@ test("restriction event timestamps are checked independently of JSON shape", () 
   );
 });
 
-test("the moving Covenant candidate cannot be represented as an active immutable adoption", () => {
+test("active-shaped records require exact release identities and verified authority declarations", () => {
   const active = adoptionFixture();
   active.declaration.status = "active";
   active.declaration.effective_at = "2026-07-13T00:00:00Z";
@@ -725,16 +745,92 @@ test("the moving Covenant candidate cannot be represented as an active immutable
     description: "Evidence attributed to the named representative.",
     digest: digest("f"),
   }];
-  const revision = "0123456789012345678901234567890123456789";
-  active.adoption_schema.source =
-    `https://raw.githubusercontent.com/cambridgetcg/xenia/${revision}/covenant/0.1/adoption.schema.json`;
-  active.adoption_schema.source_stability = "immutable";
-  active.covenant.source =
-    `https://raw.githubusercontent.com/cambridgetcg/xenia/${revision}/covenant/0.1/covenant.json`;
-  active.covenant.source_stability = "immutable";
+  active.release_verification = {
+    state: "verified",
+    tag: canonicalRelease.tag,
+    tagged_commit: "0123456789012345678901234567890123456789",
+    observed_at: "2026-07-12T00:00:00Z",
+    verifier: {
+      id: "https://example.com/#release-checker",
+      method: "Resolve the annotated tag and hash the three exact source responses without redirects.",
+    },
+    source_results: canonicalRelease.sources.map((source) => ({
+      ...source,
+      outcome: "pass",
+    })),
+    artifacts: [
+      {
+        kind: "git_tag_resolution",
+        locator: "https://github.com/cambridgetcg/xenia/tree/covenant-v0.1.0-rc.1",
+        description: "A claimed release-tag resolution result; schema validity does not prove it true.",
+        digest: digest("e"),
+      },
+      {
+        kind: "source_retrieval",
+        locator: "https://example.com/release-observation.json",
+        description: "A claimed no-redirect retrieval log for the three exact release sources.",
+        digest: digest("d"),
+      },
+    ],
+    limitations: ["Remote tag protection and privileged future movement are not established."],
+  };
+  assertBothValid(active);
+  assert.equal(
+    active.non_claims.release_publication_or_immutability_is_not_established_by_schema,
+    true,
+  );
 
-  assertSchemaValid(active);
-  assertSemanticIssue(active, "active_source_not_immutable", ".declaration.status");
+  const wrongSource = structuredClone(active);
+  wrongSource.covenant.source =
+    "https://raw.githubusercontent.com/cambridgetcg/xenia/not-the-release/covenant/0.1/covenant.json";
+  assert.equal(validateAdoption(wrongSource), false);
+  assertSemanticIssue(wrongSource, "source_locator_mismatch", ".covenant.source");
+
+  const movingSource = structuredClone(active);
+  movingSource.adoption_schema.source =
+    "https://raw.githubusercontent.com/cambridgetcg/xenia/main/covenant/0.1/adoption.schema.json";
+  movingSource.adoption_schema.source_stability = "moving";
+  assert.equal(validateAdoption(movingSource), false);
+  assertSemanticIssue(movingSource, "source_locator_mismatch", ".adoption_schema.source");
+  assertSemanticIssue(movingSource, "source_stability_mismatch", ".adoption_schema.source_stability");
+
+  const unverified = structuredClone(active);
+  unverified.declaration.speaker.authority_state = "unverified";
+  unverified.declaration.speaker.authority_evidence = [];
+  assert.equal(validateAdoption(unverified), false);
+  assertSemanticIssue(unverified, "active_authority_unverified", ".declaration.speaker");
+
+  const releaseUnverified = structuredClone(active);
+  releaseUnverified.release_verification = adoptionFixture().release_verification;
+  assert.equal(validateAdoption(releaseUnverified), false);
+  assertSemanticIssue(releaseUnverified, "active_release_unverified", ".release_verification");
+
+  const wrongReleaseDigest = structuredClone(active);
+  wrongReleaseDigest.release_verification.source_results[1].sha256 = digest("0");
+  assertSchemaValid(wrongReleaseDigest);
+  assertSemanticIssue(
+    wrongReleaseDigest,
+    "release_source_result_mismatch",
+    ".release_verification.source_results[1]",
+  );
+
+  const noSourceRetrievalArtifact = structuredClone(active);
+  noSourceRetrievalArtifact.release_verification.artifacts.splice(1, 1);
+  assert.equal(validateAdoption(noSourceRetrievalArtifact), false);
+  assertSemanticIssue(
+    noSourceRetrievalArtifact,
+    "release_source_retrieval_artifact_missing",
+    ".release_verification.artifacts",
+  );
+
+  const undigestedTagArtifact = structuredClone(active);
+  delete undigestedTagArtifact.release_verification.artifacts[0].digest;
+  assert.equal(validateAdoption(undigestedTagArtifact), false);
+  assertSemanticIssue(
+    undigestedTagArtifact,
+    "release_tag_resolution_artifact_missing",
+    ".release_verification.artifacts",
+  );
 });
 
 test("the human Covenant and adoption schema are generated from normative data", async () => {
