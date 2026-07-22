@@ -42,7 +42,7 @@ try {
   ]);
   const [artifact] = JSON.parse(packed.stdout);
   assert.equal(artifact.name, "@agenttool/xenia");
-  assert.equal(artifact.version, "0.1.0-beta.4");
+  assert.equal(artifact.version, "0.1.0-beta.5");
 
   const expectedFiles = [
     "ADOPTION.md",
@@ -74,6 +74,14 @@ try {
     "dist/negotiation.d.ts.map",
     "dist/negotiation.js",
     "dist/negotiation.js.map",
+    "dist/rights-0.1-data.d.ts",
+    "dist/rights-0.1-data.d.ts.map",
+    "dist/rights-0.1-data.js",
+    "dist/rights-0.1-data.js.map",
+    "dist/rights-0.1.d.ts",
+    "dist/rights-0.1.d.ts.map",
+    "dist/rights-0.1.js",
+    "dist/rights-0.1.js.map",
     "dist/surface-0.1.d.ts",
     "dist/surface-0.1.d.ts.map",
     "dist/surface-0.1.js",
@@ -95,6 +103,8 @@ try {
     "src/index.ts",
     "src/manifest.ts",
     "src/negotiation.ts",
+    "src/rights-0.1-data.ts",
+    "src/rights-0.1.ts",
     "src/surface-0.1.ts",
     "src/types.ts",
     "src/visible-door.ts",
@@ -130,7 +140,7 @@ try {
   const installedPackage = JSON.parse(
     await readFile(join(installedDirectory, "package.json"), "utf8"),
   );
-  assert.equal(installedPackage.version, "0.1.0-beta.4");
+  assert.equal(installedPackage.version, "0.1.0-beta.5");
   assert.equal(installedPackage.dependencies, undefined);
   assert.equal(installedPackage.optionalDependencies, undefined);
   assert.equal(installedPackage.peerDependencies, undefined);
@@ -142,6 +152,11 @@ try {
     types: "./dist/surface-0.1.d.ts",
     import: "./dist/surface-0.1.js",
     default: "./dist/surface-0.1.js",
+  });
+  assert.deepEqual(installedPackage.exports["./rights-0.1"], {
+    types: "./dist/rights-0.1.d.ts",
+    import: "./dist/rights-0.1.js",
+    default: "./dist/rights-0.1.js",
   });
   assert.equal(installedPackage.exports["./spec.json"], "./spec.json");
   assert.equal(installedPackage.exports["./RIGHTS.md"], "./RIGHTS.md");
@@ -190,7 +205,7 @@ try {
     "import covenant from '@agenttool/xenia/covenant-0.1' with { type: 'json' };",
     "import covenantSchema from '@agenttool/xenia/covenant-0.1/schema' with { type: 'json' };",
     "import adoptionSchema from '@agenttool/xenia/covenant-0.1/adoption-schema' with { type: 'json' };",
-    "import { canonicalAdoptionSchema, canonicalCovenant, canonicalCovenantSchema } from '@agenttool/xenia/covenant-0.1/validate-adoption';",
+    "import { canonicalAdoptionSchema, canonicalCovenant, canonicalCovenantSchema, canonicalSources } from '@agenttool/xenia/covenant-0.1/validate-adoption';",
     "assert.deepEqual(covenant, canonicalCovenant, 'covenant JSON export drift');",
     "assert.deepEqual(covenantSchema, canonicalCovenantSchema, 'covenant schema export drift');",
     "assert.deepEqual(adoptionSchema, canonicalAdoptionSchema, 'adoption schema export drift');",
@@ -198,17 +213,29 @@ try {
     "assert.equal(covenant.schema_version, covenantSchema.properties.schema_version.const, 'covenant version drift');",
     "assert.equal(covenant.profile, covenantSchema.properties.profile.const, 'covenant profile drift');",
     "assert.equal(covenant.status, covenantSchema.properties.status.const, 'covenant status drift');",
+    "assert.equal(canonicalSources.covenantSchema, covenantSchema.$id, 'covenant schema source drift');",
+    "assert.equal(canonicalSources.adoptionSchema, adoptionSchema.$id, 'adoption schema source drift');",
+    "assert.equal(covenant.schema_pin.source, canonicalSources.covenantSchema, 'covenant schema pin source drift');",
+    "assert.equal(covenant.schema_pin.source_stability, 'immutable', 'covenant schema source is not immutable');",
+    "assert.equal(Object.values(canonicalSources).some(source => source.includes('/main/')), false, 'moving Covenant source shipped');",
     "assert.ok(Array.isArray(covenant.rights) && covenant.rights.length > 0, 'covenant rights missing');",
     "assert.equal(adoptionSchema.properties.$schema.const, adoptionSchema.$id, 'adoption schema self-link drift');",
     "assert.equal(adoptionSchema.properties.profile.const, covenant.profile, 'adoption profile drift');",
-    "assert.equal(adoptionSchema.properties.covenant.$ref, '#/$defs/sourcePin', 'adoption covenant pin drift');",
-    "assert.equal(adoptionSchema.properties.adoption_schema.$ref, '#/$defs/sourcePin', 'adoption schema pin drift');",
+    "assert.equal(adoptionSchema.properties.covenant.allOf[0].$ref, '#/$defs/sourcePin', 'adoption covenant pin drift');",
+    "assert.equal(adoptionSchema.properties.covenant.allOf[1].properties.source.const, canonicalSources.covenant, 'adoption covenant source drift');",
+    "assert.equal(adoptionSchema.properties.adoption_schema.allOf[0].$ref, '#/$defs/sourcePin', 'adoption schema pin drift');",
+    "assert.equal(adoptionSchema.properties.adoption_schema.allOf[1].properties.source.const, canonicalSources.adoptionSchema, 'adoption schema source constraint drift');",
   ].join("\n");
   await run(process.execPath, ["--input-type=module", "--eval", covenantImportCheck], {
     cwd: packageDirectory,
   });
 
-  for (const path of ["dist/surface-0.1.js", "dist/negotiation.js"]) {
+  for (const path of [
+    "dist/surface-0.1.js",
+    "dist/negotiation.js",
+    "dist/rights-0.1.js",
+    "dist/rights-0.1-data.js",
+  ]) {
     const source = await readFile(join(installedDirectory, path), "utf8");
     assert.doesNotMatch(source, /(?:from\s+|import\s*)["']node:/, `${path} imports a Node builtin`);
     for (const match of source.matchAll(/from\s+["']([^"']+)["']/g)) {
@@ -218,8 +245,13 @@ try {
 
   const importCheck = [
     "import { evaluateDoorObservation } from '@agenttool/xenia';",
+    "import { RIGHTS_BASELINE, RIGHTS_BASELINE_VERSION, verifyRightsBaseline } from '@agenttool/xenia/rights-0.1';",
+    "import spec from '@agenttool/xenia/spec.json' with { type: 'json' };",
     "import { SURFACE_MANIFEST_PATH, createSurfaceManifestResponse, defineSurfaceManifest, negotiateSurfaceResource } from '@agenttool/xenia/surface-0.1';",
     "if (typeof evaluateDoorObservation !== 'function') throw new Error('root API drift');",
+    "if (RIGHTS_BASELINE_VERSION !== 'xenia.rights/0.1') throw new Error('rights subpath drift');",
+    "if (!verifyRightsBaseline(RIGHTS_BASELINE).valid) throw new Error('rights baseline drift');",
+    "if (!verifyRightsBaseline(spec.rights).valid) throw new Error('installed rights/spec drift');",
     "if (SURFACE_MANIFEST_PATH !== '/.well-known/agent.json') throw new Error('profile drift');",
     "const manifest = defineSurfaceManifest({ service: { name: 'consumer', canonicalUrl: 'https://example.com/', description: 'packed consumer' }, resources: [{ id: 'entry', href: 'https://example.com/' }] });",
     "if (negotiateSurfaceResource(manifest.resources[0], 'application/json') !== 'application/json') throw new Error('negotiation drift');",
@@ -234,6 +266,9 @@ try {
     join(packageDirectory, "consumer.ts"),
     [
       "import { evaluateDoorObservation } from '@agenttool/xenia';",
+      "import { RIGHTS_BASELINE, type RightsBaselineId } from '@agenttool/xenia/rights-0.1';",
+      "const rightId: RightsBaselineId = RIGHTS_BASELINE.baseline[0].id;",
+      "void rightId;",
       "import { defineSurfaceManifest, negotiateSurfaceResource, type SurfaceManifest } from '@agenttool/xenia/surface-0.1';",
       "const manifest: SurfaceManifest = defineSurfaceManifest({",
       "  service: { name: 'consumer', canonicalUrl: 'https://example.com/', description: 'typed packed consumer' },",

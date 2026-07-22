@@ -1,0 +1,22 @@
+{
+  "name": "@agenttool/xenia-observe",
+  "version": "0.1.0-dev",
+  "description": "Local evidence recorder for XENIA Surface and Covenant artifacts",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "xenia": "observe.mjs"
+  },
+  "scripts": {
+    "test": "node --test *.test.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@agenttool/xenia-surface": "0.1.0-rc.1",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1"
+  },
+  "license": "SEE LICENSE IN ../../LICENSES.md"
+}

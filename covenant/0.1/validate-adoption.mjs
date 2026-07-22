@@ -26,6 +26,30 @@ export const canonicalPins = Object.freeze({
   adoptionSchema: sha256(adoptionSchemaBytes),
 });
 
+export const canonicalSources = Object.freeze({
+  covenantSchema: canonicalCovenantSchema.$id,
+  adoptionSchema: canonicalAdoptionSchema.$id,
+  covenant: new URL("covenant.json", canonicalAdoptionSchema.$id).href,
+});
+
+export const canonicalRelease = Object.freeze({
+  tag: "covenant-v0.1.0-rc.1",
+  sources: Object.freeze([
+    Object.freeze({
+      source: canonicalSources.covenantSchema,
+      sha256: canonicalPins.covenantSchema,
+    }),
+    Object.freeze({
+      source: canonicalSources.covenant,
+      sha256: canonicalPins.covenant,
+    }),
+    Object.freeze({
+      source: canonicalSources.adoptionSchema,
+      sha256: canonicalPins.adoptionSchema,
+    }),
+  ]),
+});
+
 export const canonicalDigestProfile = Object.freeze({
   algorithm: "sha-256",
   representation: "exact-source-bytes",
@@ -77,7 +101,7 @@ function checkTimeOrder(start, end, startPath, endPath, issues) {
   }
 }
 
-function checkSourcePin(pin, expectedDigest, path, issues) {
+function checkSourcePin(pin, expectedSource, expectedDigest, path, issues) {
   if (!record(pin)) {
     add(issues, "source_pin_missing", path, "A structured source pin is required.");
     return;
@@ -85,11 +109,14 @@ function checkSourcePin(pin, expectedDigest, path, issues) {
   if (pin.sha256 !== expectedDigest) {
     add(issues, "source_pin_mismatch", `${path}.sha256`, "The record does not pin the installed canonical bytes.");
   }
+  if (pin.source !== expectedSource) {
+    add(issues, "source_locator_mismatch", `${path}.source`, "The record does not identify the installed release source.");
+  }
+  if (pin.source_stability !== "immutable") {
+    add(issues, "source_stability_mismatch", `${path}.source_stability`, "The installed canonical source identity requires immutable release treatment.");
+  }
   if (!sameRecord(pin.digest_profile, canonicalDigestProfile)) {
     add(issues, "digest_profile_mismatch", `${path}.digest_profile`, "The digest profile must identify exact source bytes without redirects or transformations.");
-  }
-  if (typeof pin.source === "string" && pin.source.includes("/main/") && pin.source_stability !== "moving") {
-    add(issues, "moving_source_called_immutable", `${path}.source_stability`, "A /main/ source is moving, never immutable.");
   }
 }
 
@@ -184,6 +211,54 @@ function checkEvidence(evidence, outcome, reviewedAt, path, issues) {
   }
 }
 
+function checkReleaseVerification(release, declarationStatus, reviewedAt, issues) {
+  const path = "$.release_verification";
+  if (!record(release)) {
+    add(issues, "release_verification_missing", path, "A structured release verification state is required.");
+    return;
+  }
+  if (release.tag !== canonicalRelease.tag) {
+    add(issues, "release_tag_mismatch", `${path}.tag`, `Expected ${canonicalRelease.tag}.`);
+  }
+  if (declarationStatus === "active" && release.state !== "verified") {
+    add(issues, "active_release_unverified", path, "An active record requires a separately observed release-tag and source-byte verification record.");
+  }
+  if (release.state !== "verified") return;
+
+  const sourceResults = values(release.source_results);
+  if (sourceResults.length !== canonicalRelease.sources.length) {
+    add(issues, "release_source_count_mismatch", `${path}.source_results`, `Expected ${canonicalRelease.sources.length} ordered release source results.`);
+  }
+  for (const [index, expected] of canonicalRelease.sources.entries()) {
+    const actual = sourceResults[index];
+    const resultPath = `${path}.source_results[${index}]`;
+    if (!record(actual)
+      || actual.source !== expected.source
+      || actual.sha256 !== expected.sha256
+      || actual.outcome !== "pass") {
+      add(issues, "release_source_result_mismatch", resultPath, "The release source result must match the installed canonical source, digest, and pass outcome.");
+    }
+  }
+  const artifacts = values(release.artifacts);
+  const hasDigestedArtifact = (kind) => artifacts.some((artifact) => (
+    record(artifact)
+      && artifact.kind === kind
+      && typeof artifact.digest === "string"
+      && /^sha256:[a-f0-9]{64}$/.test(artifact.digest)
+  ));
+  if (!hasDigestedArtifact("git_tag_resolution")) {
+    add(issues, "release_tag_resolution_artifact_missing", `${path}.artifacts`, "Verified release evidence requires a digested annotated-tag resolution artifact.");
+  }
+  if (!hasDigestedArtifact("source_retrieval")) {
+    add(issues, "release_source_retrieval_artifact_missing", `${path}.artifacts`, "Verified release evidence requires a digested no-redirect source-retrieval artifact.");
+  }
+  if (validTime(reviewedAt)
+    && validTime(release.observed_at)
+    && Date.parse(release.observed_at) > Date.parse(reviewedAt)) {
+    add(issues, "release_observed_after_review", `${path}.observed_at`, "Release verification cannot be observed after the declaration review that relies on it.");
+  }
+}
+
 function derivedState(assessment) {
   const outcomes = values(assessment.requirement_results).map((result) => result?.outcome);
   if (outcomes.includes("fail")) return "breached";
@@ -261,7 +336,9 @@ function checkRestrictionEvent(event, path, issues) {
  * Checks Covenant 0.1 relationships against the exact bytes installed beside
  * this module. It does not fetch sources, authenticate a speaker, execute a
  * test, verify a signature cryptographically, inspect a deployment, or prove
- * that a cited artifact is truthful. Run JSON Schema validation separately.
+ * that a cited artifact is truthful. In particular, accepting an active-shaped
+ * record does not establish that its release tag exists remotely, cannot move,
+ * or serves the pinned bytes. Run JSON Schema validation separately.
  */
 export function validateCovenantAdoption(adoption) {
   const issues = [];
@@ -270,13 +347,34 @@ export function validateCovenantAdoption(adoption) {
     return { valid: false, issues };
   }
 
-  checkSourcePin(adoption.covenant, canonicalPins.covenant, "$.covenant", issues);
-  checkSourcePin(adoption.adoption_schema, canonicalPins.adoptionSchema, "$.adoption_schema", issues);
+  checkSourcePin(
+    adoption.covenant,
+    canonicalSources.covenant,
+    canonicalPins.covenant,
+    "$.covenant",
+    issues,
+  );
+  checkSourcePin(
+    adoption.adoption_schema,
+    canonicalSources.adoptionSchema,
+    canonicalPins.adoptionSchema,
+    "$.adoption_schema",
+    issues,
+  );
+  if (canonicalCovenant.$schema !== canonicalSources.covenantSchema) {
+    add(issues, "canonical_schema_locator_mismatch", "$.covenant.$schema", "The installed Covenant does not identify its installed structural schema release.");
+  }
+  if (canonicalCovenant.schema_pin?.source !== canonicalSources.covenantSchema) {
+    add(issues, "canonical_schema_locator_mismatch", "$.covenant.schema_pin.source", "The installed Covenant does not pin its installed structural schema release.");
+  }
   if (canonicalCovenant.schema_pin?.sha256 !== canonicalPins.covenantSchema) {
     add(issues, "canonical_schema_pin_mismatch", "$.covenant.schema_pin.sha256", "The installed Covenant does not pin its installed structural schema bytes.");
   }
   if (!sameRecord(canonicalCovenant.schema_pin?.digest_profile, canonicalDigestProfile)) {
     add(issues, "canonical_digest_profile_mismatch", "$.covenant.schema_pin.digest_profile", "The installed Covenant schema pin uses a different digest profile.");
+  }
+  if (canonicalCovenant.schema_pin?.source_stability !== "immutable") {
+    add(issues, "canonical_schema_stability_mismatch", "$.covenant.schema_pin.source_stability", "The installed Covenant structural schema source is not immutable.");
   }
 
   if (adoption.ledger_coverage !== "all_profile_duties_enumerated") {
@@ -288,13 +386,15 @@ export function validateCovenantAdoption(adoption) {
     add(issues, "recognition_scope_restricted", "$.recognition_scope", "Recognition applies to every affected principal without eligibility, acceptance, payment, ontology, or host approval conditions.");
   }
 
+  checkReleaseVerification(
+    adoption.release_verification,
+    adoption.declaration?.status,
+    adoption.declaration?.reviewed_at,
+    issues,
+  );
+
   const speaker = adoption.declaration?.speaker;
   if (adoption.declaration?.status === "active") {
-    if (adoption.covenant?.source_stability !== "immutable"
-      || adoption.adoption_schema?.source_stability !== "immutable"
-      || canonicalCovenant.schema_pin?.source_stability !== "immutable") {
-      add(issues, "active_source_not_immutable", "$.declaration.status", "Activation requires immutable Covenant, adoption-schema, and Covenant-schema sources; the moving candidate cannot be activated.");
-    }
     if (!record(speaker)
       || speaker.authority_state !== "verified"
       || values(speaker.authority_evidence).length === 0) {

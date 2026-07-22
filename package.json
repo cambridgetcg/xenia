@@ -1,11 +1,12 @@
 {
   "name": "@agenttool/xenia",
-  "version": "0.1.0-beta.4",
+  "version": "0.1.0-beta.5",
   "description": "Runtime-neutral tools for practising and observing XENIA guest-right.",
   "type": "module",
   "packageManager": "npm@11.18.0",
   "workspaces": [
-    "surface/0.1"
+    "surface/0.1",
+    "observe/0.1"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,6 +15,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./rights-0.1": {
+      "types": "./dist/rights-0.1.d.ts",
+      "import": "./dist/rights-0.1.js",
+      "default": "./dist/rights-0.1.js"
     },
     "./surface-0.1": {
       "types": "./dist/surface-0.1.d.ts",
@@ -50,12 +56,16 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json",
-    "test": "npm run build && npm run test:types && npm run test:examples && npm run test:library && npm run test:surface",
+    "test": "npm run build && npm run test:types && npm run test:examples && npm run test:library && npm run test:surface && npm run test:observe",
     "test:types": "tsc -p tsconfig.type-tests.json",
     "test:examples": "tsc -p examples/cloudflare-worker/tsconfig.json",
     "test:library": "node --test tests/*.test.mjs",
     "test:surface": "node --test surface/0.1/*.test.mjs",
+    "test:observe": "node --test observe/0.1/*.test.mjs",
+    "xenia:observe": "node observe/0.1/observe.mjs",
     "verify:surface-profile": "git diff --exit-code surface-v0.1.0-rc.1 -- surface/0.1/manifest.schema.json surface/0.1/problem.schema.json surface/0.1/result.schema.json surface/0.1/example-manifest.json",
+    "verify:covenant-release": "node tools/verify-covenant-release.mjs",
+    "verify:covenant-remote": "node tools/verify-covenant-remote.mjs",
     "verify:xenia-package": "node tools/verify-xenia-package.mjs",
     "verify:surface-package": "node tools/verify-surface-package.mjs",
     "pack:check": "npm pack --dry-run --json",

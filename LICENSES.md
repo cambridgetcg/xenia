@@ -11,6 +11,10 @@ Attribution-ShareAlike 4.0 International license. This includes `README.md`,
 `PACKAGE.md`, `CONTRIBUTING.md`, `RIGHTS.md`, the Surface profile README and
 JSON Schemas, the Surface example manifest, and the Covenant profile README,
 normative JSON, and JSON Schemas.
+This also includes `observe/0.1/README.md` and its development result schema.
+The exact informative rights index in `src/rights-0.1-data.ts` and its generated
+`dist/` forms remain CC BY-SA 4.0; the verifier wrapped around that data is
+software under MPL 2.0.
 
 Executable software examples inside those documents are additionally available
 under MPL 2.0 so their copy-paste use has an unambiguous software grant. The
@@ -21,13 +25,16 @@ The notice is in [LICENSE](LICENSE) and the full legal text is in
 
 ## Software implementation — MPL 2.0
 
-The JS/TS implementation and its build/test machinery are licensed under the
+The JS/TS implementation and its build/test machinery, except for the rights
+data module mapped above, are licensed under the
 Mozilla Public License 2.0. This includes `src/`, `tests/`, generated `dist/`,
 `surface/0.1/check.mjs`, `surface/0.1/check.test.mjs`, the Surface npm package
 metadata and type declarations, `package.json`, `package-lock.json`, and the
 TypeScript configuration files. The Covenant cross-document validator at
 `covenant/0.1/validate-adoption.mjs` is also software under MPL 2.0; the
 adjacent normative JSON, schemas, and generated prose remain CC BY-SA 4.0.
+The Observe implementation, tests, and private package metadata are software
+under MPL 2.0; its adjacent README and result schema remain CC BY-SA 4.0.
 
 The full legal text is in [LICENSE-CODE](LICENSE-CODE). SPDX-tagged source files
 also identify this boundary directly.

@@ -9,7 +9,11 @@ const covenantUrl = new URL("../covenant/0.1/covenant.json", import.meta.url);
 const schemaUrl = new URL("../covenant/0.1/adoption.schema.json", import.meta.url);
 const covenant = JSON.parse(await readFile(covenantUrl, "utf8"));
 
-const schemaId = "https://raw.githubusercontent.com/cambridgetcg/xenia/main/covenant/0.1/adoption.schema.json";
+const releaseBase = "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/";
+const schemaId = new URL("adoption.schema.json", releaseBase).href;
+const covenantSource = new URL("covenant.json", releaseBase).href;
+const covenantSchemaSource = new URL("covenant.schema.json", releaseBase).href;
+const releaseTag = "covenant-v0.1.0-rc.1";
 
 function exactResult(id, base = "requirementResult") {
   return {
@@ -40,6 +44,29 @@ function exactRight(right) {
   };
 }
 
+function exactSourcePin(source) {
+  return {
+    allOf: [
+      { $ref: "#/$defs/sourcePin" },
+      {
+        properties: {
+          source: { const: source },
+          source_stability: { const: "immutable" },
+        },
+      },
+    ],
+  };
+}
+
+function exactReleaseSource(source) {
+  return {
+    allOf: [
+      { $ref: "#/$defs/releaseSourceResult" },
+      { properties: { source: { const: source } } },
+    ],
+  };
+}
+
 const rightIds = covenant.rights.map(({ id }) => id);
 const requirementIds = covenant.rights.flatMap(({ requirements }) =>
   requirements.map(({ id }) => id)
@@ -64,6 +91,7 @@ const schema = {
     "profile",
     "adoption_schema",
     "covenant",
+    "release_verification",
     "host",
     "recognition_scope",
     "declaration",
@@ -76,8 +104,9 @@ const schema = {
     $schema: { const: schemaId },
     schema_version: { const: "xenia.covenant.adoption/0.1" },
     profile: { const: "xenia-covenant/0.1" },
-    adoption_schema: { $ref: "#/$defs/sourcePin" },
-    covenant: { $ref: "#/$defs/sourcePin" },
+    adoption_schema: exactSourcePin(schemaId),
+    covenant: exactSourcePin(covenantSource),
+    release_verification: { $ref: "#/$defs/releaseVerification" },
     host: {
       type: "object",
       required: ["name", "canonical_url"],
@@ -124,6 +153,7 @@ const schema = {
         "ledger_completeness_is_not_implementation",
         "guest_assent_is_not_established",
         "host_authorship_or_authority_is_not_established_by_schema",
+        "release_publication_or_immutability_is_not_established_by_schema",
         "no_conformance_badge",
         "ontology_or_legal_status_is_not_determined",
       ],
@@ -132,6 +162,7 @@ const schema = {
         ledger_completeness_is_not_implementation: { const: true },
         guest_assent_is_not_established: { const: true },
         host_authorship_or_authority_is_not_established_by_schema: { const: true },
+        release_publication_or_immutability_is_not_established_by_schema: { const: true },
         no_conformance_badge: { const: true },
         ontology_or_legal_status_is_not_determined: { const: true },
       },
@@ -162,6 +193,12 @@ const schema = {
             allOf: [
               { $ref: "#/$defs/sourcePin" },
               { properties: { source_stability: { const: "immutable" } } },
+            ],
+          },
+          release_verification: {
+            allOf: [
+              { $ref: "#/$defs/releaseVerification" },
+              { properties: { state: { const: "verified" } } },
             ],
           },
         },
@@ -198,16 +235,127 @@ const schema = {
       properties: {
         source: uri,
         sha256: digest,
-        source_stability: { enum: ["moving", "immutable"] },
+        source_stability: { const: "immutable" },
         digest_profile: { $ref: "#/$defs/digestProfile" },
+      },
+      additionalProperties: false,
+    },
+    releaseSourceResult: {
+      type: "object",
+      required: ["source", "sha256", "outcome"],
+      properties: {
+        source: uri,
+        sha256: digest,
+        outcome: { const: "pass" },
+      },
+      additionalProperties: false,
+    },
+    releaseArtifact: {
+      type: "object",
+      required: ["kind", "locator", "description"],
+      properties: {
+        kind: { enum: ["git_tag_resolution", "source_retrieval"] },
+        locator: { type: "string", minLength: 1, maxLength: 1000 },
+        description: nonemptyText,
+        digest,
+      },
+      additionalProperties: false,
+    },
+    releaseVerification: {
+      type: "object",
+      required: ["state", "tag", "source_results", "artifacts", "limitations"],
+      properties: {
+        state: { enum: ["unverified", "verified"] },
+        tag: { const: releaseTag },
+        tagged_commit: { type: "string", pattern: "^[a-f0-9]{40}$" },
+        observed_at: dateTime,
+        verifier: { $ref: "#/$defs/verifier" },
+        source_results: {
+          type: "array",
+          maxItems: 3,
+          items: { $ref: "#/$defs/releaseSourceResult" },
+        },
+        artifacts: {
+          type: "array",
+          maxItems: 16,
+          items: { $ref: "#/$defs/releaseArtifact" },
+        },
+        limitations: {
+          type: "array",
+          maxItems: 16,
+          uniqueItems: true,
+          items: nonemptyText,
+        },
       },
       allOf: [
         {
           if: {
-            properties: { source: { type: "string", pattern: "/main/" } },
-            required: ["source"],
+            properties: { state: { const: "unverified" } },
+            required: ["state"],
           },
-          then: { properties: { source_stability: { const: "moving" } } },
+          then: {
+            properties: {
+              tagged_commit: false,
+              observed_at: false,
+              verifier: false,
+              source_results: { maxItems: 0 },
+              artifacts: { maxItems: 0 },
+              limitations: { minItems: 1 },
+            },
+          },
+        },
+        {
+          if: {
+            properties: { state: { const: "verified" } },
+            required: ["state"],
+          },
+          then: {
+            required: ["tagged_commit", "observed_at", "verifier"],
+            properties: {
+              source_results: {
+                minItems: 3,
+                maxItems: 3,
+                prefixItems: [
+                  exactReleaseSource(covenantSchemaSource),
+                  exactReleaseSource(covenantSource),
+                  exactReleaseSource(schemaId),
+                ],
+                items: false,
+              },
+              artifacts: {
+                minItems: 2,
+                items: {
+                  type: "object",
+                  required: ["digest"],
+                  properties: { digest },
+                },
+                allOf: [
+                  {
+                    contains: {
+                      type: "object",
+                      required: ["kind", "digest"],
+                      properties: {
+                        kind: { const: "git_tag_resolution" },
+                        digest,
+                      },
+                    },
+                    minContains: 1,
+                  },
+                  {
+                    contains: {
+                      type: "object",
+                      required: ["kind", "digest"],
+                      properties: {
+                        kind: { const: "source_retrieval" },
+                        digest,
+                      },
+                    },
+                    minContains: 1,
+                  },
+                ],
+              },
+            },
+          },
         },
       ],
       additionalProperties: false,

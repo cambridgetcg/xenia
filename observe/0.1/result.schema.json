@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:xenia:observe:result:0.1-development",
+  "title": "XENIA observe development evidence index",
+  "description": "A local artifact index. It records bounded Surface evidence and optional Covenant record consistency without producing a whole-XENIA verdict.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "tool",
+    "target",
+    "surface",
+    "covenant_adoption",
+    "interpretation"
+  ],
+  "properties": {
+    "schema_version": { "const": "xenia.observe.result/0.1-development" },
+    "status": { "const": "development-draft" },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "xenia-observe" },
+        "version": { "const": "0.1.0-dev" }
+      },
+      "additionalProperties": false
+    },
+    "target": { "type": "string", "format": "uri" },
+    "surface": {
+      "type": "object",
+      "required": [
+        "artifact",
+        "schema_valid",
+        "profile",
+        "outcome",
+        "observed_at",
+        "expires_at"
+      ],
+      "properties": {
+        "artifact": { "$ref": "#/$defs/artifact" },
+        "schema_valid": { "const": true },
+        "profile": { "const": "xenia-surface/0.1" },
+        "outcome": { "enum": ["conformant", "nonconformant", "indeterminate"] },
+        "observed_at": { "type": "string", "format": "date-time" },
+        "expires_at": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "covenant_adoption": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["state"],
+          "properties": { "state": { "const": "not_supplied" } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "state",
+            "artifact",
+            "schema_validation",
+            "cross_document_validation",
+            "target_relation"
+          ],
+          "properties": {
+            "state": { "const": "supplied" },
+            "artifact": { "$ref": "#/$defs/artifact" },
+            "schema_validation": { "$ref": "#/$defs/validation" },
+            "cross_document_validation": { "$ref": "#/$defs/validation" },
+            "target_relation": { "enum": ["same_origin", "different_origin", "unknown"] }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "interpretation": {
+      "type": "object",
+      "required": [
+        "surface_scope_only",
+        "covenant_record_consistency_checked",
+        "covenant_implementation_assessed",
+        "surface_evidence_mapped_to_covenant_duties",
+        "whole_xenia_conformance_claimed"
+      ],
+      "properties": {
+        "surface_scope_only": { "const": true },
+        "covenant_record_consistency_checked": { "type": "boolean" },
+        "covenant_implementation_assessed": { "const": false },
+        "surface_evidence_mapped_to_covenant_duties": { "const": false },
+        "whole_xenia_conformance_claimed": { "const": false }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "artifact": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$" },
+        "sha256": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "path", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "path": { "type": "string" },
+        "message": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "validation": {
+      "type": "object",
+      "required": ["valid", "issues"],
+      "properties": {
+        "valid": { "type": "boolean" },
+        "issues": {
+          "type": "array",
+          "maxItems": 256,
+          "items": { "$ref": "#/$defs/issue" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

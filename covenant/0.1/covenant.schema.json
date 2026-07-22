@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/cambridgetcg/xenia/main/covenant/0.1/covenant.schema.json",
+  "$id": "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/covenant.schema.json",
   "title": "XENIA Covenant 0.1",
   "description": "Structural schema for the versioned XENIA Covenant. Shape validation is not implementation evidence or conformance.",
   "type": "object",
@@ -19,7 +19,7 @@
   ],
   "properties": {
     "$schema": {
-      "const": "https://raw.githubusercontent.com/cambridgetcg/xenia/main/covenant/0.1/covenant.schema.json"
+      "const": "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/covenant.schema.json"
     },
     "schema_pin": { "$ref": "#/$defs/sourcePin" },
     "schema_version": { "const": "xenia.covenant/0.1" },
@@ -221,30 +221,17 @@
       "required": ["source", "sha256", "source_stability", "digest_profile"],
       "properties": {
         "source": {
-          "type": "string",
-          "format": "uri"
+          "const": "https://raw.githubusercontent.com/cambridgetcg/xenia/covenant-v0.1.0-rc.1/covenant/0.1/covenant.schema.json"
         },
         "sha256": {
           "type": "string",
           "pattern": "^sha256:[a-f0-9]{64}$"
         },
         "source_stability": {
-          "type": "string",
-          "enum": ["moving", "immutable"]
+          "const": "immutable"
         },
         "digest_profile": { "$ref": "#/$defs/digestProfile" }
       },
-      "allOf": [
-        {
-          "if": {
-            "properties": { "source": { "type": "string", "pattern": "/main/" } },
-            "required": ["source"]
-          },
-          "then": {
-            "properties": { "source_stability": { "const": "moving" } }
-          }
-        }
-      ],
       "additionalProperties": false
     },
     "digestProfile": {

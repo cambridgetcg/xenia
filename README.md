@@ -36,6 +36,11 @@ for manifest handling, representation negotiation, pure visible-door
 evaluation, and a versioned Web-standard Surface producer kit. It is tooling
 around the standard, not the standard's authority or a conformance certificate.
 
+**Development evidence workbench:** [XENIA observe](observe/0.1/README.md) —
+records the external Surface result and optionally checks a host-supplied
+Covenant adoption without mapping one profile into the other. It is currently
+private development tooling with no published release identity.
+
 Surface 0.1 is the versioned wire profile and checker; `@agenttool/xenia` is the
 optional JS/TS library, available with `npm install @agenttool/xenia@beta`.
 Their versions and release tags are independent.

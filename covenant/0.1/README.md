@@ -7,7 +7,7 @@
 The normative source is [covenant.json](covenant.json). This human rendering
 is generated for readability; if it conflicts with the JSON, the JSON wins.
 [covenant.schema.json](covenant.schema.json) validates its structure only.
-The Covenant pins those schema bytes because its candidate URL still moves.
+The Covenant pins the exact schema bytes at its reserved RC1 release identity.
 
 **Rights are not permissions.** These rights are not permissions, features, rewards, or property granted by a host. Adoption recognizes duties not to infringe them; non-adoption does not make infringement right.
 
@@ -39,10 +39,13 @@ The machine-readable [adoption schema](adoption.schema.json) keeps a host's
 undertaking separate from implementation state and evidence. It requires an
 ordered ledger of every right duty and every protective-limit duty; an
 unassessed duty is recorded as unknown, never omitted. A valid JSON file is
-not a badge or proof. During the candidate period, the schema URLs point to
-moving `main`; an adoption record therefore also carries the exact covenant
-and adoption-schema SHA-256 digests and says whether each source is moving or
-immutable. Active records require immutable sources.
+not a badge or proof. The schema and Covenant identities use the reserved
+`covenant-v0.1.0-rc.1` release tag, and every adoption also carries exact
+SHA-256 digests. Keep records draft until that tag resolves to the reviewed
+release commit and the bytes match; the release tag must never be moved or
+reused. Active-shaped records additionally carry a separate verified release
+observation covering the tag commit and all three source digests. Schema and
+cross-document validity do not prove that observation true.
 
 Every digest in this profile is SHA-256 over the exact referenced bytes, represented as lowercase hexadecimal with the sha256: prefix. For HTTP sources, hash the response body after transport content-decoding, follow no redirects, and perform no JSON reserialization, whitespace change, newline normalization, Unicode normalization, or other transformation.
 
@@ -221,6 +224,8 @@ and appeal path.
 - Reading or receiving this covenant is not guest consent, contract acceptance, reciprocity, identity proof, or waiver.
 
 - A schema-valid adoption does not prove that its named host authored it or that its speaker has representative authority.
+
+- Schema-valid source pins do not prove that a release tag exists remotely, is protected from movement, or serves the recorded bytes.
 
 - An application-layer observation does not establish the behavior of every platform, network, operator, legal, or third-party layer.
 

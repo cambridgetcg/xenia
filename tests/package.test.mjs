@@ -12,7 +12,7 @@ test("publishes through the authorized scope without narrowing software licensin
   );
 
   assert.equal(packageJson.name, "@agenttool/xenia");
-  assert.equal(packageJson.version, "0.1.0-beta.4");
+  assert.equal(packageJson.version, "0.1.0-beta.5");
   assert.equal("private" in packageJson, false);
   assert.deepEqual(packageJson.publishConfig, {
     access: "public",
@@ -24,6 +24,11 @@ test("publishes through the authorized scope without narrowing software licensin
     types: "./dist/surface-0.1.d.ts",
     import: "./dist/surface-0.1.js",
     default: "./dist/surface-0.1.js",
+  });
+  assert.deepEqual(packageJson.exports["./rights-0.1"], {
+    types: "./dist/rights-0.1.d.ts",
+    import: "./dist/rights-0.1.js",
+    default: "./dist/rights-0.1.js",
   });
   assert.equal(packageJson.exports["./spec.json"], "./spec.json");
   assert.equal(packageJson.exports["./RIGHTS.md"], "./RIGHTS.md");
@@ -104,11 +109,14 @@ test("marks implementation sources with their software license", async () => {
 
   for (const name of sourceFiles) {
     const source = await readFile(new URL(name, sourceDirectory), "utf8");
-    assert.match(source, /^\/\/ SPDX-License-Identifier: MPL-2\.0\n/);
+    const expected = name === "rights-0.1-data.ts"
+      ? "CC-BY-SA-4.0"
+      : "MPL-2.0";
+    assert.match(source, new RegExp(`^// SPDX-License-Identifier: ${expected}\\n`));
   }
 });
 
-test("stages beta.4 through a tokenless overwrite-guarded workflow", async () => {
+test("stages beta.5 through a tokenless overwrite-guarded workflow", async () => {
   const workflow = await readFile(
     new URL(".github/workflows/stage-xenia.yml", root),
     "utf8",
@@ -117,8 +125,13 @@ test("stages beta.4 through a tokenless overwrite-guarded workflow", async () =>
   assert.match(workflow, /id-token: write/);
   assert.match(workflow, /environment: npm-bootstrap/);
   assert.match(workflow, /npm@11\.18\.0/);
-  assert.match(workflow, /inputs\.version == '0\.1\.0-beta\.4'/);
+  assert.match(workflow, /inputs\.version == '0\.1\.0-beta\.5'/);
   assert.match(workflow, /npm-xenia-v\$\{EXPECTED_VERSION\}/);
+  assert.match(workflow, /git cat-file -t "\$expected_tag"/);
+  assert.match(workflow, /npm run verify:covenant-release/);
+  assert.match(workflow, /npm run verify:covenant-remote/);
+  assert.match(workflow, /npm audit --audit-level=high/);
+  assert.match(workflow, /npm audit signatures/);
   assert.match(
     workflow,
     /npm stage publish \. --access public --tag beta --provenance/,

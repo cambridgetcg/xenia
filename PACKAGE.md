@@ -6,16 +6,21 @@ parts of that standard.
 
 ## Current status
 
-The `@agenttool/xenia` source is versioned `0.1.0-beta.4` and prepared for the
+The `@agenttool/xenia` source is versioned `0.1.0-beta.5` and prepared for the
 public `beta` channel. Registry availability is established by npm, not by this
 source document. Everyone may read, use, test, fork, adapt, discuss, and build
 with it under the [repository license map](LICENSES.md). See
 [CONTRIBUTING.md](CONTRIBUTING.md) for the deliberately permissionless
 participation path.
 
-Beta.4 adds the Rights and Covenant files, subpath exports, semantic validator,
-and packed-consumer checks. The earlier `0.1.0-beta.3` tarball does not contain
-them and remains immutable; npm versions are never overwritten.
+Beta.4 added the Rights and Covenant files, subpath exports, semantic validator,
+and packed-consumer checks. Beta.5 adds the explicit `rights-0.1` runtime
+snapshot and drift checker, release-tag-pinned Covenant source identities, and
+structured release-verification boundaries. Earlier tarballs remain immutable;
+npm versions are never overwritten.
+
+The repository also carries a private Observe development workbench. It is not
+included in the root npm tarball and has no published release identity.
 
 The personal `@agenttool` scope is the selected release channel and steward; it
 does not make npm the standard's authority, restrict compatible implementations,
@@ -24,7 +29,7 @@ or transfer ownership of contributors' work.
 After npm approves the staged release, install this exact beta with:
 
 ```sh
-npm install @agenttool/xenia@0.1.0-beta.4
+npm install @agenttool/xenia@0.1.0-beta.5
 ```
 
 From a clone, the naive path is:
@@ -58,7 +63,10 @@ The package source tree currently does:
   schema-valid Covenant adoption records: it checks installed-byte pins,
   canonical IDs, the exact ordered 38-right-duty plus 5-limit-duty ledger,
   aggregate states, per-duty evidence relationships, restriction-event time
-  bounds, and active-source and speaker-authority declarations.
+  bounds, and active-source and speaker-authority declarations;
+- expose a deeply frozen informative rights index from the explicit
+  `@agenttool/xenia/rights-0.1` subpath, plus exact installed-snapshot drift
+  checks and ID lookup without adding that data to the root import.
 
 The independently versioned `@agenttool/xenia-surface` package distributes the
 Node 22+ Surface 0.1 external checker, its programmatic API, and the
@@ -81,7 +89,31 @@ It deliberately does not:
   turn a consistent adoption record into evidence or consent;
 - import Sinovai's KV arena, claim-token identity, CORS, HTML, or deployment
   worker;
-- replace the normative prose or make npm the source of truth.
+- replace the normative prose or make npm the source of truth;
+- authenticate a candidate rights object, prove adoption or practice, or turn
+  equality with the installed informative index into evidence.
+
+## Rights baseline snapshot
+
+The versioned subpath keeps the canonical prose and executable helper
+separate:
+
+```js
+import {
+  RIGHTS_BASELINE,
+  getRightsBaselineRight,
+  verifyRightsBaseline,
+} from "@agenttool/xenia/rights-0.1";
+
+const repair = getRightsBaselineRight("repair-appeal");
+const drift = verifyRightsBaseline(JSON.parse(receivedBytes));
+```
+
+`RIGHTS_BASELINE` is recursively frozen and exactly mirrors
+`spec.json#rights`; `RIGHTS.md` remains the canonical prose. The verifier
+compares an unknown value with the installed snapshot, including closed keys
+and ordered arrays. It does not authenticate where bytes came from, accept
+extensions inside the baseline, or claim that matching words are practised.
 
 ## APIs
 
@@ -195,11 +227,17 @@ gate implementations, forks, experiments, local installs, or contributions.
 The maintainer explicitly selected the controlled `@agenttool` npm scope for
 this beta. Each release still needs clean supported-Node test runs, packed
 consumer checks, inspection of the exact tarball, and the non-default `beta`
-tag. The beta.4 workflow requires the exact `npm-xenia-v0.1.0-beta.4` tag at the
-workflow commit and refuses to overwrite an existing npm version. GitHub's
+tag. The beta.5 workflow requires annotated `npm-xenia-v0.1.0-beta.5` and
+`covenant-v0.1.0-rc.1` tags at the same workflow commit and refuses to overwrite
+an existing npm version. The local Covenant verifier checks the tagged tree and
+digests; a separate post-publication observation must retrieve the three exact
+raw sources without redirects. GitHub's
 short-lived OIDC identity stages the exact tarball with provenance; a
 maintainer must then review and approve that staged package with npm 2FA. No
 long-lived npm write token belongs in the repository or GitHub environment.
+The forge currently does not technically prevent a privileged future tag move,
+so immutability remains an explicit release-owner promise rather than a claimed
+platform guarantee.
 
 The first `@agenttool/xenia-surface` publication is likewise a bootstrap
 release of the already tagged `surface-v0.1.0-rc.1` checker/profile. The npm

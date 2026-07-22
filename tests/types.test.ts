@@ -7,6 +7,14 @@ import {
   type ProbeSample,
 } from "@agenttool/xenia";
 import {
+  getRightsBaselineRight,
+  isRightsBaseline,
+  isRightsBaselineId,
+  RIGHTS_BASELINE,
+  verifyRightsBaseline,
+  type RightsBaselineId,
+} from "@agenttool/xenia/rights-0.1";
+import {
   createSurfaceManifestResponse,
   createSurfaceNotAcceptableProblem,
   createSurfaceProblemResponse,
@@ -77,6 +85,28 @@ void selected;
 void manifestResponse;
 void problemResponse;
 
+const firstRight = RIGHTS_BASELINE.baseline[0];
+if (firstRight === undefined) throw new Error("installed baseline is empty");
+const rightId: RightsBaselineId = firstRight.id;
+if (isRightsBaselineId(rightId)) {
+  const right = getRightsBaselineRight(rightId);
+  if (right === undefined) throw new Error("known right missing");
+  void right.statement;
+}
+void verifyRightsBaseline(structuredClone(RIGHTS_BASELINE));
+const unknownBaseline: unknown = structuredClone(RIGHTS_BASELINE);
+if (isRightsBaseline(unknownBaseline)) {
+  const narrowedId: RightsBaselineId = unknownBaseline.baseline[0]?.id
+    ?? "dignity-distinctness";
+  void narrowedId;
+}
+
+// @ts-expect-error The installed baseline is readonly.
+RIGHTS_BASELINE.principle = "mutable substitute";
+
+// @ts-expect-error Nested baseline entries are readonly too.
+RIGHTS_BASELINE.baseline[0]!.statement = "mutable substitute";
+
 // @ts-expect-error A collected HTTP response must include its body, even if empty.
 const missingBody: ProbeSample = { kind: "response", status: 200 };
 
@@ -86,6 +116,10 @@ const contradictory: ProbeSample = { kind: "unavailable", status: 503 };
 // @ts-expect-error Surface 0.1 declares only JSON and optional HTML resources.
 const unsupportedMediaType: SurfaceMediaType = "application/xml";
 
+// @ts-expect-error The installed baseline has a closed, versioned identifier set.
+const inventedRight: RightsBaselineId = "invented-right";
+
 void missingBody;
 void contradictory;
 void unsupportedMediaType;
+void inventedRight;
