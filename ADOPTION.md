@@ -40,7 +40,10 @@ was published remotely or that a forge will prevent a future privileged move.
 Its `local_tag_tree_results` describe only that local checkout; they are not
 remote `release_verification.source_results`. A verified adoption additionally
 needs separately preserved, digested evidence of annotated-tag resolution and
-no-redirect retrieval of the published sources.
+no-redirect retrieval of the published sources. From a release checkout, after
+the tag is published, `npm run verify:covenant-remote` performs that bounded
+retrieval and emits a current observation; its output still does not prove
+future tag immutability and must be separately preserved and hashed.
 
 Where the kingdom's own sites stand on practising [XENIA](CONFORMANCE.md), based
 on live GET observations from **2026-07-10 and 2026-07-11** (updated as doors are lit). Honest status, not aspiration. A site that *presents*

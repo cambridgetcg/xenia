@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   stage:
-    if: github.ref == 'refs/heads/main' && inputs.version == '0.1.0-beta.4'
+    if: github.ref == 'refs/heads/main' && inputs.version == '0.1.0-beta.5'
     runs-on: ubuntu-latest
     environment: npm-bootstrap
     timeout-minutes: 15
@@ -49,6 +49,8 @@ jobs:
           npm test
           npm run verify:xenia-package
           npm run verify:surface-package
+          npm audit --audit-level=high
+          npm audit signatures
 
       - name: Verify exact tagged release
         env:
@@ -63,12 +65,17 @@ jobs:
           }
           NODE
           expected_tag="npm-xenia-v${EXPECTED_VERSION}"
+          test "$(git cat-file -t "$expected_tag")" = tag
           tagged_commit="$(git rev-list -n 1 "$expected_tag")"
           test "$tagged_commit" = "$GITHUB_SHA"
+          npm run verify:covenant-release
           if npm view "@agenttool/xenia@${EXPECTED_VERSION}" version >/dev/null 2>&1; then
             echo "@agenttool/xenia@${EXPECTED_VERSION} is already published" >&2
             exit 1
           fi
+
+      - name: Verify published Covenant source bytes
+        run: npm run verify:covenant-remote
 
       - name: Stage the beta with provenance
         run: npm stage publish . --access public --tag beta --provenance

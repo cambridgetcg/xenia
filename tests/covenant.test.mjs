@@ -17,6 +17,7 @@ import {
   canonicalSources,
   validateCovenantAdoption,
 } from "../covenant/0.1/validate-adoption.mjs";
+import { verifyCovenantRemote } from "../tools/verify-covenant-remote.mjs";
 
 const execFileAsync = promisify(execFile);
 const root = new URL("../", import.meta.url);
@@ -830,6 +831,92 @@ test("active-shaped records require exact release identities and verified author
     undigestedTagArtifact,
     "release_tag_resolution_artifact_missing",
     ".release_verification.artifacts",
+  );
+});
+
+test("remote Covenant verification reports passes only for exact no-redirect bytes", async () => {
+  const bytesBySource = new Map([
+    [canonicalSources.covenantSchema, await readFile(
+      new URL("covenant/0.1/covenant.schema.json", root),
+    )],
+    [canonicalSources.covenant, await readFile(
+      new URL("covenant/0.1/covenant.json", root),
+    )],
+    [canonicalSources.adoptionSchema, await readFile(
+      new URL("covenant/0.1/adoption.schema.json", root),
+    )],
+  ]);
+  const fetchImpl = async (source, options) => {
+    assert.equal(options.redirect, "error");
+    const response = new Response(bytesBySource.get(source), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+    Object.defineProperties(response, {
+      redirected: { value: false },
+      url: { value: source },
+    });
+    return response;
+  };
+
+  const observation = await verifyCovenantRemote({
+    fetchImpl,
+    observedAt: "2026-07-22T21:00:00.000Z",
+  });
+  assert.equal(observation.status, "observation");
+  assert.equal(observation.tag, canonicalRelease.tag);
+  assert.deepEqual(
+    observation.source_results,
+    canonicalRelease.sources.map((source) => ({ ...source, outcome: "pass" })),
+  );
+  assert.ok(observation.http_observations.every(({ redirected }) => !redirected));
+});
+
+function remoteResponse(body, source, options = {}) {
+  const response = new Response(body, { status: options.status ?? 200 });
+  Object.defineProperties(response, {
+    redirected: { value: options.redirected ?? false },
+    url: { value: options.url ?? source },
+  });
+  return response;
+}
+
+test("remote Covenant verification rejects non-200 responses", async () => {
+  const source = canonicalRelease.sources[0].source;
+  await assert.rejects(
+    verifyCovenantRemote({
+      fetchImpl: async () => remoteResponse(null, source, { status: 302 }),
+    }),
+    /expected HTTP 200/,
+  );
+});
+
+test("remote Covenant verification rejects redirect and effective-URL drift", async () => {
+  const source = canonicalRelease.sources[0].source;
+  const bytes = await readFile(new URL("covenant/0.1/covenant.schema.json", root));
+  await assert.rejects(
+    verifyCovenantRemote({
+      fetchImpl: async () => remoteResponse(bytes, source, { redirected: true }),
+    }),
+    /redirect observed/,
+  );
+  await assert.rejects(
+    verifyCovenantRemote({
+      fetchImpl: async () => remoteResponse(bytes, source, {
+        url: "https://example.com/moved",
+      }),
+    }),
+    /effective URL changed/,
+  );
+});
+
+test("remote Covenant verification rejects changed bytes", async () => {
+  const source = canonicalRelease.sources[0].source;
+  await assert.rejects(
+    verifyCovenantRemote({
+      fetchImpl: async () => remoteResponse("changed", source),
+    }),
+    /digest mismatch/,
   );
 });
 

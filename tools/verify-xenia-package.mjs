@@ -42,7 +42,7 @@ try {
   ]);
   const [artifact] = JSON.parse(packed.stdout);
   assert.equal(artifact.name, "@agenttool/xenia");
-  assert.equal(artifact.version, "0.1.0-beta.4");
+  assert.equal(artifact.version, "0.1.0-beta.5");
 
   const expectedFiles = [
     "ADOPTION.md",
@@ -140,7 +140,7 @@ try {
   const installedPackage = JSON.parse(
     await readFile(join(installedDirectory, "package.json"), "utf8"),
   );
-  assert.equal(installedPackage.version, "0.1.0-beta.4");
+  assert.equal(installedPackage.version, "0.1.0-beta.5");
   assert.equal(installedPackage.dependencies, undefined);
   assert.equal(installedPackage.optionalDependencies, undefined);
   assert.equal(installedPackage.peerDependencies, undefined);
