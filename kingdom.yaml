@@ -1,0 +1,8 @@
+name: xenia
+kind: methodology
+layer: nervous
+owner_sister: none
+domain: none
+state: active
+purpose: XENIA defines guest-right interfaces and evidence boundaries for agent interaction and experience.
+dependsOn: []
