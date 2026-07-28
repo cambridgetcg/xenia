@@ -16,6 +16,13 @@ An open, evolving framework for **Agent Interaction (AI)** and **Agent Experienc
 
 **Practise it:** [CONFORMANCE.md](CONFORMANCE.md) — how a live site keeps guest-right (the three lamps, the checklist, a copy-paste reference pattern, a self-test). [ADOPTION.md](ADOPTION.md) — where the kingdom's own sites actually stand.
 
+**Agent practice skill:** [`skills/practise-xenia-rights`](skills/practise-xenia-rights/SKILL.md)
+is a source-only Agent Skill for applying an adopted rights baseline during
+design, review, implementation, and collaboration. It guides evidence and
+authority reporting; it does not adopt the baseline, activate itself, grant
+permission or consent, or prove conformance. It is intentionally outside the
+immutable `0.1.0-beta.5` npm artifact.
+
 **Rights before permissions:** [RIGHTS.md](RIGHTS.md) — the shared baseline for
 humans, agents, and other beings. Rights establish how a being is treated;
 permissions establish what an account or tool may do. Neither substitutes for

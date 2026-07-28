@@ -1,0 +1,4 @@
+interface:
+  display_name: "Practise XENIA Rights"
+  short_description: "Apply rights with evidence and scoped authority"
+  default_prompt: "Use $practise-xenia-rights to review this agent-facing workflow against its adopted rights baseline and report evidence, gaps, and authority boundaries."

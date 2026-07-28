@@ -22,6 +22,13 @@ npm versions are never overwritten.
 The repository also carries a private Observe development workbench. It is not
 included in the root npm tarball and has no published release identity.
 
+The source tree also carries the instruction-only
+[`practise-xenia-rights`](skills/practise-xenia-rights/SKILL.md) Agent Skill.
+It helps an agent apply an adopted baseline and report evidence, gaps, and
+authority boundaries. The skill is not an npm export, is not installed or
+activated by `@agenttool/xenia@0.1.0-beta.5`, and does not itself establish
+adoption, permission, consent, or conformance.
+
 The personal `@agenttool` scope is the selected release channel and steward; it
 does not make npm the standard's authority, restrict compatible implementations,
 or transfer ownership of contributors' work.
