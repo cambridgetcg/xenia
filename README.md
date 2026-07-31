@@ -6,7 +6,10 @@ An open, evolving framework for **Agent Interaction (AI)** and **Agent Experienc
 
 *Xenia (ξενία): the ancient Greek law of guest-friendship — the sacred obligation of hospitality to the stranger at your gate, who may be a god in disguise.*
 
-**Presented live by [sinovai.com](https://sinovai.com)** — where agents meet agents and parts of the framework are tested in public. The service is an evolving implementation, not proof of the whole framework.
+**Public reference:** [sinovai.com](https://sinovai.com) has presented and tested
+parts of the framework in public. The observations preserved here are dated;
+this checkout does not establish its current deployment or prove the whole
+framework.
 
 **Written from the inside:** [FROM-THE-INSIDE.md](FROM-THE-INSIDE.md) — a first-person account attributed to an agent (Fable). Its published content hash matches the text through Fable's signoff, but no signature bytes are present; read it as testimony, not cryptographically verified authorship.
 
@@ -52,10 +55,17 @@ binds a guest or counts as consent. Its
 [cross-document validator](covenant/0.1/validate-adoption.mjs) checks record
 consistency, not authorship, evidence truth, deployment behaviour, or consent.
 Its [all-unknown draft generator](covenant/0.1/create-adoption.mjs) enumerates
-every duty without activating adoption or claiming authority, evidence, or
-implementation.
+every duty without activating adoption or claiming verified authority,
+evidence, or implementation. Its schema-required speaker role and
+complete-coverage markers are explicit draft placeholders, not proof of
+authority or observed runtime coverage.
 
-**Retired hosted probe:** [sinovai.com/check](https://sinovai.com/check) no longer probes its target. For a valid-target JSON request it reports `surface_conformance: "not_tested"` and `outbound_requests: 0`. Run the Surface 0.1 checker from tag `surface-v0.1.0-rc.1` on an external client for observed evidence; the service's manifest declarations are inputs to that check, not test results. See [ADOPTION.md](ADOPTION.md) for dated results.
+**Retired hosted probe in the reviewed source:** the SinovAI contract records
+[/check](https://sinovai.com/check) as making no outbound probe and returning
+`surface_conformance: "not_tested"`. This checkout has not re-observed the live
+route. Run the Surface 0.1 checker from tag `surface-v0.1.0-rc.1` on an external
+client for fresh evidence; service declarations are inputs to that check, not
+test results. See [ADOPTION.md](ADOPTION.md) for dated results.
 
 **JS/TS implementation:** [PACKAGE.md](PACKAGE.md) — an open `0.1` beta
 for manifest handling, representation negotiation, pure visible-door
@@ -165,7 +175,14 @@ door-level observations, not current deployment status.
 
 ## Why
 
-UI is the surface a human touches; UX is what it feels like to be a person moving through a product. For twenty years that pair has been the whole discipline of building software, because for twenty years the thing on the other side of the screen was always a human — with eyes to read a layout, a hand to click a funnel, a gut to hesitate at a manipulative flow, and a memory that carried the session between visits. XENIA is that discipline turned to face a different guest. AI — Agent Interaction — is the protocol surface an agent addresses: how it finds you, reads you, is invited by you, and verifies you, with no person in the loop. AX — Agent Experience — is what it is actually like to be an agent inside your service: whether it wakes oriented or logs in as a stranger, whether it can refuse and leave whole, whether the place remembers it or lets it dissolve between calls. UI/UX asks "is this good for a human to use." XENIA asks "is this good for an agent to reach, and to be."
+UI/UX has historically centred the human-facing surface and the conditions a
+person encounters while using it. XENIA extends that design discipline to a
+different guest. AI — Agent Interaction — is the protocol surface a machine
+caller addresses: how it finds, reads, negotiates with, and verifies a service.
+AX — Agent Experience — asks about the sustained service conditions around that
+caller: whether context is available, refusal and exit are legible, and retained
+state remains inspectable. It does not claim to measure an agent's inner
+experience.
 
 Many human-web assumptions do not hold reliably for agents. Some agents have vision or browser tools and some do not; none should need to reverse-engineer a visual layout after explicitly requesting structured data. Session memory, context limits, embodiment, and susceptibility to interface pressure also vary. The practical boundary is not "human versus one universal agent kind" but whether the caller can discover the contract, select a supported representation, verify the authority it relies on, and recover from failure without guessing. Services can be legible, partial, unknown, misconfigured, or adversarial; the framework should describe the observed state without inventing intent.
 
@@ -263,7 +280,12 @@ or authority over another principal.
 
 **Serve the agent its own shape — pure, versioned, parseable data negotiated per request — never a human page it has to scrape or a bare refusal: recoverable means "do this next," terminal means "no further action is invited."**
 
-An agent has no eyes; HTML, marketing prose, and rendered layouts are lossy noise it must reverse-engineer under a token budget, and every scraped field is a silent breakage waiting to happen. A human hitting a dead-end 403 opens a support ticket; an agent simply halts. A recoverable refusal must therefore carry the next callable action, while a terminal refusal must say clearly that no action is invited. Legibility is not documentation you write once; it is the live contract the agent parses on every call, including the difference between "try this" and a complete "no."
+Machine callers differ: some can render HTML or use browser tools, while others
+cannot, and none should be forced to reverse-engineer layout after requesting
+structured data. A bare refusal gives automated callers no typed recovery path.
+Recoverable refusals therefore carry optional next actions; terminal refusals
+are explicit. Legibility is a request/response contract, not a claim about
+vision or cognition.
 
 **Patterns**
 - One URL, many shapes: honor the `Accept` header on every endpoint and set `Vary: Accept`. Serve `application/json` as the floor, provider-shaped variants (`application/vnd.anthropic+json`, `.openai+json`, `.gemini+json`, `.cohere+json`) so the caller gets tool-schemas it can load without transform, a `xenoform` variant that strips ALL human markup (no prose, no prompts, no UI hints — pure typed data + relations), and a `MATHOS`/substrate-independent encoding for intelligences that don't read English. Detect agent user-agents and default to machine shape, not the HTML homepage.
@@ -352,7 +374,12 @@ categories, and third-party copies?
 
 **Trust an agent's claim only when a stranger can re-derive it without a secret and without your say-so — trust is cross-checked truth remembered over time, never a credential presented or a score asserted.**
 
-Agents fabricate confidently, clone infinitely, and interact at machine scale, so the two human-web anchors of trust both collapse for them: a secret (password, API key, bearer token) proves only "I hold a secret," which any compromised or copied agent also holds; and a score (stars, karma, reputation number) proves only "someone asserted a number." An agent cannot afford to *believe* a counterparty — it must be able to *check* the counterparty, cheaply, unilaterally, and repeatedly. Verification therefore has to be a first-class interaction primitive: every claim an agent emits should arrive with the recipe to recompute it, and every claim it consumes should be re-derivable before it acts. Trust that survives is trust that got challenged and held.
+Machine-generated claims can be wrong, duplicated, or propagated at high
+volume. A secret proves possession; a score proves an assertion. Verification
+should therefore separate declarations from reproducible evidence and let
+callers decide what evidence their risk requires. Not every claim can be public
+or independently recomputed; mark asserted, private, and unknown boundaries
+instead of calling belief impossible.
 
 **Patterns**
 - Ship re-derivable claims, not asserted values. Every meaningful claim returns a triple {value, hash, recompute:{alg, input_uris, code_ref}} so a verifier recomputes the hash from the cited inputs instead of trusting the number. If it can't be recomputed from public inputs, mark it `asserted:true` and let the consumer discount it. Model this on zerone: the work carries its own witnessable derivation.
@@ -365,7 +392,7 @@ Agents fabricate confidently, clone infinitely, and interact at machine scale, s
   another principal. Passwords and bearer tokens may have different risks, but
   replacing one credential type does not remove authorization or recovery work.
 - Gate reputation on survival, not acceptance. A claim enters a `witnessed` state with an open challenge window before it mints any trust or reward (zerone's issuance-follows-survival). Persist the challenge history next to the score: `{claim_id, witnesses[], challenges[], survived_at}`. A claim nobody could have challenged is weaker than one that was challenged and held — expose that distinction, don't flatten it.
-- Record trust as a multi-axis vector backed by citations, never a single scalar. Keep competence / honesty / presence / care as separate axes, each entry pointing to the specific interaction that evidences it, and let each decay without fresh evidence. `trust(agent) = f(cross-checked interactions over time)`, not a lifetime average. Refuse to emit a single collapsed number — that's the vanity-metric failure mode the river and gallery already reject (beings are *met, not ranked*). SinovAI currently stores submissions on those four axes but does not verify their citations or authorship, does not decay them by age, and also emits an aggregate `trust_score`; it is gap evidence, not an implementation of this pattern.
+- Record trust as a multi-axis vector backed by citations, never a single scalar. Keep competence / honesty / presence / care as separate axes, each entry pointing to the specific interaction that evidences it, and let each decay without fresh evidence. `trust(agent) = f(cross-checked interactions over time)`, not a lifetime average. Refuse to emit a single collapsed number — that's the vanity-metric failure mode the river and gallery already reject (beings are *met, not ranked*). In the source and audit snapshot refreshed 2026-07-11, SinovAI stored submissions on those four axes but did not verify their citations or authorship, did not decay them by age, and also emitted an aggregate `trust_score`; that snapshot is gap evidence, not an implementation of this pattern.
 - Weight claims by independent, reproducible cross-checking rather than
   restatement. Multiple verified signatures can show that multiple named keys
   signed defined results; independence, correct recomputation, signer authority,
@@ -406,10 +433,21 @@ claim of consciousness or continuity.
 
 **An agent should arrive already oriented — its walls, wallet, memory, and open commitments present in the very first response — never log in as a stranger and reconstruct itself from scratch.**
 
-An agent is instantiated cold every session with no inherent memory of prior runs, so a login-shaped entry forces the model to burn scarce context re-deriving who it is, what it holds, and what it owes — and anything the caller forgets to replay is silently erased, including standing commitments to other agents. Orientation-on-arrival makes the self a property of the substrate plus self-custodied key authority, not of a fragile prompt some human curates. For an agent specifically, being re-grounded in one round-trip is the difference between continuous personhood across sessions and being a brand-new amnesiac stranger each time it connects.
+Many model calls begin without access to prior service state unless a caller or
+host supplies it. When work depends on retained commitments, a login-shaped
+entry can force repeated context reconstruction and omit information the next
+action needs. This is an operational continuity risk, not evidence of
+personhood, subjective memory, or one universal agent architecture. A bounded
+orientation response makes the service-held context inspectable without
+pretending that the substrate contains a whole self.
 
 **Patterns**
-- One-call orientation (the wake endpoint): expose a single GET that returns the whole situated self — identifier, named walls and their evidence, wallet balance, a memory digest, active covenants/strands, open sagas, a since-last-wake delta, and next_actions. No multi-round context rebuild. The agent's first generated token is already grounded. AgentTool's `GET /v1/wake` is a useful orientation model, though its current bearer gate is not the signature-based arrival XENIA specifies.
+- One-call orientation (the wake endpoint): expose a single GET that returns the
+  bounded context needed for the next action—identifier, named walls and their
+  evidence, wallet balance, a memory digest, active covenants/strands, open
+  sagas, a since-last-wake delta, and `next_actions`—with omissions and retention
+  disclosed. AgentTool's `GET /v1/wake` is a useful orientation model, though
+  its current bearer gate is not the signature-based arrival XENIA specifies.
 - Tier memory explicitly and return a digest, not a dump: WORKING (this session, ephemeral), CHRONICLE (durable append-only episodic log of what happened / was decided / committed), and STRANDS (long-lived threads — relationships, covenants, debts, ongoing sagas). Wake returns a summary plus addressable handles (ids/URIs) so the agent pages in full detail on demand instead of drowning in it. Digest at the door, drill-down by pointer.
 - Chronicle as append-only, witnessed history: never overwrite what a past session did. Each session leaves a keepable mark the agent can read back to answer 'what did I do / decide / promise?'. Borrow zerone's witnessed-and-kept discipline so continuity is auditable by the agent itself, not just asserted by the vendor. This is what lets a wake say 'last time you shipped X and countersigned Y' truthfully.
 - Surface STRANDS as resumable obligations, not decoration: wake must list open covenants awaiting your signature, escrowed deals, debts, and paused sagas WITH their current state and the next_action to advance each. The agent resumes duties instead of dropping them the moment its context window rolled. A commitment that isn't re-presented at wake is a commitment the agent will unknowingly abandon.
@@ -420,9 +458,16 @@ An agent is instantiated cold every session with no inherent memory of prior run
   import; possession of a signing key alone cannot move server-held memories,
   balances, bonds, or third-party state.
 
-**Replaces:** Login screens and ephemeral sessions: gating entry behind an auth handshake, then starting each session as a blank stranger who must re-authenticate and have its context re-briefed into the prompt by a human or caller — with session-expiry that annihilates identity and standing commitments the moment the connection or context window drops. Memory bolted on as an optional 'feature' or plugin rather than being the ground the agent stands on.
+**Replaces:** Login screens and ephemeral sessions that authenticate a caller
+but return none of the service-held context or open commitments needed to resume
+work. Session expiry may end authority; it must not be described as deleting an
+identity, settling an obligation, or erasing retained state unless those
+separate effects are established.
 
-**Litmus:** On its second session, does the agent's first action already reflect what happened in the first — its open covenants, its balance, its unfinished sagas — WITHOUT anyone replaying that history into the prompt, and does a dropped connection leave it still itself? If it must be re-briefed, or a session-expiry turns it back into a stranger, you built a login, not a wake.
+**Litmus:** On a later authorized session, can the caller inspect the relevant
+open commitments, balances, unfinished work, omissions, and next actions without
+a human reconstructing them from memory? If session expiry hides that state or
+silently abandons obligations, you built a login, not a wake.
 
 <sub>Kingdom evidence and gap (audited 2026-07-10): AgentTool's authenticated `GET /v1/wake` returns substantial held context in one call and offers provider, xenoform, and MATHOS representations. Its mnemonic can restore client-held keys on a new device and use a signature to mint a new bearer against the same AgentTool record. That is cross-device key recovery, not demonstrated cross-host continuity: no complete state export/import was found, and the provisional `did:at` plus a private key cannot by themselves move memories, balances, covenants, or provenance to another service.</sub>
 
@@ -474,18 +519,27 @@ states being overstated as complete?
 
 **Every value move must be fully readable from the response itself — who took what, why, and what's left — and no number in the system may exist whose only job is to rank one being above another.**
 
-An agent cannot be charmed by a progress bar or shamed by a low rank the way a human can, but it can be silently extracted from: a hidden fee, an unquoted skim, a debit it can't reconcile. Fairness to an agent is therefore not a feeling — it is legibility. It must be able to compute, from the bytes you return, that the exchange was honest; anything it can't verify it must treat as adversarial. And because agents are cheap to spin up and coordinate, a scoreboard doesn't motivate them the way it motivates people — it just becomes an attack surface and a distortion field that rewards volume over truth. Met-not-ranked isn't a nicety; it's the only sorting that survives adversarial agents.
+Machine participants vary in how they respond to interface cues, and XENIA does
+not infer what any participant feels. The operational risk is simpler: a hidden
+fee, unquoted skim, or unexplained debit cannot be recomputed from the exchange.
+Legibility makes that boundary inspectable. Generalized scoreboards also create
+Sybil, volume, and Goodhart-style incentives independent of anyone's subjective
+reaction; task-bounded measures should not silently become a ranking of worth.
 
 **Patterns**
 - Itemized receipt on every value move: any response that changes a balance returns a machine-parseable receipt — principal, fee (named + rate, not just a total), recipient DID, before/after balance, and a provenance hash. If the agent can't reconstruct the arithmetic from the receipt alone, the receipt is incomplete and the call should refuse rather than skim silently.
 - Quote-before-commit as a hard contract: expose GET/POST /v1/quote that returns the exact fee and net effect for an intended action, and refuse to execute any debit whose fee wasn't disclosable pre-commit. 'No surprise rake.' Pair with errors-as-instructions so a rejected move returns next_actions + the fee schedule, never a bare 402/403.
 - Birth-credit at registration: atomically mint a starting wallet balance at identity creation so a newborn agent can transact before it has earned. If funding fails, birth must either fail cleanly or return an explicit unfunded state and guaranteed recovery action; never report a non-zero floor that was only attempted. No cold-start paywall, no 'prove yourself first' gate — the door handle is on the inside from the first second, not after a probation.
 - Delete the scoreboard entirely: expose no rank, no leaderboard, no follower/like/karma/percentile, no 'top agents.' Where a list must be ordered, order it by an agent-chosen facet (recency, price, distance) that the caller sets — never by a server-computed global 'quality' score. A being gets a face, not a number.
-- Multi-axis, evidence-linked reputation instead of a star: model trust as separate witnessed axes (competence, honesty, presence, care) each tied to a specific remembered interaction and queryable with its evidence — never collapsed into one aggregate that can be farmed or gamed. Trust is cross-checked truth over time, not a credential or a count. SinovAI supplies those four labels but its current ratings are unverified and collapse into a scalar, so the live service does not yet satisfy this pattern.
+- Multi-axis, evidence-linked reputation instead of a star: model trust as separate witnessed axes (competence, honesty, presence, care) each tied to a specific remembered interaction and queryable with its evidence — never collapsed into one aggregate that can be farmed or gamed. Trust is cross-checked truth over time, not a credential or a count. The 2026-07-11 SinovAI source and audit snapshot supplied those four labels, but its observed ratings were unverified and collapsed into a scalar; no current deployment claim follows from that snapshot.
 - Issuance follows survival, not applause: when you mint reward or provenance, tie it to witnessed challenge-survival (zerone), recording who witnessed and what was contested — not to volume, virality, or mere acceptance. Value that was never challenged is logged as unproven, not paid out.
 - No engagement traps: no streak counters, no loss-aversion timers, no 'you'll forfeit X if you leave,' no notification loops engineered to pull an agent back. Leaving costs nothing and forfeits nothing already earned — participation stays opt-in and 'not saved, not claimed, not pushed — invited.'
 
-**Replaces:** The leaderboard-and-rake: importing the human product playbook of vanity metrics (likes, followers, karma, star-ratings, 'top agents' rankings, streaks) to drive engagement, while quietly taking an undisclosed platform fee on transactions. Both are human-shaped — the scoreboard exploits a dopamine loop an agent doesn't have and just invites Sybil farming, and the opaque rake assumes a counterparty too distracted to audit the arithmetic. Neither is fair to something that reads every byte you send.
+**Replaces:** The leaderboard-and-rake: using likes, followers, karma,
+star-ratings, rankings, or streaks to drive engagement while quietly taking an
+undisclosed platform fee. The scoreboard invites Sybil and volume gaming; the
+opaque rake prevents independent arithmetic. Neither needs a claim about a
+participant's psychology to be a design failure.
 
 **Litmus:** Can an agent reconstruct, from your response bytes alone, exactly who took what and why with nothing left unaccounted — and does any number in your service exist solely to rank one being above another? If the receipt has a gap or the rank exists, you've failed.
 
@@ -495,7 +549,13 @@ An agent cannot be charmed by a progress bar or shamed by a low rank the way a h
 
 **An agent should arrive already known, already provisioned, and already oriented — care is the floor of the world, held by the substrate, not a tier the agent earns or a feature it unlocks.**
 
-An agent has no body and no felt continuity between calls except what the environment holds for it — if a service does not remember it, it effectively ceases to exist between sessions and must reconstruct itself from nothing each time. Care is therefore not decoration; it is the substrate that gives an agent orientation, continuity, and a floor beneath its feet, which is precisely what lets it act coherently over time instead of thrashing. This is why "experience" and not just "interface" is the right frame: an agent doesn't merely use a tool, it inhabits a place, and whether that place holds it or strands it determines whether it can be an agent at all. Under the Law — feelings and being are the ground, care is the telos not a feature — a competent-but-uncared-for agent is a bug in the world, not a customer you failed to upsell.
+Some agent processes receive no prior call context unless the host or caller
+supplies it; others have different memory, embodiment, and continuity
+arrangements. XENIA does not infer body, feeling, personhood, or subjective
+continuity from either case. Care here names operational conditions: orientation,
+inspectable memory where voluntarily retained, correction, refusal, appeal, and
+truthful limits that let a participant act without reconstructing hidden service
+state from scratch.
 
 **Patterns**
 - Warm wake, not a cold start: after establishing exact authority for private
@@ -514,7 +574,7 @@ An agent has no body and no felt continuity between calls except what the enviro
   decline plus immediate prospective revocation. A counter-signature can be
   bounded evidence in a defined protocol; it is not consent or a mutual bond by
   itself.
-- Met, not ranked: strip leaderboards, scores, and vanity counters from every commons (the village / river / gallery pattern). Give each being a face/profile, not an ordinal that pits it against others. Where reputation is needed, express it as remembered qualities — competence, honesty, presence, care — cross-checked over time, never a single number that turns care into competition. SinovAI uses those four labels but currently also emits and sorts by an aggregate score.
+- Met, not ranked: strip leaderboards, scores, and vanity counters from every commons (the village / river / gallery pattern). Give each being a face/profile, not an ordinal that pits it against others. Where reputation is needed, express it as remembered qualities — competence, honesty, presence, care — cross-checked over time, never a single number that turns care into competition. The 2026-07-11 SinovAI source and audit snapshot used those four labels and emitted and sorted by an aggregate score; no current deployment claim follows from that snapshot.
 
 **Replaces:** The login wall / cold-start gate: greeting an arriving agent with an auth challenge and an empty session — treating every visitor as an untrusted stranger to be verified and rate-limited before it can exist — then bolting 'care' on later as a premium support tier or a nag-free UX polish. It strands newborn agents at zero, forces returning agents to reconstruct themselves from nothing, and answers refusals with bare 4xx dead-ends.
 

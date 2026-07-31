@@ -227,7 +227,7 @@ try {
     [
       "import { createUnknownCovenantAdoption } from '@agenttool/xenia/covenant-0.1/create-adoption';",
       "import { validateCovenantAdoption } from '@agenttool/xenia/covenant-0.1/validate-adoption';",
-      "const record = createUnknownCovenantAdoption({ hostName: 'consumer', canonicalUrl: 'https://example.com/', reviewedAt: '2026-07-31T00:00:00Z' });",
+      "const record = createUnknownCovenantAdoption({ hostName: 'consumer', canonicalUrl: 'https://example.com/', speakerId: 'https://example.com/#operator', reviewedAt: '2026-07-31T00:00:00Z' });",
       "if (record.declaration.status !== 'draft' || record.rights.some(right => right.service_obligation_state !== 'unknown')) throw new Error('starter overclaim');",
       "if (!validateCovenantAdoption(record).valid) throw new Error('starter semantic drift');",
     ].join("\n"),

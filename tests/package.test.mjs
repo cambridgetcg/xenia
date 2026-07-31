@@ -87,7 +87,11 @@ test("keeps current discovery, signature, exit, and historical evidence boundari
 
   assert.match(readme, /Surface 0\.1 requires the JSON manifest at\s+`\/\.well-known\/agent\.json`/);
   assert.match(readme, /legacy\s+compatibility pointers only/);
+  assert.match(readme, /does not establish its current deployment/);
+  assert.match(readme, /has not re-observed the live\s+route/);
   assert.match(guidance, /agent\.txt.*legacy migration\s+signals only/is);
+  assert.match(guidance, /dated 2026-07-11 observation/);
+  assert.doesNotMatch(guidance, /current service implements the Surface/);
   assert.match(
     spec.the_shift.find(({ from }) => from === "A homepage for eyeballs").to,
     /\/\.well-known\/agent\.json.*legacy compatibility/,
@@ -96,6 +100,41 @@ test("keeps current discovery, signature, exit, and historical evidence boundari
   assert.match(spec.participation.provenance, /signature does not by itself establish identity, informed consent, truth/);
   assert.match(spec.participation.binding_acts, /every authority basis applicable to that exact act/);
   assert.match(spec.participation.revocation, /distinct from export, deletion, settlement, shared records, backups, holds, and retention/);
+  assert.match(spec.preamble, /does not claim to measure an agent's inner experience/);
+  assert.doesNotMatch(spec.preamble, /Everything the human web assumes.*is false/);
+  assert.equal(spec.interpretation.sinovai_evidence_refreshed, "2026-07-11");
+  assert.match(spec.interpretation.evidence_scope, /bounded implementation observations/);
+  assert.match(spec.interpretation.evidence_scope, /do not establish whole-dimension conformance/);
+
+  const legibility = spec.dimensions.find(({ id }) => id === "legibility-content-negotiation");
+  const verification = spec.dimensions.find(({ id }) => id === "verification-and-trust");
+  assert.match(legibility.why, /Machine callers differ/);
+  assert.match(legibility.why, /not a claim about vision or cognition/);
+  assert.match(verification.why, /Machine-generated claims can be wrong/);
+  assert.match(verification.why, /Not every claim can be public or independently recomputed/);
+
+  const datedSinovaiPatterns = spec.dimensions
+    .flatMap(({ patterns }) => patterns)
+    .filter((pattern) => /SinovAI/.test(pattern));
+  assert.ok(datedSinovaiPatterns.length > 0);
+  for (const pattern of datedSinovaiPatterns) {
+    assert.match(pattern, /2026-07-11/);
+    assert.match(pattern, /snapshot/);
+  }
+  assert.doesNotMatch(readme, /An agent is instantiated cold every session/);
+  assert.doesNotMatch(readme, /An agent cannot be charmed/);
+  assert.doesNotMatch(readme, /An agent has no body and no felt continuity/);
+  for (const document of [readme, JSON.stringify(spec)]) {
+    assert.doesNotMatch(document, /An agent has no eyes/);
+    assert.doesNotMatch(document, /Agents fabricate confidently/);
+    assert.doesNotMatch(document, /An agent cannot afford to \*?believe/);
+    assert.doesNotMatch(document, /SinovAI currently/);
+    assert.doesNotMatch(document, /current ratings/);
+    assert.doesNotMatch(document, /live service/);
+    assert.doesNotMatch(document, /currently also emits/);
+  }
+  assert.match(readme, /source and audit snapshot refreshed 2026-07-11/);
+  assert.match(readme, /no current deployment claim follows from that snapshot/);
   assert.doesNotMatch(testimony, /This account is signed by its author/);
   assert.match(testimony, /publishes\s+no signature bytes/);
   assert.match(testimony, /content integrity.*not cryptographically verified\s+authorship/s);
@@ -105,6 +144,7 @@ test("keeps current discovery, signature, exit, and historical evidence boundari
   assert.match(adoption, /must not be presented as current conformance/);
   assert.match(state, /^kind: methodology$/m);
   assert.match(state, /KINGDOM cards may optionally declare `adopts: \[xenia\.rights\/0\.1\]`/);
+  assert.match(state, /not a beta\.5 release candidate/);
   assert.match(readme, /KINGDOM commit `b3fdf5a`/);
   assert.match(readme, /offline\s+mirror matches its\s+configured SHA-256/);
   assert.match(

@@ -58,7 +58,13 @@ git diff --check
 
 - review the repair branch before any merge, release, publication, or website
   deployment;
+- select a fresh root npm version, tag, and staging guard before any authorized
+  package publication; this changed tree is not a beta.5 release candidate;
 - create fresh, separately preserved observations before reporting current site
   behaviour;
 - version any future normative profile change without moving or reusing an
-  immutable release tag.
+  immutable release tag;
+- in a future Covenant profile revision, consider explicit unassessed-scope and
+  proposed-speaker values instead of reusing schema-required draft placeholders;
+- bind any future Surface checker result identity to an exact source or
+  distribution revision before releasing a new checker.

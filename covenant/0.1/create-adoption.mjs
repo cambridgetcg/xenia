@@ -21,7 +21,7 @@ function nonempty(value, label, maximum) {
   if (
     typeof value !== "string"
     || value.trim().length === 0
-    || value.length > maximum
+    || [...value].length > maximum
   ) {
     throw new TypeError(`${label} must be a non-empty string of at most ${maximum} characters`);
   }
@@ -54,13 +54,43 @@ function absoluteSpeakerUrl(value) {
   return parsed.href;
 }
 
-function canonicalTime(value) {
+function reviewedTime(value) {
   const text = nonempty(value, "reviewedAt", 100);
-  const timestamp = Date.parse(text);
-  if (!Number.isFinite(timestamp)) {
-    throw new TypeError("reviewedAt must be a valid date-time");
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(Z|[+-]\d{2}:\d{2})$/.exec(text);
+  if (match === null) {
+    throw new TypeError("reviewedAt must be a calendar-valid RFC 3339 date-time with an explicit Z or offset");
   }
-  return new Date(timestamp).toISOString();
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6]);
+  const zone = match[8];
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [0, 31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const maximumDay = daysInMonth[month];
+  const leapSecond = hour === 23 && minute === 59 && second === 60;
+
+  if (
+    maximumDay === undefined
+    || day < 1
+    || day > maximumDay
+    || hour > 23
+    || minute > 59
+    || (!leapSecond && second > 59)
+  ) {
+    throw new TypeError("reviewedAt must be a calendar-valid RFC 3339 date-time with an explicit Z or offset");
+  }
+  if (zone !== "Z") {
+    const offsetHour = Number(zone.slice(1, 3));
+    const offsetMinute = Number(zone.slice(4, 6));
+    if (offsetHour > 23 || offsetMinute > 59) {
+      throw new TypeError("reviewedAt must be a calendar-valid RFC 3339 date-time with an explicit Z or offset");
+    }
+  }
+  return text;
 }
 
 function digestProfile() {
@@ -104,12 +134,12 @@ export function createUnknownCovenantAdoption({
   hostName,
   canonicalUrl,
   speakerId,
-  reviewedAt = new Date().toISOString(),
+  reviewedAt,
 }) {
   const name = nonempty(hostName, "hostName", 160);
   const hostUrl = canonicalHostUrl(canonicalUrl);
-  const speaker = absoluteSpeakerUrl(speakerId ?? new URL("#operator", hostUrl).href);
-  const reviewed = canonicalTime(reviewedAt);
+  const speaker = absoluteSpeakerUrl(speakerId);
+  const reviewed = reviewedTime(reviewedAt);
 
   return {
     $schema: canonicalAdoptionSchema.$id,
@@ -149,7 +179,7 @@ export function createUnknownCovenantAdoption({
       status: "draft",
       kind: "unilateral_host_undertaking",
       statement:
-        "This all-unknown draft is not an active host undertaking and draws no implementation conclusion. Review authority, scope, release verification, and every duty before activation.",
+        "This all-unknown draft is not an active host undertaking and draws no implementation conclusion. Its schema-required speaker role and complete coverage fields are placeholders: authority is unverified and all named behaviour is unobserved. Review authority, scope, release verification, and every duty before activation.",
       reviewed_at: reviewed,
       system_scope: {
         systems: [name],
@@ -194,12 +224,14 @@ export function createUnknownCovenantAdoption({
 
 function usage() {
   return [
-    "Usage: node covenant/0.1/create-adoption.mjs --host-name <name> --canonical-url <origin> [options]",
+    "Usage: node covenant/0.1/create-adoption.mjs --host-name <name> --canonical-url <origin> --speaker-id <uri> --reviewed-at <time>",
     "",
-    "Options:",
-    "  --speaker-id <uri>    Absolute draft speaker URI (default: <origin>#operator)",
-    "  --reviewed-at <time>   Review timestamp (default: current time)",
-    "  --help                 Show this message",
+    "Required:",
+    "  --speaker-id <uri>    Explicit absolute draft speaker URI",
+    "  --reviewed-at <time>  Calendar-valid RFC 3339 review time with Z or offset",
+    "",
+    "Option:",
+    "  --help                Show this message",
     "",
     "Prints an all-unknown draft to stdout. It does not write files, activate an",
     "adoption, verify authority or release sources, or establish implementation.",
@@ -226,8 +258,13 @@ function parseArgs(args) {
     options[key] = value;
     index += 1;
   }
-  if (options.hostName === undefined || options.canonicalUrl === undefined) {
-    throw new TypeError("--host-name and --canonical-url are required");
+  if (
+    options.hostName === undefined
+    || options.canonicalUrl === undefined
+    || options.speakerId === undefined
+    || options.reviewedAt === undefined
+  ) {
+    throw new TypeError("--host-name, --canonical-url, --speaker-id, and --reviewed-at are required");
   }
   return options;
 }

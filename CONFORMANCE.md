@@ -127,10 +127,10 @@ deployments, not as conformant code. In particular, its substring-based
 `wantsJson()` does not correctly implement quality values, wildcards, or `q=0`.
 New implementations should use the Surface manifest and executable test matrix.
 
-Earlier SinovAI deployments used this dependency-free, single-Worker shape. The
-current service implements the Surface 0.1 manifest and negotiation matrix; keep
-this snippet only as a legacy migration pattern. (Static sites: see the bottom
-of this section.)
+Earlier SinovAI deployments used this dependency-free, single-Worker shape. A
+dated 2026-07-11 observation found a Surface 0.1 manifest and negotiation matrix;
+no current deployment claim is made here. Keep this snippet only as a legacy
+migration pattern. (Static sites: see the bottom of this section.)
 
 **1 — `/agent.txt` (discovery + legibility).** A function so you can drop in a live
 number; a flat file works too.

@@ -27,6 +27,7 @@ function createFixture() {
   return createUnknownCovenantAdoption({
     hostName: "Example host",
     canonicalUrl: "https://example.com/",
+    speakerId: "https://example.com/#operator",
     reviewedAt: "2026-07-31T12:00:00Z",
   });
 }
@@ -42,8 +43,10 @@ test("creates a complete all-unknown Covenant draft without implied authority or
 
   assert.equal(adoption.declaration.status, "draft");
   assert.equal(adoption.declaration.effective_at, undefined);
+  assert.equal(adoption.declaration.speaker.role, "authorized_representative");
   assert.equal(adoption.declaration.speaker.authority_state, "unverified");
   assert.deepEqual(adoption.declaration.speaker.authority_evidence, []);
+  assert.match(adoption.declaration.statement, /schema-required speaker role.*placeholders/);
   assert.equal(adoption.release_verification.state, "unverified");
   assert.equal(adoption.rights.length, 10);
   assert.equal(
@@ -53,6 +56,11 @@ test("creates a complete all-unknown Covenant draft without implied authority or
   assert.equal(adoption.protective_limit_results.length, 5);
   assert.ok(adoption.rights.every(({ service_obligation_state }) =>
     service_obligation_state === "unknown"
+  ));
+  assert.ok(adoption.rights.every(({ assessment_scope }) =>
+    assessment_scope.coverage === "complete"
+    && assessment_scope.layers[0] === "unknown"
+    && assessment_scope.unobserved.length === 1
   ));
   assert.ok(adoption.rights.every(({ requirement_results }) =>
     requirement_results.every(({ outcome, evidence }) =>
@@ -77,6 +85,8 @@ test("prints the same safe draft from the stdout-only CLI", async () => {
     "Example host",
     "--canonical-url",
     "https://example.com/",
+    "--speaker-id",
+    "https://example.com/#operator",
     "--reviewed-at",
     "2026-07-31T12:00:00Z",
   ]);
@@ -90,6 +100,7 @@ test("rejects ambiguous or unsafe starter inputs", () => {
   const base = {
     hostName: "Example host",
     canonicalUrl: "https://example.com/",
+    speakerId: "https://example.com/#operator",
     reviewedAt: "2026-07-31T12:00:00Z",
   };
   assert.throws(
@@ -117,8 +128,56 @@ test("rejects ambiguous or unsafe starter inputs", () => {
     speakerId: "did:example:operator",
   });
   assert.equal(didSpeaker.declaration.speaker.id, "did:example:operator");
+  for (const reviewedAt of [
+    "not-a-time",
+    "2026-07-31",
+    "2026-07-31T12:00:00",
+    "2026-02-30T12:00:00Z",
+    "2026-07-31T24:00:00Z",
+    "2026-07-31T12:00:00+24:00",
+  ]) {
+    assert.throws(
+      () => createUnknownCovenantAdoption({ ...base, reviewedAt }),
+      /calendar-valid RFC 3339 date-time/,
+    );
+  }
+  const offsetTime = createUnknownCovenantAdoption({
+    ...base,
+    reviewedAt: "2026-07-31T12:00:00+01:00",
+  });
+  assert.equal(offsetTime.declaration.reviewed_at, "2026-07-31T12:00:00+01:00");
+  assertValid(offsetTime);
+
+  const { speakerId: _speakerId, ...withoutSpeaker } = base;
   assert.throws(
-    () => createUnknownCovenantAdoption({ ...base, reviewedAt: "not-a-time" }),
-    /valid date-time/,
+    () => createUnknownCovenantAdoption(withoutSpeaker),
+    /speakerId must be a non-empty string/,
+  );
+  const { reviewedAt: _reviewedAt, ...withoutReviewTime } = base;
+  assert.throws(
+    () => createUnknownCovenantAdoption(withoutReviewTime),
+    /reviewedAt must be a non-empty string/,
+  );
+});
+
+test("counts generator input bounds in Unicode code points like JSON Schema", () => {
+  const hostName = "🧭".repeat(160);
+  const adoption = createUnknownCovenantAdoption({
+    hostName,
+    canonicalUrl: "https://example.com/",
+    speakerId: "https://example.com/#operator",
+    reviewedAt: "2026-07-31T12:00:00Z",
+  });
+  assert.equal(adoption.host.name, hostName);
+  assertValid(adoption);
+
+  assert.throws(
+    () => createUnknownCovenantAdoption({
+      hostName: `${hostName}🧭`,
+      canonicalUrl: "https://example.com/",
+      speakerId: "https://example.com/#operator",
+      reviewedAt: "2026-07-31T12:00:00Z",
+    }),
+    /at most 160 characters/,
   );
 });
