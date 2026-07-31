@@ -31,10 +31,13 @@ immutable `0.1.0-beta.5` npm artifact.
 **KINGDOM integration:** a current KINGDOM card may optionally declare
 `adopts: [xenia.rights/0.1]`. That field is a project-level declaration, not an
 automatic consequence of linking XENIA, so this repository's own
-[`kingdom.yaml`](kingdom.yaml) does not claim self-adoption. KINGDOM's current
-canonical reader can confirm the expected local identity marker and source
-layout; it does not authenticate a Git remote, tag, publisher, signature, or
-digest, and it does not prove practice or conformance.
+[`kingdom.yaml`](kingdom.yaml) does not claim self-adoption. As observed in
+KINGDOM commit `b3fdf5a`, its rights reader checks that the configured offline
+mirror matches its configured SHA-256 and reports the configured release,
+commit, source, and licence metadata. That bounded local byte check does not
+independently authenticate the Git remote, tag, publisher, signature, or
+authority of the configured metadata, and it does not prove practice or
+conformance.
 
 **Rights before permissions:** [RIGHTS.md](RIGHTS.md) — the shared baseline for
 humans, agents, and other beings. Rights establish how a being is treated;

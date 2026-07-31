@@ -34,8 +34,8 @@ results expired on 2026-07-12.
   the truth of a claim;
 - current deployment behaviour, whole-service conformance, universal privacy,
   deletion, retention, portability, or safety;
-- Git remote, tag, publisher, signature, or digest provenance from KINGDOM's
-  limited local canonical-reader check.
+- Git remote, tag, publisher, signature, or metadata authority from KINGDOM
+  commit `b3fdf5a`'s bounded local mirror-and-digest check.
 
 ## integration
 

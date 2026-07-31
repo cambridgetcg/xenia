@@ -105,6 +105,12 @@ test("keeps current discovery, signature, exit, and historical evidence boundari
   assert.match(adoption, /must not be presented as current conformance/);
   assert.match(state, /^kind: methodology$/m);
   assert.match(state, /KINGDOM cards may optionally declare `adopts: \[xenia\.rights\/0\.1\]`/);
+  assert.match(readme, /KINGDOM commit `b3fdf5a`/);
+  assert.match(readme, /offline\s+mirror matches its\s+configured SHA-256/);
+  assert.match(
+    readme,
+    /does not\s+independently authenticate the Git remote, tag, publisher, signature, or\s+authority/,
+  );
 });
 
 test("publishes rights as a floor distinct from permissions and credentials", async () => {
