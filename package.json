@@ -32,6 +32,7 @@
     "./covenant-0.1/schema": "./covenant/0.1/covenant.schema.json",
     "./covenant-0.1/adoption-schema": "./covenant/0.1/adoption.schema.json",
     "./covenant-0.1/validate-adoption": "./covenant/0.1/validate-adoption.mjs",
+    "./covenant-0.1/create-adoption": "./covenant/0.1/create-adoption.mjs",
     "./package.json": "./package.json"
   },
   "files": [

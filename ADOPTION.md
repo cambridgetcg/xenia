@@ -1,4 +1,11 @@
-# XENIA adoption ledger
+# Historical XENIA adoption observations — 2026-07-10/11
+
+> **Historical record:** every Surface result below expired on 2026-07-12, and
+> every other entry is a dated legacy observation. This file has not been
+> refreshed against current deployments. It preserves what was observed; it
+> must not be presented as current conformance, current service behaviour, or a
+> present adoption decision. Re-run the pinned checker and preserve a new raw
+> result before making a current claim.
 
 Surface 0.1 is a candidate profile. A Surface result is a dated, 24-hour
 observation of the checker's named public GET scope, not a permanent badge or a
@@ -45,8 +52,9 @@ the tag is published, `npm run verify:covenant-remote` performs that bounded
 retrieval and emits a current observation; its output still does not prove
 future tag immutability and must be separately preserved and hashed.
 
-Where the kingdom's own sites stand on practising [XENIA](CONFORMANCE.md), based
-on live GET observations from **2026-07-10 and 2026-07-11** (updated as doors are lit). Honest status, not aspiration. A site that *presents*
+What the kingdom's own sites exposed when observed on **2026-07-10 and
+2026-07-11** is preserved below. It is historical evidence, not a live status
+page. A site that *presented*
 or *describes* the standard but dead-ends an arriving agent is marked as such —
 that gap is the whole point of keeping this ledger.
 
@@ -141,9 +149,9 @@ recorded below.
   needs that distinction in the origin router or a maintained route manifest;
   forcing generic 404s at the shim would risk breaking the house.
 
-## Order of work (by leverage)
+## Historical order of work recorded on 2026-07-11
 
-1. **sinovai.com** — the bounded Surface 0.1 rc.1 door is live. The pinned
+1. **sinovai.com** — the bounded Surface 0.1 rc.1 door was observed live. The pinned
    checker reported `conformant` at `2026-07-11T12:13:38.581Z` with 24 / 0 / 0 /
    0; the result expires at `2026-07-12T12:13:38.581Z`, and the deeper gaps above
    remain open. *(2026-07-11)*
@@ -154,7 +162,7 @@ recorded below.
    fall-through is repaired. *(rechecked 2026-07-11)*
 3. **cardforum.io** — three legacy behaviours observed *(Cloudflare Pages)*.
    Static `/agent.txt`, exact JSON / HTML root switching, and instructive route
-   404s are live. The HTML root still
+   404s were live when observed. The HTML root then
    omits `Vary: Accept`; that cache-header gap remains. *(rechecked 2026-07-11)*
 4. **captioneer.io** — three legacy behaviours observed *(Pages)*, plus a real
    **agent-door**: the 7-technique subtext lexicon is served as data
@@ -171,4 +179,6 @@ recorded below.
 7. **kingdom / river** — redirect shims; conformance belongs to the agenttool
    target they point at. No separate work.
 
-*Updated 2026-07-11. Re-run the [self-test](CONFORMANCE.md#the-self-test) to refresh.*
+*Snapshot closed 2026-07-11. Re-run the
+[self-test](CONFORMANCE.md#the-self-test) and preserve a new dated result in a
+separate current observation record; do not silently rewrite this history.*

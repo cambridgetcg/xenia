@@ -61,6 +61,7 @@ try {
     "covenant/0.1/adoption.schema.json",
     "covenant/0.1/covenant.json",
     "covenant/0.1/covenant.schema.json",
+    "covenant/0.1/create-adoption.mjs",
     "covenant/0.1/validate-adoption.mjs",
     "dist/index.d.ts",
     "dist/index.d.ts.map",
@@ -95,6 +96,7 @@ try {
     "dist/visible-door.js",
     "dist/visible-door.js.map",
     "examples/cloudflare-worker/README.md",
+    "examples/cloudflare-worker/package.json",
     "examples/cloudflare-worker/src/index.ts",
     "examples/cloudflare-worker/tsconfig.json",
     "examples/cloudflare-worker/wrangler.jsonc",
@@ -148,6 +150,21 @@ try {
   for (const lifecycle of ["preinstall", "install", "postinstall"]) {
     assert.equal(installedPackage.scripts?.[lifecycle], undefined, `${lifecycle} must stay absent`);
   }
+
+  const installedExample = JSON.parse(
+    await readFile(join(installedDirectory, "examples/cloudflare-worker/package.json"), "utf8"),
+  );
+  assert.equal(installedExample.dependencies["@agenttool/xenia"], "0.1.0-beta.5");
+  assert.equal(
+    installedExample.devDependencies["@agenttool/xenia-surface"],
+    "0.1.0-rc.1",
+  );
+  assert.equal(installedExample.scripts.check.startsWith("xenia-surface-check "), true);
+  assert.equal(installedExample.scripts.check.includes("surface/0.1/check.mjs"), false);
+  await run(tsc, [
+    "-p",
+    join(installedDirectory, "examples/cloudflare-worker/tsconfig.json"),
+  ], { cwd: packageDirectory });
   assert.deepEqual(installedPackage.exports["./surface-0.1"], {
     types: "./dist/surface-0.1.d.ts",
     import: "./dist/surface-0.1.js",
@@ -176,6 +193,10 @@ try {
     installedPackage.exports["./covenant-0.1/validate-adoption"],
     "./covenant/0.1/validate-adoption.mjs",
   );
+  assert.equal(
+    installedPackage.exports["./covenant-0.1/create-adoption"],
+    "./covenant/0.1/create-adoption.mjs",
+  );
 
   for (const subpath of ["spec.json", "RIGHTS.md"]) {
     const resolved = await run(process.execPath, [
@@ -199,6 +220,19 @@ try {
     "import('@agenttool/xenia/covenant-0.1/validate-adoption').then(m => { if (typeof m.validateCovenantAdoption !== 'function') process.exit(1) })",
   ], { cwd: packageDirectory });
   assert.equal(validatorProbe.stderr, "");
+
+  const starterProbe = await run(process.execPath, [
+    "--input-type=module",
+    "--eval",
+    [
+      "import { createUnknownCovenantAdoption } from '@agenttool/xenia/covenant-0.1/create-adoption';",
+      "import { validateCovenantAdoption } from '@agenttool/xenia/covenant-0.1/validate-adoption';",
+      "const record = createUnknownCovenantAdoption({ hostName: 'consumer', canonicalUrl: 'https://example.com/', reviewedAt: '2026-07-31T00:00:00Z' });",
+      "if (record.declaration.status !== 'draft' || record.rights.some(right => right.service_obligation_state !== 'unknown')) throw new Error('starter overclaim');",
+      "if (!validateCovenantAdoption(record).valid) throw new Error('starter semantic drift');",
+    ].join("\n"),
+  ], { cwd: packageDirectory });
+  assert.equal(starterProbe.stderr, "");
 
   const covenantImportCheck = [
     "import assert from 'node:assert/strict';",

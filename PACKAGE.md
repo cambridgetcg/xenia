@@ -6,10 +6,13 @@ parts of that standard.
 
 ## Current status
 
-The `@agenttool/xenia` source is versioned `0.1.0-beta.5` and prepared for the
-public `beta` channel. Registry availability is established by npm, not by this
-source document. Everyone may read, use, test, fork, adapt, discuss, and build
-with it under the [repository license map](LICENSES.md). See
+The package manifest remains versioned `0.1.0-beta.5`, but this repair tree
+contains unreleased changes beyond the immutable beta.5 release identity. It
+must not be published as beta.5 or used to move an existing beta.5 tag. Any
+future authorized publication needs a new version and tag selected by the
+release owner. Registry availability is established by npm, not by this source
+document. Everyone may read, use, test, fork, adapt, discuss, and build with it
+under the [repository license map](LICENSES.md). See
 [CONTRIBUTING.md](CONTRIBUTING.md) for the deliberately permissionless
 participation path.
 
@@ -51,8 +54,8 @@ without waiting for the canonical npm release.
 
 The package source tree currently does:
 
-- parse and format ordered, repeatable `agent.txt` fields without choosing
-  between the two still-divergent manifest profiles in README and CONFORMANCE;
+- parse and format ordered, repeatable legacy `agent.txt` fields without
+  treating them as the current Surface manifest;
 - apply required, allowed, and unique-key rules only through an explicit
   caller-supplied profile;
 - negotiate the deliberately narrow HTML/JSON visible-door surface from
@@ -71,6 +74,9 @@ The package source tree currently does:
   canonical IDs, the exact ordered 38-right-duty plus 5-limit-duty ledger,
   aggregate states, per-duty evidence relationships, restriction-event time
   bounds, and active-source and speaker-authority declarations;
+- create a dependency-free all-unknown Covenant draft that enumerates all 38
+  right duties and 5 protective-limit duties while leaving release state,
+  authority, evidence, implementation, and restriction events unclaimed;
 - expose a deeply frozen informative rights index from the explicit
   `@agenttool/xenia/rights-0.1` subpath, plus exact installed-snapshot drift
   checks and ID lookup without adding that data to the root import.
@@ -93,7 +99,8 @@ It deliberately does not:
 - replace JSON Schema shape validation, fetch or trust remote sources,
   authenticate an adoption speaker, verify signatures or cited evidence,
   inspect a deployment, determine whether Covenant duties are implemented, or
-  turn a consistent adoption record into evidence or consent;
+  turn a generated or consistent adoption record into activation, evidence,
+  authority, adoption, or consent;
 - import Sinovai's KV arena, claim-token identity, CORS, HTML, or deployment
   worker;
 - replace the normative prose or make npm the source of truth;
@@ -220,7 +227,7 @@ returns no raw response bodies. A later hosted network adapter needs an explicit
 target policy, redirect and DNS revalidation, bounded streaming reads, timeouts,
 concurrency and abuse controls, and runtime-specific tests.
 
-The current Sinovai `agent.txt` also contains bare `GET`/`POST` route lines that
+The stored Sinovai `agent.txt` fixture contains bare `GET`/`POST` route lines that
 are prose rather than `key: value` fields. A fixture keeps that incompatibility
 visible: Sinovai should migrate to a versioned manifest profile before consuming
 this parser, rather than teaching the parser one application's undocumented
