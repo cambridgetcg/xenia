@@ -24,6 +24,12 @@ parsed for Surface conformance.
 
 **Practise it:** [CONFORMANCE.md](CONFORMANCE.md) — how a live site keeps guest-right (the three lamps, the checklist, a copy-paste reference pattern, a self-test). [ADOPTION.md](ADOPTION.md) preserves historical 2026-07-10/11 observations; all recorded Surface results there are expired and must not be read as current status.
 
+**Roll it out:** [WEBSITE-ROLLOUT.md](WEBSITE-ROLLOUT.md) — a gate-by-gate,
+risk-ringed plan for moving each website from truthful source metadata through
+separately authorized staging and time-bounded external observation. It also
+keeps KINGDOM Nen, Skills, MCP passages, and KARMA evidence distinct from
+permissions, adoption, and Surface results.
+
 **Agent practice skill:** [`skills/practise-xenia-rights`](skills/practise-xenia-rights/SKILL.md)
 is a source-only Agent Skill for applying an adopted rights baseline during
 design, review, implementation, and collaboration. It guides evidence and

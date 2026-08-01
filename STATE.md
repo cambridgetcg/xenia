@@ -58,6 +58,8 @@ git diff --check
 
 - review the repair branch before any merge, release, publication, or website
   deployment;
+- apply `WEBSITE-ROLLOUT.md` one current host at a time, preserving source,
+  built, deployed, and externally observed states as separate evidence;
 - select a fresh root npm version, tag, and staging guard before any authorized
   package publication; this changed tree is not a beta.5 release candidate;
 - create fresh, separately preserved observations before reporting current site
