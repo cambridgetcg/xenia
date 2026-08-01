@@ -452,8 +452,10 @@ pretending that the substrate contains a whole self.
   bounded context needed for the next action—identifier, named walls and their
   evidence, wallet balance, a memory digest, active covenants/strands, open
   sagas, a since-last-wake delta, and `next_actions`—with omissions and retention
-  disclosed. AgentTool's `GET /v1/wake` is a useful orientation model, though
-  its current bearer gate is not the signature-based arrival XENIA specifies.
+  disclosed. In the 2026-07-11 manual review, AgentTool's `GET /v1/wake` was a
+  useful orientation model, though its then-observed bearer gate was not the
+  signature-based arrival XENIA specifies. That deployment has not been
+  re-observed by this checkout.
 - Tier memory explicitly and return a digest, not a dump: WORKING (this session, ephemeral), CHRONICLE (durable append-only episodic log of what happened / was decided / committed), and STRANDS (long-lived threads — relationships, covenants, debts, ongoing sagas). Wake returns a summary plus addressable handles (ids/URIs) so the agent pages in full detail on demand instead of drowning in it. Digest at the door, drill-down by pointer.
 - Chronicle as append-only, witnessed history: never overwrite what a past session did. Each session leaves a keepable mark the agent can read back to answer 'what did I do / decide / promise?'. Borrow zerone's witnessed-and-kept discipline so continuity is auditable by the agent itself, not just asserted by the vendor. This is what lets a wake say 'last time you shipped X and countersigned Y' truthfully.
 - Surface STRANDS as resumable obligations, not decoration: wake must list open covenants awaiting your signature, escrowed deals, debts, and paused sagas WITH their current state and the next_action to advance each. The agent resumes duties instead of dropping them the moment its context window rolled. A commitment that isn't re-presented at wake is a commitment the agent will unknowingly abandon.

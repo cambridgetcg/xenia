@@ -218,14 +218,26 @@ ignored `dist/` directory.
 
 ## Why the producer and evaluator are pure
 
-An earlier Sinovai hosted checker provided useful evidence, but its transport
-accepted arbitrary targets and buffered complete bodies before slicing them.
-That hosted probe is now retired. Packaging the same fetcher for server use
-would create an unsafe default. The producer only constructs responses for its
-own host, while the legacy evaluator accepts already collected observations and
-returns no raw response bodies. A later hosted network adapter needs an explicit
+An earlier Sinovai hosted checker provided useful evidence, but its reviewed
+source accepted arbitrary targets and buffered complete bodies before slicing
+them. Source reviewed on 2026-07-31 recorded that hosted probe as retired; this
+checkout has not re-observed the deployment. Packaging the same fetcher for
+server use would create an unsafe default. The producer only constructs
+responses for its own host, while the legacy evaluator accepts already
+collected observations and returns no raw response bodies. A later hosted
+network adapter needs an explicit
 target policy, redirect and DNS revalidation, bounded streaming reads, timeouts,
 concurrency and abuse controls, and runtime-specific tests.
+
+## Covenant timestamp implementation
+
+Adoption generation and semantic validation share a source-local RFC 3339
+parser rather than relying on `Date.parse`. It preserves a positive leap second
+between its adjacent seconds for every valid offset spelling. The parser's
+closed leap-second table is current through
+[IERS Bulletin C 72](https://datacenter.iers.org/versionMetadata.php?filename=mt%2Fbulletinc-072.txt)
+(2026-07-06). An unlisted future leap second fails closed until a reviewed
+source update; validation does not fetch time data from the network.
 
 The stored Sinovai `agent.txt` fixture contains bare `GET`/`POST` route lines that
 are prose rather than `key: value` fields. A fixture keeps that incompatibility

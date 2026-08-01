@@ -102,7 +102,7 @@ These are source-work states, not public deployment states.
 
 | Repository slice | Current bounded result | Required next gate |
 | --- | --- | --- |
-| XENIA framework repair | Release, adoption, historical-observation, package, and KINGDOM-rights claims are repaired on a local review branch | Independent review, then separately authorized integration and new release identity |
+| XENIA framework repair | A local branch bounds release, adoption, package, KINGDOM-rights, and dated historical-observation claims; its tests are source evidence only | Independent review, then separately authorized integration and new release identity |
 | TaxSorted calculator | A source-only Surface manifest and import-graph boundary keep dormant HMRC, network, and persistent-storage paths outside the calculator | Implement real HTTP negotiation/problems, stage the built artifact, and observe it; filing remains undeclared |
 | ai-love | Public/private file boundaries and source metadata are being contained locally | Resolve mutable-record serialization, shared private authentication, honest deletion UI, and explicit deploy modes before Surface work or deployment |
 | CashLoom | The historical draft is bounded to its dated system and current custom MONEYWORLD discovery is not called XENIA Surface | Create a new current-scope Covenant assessment, then implement and observe a release-pinned Surface; payments remain a higher-risk layer |

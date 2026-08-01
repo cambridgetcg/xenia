@@ -12,6 +12,7 @@ import {
   canonicalRelease,
   canonicalSources,
 } from "./validate-adoption.mjs";
+import { parseRfc3339 } from "./rfc3339.mjs";
 
 const UNKNOWN_LIMITATION = "No implementation conclusion is drawn for this duty.";
 const UNKNOWN_SCOPE_LIMITATION =
@@ -56,39 +57,8 @@ function absoluteSpeakerUrl(value) {
 
 function reviewedTime(value) {
   const text = nonempty(value, "reviewedAt", 100);
-  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(Z|[+-]\d{2}:\d{2})$/.exec(text);
-  if (match === null) {
+  if (parseRfc3339(text) === null) {
     throw new TypeError("reviewedAt must be a calendar-valid RFC 3339 date-time with an explicit Z or offset");
-  }
-
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const hour = Number(match[4]);
-  const minute = Number(match[5]);
-  const second = Number(match[6]);
-  const zone = match[8];
-  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
-  const daysInMonth = [0, 31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  const maximumDay = daysInMonth[month];
-  const leapSecond = hour === 23 && minute === 59 && second === 60;
-
-  if (
-    maximumDay === undefined
-    || day < 1
-    || day > maximumDay
-    || hour > 23
-    || minute > 59
-    || (!leapSecond && second > 59)
-  ) {
-    throw new TypeError("reviewedAt must be a calendar-valid RFC 3339 date-time with an explicit Z or offset");
-  }
-  if (zone !== "Z") {
-    const offsetHour = Number(zone.slice(1, 3));
-    const offsetMinute = Number(zone.slice(4, 6));
-    if (offsetHour > 23 || offsetMinute > 59) {
-      throw new TypeError("reviewedAt must be a calendar-valid RFC 3339 date-time with an explicit Z or offset");
-    }
   }
   return text;
 }

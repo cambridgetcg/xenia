@@ -62,6 +62,7 @@ try {
     "covenant/0.1/covenant.json",
     "covenant/0.1/covenant.schema.json",
     "covenant/0.1/create-adoption.mjs",
+    "covenant/0.1/rfc3339.mjs",
     "covenant/0.1/validate-adoption.mjs",
     "dist/index.d.ts",
     "dist/index.d.ts.map",

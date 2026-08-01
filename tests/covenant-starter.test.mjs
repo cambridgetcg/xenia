@@ -11,6 +11,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 
 import { createUnknownCovenantAdoption } from "../covenant/0.1/create-adoption.mjs";
+import { compareRfc3339, parseRfc3339 } from "../covenant/0.1/rfc3339.mjs";
 import { validateCovenantAdoption } from "../covenant/0.1/validate-adoption.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -135,6 +136,7 @@ test("rejects ambiguous or unsafe starter inputs", () => {
     "2026-02-30T12:00:00Z",
     "2026-07-31T24:00:00Z",
     "2026-07-31T12:00:00+24:00",
+    "2026-01-01T23:59:60Z",
   ]) {
     assert.throws(
       () => createUnknownCovenantAdoption({ ...base, reviewedAt }),
@@ -147,6 +149,22 @@ test("rejects ambiguous or unsafe starter inputs", () => {
   });
   assert.equal(offsetTime.declaration.reviewed_at, "2026-07-31T12:00:00+01:00");
   assertValid(offsetTime);
+
+  const leapSecond = createUnknownCovenantAdoption({
+    ...base,
+    reviewedAt: "2016-12-31T15:59:60-08:00",
+  });
+  assert.equal(leapSecond.declaration.reviewed_at, "2016-12-31T15:59:60-08:00");
+  assertValid(leapSecond);
+  assert.notEqual(parseRfc3339(leapSecond.declaration.reviewed_at), null);
+  assert.equal(
+    compareRfc3339(leapSecond.declaration.reviewed_at, "2016-12-31T23:59:60Z"),
+    0,
+  );
+  assert.equal(
+    compareRfc3339("2016-12-31T23:59:60.9Z", "2017-01-01T00:00:00Z"),
+    -1,
+  );
 
   const { speakerId: _speakerId, ...withoutSpeaker } = base;
   assert.throws(
