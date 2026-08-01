@@ -98,14 +98,17 @@ accounts, and payment paths are unreachable from its declared surface.
 
 ## Current local pilots
 
-These are source-work states, not public deployment states.
+These are source-work states, not public deployment states. **APPROVED** means
+an independent source review accepted only the bounded result at the listed
+local revision; it does not establish public Surface behaviour, adoption,
+integration, or authority to publish or deploy.
 
 | Repository slice | Current bounded result | Required next gate |
 | --- | --- | --- |
-| XENIA framework repair | A local branch bounds release, adoption, package, KINGDOM-rights, and dated historical-observation claims; its tests are source evidence only | Independent review, then separately authorized integration and new release identity |
-| TaxSorted calculator | A source-only Surface manifest and import-graph boundary keep dormant HMRC, network, and persistent-storage paths outside the calculator | Implement real HTTP negotiation/problems, stage the built artifact, and observe it; filing remains undeclared |
-| ai-love | Public/private file boundaries and source metadata are being contained locally | Resolve mutable-record serialization, shared private authentication, honest deletion UI, and explicit deploy modes before Surface work or deployment |
-| CashLoom | The historical draft is bounded to its dated system and current custom MONEYWORLD discovery is not called XENIA Surface | Create a new current-scope Covenant assessment, then implement and observe a release-pinned Surface; payments remain a higher-risk layer |
+| XENIA framework repair | Implementation through exact source revision `5f06ff3` is independently **APPROVED** for bounded release, adoption, package, KINGDOM-rights, and dated historical-observation repairs; its tests remain source evidence only | Separately authorized integration and a new release identity |
+| TaxSorted calculator | Exact source-only RC1 revision `30213a9` is independently **APPROVED**: its manifest and import boundary are offline-buildable, print/PDF boundaries are disclosed, and build bytes are not claimed deterministic; dormant HMRC, network, and app-managed persistent-storage paths remain outside the calculator | Implement real HTTP negotiation/problems, pin the staged artifact actually built, and observe it externally; filing remains undeclared |
+| ai-love | Exact source revision `3f6d3f1` is independently **APPROVED** for bounded containment: one authenticated mutation queue, revision-bound and terminal-safe review, symlink-safe public QA staging, and an explicit public-file commit path with hooks, filesystem monitoring, and signing disabled. Its manifest still records deployment as unknown; configured Git filters and a replaced Git binary remain outside this result | Complete current lifecycle, backup, hosting, and authority inventory; implement Surface negotiation/problems against the built artifact, then stage and observe it externally under separate authorization |
+| CashLoom | Exact revision `f1ed50d` is independently **APPROVED** only for the dated historical beta4 identity; current MONEYWORLD discovery is not XENIA Surface | Create a new current-scope Covenant assessment for MONEYWORLD, then implement and observe a release-pinned Surface; payments remain a higher-risk layer |
 | Sites listed only in `ADOPTION.md` | Historical 2026-07-10/11 evidence only | Re-inventory and re-observe each current origin before choosing a ring or making any present-tense claim |
 
 ## KINGDOM, Nen, Skills, and MCP
