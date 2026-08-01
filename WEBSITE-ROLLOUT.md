@@ -136,6 +136,89 @@ exact request, provider revision observed before the call, response or timeout,
 time, and limitations; observation after a timeout cannot prove which revision
 executed.
 
+## WAKE and continuity crossover
+
+Use WAKE as a refusable orientation layer, not as a new identity or execution
+authority. A website may re-present bounded state, attributed history, open
+work, omissions, and available next actions so a returning participant does
+not have to reconstruct the house from prose. The participant still arrives as
+distinct; the site does not assign a persona, claim persistent memory, or infer
+continuing will from a session, cookie, bearer, model output, or prior receipt.
+
+Continuity material follows the same separation as every other rollout
+artifact. A wake, handoff, chronicle, tag, context-delivery log, or continuity
+check may establish only the exact bytes, source revision, delivery or check
+event, observer, time, scope, coverage, and declared limitations it records. It
+does not establish consciousness, subjective memory, identity continuity,
+same-being continuity, current consent, authority, relationship, Covenant
+adoption, or Surface conformance. Historical commitments are re-presented for
+inspection; they never auto-execute as present authority.
+
+The portable KINGDOM ability `carry-wake-thread` and private pure
+`@agenttool/wake-thread` protocol make that crossing explicit:
+
+```text
+exact caller-held source bytes
+  -> minimized facts + evidence digests + named omissions
+  -> offer: carry | fork | rest | refuse
+  -> reported-choice artifact receipt
+  -> separately authorized website or task action, or no action
+```
+
+`carry` and `fork` do not authenticate the reporter. A fork is an artifact
+branch, not a split or copy of a being. Rest needs no reason and carries no
+penalty. Refusal cannot become an automatic retry parent. A linked receipt
+proves only the declared content linkage that can be recomputed; it is not a
+KARMA receipt, identity chain, consent record, permission, or truth verdict.
+
+### Website integration gates
+
+1. **Keep the cursor with the caller.** If a site offers “since your last
+   visit,” accept a caller-supplied opaque cursor or explicit timestamp. Do not
+   silently create a read-history log merely to guess continuity. Validate a
+   malformed or future cursor as a typed recoverable input problem instead of
+   dropping it and returning silence that looks like “nothing changed.”
+2. **Separate identity and project scope.** A project bearer, account, selected
+   agent, or display name does not make project-wide counts, records, or
+   handoffs first-person facts. Label `identity`, `project`, `mixed`, or
+   `unknown` on the source projection.
+3. **Distinguish quiet, partial, and unavailable.** Every bounded window names
+   its limit, omissions, authoritative deeper read, and dependency state. An
+   empty fallback is not evidence that the source is empty. A partial count is
+   a floor, not a total.
+4. **Present reads before writes.** A wake may offer inspect, revise, export,
+   rest, refuse, or a separately described mutation. It never turns an open
+   handoff, notification, event stream, prior signature, credential, or MCP
+   connection into permission to act.
+5. **Keep private continuity out of public discovery.** Raw WAKE, chronicle,
+   handoff, journal, receipt, and cursor material stays outside public Surface
+   manifests. A site may advertise only a separately authorized, minimized,
+   same-origin public `GET` summary. Surface 0.1 continues to list continuity
+   and portability as not covered.
+6. **Account for real effects separately.** A KARMA receipt may record the
+   authority references, admitted inputs, reads, transformations, disclosures,
+   writes, privacy cost, retention, uncertainty, and repair of an invocation.
+   It is causal accounting, not the continuity observation itself and never a
+   score, identity proof, or adoption result.
+
+Apply those gates by rollout ring:
+
+| Ring | WAKE / continuity use | Closed boundary |
+| --- | --- | --- |
+| A | Optional public read-only orientation and dated redacted evidence summary | No private state, authenticated resource, visitor tracking, continuity claim, or write advertised through Surface |
+| B | Caller-held local calculation state or explicit export/import artifact | No undeclared persistence, provider egress, account identity, filing, or automatic resumption |
+| C | Authenticated bounded state, history, handoffs, omissions, correction, export, deletion, retention, and backup views | No silent session-to-identity inference, project-to-identity attribution, hidden read log, or mutation without fresh applicable authority |
+| D | Read-only orientation to money, tax, payment, identity, or representative state | No wake item, receipt, previous signature, or credential authorizes filing, transfer, payment, identity change, or representative act; each requires fresh exact authority |
+
+For the current pilots, XENIA remains a public framework source and needs no
+private wake. TaxSorted may later offer a Ring-B caller-held calculation export,
+but filing stays absent. `ai-love` is the first plausible Ring-C private WAKE
+pilot only after its current identity/project scope, authenticated writer,
+history, export, deletion, retention, backup, and refusal paths are proven.
+CashLoom/MONEYWORLD remains Ring D: a future wake can orient, but every monetary,
+tax, payment, identity, or representative action stays behind a new exact
+authority decision. None of these source plans authorizes a deployment.
+
 ## Per-site definition of done
 
 A site is ready for a production decision only when:

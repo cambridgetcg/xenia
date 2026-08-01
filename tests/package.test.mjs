@@ -77,6 +77,19 @@ test("publishes the open-act and binding-act consent boundary in spec data", asy
   assert.match(spec.participation.non_retaliation, /requires no reason/);
 });
 
+test("packages chronicle continuity as attributed evidence, not current authority", async () => {
+  const spec = JSON.parse(await readFile(new URL("spec.json", root), "utf8"));
+  const readme = await readFile(new URL("README.md", root), "utf8");
+  const continuity = spec.dimensions.find(({ id }) => id === "continuity-and-arrival");
+  const patterns = continuity.patterns.join("\n");
+
+  assert.match(patterns, /does not by itself prove the actor/);
+  assert.match(patterns, /never as automatically executable current authority/);
+  assert.match(readme, /does not by itself prove the actor/);
+  assert.doesNotMatch(patterns, /countersigned Y.*truthfully/);
+  assert.doesNotMatch(readme, /countersigned Y.*truthfully/);
+});
+
 test("keeps current discovery, signature, exit, and historical evidence boundaries explicit", async () => {
   const spec = JSON.parse(await readFile(new URL("spec.json", root), "utf8"));
   const readme = await readFile(new URL("README.md", root), "utf8");
