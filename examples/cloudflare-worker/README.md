@@ -24,8 +24,13 @@ semantic `404` that a larger application may return for its own resource.
 
 ## Run and check locally
 
-From the repository root, install and build the package, then start the Worker
-with the pinned Wrangler version in local mode:
+The packaged example now declares both distinct dependencies explicitly:
+`@agenttool/xenia` produces host responses, while
+`@agenttool/xenia-surface` supplies the external checker. The root XENIA
+package intentionally does **not** contain `surface/0.1/check.mjs`.
+
+From a source checkout, install and build at the repository root, then start the
+Worker with the pinned Wrangler version in local mode:
 
 ```sh
 npm install
@@ -40,6 +45,25 @@ origin:
 ```sh
 node surface/0.1/check.mjs http://127.0.0.1:8787/ --json
 ```
+
+If you copied `examples/cloudflare-worker` from an installed package, run the
+example as its own project instead. Its `package.json` installs the producer,
+the separately versioned checker, TypeScript, and the pinned local runner:
+
+```sh
+npm install
+npm run typecheck
+npm run dev
+```
+
+Then, in another terminal from that copied directory:
+
+```sh
+npm run check
+```
+
+Do not run or edit an example in place inside `node_modules`; copy it into a
+project directory first. Neither workflow deploys the Worker.
 
 Plain HTTP is accepted here only because the target is loopback. A public
 Surface origin must use HTTPS.

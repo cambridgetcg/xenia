@@ -691,6 +691,58 @@ test("evidence cannot postdate the review that relies on it", () => {
   );
 });
 
+test("nested evidence artifacts cannot postdate their evidence or review", () => {
+  const futureArtifact = adoptionFixture();
+  const assessment = implementRight(futureArtifact);
+  assessment.requirement_results[0].evidence.observed_at = "2026-07-12T00:00:00Z";
+  assessment.requirement_results[0].evidence.artifacts[0].observed_at =
+    "2026-07-13T00:00:01Z";
+
+  assertSchemaValid(futureArtifact);
+  assertSemanticIssue(
+    futureArtifact,
+    "artifact_after_evidence",
+    ".rights[0].requirement_results[0].evidence.artifacts[0].observed_at",
+  );
+  assertSemanticIssue(
+    futureArtifact,
+    "artifact_after_review",
+    ".rights[0].requirement_results[0].evidence.artifacts[0].observed_at",
+  );
+});
+
+test("a leap-second review cannot bypass evidence chronology", () => {
+  const future = adoptionFixture();
+  future.declaration.reviewed_at = "2016-12-31T15:59:60-08:00";
+  const assessment = implementRight(future);
+  for (const result of assessment.requirement_results) {
+    result.evidence.observed_at = "2017-01-01T00:00:01Z";
+    result.evidence.expires_at = "2017-01-02T00:00:00Z";
+    result.evidence.artifacts[0].observed_at = "2017-01-01T00:00:01Z";
+  }
+
+  assertSchemaValid(future);
+  assertSemanticIssue(
+    future,
+    "evidence_after_review",
+    ".rights[0].requirement_results[0].evidence.observed_at",
+  );
+});
+
+test("an unannounced leap second cannot bypass chronology", () => {
+  const invalid = adoptionFixture();
+  invalid.declaration.reviewed_at = "2026-01-01T23:59:60Z";
+
+  // ajv-formats accepts the leap-second shape; the installed profile must also
+  // establish that IERS announced the represented instant.
+  assertSchemaValid(invalid);
+  assertSemanticIssue(
+    invalid,
+    "timestamp_invalid",
+    ".declaration.reviewed_at",
+  );
+});
+
 test("a pass cannot rely on evidence expired by declaration review", () => {
   const expired = adoptionFixture();
   const assessment = implementRight(expired);
@@ -733,6 +785,32 @@ test("restriction event timestamps are checked independently of JSON shape", () 
     invalidReview,
     "review_after_expiry",
     ".protective_limit_results[0].restriction_events[0].review_at",
+  );
+
+  const invalidEvidence = adoptionFixture();
+  const evidenceEvent = restrictionEvent("restriction-003");
+  evidenceEvent.evidence[0].observed_at = "2026-01-01T23:59:60Z";
+  invalidEvidence.protective_limit_results[0].restriction_events.push(evidenceEvent);
+
+  assertSchemaValid(invalidEvidence);
+  assertSemanticIssue(
+    invalidEvidence,
+    "timestamp_invalid",
+    ".protective_limit_results[0].restriction_events[0].evidence[0].observed_at",
+  );
+
+  const futureStart = adoptionFixture();
+  const futureEvent = restrictionEvent("restriction-004");
+  futureEvent.started_at = "2026-07-13T00:00:01Z";
+  futureEvent.review_at = "2026-07-14T00:00:00Z";
+  futureEvent.expires_at = "2026-07-15T00:00:00Z";
+  futureStart.protective_limit_results[0].restriction_events.push(futureEvent);
+
+  assertSchemaValid(futureStart);
+  assertSemanticIssue(
+    futureStart,
+    "restriction_started_after_review",
+    ".protective_limit_results[0].restriction_events[0].started_at",
   );
 });
 

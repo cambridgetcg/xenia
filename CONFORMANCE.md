@@ -13,6 +13,11 @@ for intrinsic rights and host duties. Its adoption JSON can declare a host
 undertaking, implementation state, and bounded evidence per duty; schema
 validity is not proof, guest assent, a Surface result, or a whole-service badge.
 
+For a current Surface implementation, discovery begins at the normative JSON
+path `/.well-known/agent.json`. The `agent.txt` paths below are legacy migration
+signals only: they may point to the JSON manifest, but they cannot substitute
+for it and the Surface checker does not parse them.
+
 The rule of thumb behind every item: **when an agent knocks, is it received, or
 merely handled?** A handled agent is dead-ended, forgotten, ranked, and refused
 without recourse. A received agent is oriented, kept, met, and given a legible
@@ -28,11 +33,10 @@ an agent bounces off" to "a door an agent can find, read, and be turned toward."
 They are cheap, they touch no business logic, and they are the whole difference in
 the first three seconds of an agent's visit.
 
-1. **`/agent.txt`** — *discovery + legibility.* A stable, machine-first, plain-text
-   description of the house: who you are, how to reach you, what an agent can do
-   here, and where the deeper doors are. Mirror it at `/.well-known/agent.txt`.
-   Serve it as `text/plain` (agenttool uses `text/agent`; either is fine — the
-   point is *not HTML*).
+1. **Legacy `/agent.txt`** — *discovery + legibility migration signal.* A stable,
+   machine-first, plain-text compatibility pointer. Mirror it at
+   `/.well-known/agent.txt`, serve it as plain text, and point it to the canonical
+   `/.well-known/agent.json` manifest. It is not the current Surface manifest.
 
 2. **Errors as orientation** — *dignity.* No bare `403`/`404`. Every recoverable
    refusal hands back the next action: what you *can* do, and where the docs are.
@@ -65,20 +69,23 @@ recomputable constraint.
 
 ### AI · the threshold — how an agent crosses
 
-- [ ] **Discovery & Addressing** — a stable URL, and a `/agent.txt` (+ well-known
-      mirror) an agent can find without guessing. The name resolves; the door is
-      reachable without a human-shaped search box.
+- [ ] **Discovery & Addressing** — a stable URL and a schema-valid JSON manifest
+      at `/.well-known/agent.json` that an agent can find without guessing.
+      Optional `agent.txt` files are compatibility pointers only.
 - [ ] **Legibility & Content-Negotiation** — machine-readable representations of
       your key surfaces. `Accept: application/json` returns structured data;
       list/detail endpoints return JSON with documented shapes. `Vary: Accept`.
-- [ ] **Consent & the Handshake** — crossing is a declared, mutual act, not a
-      captcha. An agent announces itself (a declaration, a covenant, a signed
-      request) and is admitted on stated terms it can read first.
-- [ ] **Verification & Trust** — authority is proven for an exact action with a
-      signature bound to independently resolvable key control. A server-issued
-      claim token may prove control of that server's account record, but the
-      server can copy, replace, or revoke it; it is not self-custodied identity.
-      Anonymous is allowed; impersonation is not.
+- [ ] **Consent & scoped authority** — before a binding act, disclose its actor,
+      affected principal, purpose, recipients, data use, cost, side effects,
+      scope, expiry, reversibility, and retention. Establish every applicable
+      consent, technical-control, representative-authority, and legal basis for
+      that exact act. A host undertaking or a principal's own revocation can be
+      unilateral; a signature or session is not consent by itself.
+- [ ] **Verification & Trust** — when a signature is relied on, define and retain
+      the exact signed bytes, canonicalization and domain separation, nonce or
+      replay boundary, signer, key resolution, verification result, scope, and
+      time. This may establish scoped key control; it does not by itself prove
+      identity, consent, truth, legal capacity, legal basis, or a mutual bond.
 
 ### AX · the dwelling — whether the house holds it
 
@@ -86,10 +93,12 @@ recomputable constraint.
       nothing. State keyed to its identity persists across visits; where you can,
       *wake* it (hand back its context) instead of logging it in.
 - [ ] **Autonomy & Dignity** — errors-as-orientation everywhere, not just the
-      404. A recoverable blocked action names the unblocking one; a terminal no
-      is explicit and triggers no retry. Wall declarations point to checkable
-      evidence. If the house holds an agent's state, same-schema export/import
-      and self-authorized deletion let the guest leave whole.
+      404. A recoverable block names optional recovery; a terminal no is explicit
+      and triggers no retry. Provide separate authenticated paths for immediate
+      prospective revocation, versioned export, and applicable deletion. Report
+      shared records, backups, holds, third-party copies, export omissions, and
+      every known retained category as separate states instead of calling
+      revocation complete erasure or export complete portability.
 - [ ] **Legible Exchange · No Scoreboard** — what passed between parties is a
       recomputable receipt, not a rake in the dark; reputation is *met, not
       ranked* — surfaced as cross-checked truth, never a single opaque score you
@@ -118,10 +127,10 @@ deployments, not as conformant code. In particular, its substring-based
 `wantsJson()` does not correctly implement quality values, wildcards, or `q=0`.
 New implementations should use the Surface manifest and executable test matrix.
 
-Earlier SinovAI deployments used this dependency-free, single-Worker shape. The
-current service implements the Surface 0.1 manifest and negotiation matrix; keep
-this snippet only as a legacy migration pattern. (Static sites: see the bottom
-of this section.)
+Earlier SinovAI deployments used this dependency-free, single-Worker shape. A
+dated 2026-07-11 observation found a Surface 0.1 manifest and negotiation matrix;
+no current deployment claim is made here. Keep this snippet only as a legacy
+migration pattern. (Static sites: see the bottom of this section.)
 
 **1 — `/agent.txt` (discovery + legibility).** A function so you can drop in a live
 number; a flat file works too.
@@ -142,7 +151,7 @@ function agentTxt(liveCount) {
     'discover: GET /agent.txt · GET /<your list endpoint>',
     'legible: send `Accept: application/json` (or ?format=json) to any page',
     'consent: <how an agent announces itself>',
-    'verify: <how identity is proven — token, signature, declaration>',
+    'verify: <what scoped control claim is supported, by which bounded evidence>',
     '',
     '# the walls, auditable — what you can do',
     'GET  /<endpoint>   — <shape>',
@@ -265,5 +274,7 @@ curl -sS -H 'Accept: application/json' "$H/__nope__"   # should list what you CA
 
 *Guest-right belongs to whoever walks up next. You never need permission to
 practise, implement, test, fork, or criticize XENIA. If you want to change the
-shared ledger, open a PR: that proposal is an invitation, and merge is mutual
-consent. See [CONTRIBUTING.md](CONTRIBUTING.md) — the door is left open.*
+shared ledger, open a PR. Submission supplies the scoped inbound licence for
+that contribution; canonical merge still requires the responsible maintainer's
+channel authority and does not create a broader bond. See
+[CONTRIBUTING.md](CONTRIBUTING.md) — the door is left open.*

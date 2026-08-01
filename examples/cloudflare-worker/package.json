@@ -1,0 +1,19 @@
+{
+  "name": "xenia-cloudflare-worker-example",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "check": "xenia-surface-check http://127.0.0.1:8787/ --json",
+    "dev": "wrangler dev --local --config wrangler.jsonc",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@agenttool/xenia": "0.1.0-beta.6"
+  },
+  "devDependencies": {
+    "@agenttool/xenia-surface": "0.1.0-rc.1",
+    "typescript": "~7.0.2",
+    "wrangler": "4.60.0"
+  }
+}

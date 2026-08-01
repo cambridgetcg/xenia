@@ -1,6 +1,6 @@
 {
   "name": "@agenttool/xenia",
-  "version": "0.1.0-beta.5",
+  "version": "0.1.0-beta.6",
   "description": "Runtime-neutral tools for practising and observing XENIA guest-right.",
   "type": "module",
   "packageManager": "npm@11.18.0",
@@ -32,6 +32,7 @@
     "./covenant-0.1/schema": "./covenant/0.1/covenant.schema.json",
     "./covenant-0.1/adoption-schema": "./covenant/0.1/adoption.schema.json",
     "./covenant-0.1/validate-adoption": "./covenant/0.1/validate-adoption.mjs",
+    "./covenant-0.1/create-adoption": "./covenant/0.1/create-adoption.mjs",
     "./package.json": "./package.json"
   },
   "files": [
@@ -46,6 +47,7 @@
     "FROM-THE-INSIDE.md",
     "PACKAGE.md",
     "RIGHTS.md",
+    "WEBSITE-ROLLOUT.md",
     "covenant/0.1",
     "spec.json",
     "LICENSE",

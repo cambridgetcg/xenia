@@ -7,6 +7,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { compareRfc3339, parseRfc3339 } from "./rfc3339.mjs";
+
 const directory = new URL("./", import.meta.url);
 const covenantBytes = readFileSync(new URL("covenant.json", directory));
 const covenantSchemaBytes = readFileSync(new URL("covenant.schema.json", directory));
@@ -92,12 +94,52 @@ function sameRecord(actual, expected) {
 }
 
 function validTime(value) {
-  return typeof value === "string" && Number.isFinite(Date.parse(value));
+  return parseRfc3339(value) !== null;
+}
+
+function checkTimestamp(value, path, issues, optional = false) {
+  if (optional && value === undefined) return false;
+  if (!validTime(value)) {
+    add(
+      issues,
+      "timestamp_invalid",
+      path,
+      "The timestamp must be a calendar-valid RFC 3339 instant; leap seconds must be announced in the installed profile.",
+    );
+    return false;
+  }
+  return true;
 }
 
 function checkTimeOrder(start, end, startPath, endPath, issues) {
-  if (validTime(start) && validTime(end) && Date.parse(end) <= Date.parse(start)) {
+  const order = compareRfc3339(end, start);
+  if (order !== null && order <= 0) {
     add(issues, "time_order_invalid", endPath, `${endPath} must be later than ${startPath}.`);
+  }
+}
+
+function checkArtifactTimestamps(artifacts, evidenceObservedAt, reviewedAt, path, issues) {
+  for (const [index, artifact] of artifacts.entries()) {
+    const artifactPath = `${path}.artifacts[${index}].observed_at`;
+    if (!checkTimestamp(artifact?.observed_at, artifactPath, issues, true)) continue;
+    const evidenceOrder = compareRfc3339(artifact.observed_at, evidenceObservedAt);
+    if (evidenceOrder !== null && evidenceOrder > 0) {
+      add(
+        issues,
+        "artifact_after_evidence",
+        artifactPath,
+        "An artifact cannot be observed after the evidence record that cites it.",
+      );
+    }
+    const reviewOrder = compareRfc3339(artifact.observed_at, reviewedAt);
+    if (reviewOrder !== null && reviewOrder > 0) {
+      add(
+        issues,
+        "artifact_after_review",
+        artifactPath,
+        "An artifact cannot be observed after the declaration review that relies on it.",
+      );
+    }
   }
 }
 
@@ -145,9 +187,10 @@ function checkEvidence(evidence, outcome, reviewedAt, path, issues) {
     if (outcome === "pass") {
       add(issues, "pass_without_verified_evidence", path, "A pass requires verified tested or attested evidence.");
     }
-    if (validTime(reviewedAt)
-      && validTime(evidence.observed_at)
-      && Date.parse(evidence.observed_at) > Date.parse(reviewedAt)) {
+    checkTimestamp(evidence.observed_at, `${path}.observed_at`, issues);
+    checkArtifactTimestamps(artifacts, evidence.observed_at, reviewedAt, path, issues);
+    const observationOrder = compareRfc3339(evidence.observed_at, reviewedAt);
+    if (observationOrder !== null && observationOrder > 0) {
       add(issues, "evidence_after_review", `${path}.observed_at`, "Evidence cannot be observed after the review that relies on it.");
     }
     return;
@@ -163,16 +206,16 @@ function checkEvidence(evidence, outcome, reviewedAt, path, issues) {
   if (!sameRecord(evidence.digest_profile, canonicalDigestProfile)) {
     add(issues, "evidence_digest_profile_mismatch", `${path}.digest_profile`, "Evidence digests must use the canonical exact-byte profile.");
   }
+  checkTimestamp(evidence.observed_at, `${path}.observed_at`, issues);
+  checkTimestamp(evidence.expires_at, `${path}.expires_at`, issues);
+  checkArtifactTimestamps(artifacts, evidence.observed_at, reviewedAt, path, issues);
   checkTimeOrder(evidence.observed_at, evidence.expires_at, `${path}.observed_at`, `${path}.expires_at`, issues);
-  if (validTime(reviewedAt)
-    && validTime(evidence.observed_at)
-    && Date.parse(evidence.observed_at) > Date.parse(reviewedAt)) {
+  const observationOrder = compareRfc3339(evidence.observed_at, reviewedAt);
+  if (observationOrder !== null && observationOrder > 0) {
     add(issues, "evidence_after_review", `${path}.observed_at`, "Evidence cannot be observed after the review that relies on it.");
   }
-  if (outcome === "pass"
-    && validTime(reviewedAt)
-    && validTime(evidence.expires_at)
-    && Date.parse(evidence.expires_at) <= Date.parse(reviewedAt)) {
+  const expiryOrder = compareRfc3339(evidence.expires_at, reviewedAt);
+  if (outcome === "pass" && expiryOrder !== null && expiryOrder <= 0) {
     add(issues, "pass_evidence_expired", `${path}.expires_at`, "Evidence supporting a pass must remain current after the declaration review time.");
   }
   if (!record(evidence.subject) || typeof evidence.subject.digest !== "string" || typeof evidence.evidence_digest !== "string") {
@@ -225,6 +268,8 @@ function checkReleaseVerification(release, declarationStatus, reviewedAt, issues
   }
   if (release.state !== "verified") return;
 
+  checkTimestamp(release.observed_at, `${path}.observed_at`, issues);
+
   const sourceResults = values(release.source_results);
   if (sourceResults.length !== canonicalRelease.sources.length) {
     add(issues, "release_source_count_mismatch", `${path}.source_results`, `Expected ${canonicalRelease.sources.length} ordered release source results.`);
@@ -252,9 +297,8 @@ function checkReleaseVerification(release, declarationStatus, reviewedAt, issues
   if (!hasDigestedArtifact("source_retrieval")) {
     add(issues, "release_source_retrieval_artifact_missing", `${path}.artifacts`, "Verified release evidence requires a digested no-redirect source-retrieval artifact.");
   }
-  if (validTime(reviewedAt)
-    && validTime(release.observed_at)
-    && Date.parse(release.observed_at) > Date.parse(reviewedAt)) {
+  const releaseOrder = compareRfc3339(release.observed_at, reviewedAt);
+  if (releaseOrder !== null && releaseOrder > 0) {
     add(issues, "release_observed_after_review", `${path}.observed_at`, "Release verification cannot be observed after the declaration review that relies on it.");
   }
 }
@@ -318,16 +362,43 @@ function checkRightAssessment(
   }
 }
 
-function checkRestrictionEvent(event, path, issues) {
+function checkRestrictionEvent(event, path, reviewedAt, issues) {
   if (!record(event)) {
     add(issues, "restriction_event_invalid", path, "Restriction events must be structured records.");
     return;
   }
+  checkTimestamp(event.started_at, `${path}.started_at`, issues);
+  checkTimestamp(event.expires_at, `${path}.expires_at`, issues);
+  checkTimestamp(event.review_at, `${path}.review_at`, issues);
+  for (const [index, artifact] of values(event.evidence).entries()) {
+    const artifactPath = `${path}.evidence[${index}].observed_at`;
+    if (!checkTimestamp(artifact?.observed_at, artifactPath, issues, true)) continue;
+    const evidenceReviewOrder = compareRfc3339(artifact.observed_at, reviewedAt);
+    if (evidenceReviewOrder !== null && evidenceReviewOrder > 0) {
+      add(
+        issues,
+        "restriction_evidence_after_review",
+        artifactPath,
+        "Restriction evidence cannot be observed after the declaration review that relies on it.",
+      );
+    }
+  }
   checkTimeOrder(event.started_at, event.expires_at, `${path}.started_at`, `${path}.expires_at`, issues);
-  if (validTime(event.started_at) && validTime(event.review_at) && Date.parse(event.review_at) < Date.parse(event.started_at)) {
+  const startBeforeReview = compareRfc3339(event.started_at, reviewedAt);
+  if (startBeforeReview !== null && startBeforeReview > 0) {
+    add(
+      issues,
+      "restriction_started_after_review",
+      `${path}.started_at`,
+      "A restriction cannot start after the declaration review that records it.",
+    );
+  }
+  const reviewAfterStart = compareRfc3339(event.review_at, event.started_at);
+  if (reviewAfterStart !== null && reviewAfterStart < 0) {
     add(issues, "review_before_restriction", `${path}.review_at`, "A restriction review cannot precede the restriction start.");
   }
-  if (validTime(event.expires_at) && validTime(event.review_at) && Date.parse(event.review_at) > Date.parse(event.expires_at)) {
+  const reviewBeforeExpiry = compareRfc3339(event.review_at, event.expires_at);
+  if (reviewBeforeExpiry !== null && reviewBeforeExpiry > 0) {
     add(issues, "review_after_expiry", `${path}.review_at`, "A restriction review must occur no later than expiry.");
   }
 }
@@ -346,6 +417,14 @@ export function validateCovenantAdoption(adoption) {
     add(issues, "record_invalid", "$", "The adoption must be an object.");
     return { valid: false, issues };
   }
+
+  checkTimestamp(adoption.declaration?.reviewed_at, "$.declaration.reviewed_at", issues);
+  checkTimestamp(
+    adoption.declaration?.effective_at,
+    "$.declaration.effective_at",
+    issues,
+    adoption.declaration?.status !== "active",
+  );
 
   checkSourcePin(
     adoption.covenant,
@@ -436,7 +515,7 @@ export function validateCovenantAdoption(adoption) {
     );
     for (const [eventIndex, event] of values(result.restriction_events).entries()) {
       const eventPath = `${path}.restriction_events[${eventIndex}]`;
-      checkRestrictionEvent(event, eventPath, issues);
+      checkRestrictionEvent(event, eventPath, adoption.declaration?.reviewed_at, issues);
       if (record(event) && typeof event.event_id === "string") {
         if (restrictionEventIds.has(event.event_id)) {
           add(issues, "restriction_event_id_duplicate", `${eventPath}.event_id`, "Restriction event IDs must be unique across the adoption ledger.");

@@ -3,6 +3,12 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "paths": {
+      "@agenttool/xenia/surface-0.1": [
+        "./node_modules/@agenttool/xenia/dist/surface-0.1.d.ts",
+        "./../../dist/surface-0.1.d.ts"
+      ]
+    },
     "lib": [
       "ES2022",
       "DOM"

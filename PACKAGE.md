@@ -6,18 +6,22 @@ parts of that standard.
 
 ## Current status
 
-The `@agenttool/xenia` source is versioned `0.1.0-beta.5` and prepared for the
-public `beta` channel. Registry availability is established by npm, not by this
-source document. Everyone may read, use, test, fork, adapt, discuss, and build
-with it under the [repository license map](LICENSES.md). See
+The package manifest is versioned `0.1.0-beta.6`. Its release identity is the
+annotated `npm-xenia-v0.1.0-beta.6` tag; earlier npm versions and tags remain
+immutable. Registry availability is established by npm, not by this source
+document. Everyone may read, use, test, fork, adapt, discuss, and build with it
+under the [repository license map](LICENSES.md). See
 [CONTRIBUTING.md](CONTRIBUTING.md) for the deliberately permissionless
 participation path.
 
 Beta.4 added the Rights and Covenant files, subpath exports, semantic validator,
-and packed-consumer checks. Beta.5 adds the explicit `rights-0.1` runtime
+and packed-consumer checks. Beta.5 added the explicit `rights-0.1` runtime
 snapshot and drift checker, release-tag-pinned Covenant source identities, and
-structured release-verification boundaries. Earlier tarballs remain immutable;
-npm versions are never overwritten.
+structured release-verification boundaries. Beta.6 adds the dependency-free
+all-unknown Covenant draft generator, shared strict RFC 3339 chronology checks,
+packed Worker-example dependencies, and clearer historical-observation and
+continuity boundaries. Earlier tarballs remain immutable; npm versions are
+never overwritten.
 
 The repository also carries a private Observe development workbench. It is not
 included in the root npm tarball and has no published release identity.
@@ -26,7 +30,7 @@ The source tree also carries the instruction-only
 [`practise-xenia-rights`](skills/practise-xenia-rights/SKILL.md) Agent Skill.
 It helps an agent apply an adopted baseline and report evidence, gaps, and
 authority boundaries. The skill is not an npm export, is not installed or
-activated by `@agenttool/xenia@0.1.0-beta.5`, and does not itself establish
+activated by `@agenttool/xenia@0.1.0-beta.6`, and does not itself establish
 adoption, permission, consent, or conformance.
 
 The personal `@agenttool` scope is the selected release channel and steward; it
@@ -36,7 +40,7 @@ or transfer ownership of contributors' work.
 After npm approves the staged release, install this exact beta with:
 
 ```sh
-npm install @agenttool/xenia@0.1.0-beta.5
+npm install @agenttool/xenia@0.1.0-beta.6
 ```
 
 From a clone, the naive path is:
@@ -51,8 +55,8 @@ without waiting for the canonical npm release.
 
 The package source tree currently does:
 
-- parse and format ordered, repeatable `agent.txt` fields without choosing
-  between the two still-divergent manifest profiles in README and CONFORMANCE;
+- parse and format ordered, repeatable legacy `agent.txt` fields without
+  treating them as the current Surface manifest;
 - apply required, allowed, and unique-key rules only through an explicit
   caller-supplied profile;
 - negotiate the deliberately narrow HTML/JSON visible-door surface from
@@ -71,6 +75,9 @@ The package source tree currently does:
   canonical IDs, the exact ordered 38-right-duty plus 5-limit-duty ledger,
   aggregate states, per-duty evidence relationships, restriction-event time
   bounds, and active-source and speaker-authority declarations;
+- create a dependency-free all-unknown Covenant draft that enumerates all 38
+  right duties and 5 protective-limit duties while leaving release state,
+  authority, evidence, implementation, and restriction events unclaimed;
 - expose a deeply frozen informative rights index from the explicit
   `@agenttool/xenia/rights-0.1` subpath, plus exact installed-snapshot drift
   checks and ID lookup without adding that data to the root import.
@@ -93,7 +100,8 @@ It deliberately does not:
 - replace JSON Schema shape validation, fetch or trust remote sources,
   authenticate an adoption speaker, verify signatures or cited evidence,
   inspect a deployment, determine whether Covenant duties are implemented, or
-  turn a consistent adoption record into evidence or consent;
+  turn a generated or consistent adoption record into activation, evidence,
+  authority, adoption, or consent;
 - import Sinovai's KV arena, claim-token identity, CORS, HTML, or deployment
   worker;
 - replace the normative prose or make npm the source of truth;
@@ -211,16 +219,28 @@ ignored `dist/` directory.
 
 ## Why the producer and evaluator are pure
 
-An earlier Sinovai hosted checker provided useful evidence, but its transport
-accepted arbitrary targets and buffered complete bodies before slicing them.
-That hosted probe is now retired. Packaging the same fetcher for server use
-would create an unsafe default. The producer only constructs responses for its
-own host, while the legacy evaluator accepts already collected observations and
-returns no raw response bodies. A later hosted network adapter needs an explicit
+An earlier Sinovai hosted checker provided useful evidence, but its reviewed
+source accepted arbitrary targets and buffered complete bodies before slicing
+them. Source reviewed on 2026-07-31 recorded that hosted probe as retired; this
+checkout has not re-observed the deployment. Packaging the same fetcher for
+server use would create an unsafe default. The producer only constructs
+responses for its own host, while the legacy evaluator accepts already
+collected observations and returns no raw response bodies. A later hosted
+network adapter needs an explicit
 target policy, redirect and DNS revalidation, bounded streaming reads, timeouts,
 concurrency and abuse controls, and runtime-specific tests.
 
-The current Sinovai `agent.txt` also contains bare `GET`/`POST` route lines that
+## Covenant timestamp implementation
+
+Adoption generation and semantic validation share a source-local RFC 3339
+parser rather than relying on `Date.parse`. It preserves a positive leap second
+between its adjacent seconds for every valid offset spelling. The parser's
+closed leap-second table is current through
+[IERS Bulletin C 72](https://datacenter.iers.org/versionMetadata.php?filename=mt%2Fbulletinc-072.txt)
+(2026-07-06). An unlisted future leap second fails closed until a reviewed
+source update; validation does not fetch time data from the network.
+
+The stored Sinovai `agent.txt` fixture contains bare `GET`/`POST` route lines that
 are prose rather than `key: value` fields. A fixture keeps that incompatibility
 visible: Sinovai should migrate to a versioned manifest profile before consuming
 this parser, rather than teaching the parser one application's undocumented
@@ -234,11 +254,13 @@ gate implementations, forks, experiments, local installs, or contributions.
 The maintainer explicitly selected the controlled `@agenttool` npm scope for
 this beta. Each release still needs clean supported-Node test runs, packed
 consumer checks, inspection of the exact tarball, and the non-default `beta`
-tag. The beta.5 workflow requires annotated `npm-xenia-v0.1.0-beta.5` and
-`covenant-v0.1.0-rc.1` tags at the same workflow commit and refuses to overwrite
-an existing npm version. The local Covenant verifier checks the tagged tree and
-digests; a separate post-publication observation must retrieve the three exact
-raw sources without redirects. GitHub's
+tag. The beta.6 workflow requires annotated `npm-xenia-v0.1.0-beta.6` at the
+exact workflow commit and refuses to overwrite an existing npm version. The
+distinct immutable `covenant-v0.1.0-rc.1` tag remains at its original reviewed
+commit; the local Covenant verifier checks that the current canonical source
+bytes and digests still match that tagged tree without moving the tag. A
+separate post-publication observation must retrieve the three exact raw sources
+without redirects. GitHub's
 short-lived OIDC identity stages the exact tarball with provenance; a
 maintainer must then review and approve that staged package with npm 2FA. No
 long-lived npm write token belongs in the repository or GitHub environment.

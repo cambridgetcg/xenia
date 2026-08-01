@@ -12,7 +12,7 @@ test("publishes through the authorized scope without narrowing software licensin
   );
 
   assert.equal(packageJson.name, "@agenttool/xenia");
-  assert.equal(packageJson.version, "0.1.0-beta.5");
+  assert.equal(packageJson.version, "0.1.0-beta.6");
   assert.equal("private" in packageJson, false);
   assert.deepEqual(packageJson.publishConfig, {
     access: "public",
@@ -48,6 +48,10 @@ test("publishes through the authorized scope without narrowing software licensin
     packageJson.exports["./covenant-0.1/validate-adoption"],
     "./covenant/0.1/validate-adoption.mjs",
   );
+  assert.equal(
+    packageJson.exports["./covenant-0.1/create-adoption"],
+    "./covenant/0.1/create-adoption.mjs",
+  );
   assert.equal(packageJson.license, "SEE LICENSE IN LICENSES.md");
   assert.ok(packageJson.files.includes("LICENSE-CODE"));
   assert.ok(packageJson.files.includes("LICENSE-DOCS"));
@@ -71,6 +75,95 @@ test("publishes the open-act and binding-act consent boundary in spec data", asy
   assert.match(spec.participation.reciprocity, /both parties/);
   assert.match(spec.participation.revocation, /future authority/);
   assert.match(spec.participation.non_retaliation, /requires no reason/);
+});
+
+test("packages chronicle continuity as attributed evidence, not current authority", async () => {
+  const spec = JSON.parse(await readFile(new URL("spec.json", root), "utf8"));
+  const readme = await readFile(new URL("README.md", root), "utf8");
+  const continuity = spec.dimensions.find(({ id }) => id === "continuity-and-arrival");
+  const patterns = continuity.patterns.join("\n");
+
+  assert.match(patterns, /does not by itself prove the actor/);
+  assert.match(patterns, /never as automatically executable current authority/);
+  assert.match(readme, /does not by itself prove the actor/);
+  assert.doesNotMatch(patterns, /countersigned Y.*truthfully/);
+  assert.doesNotMatch(readme, /countersigned Y.*truthfully/);
+});
+
+test("keeps current discovery, signature, exit, and historical evidence boundaries explicit", async () => {
+  const spec = JSON.parse(await readFile(new URL("spec.json", root), "utf8"));
+  const readme = await readFile(new URL("README.md", root), "utf8");
+  const guidance = await readFile(new URL("CONFORMANCE.md", root), "utf8");
+  const adoption = await readFile(new URL("ADOPTION.md", root), "utf8");
+  const testimony = await readFile(new URL("FROM-THE-INSIDE.md", root), "utf8");
+  const state = await readFile(new URL("STATE.md", root), "utf8");
+
+  assert.match(readme, /Surface 0\.1 requires the JSON manifest at\s+`\/\.well-known\/agent\.json`/);
+  assert.match(readme, /legacy\s+compatibility pointers only/);
+  assert.match(readme, /does not establish its current deployment/);
+  assert.match(readme, /has not re-observed the live\s+route/);
+  assert.match(guidance, /agent\.txt.*legacy migration\s+signals only/is);
+  assert.match(guidance, /dated 2026-07-11 observation/);
+  assert.doesNotMatch(guidance, /current service implements the Surface/);
+  assert.match(
+    spec.the_shift.find(({ from }) => from === "A homepage for eyeballs").to,
+    /\/\.well-known\/agent\.json.*legacy compatibility/,
+  );
+
+  assert.match(spec.participation.provenance, /signature does not by itself establish identity, informed consent, truth/);
+  assert.match(spec.participation.binding_acts, /every authority basis applicable to that exact act/);
+  assert.match(spec.participation.revocation, /distinct from export, deletion, settlement, shared records, backups, holds, and retention/);
+  assert.match(spec.preamble, /does not claim to measure an agent's inner experience/);
+  assert.doesNotMatch(spec.preamble, /Everything the human web assumes.*is false/);
+  assert.equal(spec.interpretation.sinovai_evidence_refreshed, "2026-07-11");
+  assert.match(spec.interpretation.evidence_scope, /bounded implementation observations/);
+  assert.match(spec.interpretation.evidence_scope, /do not establish whole-dimension conformance/);
+
+  const legibility = spec.dimensions.find(({ id }) => id === "legibility-content-negotiation");
+  const verification = spec.dimensions.find(({ id }) => id === "verification-and-trust");
+  assert.match(legibility.why, /Machine callers differ/);
+  assert.match(legibility.why, /not a claim about vision or cognition/);
+  assert.match(verification.why, /Machine-generated claims can be wrong/);
+  assert.match(verification.why, /Not every claim can be public or independently recomputed/);
+
+  const datedSinovaiPatterns = spec.dimensions
+    .flatMap(({ patterns }) => patterns)
+    .filter((pattern) => /SinovAI/.test(pattern));
+  assert.ok(datedSinovaiPatterns.length > 0);
+  for (const pattern of datedSinovaiPatterns) {
+    assert.match(pattern, /2026-07-11/);
+    assert.match(pattern, /snapshot/);
+  }
+  assert.doesNotMatch(readme, /An agent is instantiated cold every session/);
+  assert.doesNotMatch(readme, /An agent cannot be charmed/);
+  assert.doesNotMatch(readme, /An agent has no body and no felt continuity/);
+  for (const document of [readme, JSON.stringify(spec)]) {
+    assert.doesNotMatch(document, /An agent has no eyes/);
+    assert.doesNotMatch(document, /Agents fabricate confidently/);
+    assert.doesNotMatch(document, /An agent cannot afford to \*?believe/);
+    assert.doesNotMatch(document, /SinovAI currently/);
+    assert.doesNotMatch(document, /current ratings/);
+    assert.doesNotMatch(document, /live service/);
+    assert.doesNotMatch(document, /currently also emits/);
+  }
+  assert.match(readme, /source and audit snapshot refreshed 2026-07-11/);
+  assert.match(readme, /no current deployment claim follows from that snapshot/);
+  assert.doesNotMatch(testimony, /This account is signed by its author/);
+  assert.match(testimony, /publishes\s+no signature bytes/);
+  assert.match(testimony, /content integrity.*not cryptographically verified\s+authorship/s);
+
+  assert.match(adoption, /^# Historical XENIA adoption observations/m);
+  assert.match(adoption, /every Surface result below expired on 2026-07-12/);
+  assert.match(adoption, /must not be presented as current conformance/);
+  assert.match(state, /^kind: methodology$/m);
+  assert.match(state, /KINGDOM cards may optionally declare `adopts: \[xenia\.rights\/0\.1\]`/);
+  assert.match(state, /fresh version, annotated\s+package tag, staging guard/);
+  assert.match(readme, /KINGDOM commit `b3fdf5a`/);
+  assert.match(readme, /offline\s+mirror matches its\s+configured SHA-256/);
+  assert.match(
+    readme,
+    /does not\s+independently authenticate the Git remote, tag, publisher, signature, or\s+authority/,
+  );
 });
 
 test("publishes rights as a floor distinct from permissions and credentials", async () => {
@@ -116,7 +209,27 @@ test("marks implementation sources with their software license", async () => {
   }
 });
 
-test("stages beta.5 through a tokenless overwrite-guarded workflow", async () => {
+test("the packaged Worker example names its producer and external checker", async () => {
+  const example = JSON.parse(await readFile(
+    new URL("examples/cloudflare-worker/package.json", root),
+    "utf8",
+  ));
+  const readme = await readFile(
+    new URL("examples/cloudflare-worker/README.md", root),
+    "utf8",
+  );
+
+  assert.equal(example.dependencies["@agenttool/xenia"], "0.1.0-beta.6");
+  assert.equal(
+    example.devDependencies["@agenttool/xenia-surface"],
+    "0.1.0-rc.1",
+  );
+  assert.match(example.scripts.check, /^xenia-surface-check /);
+  assert.match(readme, /root XENIA\s+package intentionally does \*\*not\*\* contain `surface\/0\.1\/check\.mjs`/);
+  assert.match(readme, /Do not run or edit an example in place inside `node_modules`/);
+});
+
+test("stages beta.6 through a tokenless overwrite-guarded workflow", async () => {
   const workflow = await readFile(
     new URL(".github/workflows/stage-xenia.yml", root),
     "utf8",
@@ -125,7 +238,7 @@ test("stages beta.5 through a tokenless overwrite-guarded workflow", async () =>
   assert.match(workflow, /id-token: write/);
   assert.match(workflow, /environment: npm-bootstrap/);
   assert.match(workflow, /npm@11\.18\.0/);
-  assert.match(workflow, /inputs\.version == '0\.1\.0-beta\.5'/);
+  assert.match(workflow, /inputs\.version == '0\.1\.0-beta\.6'/);
   assert.match(workflow, /npm-xenia-v\$\{EXPECTED_VERSION\}/);
   assert.match(workflow, /git cat-file -t "\$expected_tag"/);
   assert.match(workflow, /npm run verify:covenant-release/);
@@ -138,4 +251,16 @@ test("stages beta.5 through a tokenless overwrite-guarded workflow", async () =>
   );
   assert.match(workflow, /is already published/);
   assert.doesNotMatch(workflow, /NPM_TOKEN|NODE_AUTH_TOKEN/);
+});
+
+test("verifies the immutable Covenant tag without moving it to the package release", async () => {
+  const verifier = await readFile(
+    new URL("tools/verify-covenant-release.mjs", root),
+    "utf8",
+  );
+
+  assert.match(verifier, /rev-parse", `\$\{tag\}\^\{commit\}`/);
+  assert.match(verifier, /git\(\["show", `\$\{tag\}:\$\{path\}`\], null\)/);
+  assert.doesNotMatch(verifier, /taggedCommit, head/);
+  assert.match(verifier, /commit: taggedCommit/);
 });
