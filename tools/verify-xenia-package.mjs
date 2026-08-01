@@ -57,6 +57,7 @@ try {
     "PACKAGE.md",
     "README.md",
     "RIGHTS.md",
+    "WEBSITE-ROLLOUT.md",
     "covenant/0.1/README.md",
     "covenant/0.1/adoption.schema.json",
     "covenant/0.1/covenant.json",

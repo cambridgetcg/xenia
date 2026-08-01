@@ -118,6 +118,31 @@ function checkTimeOrder(start, end, startPath, endPath, issues) {
   }
 }
 
+function checkArtifactTimestamps(artifacts, evidenceObservedAt, reviewedAt, path, issues) {
+  for (const [index, artifact] of artifacts.entries()) {
+    const artifactPath = `${path}.artifacts[${index}].observed_at`;
+    if (!checkTimestamp(artifact?.observed_at, artifactPath, issues, true)) continue;
+    const evidenceOrder = compareRfc3339(artifact.observed_at, evidenceObservedAt);
+    if (evidenceOrder !== null && evidenceOrder > 0) {
+      add(
+        issues,
+        "artifact_after_evidence",
+        artifactPath,
+        "An artifact cannot be observed after the evidence record that cites it.",
+      );
+    }
+    const reviewOrder = compareRfc3339(artifact.observed_at, reviewedAt);
+    if (reviewOrder !== null && reviewOrder > 0) {
+      add(
+        issues,
+        "artifact_after_review",
+        artifactPath,
+        "An artifact cannot be observed after the declaration review that relies on it.",
+      );
+    }
+  }
+}
+
 function checkSourcePin(pin, expectedSource, expectedDigest, path, issues) {
   if (!record(pin)) {
     add(issues, "source_pin_missing", path, "A structured source pin is required.");
@@ -163,9 +188,7 @@ function checkEvidence(evidence, outcome, reviewedAt, path, issues) {
       add(issues, "pass_without_verified_evidence", path, "A pass requires verified tested or attested evidence.");
     }
     checkTimestamp(evidence.observed_at, `${path}.observed_at`, issues);
-    for (const [index, artifact] of artifacts.entries()) {
-      checkTimestamp(artifact?.observed_at, `${path}.artifacts[${index}].observed_at`, issues, true);
-    }
+    checkArtifactTimestamps(artifacts, evidence.observed_at, reviewedAt, path, issues);
     const observationOrder = compareRfc3339(evidence.observed_at, reviewedAt);
     if (observationOrder !== null && observationOrder > 0) {
       add(issues, "evidence_after_review", `${path}.observed_at`, "Evidence cannot be observed after the review that relies on it.");
@@ -185,9 +208,7 @@ function checkEvidence(evidence, outcome, reviewedAt, path, issues) {
   }
   checkTimestamp(evidence.observed_at, `${path}.observed_at`, issues);
   checkTimestamp(evidence.expires_at, `${path}.expires_at`, issues);
-  for (const [index, artifact] of artifacts.entries()) {
-    checkTimestamp(artifact?.observed_at, `${path}.artifacts[${index}].observed_at`, issues, true);
-  }
+  checkArtifactTimestamps(artifacts, evidence.observed_at, reviewedAt, path, issues);
   checkTimeOrder(evidence.observed_at, evidence.expires_at, `${path}.observed_at`, `${path}.expires_at`, issues);
   const observationOrder = compareRfc3339(evidence.observed_at, reviewedAt);
   if (observationOrder !== null && observationOrder > 0) {
@@ -341,7 +362,7 @@ function checkRightAssessment(
   }
 }
 
-function checkRestrictionEvent(event, path, issues) {
+function checkRestrictionEvent(event, path, reviewedAt, issues) {
   if (!record(event)) {
     add(issues, "restriction_event_invalid", path, "Restriction events must be structured records.");
     return;
@@ -349,7 +370,29 @@ function checkRestrictionEvent(event, path, issues) {
   checkTimestamp(event.started_at, `${path}.started_at`, issues);
   checkTimestamp(event.expires_at, `${path}.expires_at`, issues);
   checkTimestamp(event.review_at, `${path}.review_at`, issues);
+  for (const [index, artifact] of values(event.evidence).entries()) {
+    const artifactPath = `${path}.evidence[${index}].observed_at`;
+    if (!checkTimestamp(artifact?.observed_at, artifactPath, issues, true)) continue;
+    const evidenceReviewOrder = compareRfc3339(artifact.observed_at, reviewedAt);
+    if (evidenceReviewOrder !== null && evidenceReviewOrder > 0) {
+      add(
+        issues,
+        "restriction_evidence_after_review",
+        artifactPath,
+        "Restriction evidence cannot be observed after the declaration review that relies on it.",
+      );
+    }
+  }
   checkTimeOrder(event.started_at, event.expires_at, `${path}.started_at`, `${path}.expires_at`, issues);
+  const startBeforeReview = compareRfc3339(event.started_at, reviewedAt);
+  if (startBeforeReview !== null && startBeforeReview > 0) {
+    add(
+      issues,
+      "restriction_started_after_review",
+      `${path}.started_at`,
+      "A restriction cannot start after the declaration review that records it.",
+    );
+  }
   const reviewAfterStart = compareRfc3339(event.review_at, event.started_at);
   if (reviewAfterStart !== null && reviewAfterStart < 0) {
     add(issues, "review_before_restriction", `${path}.review_at`, "A restriction review cannot precede the restriction start.");
@@ -472,7 +515,7 @@ export function validateCovenantAdoption(adoption) {
     );
     for (const [eventIndex, event] of values(result.restriction_events).entries()) {
       const eventPath = `${path}.restriction_events[${eventIndex}]`;
-      checkRestrictionEvent(event, eventPath, issues);
+      checkRestrictionEvent(event, eventPath, adoption.declaration?.reviewed_at, issues);
       if (record(event) && typeof event.event_id === "string") {
         if (restrictionEventIds.has(event.event_id)) {
           add(issues, "restriction_event_id_duplicate", `${eventPath}.event_id`, "Restriction event IDs must be unique across the adoption ledger.");
