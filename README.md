@@ -35,7 +35,7 @@ is a source-only Agent Skill for applying an adopted rights baseline during
 design, review, implementation, and collaboration. It guides evidence and
 authority reporting; it does not adopt the baseline, activate itself, grant
 permission or consent, or prove conformance. It is intentionally outside the
-immutable `0.1.0-beta.5` npm artifact.
+immutable `0.1.0-beta.6` npm artifact.
 
 **KINGDOM integration:** a current KINGDOM card may optionally declare
 `adopts: [xenia.rights/0.1]`. That field is a project-level declaration, not an

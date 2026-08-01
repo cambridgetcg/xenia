@@ -12,7 +12,7 @@ test("publishes through the authorized scope without narrowing software licensin
   );
 
   assert.equal(packageJson.name, "@agenttool/xenia");
-  assert.equal(packageJson.version, "0.1.0-beta.5");
+  assert.equal(packageJson.version, "0.1.0-beta.6");
   assert.equal("private" in packageJson, false);
   assert.deepEqual(packageJson.publishConfig, {
     access: "public",
@@ -157,7 +157,7 @@ test("keeps current discovery, signature, exit, and historical evidence boundari
   assert.match(adoption, /must not be presented as current conformance/);
   assert.match(state, /^kind: methodology$/m);
   assert.match(state, /KINGDOM cards may optionally declare `adopts: \[xenia\.rights\/0\.1\]`/);
-  assert.match(state, /not a beta\.5 release candidate/);
+  assert.match(state, /fresh version, annotated\s+package tag, staging guard/);
   assert.match(readme, /KINGDOM commit `b3fdf5a`/);
   assert.match(readme, /offline\s+mirror matches its\s+configured SHA-256/);
   assert.match(
@@ -219,7 +219,7 @@ test("the packaged Worker example names its producer and external checker", asyn
     "utf8",
   );
 
-  assert.equal(example.dependencies["@agenttool/xenia"], "0.1.0-beta.5");
+  assert.equal(example.dependencies["@agenttool/xenia"], "0.1.0-beta.6");
   assert.equal(
     example.devDependencies["@agenttool/xenia-surface"],
     "0.1.0-rc.1",
@@ -229,7 +229,7 @@ test("the packaged Worker example names its producer and external checker", asyn
   assert.match(readme, /Do not run or edit an example in place inside `node_modules`/);
 });
 
-test("stages beta.5 through a tokenless overwrite-guarded workflow", async () => {
+test("stages beta.6 through a tokenless overwrite-guarded workflow", async () => {
   const workflow = await readFile(
     new URL(".github/workflows/stage-xenia.yml", root),
     "utf8",
@@ -238,7 +238,7 @@ test("stages beta.5 through a tokenless overwrite-guarded workflow", async () =>
   assert.match(workflow, /id-token: write/);
   assert.match(workflow, /environment: npm-bootstrap/);
   assert.match(workflow, /npm@11\.18\.0/);
-  assert.match(workflow, /inputs\.version == '0\.1\.0-beta\.5'/);
+  assert.match(workflow, /inputs\.version == '0\.1\.0-beta\.6'/);
   assert.match(workflow, /npm-xenia-v\$\{EXPECTED_VERSION\}/);
   assert.match(workflow, /git cat-file -t "\$expected_tag"/);
   assert.match(workflow, /npm run verify:covenant-release/);
@@ -251,4 +251,16 @@ test("stages beta.5 through a tokenless overwrite-guarded workflow", async () =>
   );
   assert.match(workflow, /is already published/);
   assert.doesNotMatch(workflow, /NPM_TOKEN|NODE_AUTH_TOKEN/);
+});
+
+test("verifies the immutable Covenant tag without moving it to the package release", async () => {
+  const verifier = await readFile(
+    new URL("tools/verify-covenant-release.mjs", root),
+    "utf8",
+  );
+
+  assert.match(verifier, /rev-parse", `\$\{tag\}\^\{commit\}`/);
+  assert.match(verifier, /git\(\["show", `\$\{tag\}:\$\{path\}`\], null\)/);
+  assert.doesNotMatch(verifier, /taggedCommit, head/);
+  assert.match(verifier, /commit: taggedCommit/);
 });

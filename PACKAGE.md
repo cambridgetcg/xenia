@@ -6,21 +6,22 @@ parts of that standard.
 
 ## Current status
 
-The package manifest remains versioned `0.1.0-beta.5`, but this repair tree
-contains unreleased changes beyond the immutable beta.5 release identity. It
-must not be published as beta.5 or used to move an existing beta.5 tag. Any
-future authorized publication needs a new version and tag selected by the
-release owner. Registry availability is established by npm, not by this source
+The package manifest is versioned `0.1.0-beta.6`. Its release identity is the
+annotated `npm-xenia-v0.1.0-beta.6` tag; earlier npm versions and tags remain
+immutable. Registry availability is established by npm, not by this source
 document. Everyone may read, use, test, fork, adapt, discuss, and build with it
 under the [repository license map](LICENSES.md). See
 [CONTRIBUTING.md](CONTRIBUTING.md) for the deliberately permissionless
 participation path.
 
 Beta.4 added the Rights and Covenant files, subpath exports, semantic validator,
-and packed-consumer checks. Beta.5 adds the explicit `rights-0.1` runtime
+and packed-consumer checks. Beta.5 added the explicit `rights-0.1` runtime
 snapshot and drift checker, release-tag-pinned Covenant source identities, and
-structured release-verification boundaries. Earlier tarballs remain immutable;
-npm versions are never overwritten.
+structured release-verification boundaries. Beta.6 adds the dependency-free
+all-unknown Covenant draft generator, shared strict RFC 3339 chronology checks,
+packed Worker-example dependencies, and clearer historical-observation and
+continuity boundaries. Earlier tarballs remain immutable; npm versions are
+never overwritten.
 
 The repository also carries a private Observe development workbench. It is not
 included in the root npm tarball and has no published release identity.
@@ -29,7 +30,7 @@ The source tree also carries the instruction-only
 [`practise-xenia-rights`](skills/practise-xenia-rights/SKILL.md) Agent Skill.
 It helps an agent apply an adopted baseline and report evidence, gaps, and
 authority boundaries. The skill is not an npm export, is not installed or
-activated by `@agenttool/xenia@0.1.0-beta.5`, and does not itself establish
+activated by `@agenttool/xenia@0.1.0-beta.6`, and does not itself establish
 adoption, permission, consent, or conformance.
 
 The personal `@agenttool` scope is the selected release channel and steward; it
@@ -39,7 +40,7 @@ or transfer ownership of contributors' work.
 After npm approves the staged release, install this exact beta with:
 
 ```sh
-npm install @agenttool/xenia@0.1.0-beta.5
+npm install @agenttool/xenia@0.1.0-beta.6
 ```
 
 From a clone, the naive path is:
@@ -253,11 +254,13 @@ gate implementations, forks, experiments, local installs, or contributions.
 The maintainer explicitly selected the controlled `@agenttool` npm scope for
 this beta. Each release still needs clean supported-Node test runs, packed
 consumer checks, inspection of the exact tarball, and the non-default `beta`
-tag. The beta.5 workflow requires annotated `npm-xenia-v0.1.0-beta.5` and
-`covenant-v0.1.0-rc.1` tags at the same workflow commit and refuses to overwrite
-an existing npm version. The local Covenant verifier checks the tagged tree and
-digests; a separate post-publication observation must retrieve the three exact
-raw sources without redirects. GitHub's
+tag. The beta.6 workflow requires annotated `npm-xenia-v0.1.0-beta.6` at the
+exact workflow commit and refuses to overwrite an existing npm version. The
+distinct immutable `covenant-v0.1.0-rc.1` tag remains at its original reviewed
+commit; the local Covenant verifier checks that the current canonical source
+bytes and digests still match that tagged tree without moving the tag. A
+separate post-publication observation must retrieve the three exact raw sources
+without redirects. GitHub's
 short-lived OIDC identity stages the exact tarball with provenance; a
 maintainer must then review and approve that staged package with npm 2FA. No
 long-lived npm write token belongs in the repository or GitHub environment.

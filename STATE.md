@@ -13,7 +13,7 @@ reviewed: 2026-07-31
   `/.well-known/agent.json`
 - Covenant: candidate `xenia-covenant/0.1`, 38 right duties and 5
   protective-limit duties
-- JavaScript producer library: source version `0.1.0-beta.5`
+- JavaScript producer library: source version `0.1.0-beta.6`
 - Surface external checker: separately versioned `0.1.0-rc.1`
 
 `agent.txt` is legacy compatibility material, not the current Surface manifest.
@@ -60,8 +60,8 @@ git diff --check
   deployment;
 - apply `WEBSITE-ROLLOUT.md` one current host at a time, preserving source,
   built, deployed, and externally observed states as separate evidence;
-- select a fresh root npm version, tag, and staging guard before any authorized
-  package publication; this changed tree is not a beta.5 release candidate;
+- keep every future changed root npm tree behind a fresh version, annotated
+  package tag, staging guard, and exact packed-consumer verification;
 - create fresh, separately preserved observations before reporting current site
   behaviour;
 - version any future normative profile change without moving or reusing an

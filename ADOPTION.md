@@ -40,13 +40,15 @@ Covenant schema, Covenant, and adoption schema, plus separately verified
 speaker authority. Record consistency still does not prove those observations
 true; release owners must preserve and check the cited artifacts.
 
-Release owners can run `npm run verify:covenant-release` after creating the
-annotated RC tag locally. It proves the tag, clean `HEAD`, installed bytes, and
-recorded digests agree in that checkout; it explicitly does not prove the tag
-was published remotely or that a forge will prevent a future privileged move.
-Its `local_tag_tree_results` describe only that local checkout; they are not
-remote `release_verification.source_results`. A verified adoption additionally
-needs separately preserved, digested evidence of annotated-tag resolution and
+Release owners can run `npm run verify:covenant-release` from a clean checkout
+after fetching the annotated RC tag. It proves that the installed canonical
+bytes and recorded digests agree with the immutable tag's tree; the checkout's
+`HEAD` may be a later package release whose canonical Covenant bytes are
+unchanged. It explicitly does not prove the tag was published remotely or that
+a forge will prevent a future privileged move. Its `local_tag_tree_results`
+describe only that local comparison; they are not remote
+`release_verification.source_results`. A verified adoption additionally needs
+separately preserved, digested evidence of annotated-tag resolution and
 no-redirect retrieval of the published sources. From a release checkout, after
 the tag is published, `npm run verify:covenant-remote` performs that bounded
 retrieval and emits a current observation; its output still does not prove

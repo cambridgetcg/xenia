@@ -42,9 +42,7 @@ try {
   const dirty = git(["status", "--porcelain"]).trim().split("\n").filter(Boolean);
   assert.ok(dirty.length === 0, `release worktree must be clean (${dirty.length} changed paths)`);
   assert.equal(git(["cat-file", "-t", tag]).trim(), "tag", `${tag} must be an annotated tag`);
-  const head = git(["rev-parse", "HEAD"]).trim();
   const taggedCommit = git(["rev-parse", `${tag}^{commit}`]).trim();
-  assert.equal(taggedCommit, head, `${tag} must peel to the release HEAD`);
   assert.equal(canonicalCovenant.$schema, canonicalCovenantSchema.$id, "Covenant schema identity drift");
   assert.equal(canonicalCovenant.schema_pin.source, canonicalSources.covenantSchema, "recorded Covenant schema source drift");
   assert.equal(canonicalCovenant.schema_pin.sha256, canonicalPins.covenantSchema, "recorded Covenant schema digest drift");
@@ -86,7 +84,7 @@ try {
 
   process.stdout.write(JSON.stringify({
     tag,
-    commit: head,
+    commit: taggedCommit,
     local_release_identity: "verified",
     local_tag_tree_results: localTagTreeResults,
     remote_publication: {
@@ -97,8 +95,8 @@ try {
   }) + "\n");
 } catch (error) {
   process.stderr.write(
-    `Covenant RC is not locally releasable: ${String(error?.message || error)}\n`
-    + "Keep adoption records draft until the annotated tag exists at the reviewed clean commit, then publish it through a separately authorized release.\n",
+    `Covenant RC is not locally verifiable: ${String(error?.message || error)}\n`
+    + "Keep adoption records draft until the immutable annotated tag and its exact source bytes can be verified through a separately authorized release.\n",
   );
   process.exitCode = 1;
 }

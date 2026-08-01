@@ -42,7 +42,7 @@ try {
   ]);
   const [artifact] = JSON.parse(packed.stdout);
   assert.equal(artifact.name, "@agenttool/xenia");
-  assert.equal(artifact.version, "0.1.0-beta.5");
+  assert.equal(artifact.version, "0.1.0-beta.6");
 
   const expectedFiles = [
     "ADOPTION.md",
@@ -144,7 +144,7 @@ try {
   const installedPackage = JSON.parse(
     await readFile(join(installedDirectory, "package.json"), "utf8"),
   );
-  assert.equal(installedPackage.version, "0.1.0-beta.5");
+  assert.equal(installedPackage.version, "0.1.0-beta.6");
   assert.equal(installedPackage.dependencies, undefined);
   assert.equal(installedPackage.optionalDependencies, undefined);
   assert.equal(installedPackage.peerDependencies, undefined);
@@ -156,7 +156,7 @@ try {
   const installedExample = JSON.parse(
     await readFile(join(installedDirectory, "examples/cloudflare-worker/package.json"), "utf8"),
   );
-  assert.equal(installedExample.dependencies["@agenttool/xenia"], "0.1.0-beta.5");
+  assert.equal(installedExample.dependencies["@agenttool/xenia"], "0.1.0-beta.6");
   assert.equal(
     installedExample.devDependencies["@agenttool/xenia-surface"],
     "0.1.0-rc.1",
