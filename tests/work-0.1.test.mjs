@@ -160,6 +160,7 @@ test("the conformance fixture manifest names every hardened boundary", () => {
       "authority-evidence-after-claim",
       "asserted-authority-at-execution",
       "authority-positive-basis-missing",
+      "identity-claim-is-not-implicitly-authority",
       "non-revocable-authority-at-execution",
       "consent-evidence-kind-mismatch",
       "consent-evidence-scope-mismatch",
@@ -386,6 +387,46 @@ test("execution needs at least one positive authority basis", () => {
   }
   refreshDigests(candidate);
   assertFailedCheck(candidate, "R.AUTHORITY", "authority_positive_basis_missing");
+});
+
+test("an attested title or role claim is not implicitly promoted into authority", () => {
+  const candidate = clone(completed);
+  const evidenceId = "urn:xenia:test:evidence:office-attestation";
+  candidate.evidence.push({
+    id: evidenceId,
+    kind: "attestation",
+    ref: "https://example.invalid/evidence/office-attestation",
+    digest: `sha256:${"a".repeat(64)}`,
+    description: "Fictitious attestation of one named office, not an authority grant.",
+    observed_at: "2026-08-03T11:01:30Z",
+    recorded_by_actor_id: "urn:xenia:example:actor:steward",
+    scope: "This record claims only that the named actor held one office at the stated time.",
+    data_zone_id: "internal_record",
+  });
+  const executorId = event(candidate, "action.proposed").payload.binding.executor_actor_id;
+  const executor = candidate.actors.find(({ id }) => id === executorId);
+  assert.ok(executor);
+  executor.identity_claims.push({
+    id: "claimed-office",
+    statement: "The actor is attested to hold a named office.",
+    evidence_state: "attested",
+    outcome: "pass",
+    evidence_ids: [evidenceId],
+  });
+  for (const basis of event(candidate, "authority.claimed").payload.binding.bases) {
+    basis.outcome = "not_applicable";
+    basis.evidence_state = "none";
+    basis.evidence = [];
+  }
+  refreshDigests(candidate);
+
+  assert.equal(validateRunSchema(candidate), true, JSON.stringify(validateRunSchema.errors));
+  const validation = assertFailedCheck(
+    candidate,
+    "R.AUTHORITY",
+    "authority_positive_basis_missing",
+  );
+  assert.equal(validation.issues.some(({ code }) => code === "evidence_reference_missing"), false);
 });
 
 test("non-revocable authority cannot support an execution start", () => {

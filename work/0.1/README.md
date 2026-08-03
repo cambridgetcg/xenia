@@ -273,6 +273,35 @@ The profile records a plan but does not schedule or execute it. Runtime choice,
 parallelism, checkpoint storage, model prompting, and subworkflow mechanics are
 outside this profile.
 
+### Identity claims are not implicitly authority
+
+`actors[].identity_claims` records bounded statements about an actor. A title,
+office, role, affiliation, credential, reputation, or other status may appear
+there. The Work checker does not read any identity claim when it evaluates
+`R.AUTHORITY`. Its existence, repetition, `outcome`, or `evidence_state` cannot
+by itself satisfy an authority basis, exact approval, implemented duty, or
+repair. Even an attested passing role claim creates no permission unless the
+record separately supplies an authority claim that passes the bounded
+structural checks below.
+
+This is a structural boundary, not an authenticity detector. Work 0.1 does not
+interpret a claim's free-text `statement`, establish its speaker or issuer, or
+decide whether its evidence is true. `recorded_by_actor_id` identifies an
+evidence recorder, not the source of the claim. The generic claim shape can
+carry a supplied `pass` or `fail` outcome, but a conformant result does not
+endorse that outcome. Producers should retain sincerity, holiness, love,
+humility, faith, righteousness, authenticity, and moral worth as quoted or
+self-described language, not present structural conformance as a judgement of
+a being.
+
+A separately recorded authority basis may refer to some of the same evidence,
+but is assessed only by the checks stated below; Work 0.1 does not prove the
+semantic sufficiency of a free-text grant. A Covenant adoption separately
+records hosted-service duty results; it does not turn an identity claim into
+Work authority. The Work checker reports only the bounded record relationships
+it can inspect and defines no authenticity, righteousness, or person-level
+score.
+
 ### Authority claims
 
 Every `authority.claimed` event contains an exact `binding` and its digest. The
