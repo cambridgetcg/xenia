@@ -19,6 +19,22 @@ not stable public release identities. Do not publish a conformance claim,
 freeze an integration, or move durable records onto these identifiers as if
 they were final.
 
+### Development migration note — 2026-08-04
+
+This draft intentionally changes the shape of every `action.proposed`
+authority reference. An earlier draft record must add
+`selected_evidence_ids_by_basis`; use an empty object only when the proposal
+was rejected or never executed. An executed proposal must select evidence from
+every passing basis. Each selected top-level evidence record and its exact
+basis projection may need the six-field `action_scope` described below.
+
+After changing an authority evidence projection, recompute its authority-claim
+digest and update the proposal's authority reference. Then recompute the
+proposal digest and every downstream copy of that digest, including approvals,
+execution records, receipts, effect observations, and causal evidence. Earlier
+draft artifacts containing `action.proposed` are not compatible until
+migrated.
+
 ## What is normative
 
 For this development draft:
@@ -295,12 +311,13 @@ self-described language, not present structural conformance as a judgement of
 a being.
 
 A separately recorded authority basis may refer to some of the same evidence,
-but is assessed only by the checks stated below; Work 0.1 does not prove the
-semantic sufficiency of a free-text grant. A Covenant adoption separately
-records hosted-service duty results; it does not turn an identity claim into
-Work authority. The Work checker reports only the bounded record relationships
-it can inspect and defines no authenticity, righteousness, or person-level
-score.
+but an action proposal must explicitly select the evidence it relies on from
+each passing basis. Selection is assessed only by the checks stated below;
+Work 0.1 does not prove the semantic sufficiency of a free-text grant. A
+Covenant adoption separately records hosted-service duty results; it does not
+turn an identity claim into Work authority. The Work checker reports only the
+bounded record relationships it can inspect and defines no authenticity,
+righteousness, or person-level score.
 
 ### Authority claims
 
@@ -326,6 +343,34 @@ do not make the evidence authentic, timely, independent, complete, or true.
 An execution MUST have at least one applicable basis with outcome `pass`; a
 claim whose five bases are all `not_applicable` cannot authorize execution.
 
+An authority claim may retain broad or otherwise unselected supporting
+evidence. Each authority reference in an `action.proposed` binding has a
+required `selected_evidence_ids_by_basis` object that records the evidence the
+proposer relies on for this proposal. The object MAY be empty in a proposal
+that is rejected or never executed. At `execution.started`, its keys MUST be
+exactly the basis kinds whose recorded outcome is `pass`, and every selected
+ID MUST occur in that exact basis of that exact authority claim. Each selected
+list is non-empty. Merely selecting a top-level record, evidence from another
+basis, or evidence from another authority claim is insufficient.
+
+At `execution.started`, every selected evidence projection MUST carry an
+`action_scope` canonically equal to the proposal-derived `run_id`, `purpose`,
+`operation`, `target`, `data_zone_ids`, and `expected_effect`. These are the
+action-scope fields, not the whole proposal: they do not include the tool,
+executor, inputs, recipients, side effects, risk, cost, licence, approvals, or
+proposal digest. The selection itself is inside the complete proposal digest,
+so exact approval covers which evidence the proposer selected as well as the
+rest of the proposal.
+
+Unselected evidence may remain broader or may carry a different scope. One
+authority claim may therefore contain distinct scoped records for several
+possible actions, with each proposal selecting its own. The same evidence ID
+MAY be selected for two basis kinds only when its exact projection occurs in
+both. That reuse, a matching scope, the evidence labels, and either digest
+establish only internal record relationships. They do not establish truth,
+relevance, authenticity, basis-specific sufficiency, consent, technical
+control, representative authority, legal basis, or provider permission.
+
 `subject_actor_ids` makes affected-party and representative claims
 attributable, but an implementation still has to decide which bases apply to
 which affected people. An empty list is not universal consent. A passing
@@ -333,9 +378,13 @@ which affected people. An empty list is not universal consent. A passing
 the affected subjects and the exact proposed action scope: purpose, operation,
 target, data zones, and expected effect. Technical control, representative
 authority, legal basis, or provider permission evidence is not affected-party
-consent. Each relied-on consent evidence record and its projected binding MUST
-therefore carry matching `consent_subject_actor_ids` and structured
-`action_scope`; the free-text `scope` field is descriptive, not sufficient.
+consent. Each consent evidence record in a passing basis and its projected
+binding MUST therefore carry matching `consent_subject_actor_ids` and
+structured `action_scope`; the free-text `scope` field is descriptive, not
+sufficient.
+Proposal-side selection does not weaken this rule: every evidence record in a
+passing affected-party consent basis remains subject to these consent-specific
+kind, subject, and scope checks, whether selected or not.
 
 A `human_agent_pair` lists at least one human-role member and one agent-role
 member and MUST set `authority_merge: false`. A human or agent role MUST match
@@ -356,9 +405,10 @@ separately; it is not erased by withdrawal.
 An `action.proposed` binding discloses the executor, exact tool and version,
 operation, target, inputs, purpose, recipients, data zones, expected effect,
 possible side effects, risk, maximum cost, required licenses and terms,
-idempotency key, authority claims, required approvers, nonces, expiries, and
-retry policy. Its data zones are exact projections, so their classification,
-purpose, audience, and retention are covered by the proposal digest.
+idempotency key, authority claims and their selected evidence by basis,
+required approvers, nonces, expiries, and retry policy. Its data zones are exact
+projections, so their classification, purpose, audience, and retention are
+covered by the proposal digest.
 Each input names one of those zones. The zone projection is the single source
 of truth for that input's audience; an implementation MUST NOT invent a
 second, narrower or broader audience from the input name, kind, or locator.

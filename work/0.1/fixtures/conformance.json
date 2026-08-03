@@ -40,6 +40,34 @@
       "description": "An attested office claim remains outside R.AUTHORITY; without a positive authority basis, execution is nonconformant."
     },
     {
+      "id": "authority-basis-selection-missing",
+      "expected_result": "nonconformant",
+      "expected_check": "R.AUTHORITY",
+      "expected_issue": "authority_basis_selection_missing",
+      "description": "An executed proposal omits the evidence selection for one passing basis in a referenced authority claim."
+    },
+    {
+      "id": "authority-basis-selection-nonpassing",
+      "expected_result": "nonconformant",
+      "expected_check": "R.AUTHORITY",
+      "expected_issue": "authority_basis_selection_nonpassing",
+      "description": "An executed proposal selects evidence from a basis whose recorded outcome is not pass."
+    },
+    {
+      "id": "authority-selected-evidence-not-in-basis",
+      "expected_result": "nonconformant",
+      "expected_check": "R.REFERENCES",
+      "expected_issue": "authority_selected_evidence_not_in_basis",
+      "description": "A proposal selects an evidence ID that exists elsewhere but not in the named basis of the referenced authority claim."
+    },
+    {
+      "id": "authority-selected-evidence-scope-mismatch",
+      "expected_result": "nonconformant",
+      "expected_check": "R.AUTHORITY",
+      "expected_issue": "authority_selected_evidence_scope_mismatch",
+      "description": "Proposal-selected authority evidence omits or differs from the six proposal-derived action-scope fields."
+    },
+    {
       "id": "non-revocable-authority-at-execution",
       "expected_result": "nonconformant",
       "expected_check": "R.AUTHORITY",

@@ -50,7 +50,7 @@ const SEMANTIC_CHECKS = Object.freeze([
   ["R.LIMITS_PLAN", "declared finite limits, costs, attempts, and acyclic plans are respected"],
   ["R.STATE", "the finite work-state transitions are internally consistent"],
   ["R.DIGESTS", "authority and action digests match the profile canonicalization"],
-  ["R.AUTHORITY", "recorded execution starts reference active, exactly scoped authority claims without upgrading claims into proof"],
+  ["R.AUTHORITY", "recorded execution starts reference active authority claims and proposal-selected scoped evidence without upgrading claims into proof"],
   ["R.APPROVALS", "every recorded execution start has exact, unexpired, one-use approvals for its proposal"],
   ["R.EXECUTION", "recorded execution starts and provider receipts are paired once and remain distinct from effects"],
   ["R.EFFECTS", "effect observations are separate, ordered, and consistent with terminal outcome claims"],
@@ -973,7 +973,31 @@ function checkReferences(ctx, issues) {
         binding.inputs.forEach((input, inputIndex) => {
           requireZone(ctx, input.data_zone_id, `${path}.payload.binding.inputs[${inputIndex}].data_zone_id`, issues);
         });
-        binding.authority_claims.forEach((reference, index) => requireEvent(ctx, reference.event_id, `${path}.payload.binding.authority_claims[${index}].event_id`, issues, "authority.claimed", event));
+        binding.authority_claims.forEach((reference, referenceIndex) => {
+          const referencePath = `${path}.payload.binding.authority_claims[${referenceIndex}]`;
+          const authority = requireEvent(
+            ctx,
+            reference.event_id,
+            `${referencePath}.event_id`,
+            issues,
+            "authority.claimed",
+            event,
+          );
+          if (!authority) return;
+          for (const [basisKind, selectedIds] of Object.entries(reference.selected_evidence_ids_by_basis)) {
+            const basis = authority.payload.binding.bases.find(({ kind }) => kind === basisKind);
+            for (const [selectedIndex, evidenceId] of selectedIds.entries()) {
+              if (!basis?.evidence.some(({ id }) => id === evidenceId)) {
+                pushIssue(
+                  issues,
+                  "authority_selected_evidence_not_in_basis",
+                  `${referencePath}.selected_evidence_ids_by_basis.${basisKind}[${selectedIndex}]`,
+                  "Selected authority evidence must occur in that exact basis of the referenced authority claim.",
+                );
+              }
+            }
+          }
+        });
         binding.required_approvals.forEach((approval, index) => requireActor(ctx, approval.actor_id, `${path}.payload.binding.required_approvals[${index}].actor_id`, issues));
         if (binding.license.state === "reviewed") {
           requireActor(ctx, binding.license.reviewed_by_actor_id, `${path}.payload.binding.license.reviewed_by_actor_id`, issues);
@@ -1445,11 +1469,20 @@ function checkAuthority(ctx, issues) {
     if (!sameMembers(event.payload.authority_claim_event_ids, proposalAuthorityIds)) {
       pushIssue(issues, "execution_authority_set_mismatch", `${path}.authority_claim_event_ids`, "Execution authority IDs must exactly match the authority claims bound into the proposal.");
     }
+    const expectedEvidenceScope = actionScope(ctx.run, action);
     for (const [authorityIndex, reference] of action.authority_claims.entries()) {
       const authority = ctx.events.get(reference.event_id)?.event;
       if (authority?.type !== "authority.claimed") continue;
       const binding = authority.payload.binding;
-      const authorityPath = `$.events[${index}].payload.authority_claim_event_ids[${authorityIndex}]`;
+      const executionAuthorityIndex = event.payload.authority_claim_event_ids.indexOf(
+        reference.event_id,
+      );
+      const authorityPath = executionAuthorityIndex === -1
+        ? `$.events[${index}].payload.authority_claim_event_ids`
+        : `$.events[${index}].payload.authority_claim_event_ids[${executionAuthorityIndex}]`;
+      const proposalIndex = ctx.events.get(proposal.id).index;
+      const selectionPath = `$.events[${proposalIndex}].payload.binding.authority_claims[${authorityIndex}].selected_evidence_ids_by_basis`;
+      const selectedEvidenceByBasis = reference.selected_evidence_ids_by_basis;
       if (ctx.actors.get(binding.claimant_actor_id)?.actor.kind === "human_agent_pair") {
         pushIssue(issues, "pair_authority_unsupported", authorityPath, "A human-agent pair does not merge member authority and cannot supply an execution authority claim in Work 0.1.");
       }
@@ -1483,6 +1516,31 @@ function checkAuthority(ctx, issues) {
         pushIssue(issues, "authority_withdrawn", authorityPath, "The authority claim was withdrawn before execution.");
       }
       for (const basis of binding.bases) {
+        const selected = selectedEvidenceByBasis[basis.kind];
+        if (basis.outcome === "pass" && selected === undefined) {
+          pushIssue(issues, "authority_basis_selection_missing", `${selectionPath}.${basis.kind}`, "Every passing authority basis must have proposal-selected evidence.");
+        }
+        if (basis.outcome !== "pass" && selected !== undefined) {
+          pushIssue(issues, "authority_basis_selection_nonpassing", `${selectionPath}.${basis.kind}`, "A proposal cannot select evidence from a non-passing authority basis.");
+        }
+      }
+      for (const basis of binding.bases) {
+        if (basis.outcome === "pass") {
+          const selected = selectedEvidenceByBasis[basis.kind] ?? [];
+          for (const [selectedIndex, evidenceId] of selected.entries()) {
+            const evidenceBinding = basis.evidence.find(({ id }) => id === evidenceId);
+            if (!evidenceBinding) continue;
+            if (!evidenceBinding.action_scope
+              || !sameCanonical(evidenceBinding.action_scope, expectedEvidenceScope)) {
+              pushIssue(
+                issues,
+                "authority_selected_evidence_scope_mismatch",
+                `${selectionPath}.${basis.kind}[${selectedIndex}]`,
+                "Selected authority evidence must bind the proposal-derived run, purpose, operation, target, data zones, and expected effect.",
+              );
+            }
+          }
+        }
         if (basis.kind === "affected_party_consent"
           && !sameMembers(basis.subject_actor_ids, action.expected_effect.affected_actor_ids)) {
           pushIssue(issues, "consent_subject_set_mismatch", authorityPath, "The affected-party consent basis must name exactly the actors declared as affected by the action.");
