@@ -115,7 +115,24 @@
       "observed_at": "2026-08-03T11:02:00Z",
       "recorded_by_actor_id": "urn:xenia:example:actor:steward",
       "scope": "Technical control and provider permission claimed for one notice creation.",
-      "data_zone_id": "internal_record"
+      "data_zone_id": "internal_record",
+      "action_scope": {
+        "run_id": "urn:xenia:example:run:lantern-notice",
+        "purpose": "Publish the approved fictitious garden notice.",
+        "operation": "notice.create",
+        "target": "urn:xenia:example:resource:lantern-board",
+        "data_zone_ids": ["public_content"],
+        "expected_effect": {
+          "kind": "create",
+          "summary": "Create one public notice on the fictitious lantern board.",
+          "target": "urn:xenia:example:resource:lantern-board",
+          "reversibility": "reversible",
+          "evidence_plan": "Read the target separately and retain a bounded observation reference.",
+          "affected_actor_ids": [
+            "urn:xenia:example:actor:steward"
+          ]
+        }
+      }
     },
     {
       "id": "urn:xenia:example:evidence:terms-1",
@@ -152,7 +169,7 @@
       "causal_scope": {
         "run_id": "urn:xenia:example:run:lantern-notice",
         "proposal_event_id": "proposal-1",
-        "proposal_digest": "sha256:947e94eeaa472840d3f57be3dea035dafe39edd8f0b01ed13dd2b429b5a2d02e",
+        "proposal_digest": "sha256:9c145c4bb52a9cc6a253c0cc88e25e939d71fa0f7fd120aeb6ff3f4b5b46d220",
         "execution_event_id": "execution-1",
         "receipt_event_id": "receipt-1",
         "target": "urn:xenia:example:resource:lantern-board",
@@ -290,6 +307,23 @@
                       "mode": "until",
                       "until": "2026-08-10T11:00:00Z"
                     }
+                  },
+                  "action_scope": {
+                    "run_id": "urn:xenia:example:run:lantern-notice",
+                    "purpose": "Publish the approved fictitious garden notice.",
+                    "operation": "notice.create",
+                    "target": "urn:xenia:example:resource:lantern-board",
+                    "data_zone_ids": ["public_content"],
+                    "expected_effect": {
+                      "kind": "create",
+                      "summary": "Create one public notice on the fictitious lantern board.",
+                      "target": "urn:xenia:example:resource:lantern-board",
+                      "reversibility": "reversible",
+                      "evidence_plan": "Read the target separately and retain a bounded observation reference.",
+                      "affected_actor_ids": [
+                        "urn:xenia:example:actor:steward"
+                      ]
+                    }
                   }
                 }
               ]
@@ -388,13 +422,30 @@
                       "mode": "until",
                       "until": "2026-08-10T11:00:00Z"
                     }
+                  },
+                  "action_scope": {
+                    "run_id": "urn:xenia:example:run:lantern-notice",
+                    "purpose": "Publish the approved fictitious garden notice.",
+                    "operation": "notice.create",
+                    "target": "urn:xenia:example:resource:lantern-board",
+                    "data_zone_ids": ["public_content"],
+                    "expected_effect": {
+                      "kind": "create",
+                      "summary": "Create one public notice on the fictitious lantern board.",
+                      "target": "urn:xenia:example:resource:lantern-board",
+                      "reversibility": "reversible",
+                      "evidence_plan": "Read the target separately and retain a bounded observation reference.",
+                      "affected_actor_ids": [
+                        "urn:xenia:example:actor:steward"
+                      ]
+                    }
                   }
                 }
               ]
             }
           ]
         },
-        "claim_digest": "sha256:2dfac684591e3cf00a43463fbf6a02146805f07fa76450fd20ac62d6e17127a9"
+        "claim_digest": "sha256:d2998bab8b3917319bcb94de507cd55a49008fe643c5a57cd7976d56c10b91d7"
       }
     },
     {
@@ -482,7 +533,12 @@
           "authority_claims": [
             {
               "event_id": "authority-1",
-              "digest": "sha256:2dfac684591e3cf00a43463fbf6a02146805f07fa76450fd20ac62d6e17127a9"
+              "digest": "sha256:d2998bab8b3917319bcb94de507cd55a49008fe643c5a57cd7976d56c10b91d7",
+              "selected_evidence_ids_by_basis": {
+                "technical_control": ["urn:xenia:example:evidence:permission-1"],
+                "affected_party_consent": ["urn:xenia:example:evidence:consent-1"],
+                "provider_permission": ["urn:xenia:example:evidence:permission-1"]
+              }
             }
           ],
           "required_approvals": [
@@ -497,7 +553,7 @@
             "max_attempts": 1
           }
         },
-        "proposal_digest": "sha256:947e94eeaa472840d3f57be3dea035dafe39edd8f0b01ed13dd2b429b5a2d02e"
+        "proposal_digest": "sha256:9c145c4bb52a9cc6a253c0cc88e25e939d71fa0f7fd120aeb6ff3f4b5b46d220"
       }
     },
     {
@@ -509,7 +565,7 @@
       "previous_event_id": "proposal-1",
       "payload": {
         "proposal_event_id": "proposal-1",
-        "proposal_digest": "sha256:947e94eeaa472840d3f57be3dea035dafe39edd8f0b01ed13dd2b429b5a2d02e",
+        "proposal_digest": "sha256:9c145c4bb52a9cc6a253c0cc88e25e939d71fa0f7fd120aeb6ff3f4b5b46d220",
         "approver_actor_id": "urn:xenia:example:actor:steward",
         "nonce": "approve-lantern-0001",
         "decision": "approved",
@@ -526,7 +582,7 @@
       "payload": {
         "execution_id": "urn:xenia:example:execution:lantern-notice-1",
         "proposal_event_id": "proposal-1",
-        "proposal_digest": "sha256:947e94eeaa472840d3f57be3dea035dafe39edd8f0b01ed13dd2b429b5a2d02e",
+        "proposal_digest": "sha256:9c145c4bb52a9cc6a253c0cc88e25e939d71fa0f7fd120aeb6ff3f4b5b46d220",
         "approval_event_ids": ["approval-1"],
         "authority_claim_event_ids": ["authority-1"],
         "executor_actor_id": "urn:xenia:example:actor:helper"
@@ -542,7 +598,7 @@
       "payload": {
         "execution_event_id": "execution-1",
         "proposal_event_id": "proposal-1",
-        "proposal_digest": "sha256:947e94eeaa472840d3f57be3dea035dafe39edd8f0b01ed13dd2b429b5a2d02e",
+        "proposal_digest": "sha256:9c145c4bb52a9cc6a253c0cc88e25e939d71fa0f7fd120aeb6ff3f4b5b46d220",
         "provider": {
           "id": "urn:xenia:example:provider:noticeboard",
           "version": "1.0"
@@ -568,7 +624,7 @@
         "execution_event_id": "execution-1",
         "receipt_event_id": "receipt-1",
         "proposal_event_id": "proposal-1",
-        "proposal_digest": "sha256:947e94eeaa472840d3f57be3dea035dafe39edd8f0b01ed13dd2b429b5a2d02e",
+        "proposal_digest": "sha256:9c145c4bb52a9cc6a253c0cc88e25e939d71fa0f7fd120aeb6ff3f4b5b46d220",
         "outcome": "confirmed",
         "summary": "The exact notice was separately observed at the declared target.",
         "evidence_state": "tested",

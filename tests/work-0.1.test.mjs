@@ -69,6 +69,11 @@ function refreshDigests(run) {
       entry.payload.proposal_digest = proposalDigest;
     }
   }
+  for (const evidence of run.evidence) {
+    if (evidence.causal_scope?.proposal_event_id === proposal.id) {
+      evidence.causal_scope.proposal_digest = proposalDigest;
+    }
+  }
   return run;
 }
 
@@ -122,6 +127,41 @@ function addPairActor(run) {
   return id;
 }
 
+function authorityBasis(run, kind) {
+  return event(run, "authority.claimed").payload.binding.bases
+    .find((basis) => basis.kind === kind);
+}
+
+function actionAuthorityReference(run) {
+  return event(run, "action.proposed").payload.binding.authority_claims[0];
+}
+
+function addOfficeIdentityClaim(run) {
+  const evidence = {
+    id: "urn:xenia:test:evidence:office-attestation",
+    kind: "attestation",
+    ref: "https://example.invalid/evidence/office-attestation",
+    digest: `sha256:${"a".repeat(64)}`,
+    description: "Fictitious attestation of one named office, not an authority grant.",
+    observed_at: "2026-08-03T11:01:30Z",
+    recorded_by_actor_id: "urn:xenia:example:actor:steward",
+    scope: "This record claims only that the named actor held one office at the stated time.",
+    data_zone_id: "internal_record",
+  };
+  run.evidence.push(evidence);
+  const executorId = event(run, "action.proposed").payload.binding.executor_actor_id;
+  const executor = run.actors.find(({ id }) => id === executorId);
+  assert.ok(executor);
+  executor.identity_claims.push({
+    id: "claimed-office",
+    statement: "The actor is attested to hold a named office.",
+    evidence_state: "attested",
+    outcome: "pass",
+    evidence_ids: [evidence.id],
+  });
+  return evidence;
+}
+
 test("Work development schemas compile strictly and accept their examples", () => {
   assert.equal(validateRunSchema(completed), true, JSON.stringify(validateRunSchema.errors));
   assert.equal(validateRunSchema(declined), true, JSON.stringify(validateRunSchema.errors));
@@ -161,6 +201,10 @@ test("the conformance fixture manifest names every hardened boundary", () => {
       "asserted-authority-at-execution",
       "authority-positive-basis-missing",
       "identity-claim-is-not-implicitly-authority",
+      "authority-basis-selection-missing",
+      "authority-basis-selection-nonpassing",
+      "authority-selected-evidence-not-in-basis",
+      "authority-selected-evidence-scope-mismatch",
       "non-revocable-authority-at-execution",
       "consent-evidence-kind-mismatch",
       "consent-evidence-scope-mismatch",
@@ -336,6 +380,11 @@ test("finite limits, ordering and exact digest binding reject mutations", () => 
   event(proposalMutation, "action.proposed").payload.binding.inputs[0].value = "Different notice.";
   assert.ok(issueCodes(proposalMutation).has("proposal_digest_mismatch"));
 
+  const selectionMutation = clone(completed);
+  delete actionAuthorityReference(selectionMutation)
+    .selected_evidence_ids_by_basis.provider_permission;
+  assert.ok(issueCodes(selectionMutation).has("proposal_digest_mismatch"));
+
   const authorityScope = clone(completed);
   event(authorityScope, "authority.claimed").payload.binding.resources = [
     "urn:xenia:example:resource:other-board",
@@ -385,39 +434,20 @@ test("execution needs at least one positive authority basis", () => {
     basis.evidence_state = "none";
     basis.evidence = [];
   }
+  actionAuthorityReference(candidate).selected_evidence_ids_by_basis = {};
   refreshDigests(candidate);
   assertFailedCheck(candidate, "R.AUTHORITY", "authority_positive_basis_missing");
 });
 
 test("an attested title or role claim is not implicitly promoted into authority", () => {
   const candidate = clone(completed);
-  const evidenceId = "urn:xenia:test:evidence:office-attestation";
-  candidate.evidence.push({
-    id: evidenceId,
-    kind: "attestation",
-    ref: "https://example.invalid/evidence/office-attestation",
-    digest: `sha256:${"a".repeat(64)}`,
-    description: "Fictitious attestation of one named office, not an authority grant.",
-    observed_at: "2026-08-03T11:01:30Z",
-    recorded_by_actor_id: "urn:xenia:example:actor:steward",
-    scope: "This record claims only that the named actor held one office at the stated time.",
-    data_zone_id: "internal_record",
-  });
-  const executorId = event(candidate, "action.proposed").payload.binding.executor_actor_id;
-  const executor = candidate.actors.find(({ id }) => id === executorId);
-  assert.ok(executor);
-  executor.identity_claims.push({
-    id: "claimed-office",
-    statement: "The actor is attested to hold a named office.",
-    evidence_state: "attested",
-    outcome: "pass",
-    evidence_ids: [evidenceId],
-  });
+  addOfficeIdentityClaim(candidate);
   for (const basis of event(candidate, "authority.claimed").payload.binding.bases) {
     basis.outcome = "not_applicable";
     basis.evidence_state = "none";
     basis.evidence = [];
   }
+  actionAuthorityReference(candidate).selected_evidence_ids_by_basis = {};
   refreshDigests(candidate);
 
   assert.equal(validateRunSchema(candidate), true, JSON.stringify(validateRunSchema.errors));
@@ -429,11 +459,238 @@ test("an attested title or role claim is not implicitly promoted into authority"
   assert.equal(validation.issues.some(({ code }) => code === "evidence_reference_missing"), false);
 });
 
+test("executed proposals select evidence from each and only passing authority basis", () => {
+  const missing = clone(completed);
+  delete actionAuthorityReference(missing).selected_evidence_ids_by_basis.provider_permission;
+  refreshDigests(missing);
+  assertFailedCheck(missing, "R.AUTHORITY", "authority_basis_selection_missing");
+
+  const nonpassing = clone(completed);
+  const permissionBinding = clone(authorityBasis(nonpassing, "technical_control").evidence[0]);
+  const representative = authorityBasis(nonpassing, "representative_authority");
+  representative.subject_actor_ids = ["urn:xenia:example:actor:steward"];
+  representative.evidence_state = "tested";
+  representative.outcome = "fail";
+  representative.evidence = [permissionBinding];
+  actionAuthorityReference(nonpassing).selected_evidence_ids_by_basis.representative_authority = [
+    permissionBinding.id,
+  ];
+  refreshDigests(nonpassing);
+  const nonpassingValidation = assertFailedCheck(
+    nonpassing,
+    "R.AUTHORITY",
+    "authority_basis_selection_nonpassing",
+  );
+  assert.ok(nonpassingValidation.issues.some(({ code }) => code === "authority_basis_unresolved"));
+
+  const wrongBasis = clone(completed);
+  actionAuthorityReference(wrongBasis).selected_evidence_ids_by_basis.technical_control = [
+    "urn:xenia:example:evidence:consent-1",
+  ];
+  refreshDigests(wrongBasis);
+  assertFailedCheck(
+    wrongBasis,
+    "R.REFERENCES",
+    "authority_selected_evidence_not_in_basis",
+  );
+
+  const neverExecuted = clone(completed);
+  actionAuthorityReference(neverExecuted).selected_evidence_ids_by_basis = {};
+  const proposalIndex = neverExecuted.events.findIndex(({ type }) => type === "action.proposed");
+  neverExecuted.events = neverExecuted.events.slice(0, proposalIndex + 1);
+  neverExecuted.events.push({
+    id: "closed-without-action-1",
+    sequence: 6,
+    type: "work.closed",
+    at: "2026-08-03T11:04:00Z",
+    actor_id: "urn:xenia:example:actor:helper",
+    previous_event_id: "proposal-1",
+    payload: {
+      outcome: "no_action",
+      summary: "The proposal was recorded but no external action was started.",
+      limitations: ["No authority evidence was selected for execution."],
+    },
+  });
+  neverExecuted.evidence = neverExecuted.evidence.filter(
+    ({ id }) => !id.endsWith(":receipt-1") && !id.endsWith(":observation-1"),
+  );
+  neverExecuted.terminal_state = "closed";
+  neverExecuted.terminal_event_id = "closed-without-action-1";
+  neverExecuted.updated_at = "2026-08-03T11:04:00Z";
+  refreshDigests(neverExecuted);
+  const neverExecutedValidation = validationFor(neverExecuted);
+  assert.equal(checkOutcome(neverExecutedValidation, "R.AUTHORITY"), "pass");
+});
+
+test("title evidence explicitly selected as authority still needs a matching action scope", () => {
+  const candidate = clone(completed);
+  const officeEvidence = addOfficeIdentityClaim(candidate);
+  const officeBinding = clone(authorityBasis(candidate, "technical_control").evidence[0]);
+  Object.assign(officeBinding, {
+    id: officeEvidence.id,
+    kind: officeEvidence.kind,
+    digest: officeEvidence.digest,
+    observed_at: officeEvidence.observed_at,
+    recorded_by_actor_id: officeEvidence.recorded_by_actor_id,
+    scope: officeEvidence.scope,
+  });
+  delete officeBinding.action_scope;
+  for (const basis of event(candidate, "authority.claimed").payload.binding.bases) {
+    basis.outcome = "not_applicable";
+    basis.evidence_state = "none";
+    basis.evidence = [];
+  }
+  const representative = authorityBasis(candidate, "representative_authority");
+  representative.subject_actor_ids = ["urn:xenia:example:actor:steward"];
+  representative.evidence_state = "attested";
+  representative.outcome = "pass";
+  representative.evidence = [officeBinding];
+  actionAuthorityReference(candidate).selected_evidence_ids_by_basis = {
+    representative_authority: [officeEvidence.id],
+  };
+  refreshDigests(candidate);
+
+  assert.equal(validateRunSchema(candidate), true, JSON.stringify(validateRunSchema.errors));
+  const validation = assertFailedCheck(
+    candidate,
+    "R.AUTHORITY",
+    "authority_selected_evidence_scope_mismatch",
+  );
+  assert.equal(checkOutcome(validation, "R.REFERENCES"), "pass", JSON.stringify(validation.issues));
+});
+
+test("selected authority scope is exact while unselected supporting evidence may stay broad", () => {
+  const permissionId = "urn:xenia:example:evidence:permission-1";
+  const scopeMutations = [
+    ["run_id", (scope) => { scope.run_id = "urn:xenia:test:run:other"; }],
+    ["purpose", (scope) => { scope.purpose = "Perform a different bounded action."; }],
+    ["operation", (scope) => { scope.operation = "notice.update"; }],
+    ["target", (scope) => { scope.target = "urn:xenia:example:resource:other-board"; }],
+    ["data_zone_ids", (scope) => { scope.data_zone_ids = ["internal_record"]; }],
+    ["expected_effect.kind", (scope) => { scope.expected_effect.kind = "update"; }],
+    ["expected_effect.summary", (scope) => {
+      scope.expected_effect.summary = "Update a different fictitious notice.";
+    }],
+    ["expected_effect.target", (scope) => {
+      scope.expected_effect.target = "urn:xenia:example:resource:other-board";
+    }],
+    ["expected_effect.reversibility", (scope) => {
+      scope.expected_effect.reversibility = "compensatable";
+    }],
+    ["expected_effect.evidence_plan", (scope) => {
+      scope.expected_effect.evidence_plan = "Inspect a different target.";
+    }],
+    ["expected_effect.affected_actor_ids", (scope) => {
+      scope.expected_effect.affected_actor_ids = ["urn:xenia:example:actor:helper"];
+    }],
+  ];
+  for (const [field, mutate] of scopeMutations) {
+    const wrongScope = clone(completed);
+    mutate(wrongScope.evidence.find(({ id }) => id === permissionId).action_scope);
+    for (const basis of event(wrongScope, "authority.claimed").payload.binding.bases) {
+      for (const binding of basis.evidence) {
+        if (binding.id === permissionId) mutate(binding.action_scope);
+      }
+    }
+    refreshDigests(wrongScope);
+    const wrongValidation = assertFailedCheck(
+      wrongScope,
+      "R.AUTHORITY",
+      "authority_selected_evidence_scope_mismatch",
+    );
+    assert.equal(
+      checkOutcome(wrongValidation, "R.REFERENCES"),
+      field === "run_id" ? "fail" : "pass",
+      `${field}: ${JSON.stringify(wrongValidation.issues)}`,
+    );
+  }
+
+  const broadSupport = clone(completed);
+  const broadEvidence = clone(broadSupport.evidence.find(({ id }) => id === permissionId));
+  broadEvidence.id = "urn:xenia:test:evidence:broad-control-policy";
+  broadEvidence.ref = "https://example.invalid/evidence/broad-control-policy";
+  broadEvidence.digest = `sha256:${"b".repeat(64)}`;
+  broadEvidence.description = "Fictitious broad supporting policy with no action applicability claim.";
+  broadEvidence.scope = "Broad supporting material not selected by this proposal.";
+  delete broadEvidence.action_scope;
+  broadSupport.evidence.push(broadEvidence);
+  const broadBinding = clone(authorityBasis(broadSupport, "technical_control").evidence[0]);
+  Object.assign(broadBinding, {
+    id: broadEvidence.id,
+    kind: broadEvidence.kind,
+    digest: broadEvidence.digest,
+    observed_at: broadEvidence.observed_at,
+    recorded_by_actor_id: broadEvidence.recorded_by_actor_id,
+    scope: broadEvidence.scope,
+  });
+  delete broadBinding.action_scope;
+  authorityBasis(broadSupport, "technical_control").evidence.push(broadBinding);
+  refreshDigests(broadSupport);
+  const broadValidation = validationFor(broadSupport);
+  assert.equal(checkOutcome(broadValidation, "R.REFERENCES"), "pass");
+  assert.equal(checkOutcome(broadValidation, "R.AUTHORITY"), "pass");
+
+  const selectedBroadSupport = clone(broadSupport);
+  actionAuthorityReference(
+    selectedBroadSupport,
+  ).selected_evidence_ids_by_basis.technical_control.push(broadEvidence.id);
+  refreshDigests(selectedBroadSupport);
+  const selectedBroadValidation = assertFailedCheck(
+    selectedBroadSupport,
+    "R.AUTHORITY",
+    "authority_selected_evidence_scope_mismatch",
+  );
+  assert.equal(
+    checkOutcome(selectedBroadValidation, "R.REFERENCES"),
+    "pass",
+    JSON.stringify(selectedBroadValidation.issues),
+  );
+});
+
 test("non-revocable authority cannot support an execution start", () => {
   const candidate = clone(completed);
   event(candidate, "authority.claimed").payload.binding.revocable = false;
   refreshDigests(candidate);
   assertFailedCheck(candidate, "R.AUTHORITY", "non_revocable_authority_at_execution");
+});
+
+test("authority diagnostics follow claim IDs when execution lists them in another order", () => {
+  const candidate = clone(completed);
+  const firstAuthority = event(candidate, "authority.claimed");
+  const secondAuthority = clone(firstAuthority);
+  secondAuthority.id = "authority-2";
+  secondAuthority.payload.binding.claim_event_id = secondAuthority.id;
+  secondAuthority.payload.claim_digest = authorityClaimDigest(secondAuthority.payload.binding);
+  candidate.events.splice(candidate.events.indexOf(firstAuthority) + 1, 0, secondAuthority);
+  candidate.limits.max_events += 1;
+  resequenceEvents(candidate);
+
+  const proposalReference = actionAuthorityReference(candidate);
+  event(candidate, "action.proposed").payload.binding.authority_claims.push({
+    event_id: secondAuthority.id,
+    digest: secondAuthority.payload.claim_digest,
+    selected_evidence_ids_by_basis: clone(proposalReference.selected_evidence_ids_by_basis),
+  });
+  event(candidate, "execution.started").payload.authority_claim_event_ids = [
+    secondAuthority.id,
+    firstAuthority.id,
+  ];
+  firstAuthority.payload.binding.revocable = false;
+  refreshDigests(candidate);
+
+  const validation = assertFailedCheck(
+    candidate,
+    "R.AUTHORITY",
+    "non_revocable_authority_at_execution",
+  );
+  const issue = validation.issues.find(
+    ({ code }) => code === "non_revocable_authority_at_execution",
+  );
+  const executionIndex = candidate.events.findIndex(({ type }) => type === "execution.started");
+  assert.equal(
+    issue.path,
+    `$.events[${executionIndex}].payload.authority_claim_event_ids[1]`,
+  );
 });
 
 test("affected-party consent uses consent-specific evidence", () => {
@@ -442,6 +699,9 @@ test("affected-party consent uses consent-specific evidence", () => {
   const permissionEvidence = bases.find(({ kind }) => kind === "technical_control").evidence[0];
   const consent = bases.find(({ kind }) => kind === "affected_party_consent");
   consent.evidence = [clone(permissionEvidence)];
+  actionAuthorityReference(candidate).selected_evidence_ids_by_basis.affected_party_consent = [
+    permissionEvidence.id,
+  ];
   refreshDigests(candidate);
   assertFailedCheck(candidate, "R.AUTHORITY", "consent_evidence_kind_mismatch");
 });
@@ -466,6 +726,34 @@ test("affected-party consent evidence binds exact subjects and action scope", ()
   subjectBinding.consent_subject_actor_ids = clone(subjectEvidence.consent_subject_actor_ids);
   refreshDigests(wrongSubjects);
   assertFailedCheck(wrongSubjects, "R.AUTHORITY", "consent_evidence_subject_mismatch");
+
+  const unselectedWrongScope = clone(completed);
+  const consentId = "urn:xenia:example:evidence:consent-1";
+  const unselectedConsent = clone(
+    unselectedWrongScope.evidence.find(({ id }) => id === consentId),
+  );
+  unselectedConsent.id = "urn:xenia:test:evidence:unselected-consent";
+  unselectedConsent.ref = "https://example.invalid/evidence/unselected-consent";
+  unselectedConsent.digest = `sha256:${"c".repeat(64)}`;
+  unselectedConsent.action_scope.purpose = "Consent to a different proposed action.";
+  unselectedWrongScope.evidence.push(unselectedConsent);
+  const unselectedConsentBinding = clone(
+    authorityBasis(unselectedWrongScope, "affected_party_consent").evidence[0],
+  );
+  Object.assign(unselectedConsentBinding, {
+    id: unselectedConsent.id,
+    digest: unselectedConsent.digest,
+    action_scope: clone(unselectedConsent.action_scope),
+  });
+  authorityBasis(unselectedWrongScope, "affected_party_consent").evidence.push(
+    unselectedConsentBinding,
+  );
+  refreshDigests(unselectedWrongScope);
+  assertFailedCheck(
+    unselectedWrongScope,
+    "R.AUTHORITY",
+    "consent_evidence_scope_mismatch",
+  );
 });
 
 test("credential-shaped and restricted literals fail without echoing their values", () => {
