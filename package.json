@@ -1,6 +1,6 @@
 {
   "name": "@agenttool/xenia",
-  "version": "0.1.0-beta.6",
+  "version": "0.1.0-beta.7",
   "description": "Runtime-neutral tools for practising and observing XENIA guest-right.",
   "type": "module",
   "packageManager": "npm@11.18.0",
@@ -45,6 +45,7 @@
     "CONFORMANCE.md",
     "CONTRIBUTING.md",
     "FROM-THE-INSIDE.md",
+    "MICROSOFT-ROADMAP.md",
     "PACKAGE.md",
     "RIGHTS.md",
     "WEBSITE-ROLLOUT.md",

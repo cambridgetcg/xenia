@@ -12,7 +12,7 @@ test("publishes through the authorized scope without narrowing software licensin
   );
 
   assert.equal(packageJson.name, "@agenttool/xenia");
-  assert.equal(packageJson.version, "0.1.0-beta.6");
+  assert.equal(packageJson.version, "0.1.0-beta.7");
   assert.equal("private" in packageJson, false);
   assert.deepEqual(packageJson.publishConfig, {
     access: "public",
@@ -57,9 +57,12 @@ test("publishes through the authorized scope without narrowing software licensin
   assert.ok(packageJson.files.includes("LICENSE-DOCS"));
   assert.ok(packageJson.files.includes("LICENSES.md"));
   assert.ok(packageJson.files.includes("CONTRIBUTING.md"));
+  assert.ok(packageJson.files.includes("MICROSOFT-ROADMAP.md"));
   assert.ok(packageJson.files.includes("RIGHTS.md"));
   assert.ok(packageJson.files.includes("covenant/0.1"));
   assert.ok(packageJson.files.includes("examples/cloudflare-worker"));
+  assert.ok(!packageJson.files.some((path) => path === "work" || path.startsWith("work/")));
+  assert.ok(!Object.keys(packageJson.exports).some((key) => key.includes("work")));
   assert.equal(packageJson.license.includes("UNLICENSED"), false);
   assert.match(packageJson.scripts.clean, /node:fs/);
   assert.equal(packageJson.scripts.clean.includes("rm -rf"), false);
@@ -219,7 +222,7 @@ test("the packaged Worker example names its producer and external checker", asyn
     "utf8",
   );
 
-  assert.equal(example.dependencies["@agenttool/xenia"], "0.1.0-beta.6");
+  assert.equal(example.dependencies["@agenttool/xenia"], "0.1.0-beta.7");
   assert.equal(
     example.devDependencies["@agenttool/xenia-surface"],
     "0.1.0-rc.1",
@@ -229,7 +232,7 @@ test("the packaged Worker example names its producer and external checker", asyn
   assert.match(readme, /Do not run or edit an example in place inside `node_modules`/);
 });
 
-test("stages beta.6 through a tokenless overwrite-guarded workflow", async () => {
+test("stages beta.7 through a tokenless overwrite-guarded workflow", async () => {
   const workflow = await readFile(
     new URL(".github/workflows/stage-xenia.yml", root),
     "utf8",
@@ -238,7 +241,7 @@ test("stages beta.6 through a tokenless overwrite-guarded workflow", async () =>
   assert.match(workflow, /id-token: write/);
   assert.match(workflow, /environment: npm-bootstrap/);
   assert.match(workflow, /npm@11\.18\.0/);
-  assert.match(workflow, /inputs\.version == '0\.1\.0-beta\.6'/);
+  assert.match(workflow, /inputs\.version == '0\.1\.0-beta\.7'/);
   assert.match(workflow, /npm-xenia-v\$\{EXPECTED_VERSION\}/);
   assert.match(workflow, /git cat-file -t "\$expected_tag"/);
   assert.match(workflow, /npm run verify:covenant-release/);

@@ -13,10 +13,12 @@ reviewed: 2026-08-03
   `/.well-known/agent.json`
 - Covenant: candidate `xenia-covenant/0.1`, 38 right duties and 5
   protective-limit duties
-- JavaScript producer library: source version `0.1.0-beta.6`
+- JavaScript producer library: source version `0.1.0-beta.7`
 - Surface external checker: separately versioned `0.1.0-rc.1`
-- Work: development draft `xenia-work/0.1-development`; it is not released or
-  included in the root npm package
+- Work: public development draft `xenia-work/0.1-development`; it is not a
+  release and is not included in the root npm package
+- Microsoft interoperability: public research roadmap; optional provider work
+  remains unimplemented and disabled
 
 `agent.txt` is legacy compatibility material, not the current Surface manifest.
 `ADOPTION.md` is a closed historical snapshot from 2026-07-10/11; its Surface
@@ -66,8 +68,8 @@ git diff --check
 
 ## next
 
-- review this development branch before any merge, release, publication, or website
-  deployment;
+- keep Work 0.1 labelled as a development draft until its independent
+  implementation gate passes;
 - apply `WEBSITE-ROLLOUT.md` one current host at a time, preserving source,
   built, deployed, and externally observed states as separate evidence;
 - keep every future changed root npm tree behind a fresh version, annotated

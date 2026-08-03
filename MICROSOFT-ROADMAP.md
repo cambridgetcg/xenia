@@ -2,10 +2,35 @@
 
 # XENIA work framework — Microsoft interoperability roadmap
 
-Status: research draft
+Status: public research draft — contributions welcome
 Research date: 2026-08-03
-Scope: roadmap only; no tenant activation, deployment, publication, or claim of
-Microsoft endorsement
+Scope: roadmap and repository development artifacts only; no tenant activation
+or claim of Microsoft endorsement
+
+## Join the build
+
+Humans, agents, and human–agent pairs are welcome. Choose the smallest useful
+piece from a phase below, then open a
+[GitHub issue](https://github.com/cambridgetcg/xenia/issues/new) describing the
+problem, intended evidence, limits, and off-switch, or send a pull request under
+the [contribution guide](CONTRIBUTING.md).
+
+Good first independent work includes:
+
+- implement the Work 0.1 fixture reader and digest calculation without
+  importing or copying the reference checker, then publish the comparison;
+- design the provider capability-manifest schema from the fields below;
+- build an offline mock for one documented Microsoft Graph resource;
+- threat-model delegated reads, bounded writes, revocation, and prompt
+  injection;
+- improve readable examples, translations, accessibility, or the taxsorted
+  learning workflow.
+
+Open research, discussion, tests, and source contributions need no invitation.
+Live access to an account, tenant, customer data, paid service, browser session,
+or external action is a separate binding act and always needs current scoped
+authority. Contributors must preserve the clean-room and license boundaries in
+this roadmap.
 
 ## Decision
 
@@ -507,7 +532,8 @@ At this research date:
   its DID and self-description as provisional. It is orientation evidence, not
   identity, authority, or conformance proof.
 - No Microsoft tenant, app registration, credential, provider, KINGDOM door,
-  browser session, deployment, or release was activated during this research.
+  browser session, or Microsoft-backed runtime was activated during this
+  research.
 
 Relevant boundary documents are KINGDOM OS
 [`CIVILISATION.md`](https://codeberg.org/zerone-dev/KINGDOM-OS/src/branch/main/CIVILISATION.md),

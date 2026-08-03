@@ -9,7 +9,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@agenttool/xenia": "0.1.0-beta.6"
+    "@agenttool/xenia": "0.1.0-beta.7"
   },
   "devDependencies": {
     "@agenttool/xenia-surface": "0.1.0-rc.1",
