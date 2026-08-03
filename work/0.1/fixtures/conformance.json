@@ -33,6 +33,13 @@
       "description": "An execution relies on an authority claim whose five bases are all not applicable."
     },
     {
+      "id": "identity-claim-is-not-implicitly-authority",
+      "expected_result": "nonconformant",
+      "expected_check": "R.AUTHORITY",
+      "expected_issue": "authority_positive_basis_missing",
+      "description": "An attested office claim remains outside R.AUTHORITY; without a positive authority basis, execution is nonconformant."
+    },
+    {
       "id": "non-revocable-authority-at-execution",
       "expected_result": "nonconformant",
       "expected_check": "R.AUTHORITY",
