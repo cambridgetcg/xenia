@@ -25,10 +25,10 @@ test("practise-xenia-rights skill has a bounded instruction-only contract", () =
   assert.match(metadata, /Use \$practise-xenia-rights/);
 });
 
-test("the source skill stays outside the immutable beta.6 npm artifact", () => {
+test("the source skill stays outside the immutable beta.7 npm artifact", () => {
   const packageJson = JSON.parse(read("package.json"));
 
-  assert.equal(packageJson.version, "0.1.0-beta.6");
+  assert.equal(packageJson.version, "0.1.0-beta.7");
   assert.ok(!packageJson.files.includes("skills"));
   assert.ok(!Object.keys(packageJson.exports).some((key) => key.includes("skill")));
 });

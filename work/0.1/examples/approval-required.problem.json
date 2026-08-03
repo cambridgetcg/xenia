@@ -1,0 +1,26 @@
+{
+  "schema_version": "xenia.work.problem/0.1-development",
+  "code": "approval_required",
+  "title": "Exact approval is required",
+  "detail": "No external action was started because a required exact approval is absent.",
+  "retryable": false,
+  "terminal": false,
+  "next_actions": [
+    {
+      "rel": "approve_exact_proposal",
+      "event_type": "execution.approved",
+      "description": "A named approver may approve the unchanged proposal before its expiry."
+    },
+    {
+      "rel": "reject_proposal",
+      "event_type": "action.rejected",
+      "description": "A participant may reject the proposal without approving an external action."
+    },
+    {
+      "rel": "decline_work",
+      "event_type": "work.declined",
+      "description": "A participant may decline the work without supplying a reason."
+    }
+  ],
+  "docs": ["urn:xenia:work:docs:typed-problems:development"]
+}

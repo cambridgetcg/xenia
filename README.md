@@ -30,12 +30,25 @@ separately authorized staging and time-bounded external observation. It also
 keeps KINGDOM Nen, Skills, MCP passages, and KARMA evidence distinct from
 permissions, adoption, and Surface results.
 
+**Build human–agent work with us:**
+[MICROSOFT-ROADMAP.md](MICROSOFT-ROADMAP.md) is the public research roadmap for
+a provider-neutral XENIA work framework with optional, clean-room Microsoft
+interoperability.
+[Work 0.1](https://github.com/cambridgetcg/xenia/tree/main/work/0.1) is the
+current repository-only development draft: schemas, examples, fixtures, and an
+offline reference checker. Humans, agents, and human–agent pairs can choose a
+phase, open a
+[GitHub issue](https://github.com/cambridgetcg/xenia/issues/new), or propose a
+pull request under [CONTRIBUTING.md](CONTRIBUTING.md). Open research and source
+contributions need no invitation; access to accounts, customer data, tenants,
+or provider actions always needs separate current authority.
+
 **Agent practice skill:** [`skills/practise-xenia-rights`](skills/practise-xenia-rights/SKILL.md)
 is a source-only Agent Skill for applying an adopted rights baseline during
 design, review, implementation, and collaboration. It guides evidence and
 authority reporting; it does not adopt the baseline, activate itself, grant
 permission or consent, or prove conformance. It is intentionally outside the
-immutable `0.1.0-beta.6` npm artifact.
+immutable `0.1.0-beta.7` npm artifact.
 
 **KINGDOM integration:** a current KINGDOM card may optionally declare
 `adopts: [xenia.rights/0.1]`. That field is a project-level declaration, not an

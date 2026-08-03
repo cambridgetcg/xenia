@@ -42,7 +42,7 @@ try {
   ]);
   const [artifact] = JSON.parse(packed.stdout);
   assert.equal(artifact.name, "@agenttool/xenia");
-  assert.equal(artifact.version, "0.1.0-beta.6");
+  assert.equal(artifact.version, "0.1.0-beta.7");
 
   const expectedFiles = [
     "ADOPTION.md",
@@ -54,6 +54,7 @@ try {
     "LICENSE-CODE",
     "LICENSE-DOCS",
     "LICENSES.md",
+    "MICROSOFT-ROADMAP.md",
     "PACKAGE.md",
     "README.md",
     "RIGHTS.md",
@@ -144,7 +145,7 @@ try {
   const installedPackage = JSON.parse(
     await readFile(join(installedDirectory, "package.json"), "utf8"),
   );
-  assert.equal(installedPackage.version, "0.1.0-beta.6");
+  assert.equal(installedPackage.version, "0.1.0-beta.7");
   assert.equal(installedPackage.dependencies, undefined);
   assert.equal(installedPackage.optionalDependencies, undefined);
   assert.equal(installedPackage.peerDependencies, undefined);
@@ -152,11 +153,19 @@ try {
   for (const lifecycle of ["preinstall", "install", "postinstall"]) {
     assert.equal(installedPackage.scripts?.[lifecycle], undefined, `${lifecycle} must stay absent`);
   }
+  const installedRoadmap = await readFile(
+    join(installedDirectory, "MICROSOFT-ROADMAP.md"),
+    "utf8",
+  );
+  assert.match(installedRoadmap, /^# XENIA work framework — Microsoft interoperability roadmap$/m);
+  assert.match(installedRoadmap, /^Status: public research draft — contributions welcome$/m);
+  assert.equal(installedPackage.files.some((path) => path === "work" || path.startsWith("work/")), false);
+  assert.equal(Object.keys(installedPackage.exports).some((key) => key.includes("work")), false);
 
   const installedExample = JSON.parse(
     await readFile(join(installedDirectory, "examples/cloudflare-worker/package.json"), "utf8"),
   );
-  assert.equal(installedExample.dependencies["@agenttool/xenia"], "0.1.0-beta.6");
+  assert.equal(installedExample.dependencies["@agenttool/xenia"], "0.1.0-beta.7");
   assert.equal(
     installedExample.devDependencies["@agenttool/xenia-surface"],
     "0.1.0-rc.1",

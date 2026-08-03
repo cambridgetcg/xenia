@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:xenia:work:result:0.1:development-draft",
+  "$comment": "SPDX-License-Identifier: CC-BY-SA-4.0",
+  "title": "XENIA Work 0.1 checker result development draft",
+  "type": "object",
+  "required": [
+    "$schema",
+    "schema_version",
+    "profile",
+    "artifact",
+    "verifier",
+    "observed_at",
+    "result",
+    "scope",
+    "output_handling",
+    "limits",
+    "counts",
+    "checks",
+    "issues",
+    "run",
+    "not_established"
+  ],
+  "properties": {
+    "$schema": { "const": "urn:xenia:work:result:0.1:development-draft" },
+    "schema_version": { "const": "xenia.work.result/0.1-development" },
+    "profile": { "const": "xenia-work/0.1-development" },
+    "artifact": {
+      "type": "object",
+      "required": ["complete", "observed_bytes"],
+      "properties": {
+        "complete": { "type": "boolean" },
+        "observed_bytes": { "type": "integer", "minimum": 0 },
+        "sha256": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "complete": { "const": true } },
+            "required": ["complete"]
+          },
+          "then": {
+            "properties": { "sha256": true },
+            "required": ["sha256"]
+          },
+          "else": { "not": { "required": ["sha256"] } }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "verifier": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "xenia-work-check" },
+        "version": { "const": "0.1.0-development" }
+      },
+      "additionalProperties": false
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 40,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T(?:(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]+)?|23:59:60(?:\\.[0-9]+)?)Z$"
+    },
+    "result": {
+      "type": "string",
+      "enum": ["conformant", "nonconformant", "indeterminate"]
+    },
+    "scope": {
+      "const": "Structural and interchange validation of one supplied XENIA Work 0.1 run document; no external system or evidence was contacted."
+    },
+    "output_handling": {
+      "const": "Treat this result at least as restrictively as the input record; artifact digests and terminal metadata may remain sensitive."
+    },
+    "limits": {
+      "type": "object",
+      "required": ["max_input_bytes", "max_issues"],
+      "properties": {
+        "max_input_bytes": { "const": 1048576 },
+        "max_issues": { "const": 256 }
+      },
+      "additionalProperties": false
+    },
+    "counts": {
+      "type": "object",
+      "required": ["pass", "fail", "unknown", "not_run"],
+      "properties": {
+        "pass": { "type": "integer", "minimum": 0 },
+        "fail": { "type": "integer", "minimum": 0 },
+        "unknown": { "type": "integer", "minimum": 0 },
+        "not_run": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/check" }
+    },
+    "issues": {
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/issue" }
+    },
+    "run": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["state"],
+          "properties": { "state": { "const": "unavailable" } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["state", "terminal_state"],
+          "properties": {
+            "state": { "const": "available" },
+            "terminal_state": {
+              "enum": [
+                "completed",
+                "declined",
+                "paused",
+                "cancelled",
+                "expired",
+                "failed",
+                "closed"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "not_established": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "prefixItems": [
+        { "const": "actor identity, consciousness, personhood, or legal status" },
+        { "const": "informed consent, legal basis, provider permission, or representative authority beyond internal record consistency" },
+        { "const": "that an invocation or external effect occurred" },
+        { "const": "the truth, authenticity, or causal force of evidence, receipts, observations, or claims" },
+        { "const": "privacy, security, Covenant duties, or whole-XENIA conformance" },
+        { "const": "that this checker result is safe to publish or sufficient to authorize dispatch" }
+      ],
+      "items": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "check": {
+      "type": "object",
+      "required": ["id", "outcome", "expected", "observed"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9._-]{0,63}$"
+        },
+        "outcome": {
+          "enum": ["pass", "fail", "unknown", "not_run"]
+        },
+        "expected": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "observed": { "type": "string", "minLength": 1, "maxLength": 2000 }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "path", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "path": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "message": { "type": "string", "minLength": 1, "maxLength": 2000 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

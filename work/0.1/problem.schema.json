@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:xenia:work:problem:0.1:development-draft",
+  "$comment": "SPDX-License-Identifier: CC-BY-SA-4.0",
+  "title": "XENIA Work 0.1 typed problem development draft",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "code",
+    "title",
+    "detail",
+    "retryable",
+    "terminal",
+    "next_actions",
+    "docs"
+  ],
+  "properties": {
+    "schema_version": { "const": "xenia.work.problem/0.1-development" },
+    "code": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "detail": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "retryable": { "type": "boolean" },
+    "terminal": { "type": "boolean" },
+    "next_actions": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": ["rel", "event_type", "description"],
+        "properties": {
+          "rel": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{0,63}$"
+          },
+          "event_type": {
+            "type": "string",
+            "enum": [
+              "plan.proposed",
+              "authority.claimed",
+              "action.proposed",
+              "action.rejected",
+              "execution.approved",
+              "work.declined",
+              "work.handed_off",
+              "work.asked",
+              "work.paused",
+              "work.cancelled",
+              "correction.appended",
+              "appeal.appended"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "docs": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "format": "uri",
+        "maxLength": 500
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "terminal": { "const": true },
+        "retryable": { "const": false },
+        "next_actions": { "type": "array", "maxItems": 0 }
+      }
+    },
+    {
+      "properties": {
+        "terminal": { "const": false },
+        "next_actions": { "type": "array", "minItems": 1 }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

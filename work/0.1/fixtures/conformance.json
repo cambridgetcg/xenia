@@ -1,0 +1,162 @@
+{
+  "$comment": "SPDX-License-Identifier: CC-BY-SA-4.0",
+  "schema_version": "xenia.work.conformance-fixtures/0.1-development",
+  "base_artifact": "../examples/completed-effect.json",
+  "generation": "Each case is a deterministic in-memory mutation of base_artifact in tests/work-0.1.test.mjs; protected sentinels are deliberately not stored here.",
+  "cases": [
+    {
+      "id": "evidence-record-mutation",
+      "expected_result": "nonconformant",
+      "expected_check": "R.REFERENCES",
+      "expected_issue": "evidence_binding_mismatch",
+      "description": "A top-level evidence digest differs from the immutable projection in an authority claim."
+    },
+    {
+      "id": "authority-evidence-after-claim",
+      "expected_result": "nonconformant",
+      "expected_check": "R.AUTHORITY",
+      "expected_issue": "authority_evidence_after_claim",
+      "description": "Authority evidence is observed after the authority claim that relies on it."
+    },
+    {
+      "id": "asserted-authority-at-execution",
+      "expected_result": "nonconformant",
+      "expected_check": "R.AUTHORITY",
+      "expected_issue": "asserted_authority_at_execution",
+      "description": "An execution relies on a merely asserted passing authority basis."
+    },
+    {
+      "id": "authority-positive-basis-missing",
+      "expected_result": "nonconformant",
+      "expected_check": "R.AUTHORITY",
+      "expected_issue": "authority_positive_basis_missing",
+      "description": "An execution relies on an authority claim whose five bases are all not applicable."
+    },
+    {
+      "id": "non-revocable-authority-at-execution",
+      "expected_result": "nonconformant",
+      "expected_check": "R.AUTHORITY",
+      "expected_issue": "non_revocable_authority_at_execution",
+      "description": "An execution relies on an authority claim that cannot be withdrawn for future action."
+    },
+    {
+      "id": "consent-evidence-kind-mismatch",
+      "expected_result": "nonconformant",
+      "expected_check": "R.AUTHORITY",
+      "expected_issue": "consent_evidence_kind_mismatch",
+      "description": "An affected-party consent basis relies on generic permission evidence instead of a consent record."
+    },
+    {
+      "id": "consent-evidence-scope-mismatch",
+      "expected_result": "nonconformant",
+      "expected_check": "R.AUTHORITY",
+      "expected_issue": "consent_evidence_scope_mismatch",
+      "description": "A consent record does not bind the exact action scope it is used to authorize."
+    },
+    {
+      "id": "credential-literal",
+      "expected_result": "nonconformant",
+      "expected_check": "R.STATE",
+      "expected_issue": "credential_literal_forbidden",
+      "description": "A literal action input resembles credential material."
+    },
+    {
+      "id": "credential-reference-secret",
+      "expected_result": "nonconformant",
+      "expected_check": "R.STATE",
+      "expected_issue": "credential_ref_secret_forbidden",
+      "description": "A credential reference carries secret-shaped material in a locator."
+    },
+    {
+      "id": "restricted-literal",
+      "expected_result": "nonconformant",
+      "expected_check": "R.STATE",
+      "expected_issue": "literal_protected_data",
+      "description": "A restricted data zone is carried as a literal action input."
+    },
+    {
+      "id": "choice-not-advertised",
+      "expected_result": "nonconformant",
+      "expected_check": "R.STATE",
+      "expected_issue": "choice_not_advertised",
+      "description": "A participant records an exit choice that the offer did not advertise."
+    },
+    {
+      "id": "pair-executor",
+      "expected_result": "nonconformant",
+      "expected_check": "R.AUTHORITY",
+      "expected_issue": "pair_execution_unsupported",
+      "description": "A composite human-agent pair is used as an execution principal."
+    },
+    {
+      "id": "pair-approver",
+      "expected_result": "nonconformant",
+      "expected_check": "R.APPROVALS",
+      "expected_issue": "pair_approval_unsupported",
+      "description": "A composite human-agent pair is used as an approval principal."
+    },
+    {
+      "id": "record-zone-too-broad",
+      "expected_result": "nonconformant",
+      "expected_check": "R.STATE",
+      "expected_issue": "record_zone_classification_too_broad",
+      "description": "The whole-record zone is public while the document embeds internal evidence metadata."
+    },
+    {
+      "id": "record-zone-ignores-unused-zone",
+      "expected_result": "nonconformant",
+      "expected_check": "R.STATE",
+      "expected_issue": "record_zone_classification_too_broad",
+      "description": "The whole-record zone is public while an otherwise unused restricted zone is still declared in the document."
+    },
+    {
+      "id": "recipient-outside-input-zone",
+      "expected_result": "nonconformant",
+      "expected_check": "R.STATE",
+      "expected_issue": "recipient_out_of_data_zone_audience",
+      "description": "An action recipient is absent from an input data zone's declared audience."
+    },
+    {
+      "id": "causal-evidence-before-receipt",
+      "expected_result": "nonconformant",
+      "expected_check": "R.EFFECTS",
+      "expected_issue": "causal_evidence_before_receipt",
+      "description": "A tested causal claim relies on evidence that predates the provider response."
+    },
+    {
+      "id": "causal-evidence-kind-mismatch",
+      "expected_result": "nonconformant",
+      "expected_check": "R.EFFECTS",
+      "expected_issue": "causal_evidence_kind_mismatch",
+      "description": "A tested causal claim relies on evidence unrelated to observation, testing, or attestation."
+    },
+    {
+      "id": "causal-evidence-scope-mismatch",
+      "expected_result": "nonconformant",
+      "expected_check": "R.EFFECTS",
+      "expected_issue": "causal_evidence_scope_mismatch",
+      "description": "A tested causal claim relies on evidence that does not bind its proposal, execution, receipt, target, and observed outcome."
+    },
+    {
+      "id": "rejection-after-execution",
+      "expected_result": "nonconformant",
+      "expected_check": "R.PROBLEMS",
+      "expected_issue": "rejection_after_execution",
+      "description": "A proposal is rejected after an execution start has already been recorded."
+    },
+    {
+      "id": "repair-reserve-consumed",
+      "expected_result": "nonconformant",
+      "expected_check": "R.LIMITS_PLAN",
+      "expected_issue": "repair_reserve_consumed",
+      "description": "The terminal event occupies one of the two slots reserved for repair."
+    },
+    {
+      "id": "result-output-privacy",
+      "expected_result": "nonconformant",
+      "expected_check": "R.AUTHORITY",
+      "expected_issue": "authority_resource_mismatch",
+      "description": "Opaque identifiers and protected input values do not reappear in checker output."
+    }
+  ]
+}
