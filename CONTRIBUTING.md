@@ -47,6 +47,23 @@ observations, or reputation.
 Contributions require no copyright assignment. The inbound license is the same
 as the existing file's outbound license; see [LICENSES.md](LICENSES.md).
 
+## Clean-room adapter contributions
+
+Adapters must use only public interfaces and permissions the provider makes
+available for that use. Submit only work you created or have the right to offer
+under the mapped license. For each third-party input, name its source, version
+or commit, license, and any changes.
+
+Do not submit proprietary code or documentation, private or tenant data,
+credentials, copied product text or interface artwork, decompiled material,
+data scraped from a service, black-box extraction, or provider output used to
+distil a substitute implementation. Observations from a published API or
+specification must cite the exact public source and version.
+
+A future adapter contribution must also identify the applicable product and API
+terms, requested permissions and admin consent, handled data and retention,
+metered cost, and tested off-switch.
+
 ## Build with LOVE
 
 Before offering a change, ask:

@@ -1,0 +1,26 @@
+{
+  "schema_version": "xenia.work.problem/0.1-development",
+  "code": "authority_unknown",
+  "title": "Required authority remains unknown",
+  "detail": "No external action was started because at least one required authority basis remains unknown.",
+  "retryable": false,
+  "terminal": false,
+  "next_actions": [
+    {
+      "rel": "record_scoped_claim",
+      "event_type": "authority.claimed",
+      "description": "A claimant may record new scoped evidence without treating the record as proof."
+    },
+    {
+      "rel": "change_proposal",
+      "event_type": "action.proposed",
+      "description": "A participant may offer a newly bound action that needs no unresolved authority basis."
+    },
+    {
+      "rel": "pause",
+      "event_type": "work.paused",
+      "description": "A participant may pause without supplying a reason."
+    }
+  ],
+  "docs": ["urn:xenia:work:docs:typed-problems:development"]
+}

@@ -4,7 +4,7 @@ name: xenia
 kind: methodology
 phase: active
 health: green
-reviewed: 2026-07-31
+reviewed: 2026-08-03
 
 ## current profiles
 
@@ -15,6 +15,8 @@ reviewed: 2026-07-31
   protective-limit duties
 - JavaScript producer library: source version `0.1.0-beta.6`
 - Surface external checker: separately versioned `0.1.0-rc.1`
+- Work: development draft `xenia-work/0.1-development`; it is not released or
+  included in the root npm package
 
 `agent.txt` is legacy compatibility material, not the current Surface manifest.
 `ADOPTION.md` is a closed historical snapshot from 2026-07-10/11; its Surface
@@ -26,7 +28,10 @@ results expired on 2026-07-12.
 - generate an all-unknown draft Covenant ledger without activating adoption;
 - validate Covenant record structure and installed cross-document invariants;
 - expose the informative rights snapshot without granting permissions or
-  proving practice.
+  proving practice;
+- record and check one finite Work development run, including scoped authority
+  claims, exact action approvals, provider receipts, effect observations, and
+  terminal state.
 
 ## cannot establish by itself
 
@@ -34,6 +39,8 @@ results expired on 2026-07-12.
   the truth of a claim;
 - current deployment behaviour, whole-service conformance, universal privacy,
   deletion, retention, portability, or safety;
+- real actor identity, consent, authority, legal basis, provider truth, or
+  real-world effect from a Work record or passing development check;
 - Git remote, tag, publisher, signature, or metadata authority from KINGDOM
   commit `b3fdf5a`'s bounded local mirror-and-digest check.
 
@@ -48,6 +55,9 @@ self-adoption claim.
 
 ```sh
 npm test
+node --test tests/work-0.1.test.mjs
+node work/0.1/check.mjs work/0.1/examples/completed-effect.json
+node work/0.1/check.mjs work/0.1/examples/declined.json
 node tools/render-covenant.mjs --check
 node tools/render-adoption-schema.mjs --check
 npm run verify:xenia-package
@@ -56,7 +66,7 @@ git diff --check
 
 ## next
 
-- review the repair branch before any merge, release, publication, or website
+- review this development branch before any merge, release, publication, or website
   deployment;
 - apply `WEBSITE-ROLLOUT.md` one current host at a time, preserving source,
   built, deployed, and externally observed states as separate evidence;
@@ -69,4 +79,6 @@ git diff --check
 - in a future Covenant profile revision, consider explicit unassessed-scope and
   proposed-speaker values instead of reusing schema-required draft placeholders;
 - bind any future Surface checker result identity to an exact source or
-  distribution revision before releasing a new checker.
+  distribution revision before releasing a new checker;
+- have a second independent implementation reproduce the Work fixture digests
+  and recorded relationships before considering a Work release candidate.

@@ -1,0 +1,607 @@
+{
+  "$schema": "urn:xenia:work:run:0.1:development-draft",
+  "schema_version": "xenia.work.run/0.1-development",
+  "profile": "xenia-work/0.1-development",
+  "run_id": "urn:xenia:example:run:lantern-notice",
+  "title": "Publish a fictitious garden notice",
+  "purpose": "Demonstrate one bounded, approved and observed external effect.",
+  "created_at": "2026-08-03T11:00:00Z",
+  "updated_at": "2026-08-03T11:09:00Z",
+  "terminal_state": "completed",
+  "terminal_event_id": "complete-1",
+  "limits": {
+    "expires_at": "2026-08-03T13:00:00Z",
+    "max_elapsed_ms": 7200000,
+    "max_events": 16,
+    "repair_event_reserve": 2,
+    "max_plan_steps": 4,
+    "max_external_effects": 1,
+    "max_attempts_per_action": 1,
+    "cost_ceiling": {
+      "state": "known",
+      "unit": "USD",
+      "maximum_amount": "0.10"
+    },
+    "cancellation": {
+      "mode": "event",
+      "event_type": "work.cancelled"
+    }
+  },
+  "record_data_zone_id": "internal_record",
+  "actors": [
+    {
+      "id": "urn:xenia:example:actor:steward",
+      "kind": "human",
+      "name": "Example garden steward",
+      "identity_claims": []
+    },
+    {
+      "id": "urn:xenia:example:actor:helper",
+      "kind": "agent",
+      "name": "Example notice helper",
+      "identity_claims": []
+    }
+  ],
+  "data_zones": [
+    {
+      "id": "internal_record",
+      "description": "The complete fictitious Work record and its metadata.",
+      "classification": "internal",
+      "purpose": "Validate and retain this bounded development fixture.",
+      "audience": {
+        "mode": "actors",
+        "actor_ids": [
+          "urn:xenia:example:actor:steward",
+          "urn:xenia:example:actor:helper"
+        ]
+      },
+      "retention": {
+        "mode": "until",
+        "until": "2026-08-10T11:00:00Z"
+      }
+    },
+    {
+      "id": "public_content",
+      "description": "Fictitious text intended for a public example noticeboard.",
+      "classification": "public",
+      "purpose": "Publish the approved example notice.",
+      "audience": {
+        "mode": "public"
+      },
+      "retention": {
+        "mode": "external_policy",
+        "policy_ref": "https://example.invalid/policy/noticeboard-terms-1"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "id": "urn:xenia:example:evidence:consent-1",
+      "kind": "consent_record",
+      "ref": "https://example.invalid/evidence/consent-1",
+      "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "description": "Fictitious affected-party consent record.",
+      "observed_at": "2026-08-03T11:02:00Z",
+      "recorded_by_actor_id": "urn:xenia:example:actor:steward",
+      "scope": "Consent claimed for this one notice, target and stated public audience.",
+      "data_zone_id": "internal_record",
+      "consent_subject_actor_ids": [
+        "urn:xenia:example:actor:steward"
+      ],
+      "action_scope": {
+        "run_id": "urn:xenia:example:run:lantern-notice",
+        "purpose": "Publish the approved fictitious garden notice.",
+        "operation": "notice.create",
+        "target": "urn:xenia:example:resource:lantern-board",
+        "data_zone_ids": ["public_content"],
+        "expected_effect": {
+          "kind": "create",
+          "summary": "Create one public notice on the fictitious lantern board.",
+          "target": "urn:xenia:example:resource:lantern-board",
+          "reversibility": "reversible",
+          "evidence_plan": "Read the target separately and retain a bounded observation reference.",
+          "affected_actor_ids": [
+            "urn:xenia:example:actor:steward"
+          ]
+        }
+      }
+    },
+    {
+      "id": "urn:xenia:example:evidence:permission-1",
+      "kind": "permission_record",
+      "ref": "https://example.invalid/evidence/permission-1",
+      "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "description": "Fictitious technical and provider permission test.",
+      "observed_at": "2026-08-03T11:02:00Z",
+      "recorded_by_actor_id": "urn:xenia:example:actor:steward",
+      "scope": "Technical control and provider permission claimed for one notice creation.",
+      "data_zone_id": "internal_record"
+    },
+    {
+      "id": "urn:xenia:example:evidence:terms-1",
+      "kind": "policy",
+      "ref": "https://example.invalid/policy/noticeboard-terms-1",
+      "digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "description": "Fictitious policy and service terms used by this example.",
+      "observed_at": "2026-08-03T11:02:00Z",
+      "recorded_by_actor_id": "urn:xenia:example:actor:steward",
+      "scope": "Declared service terms for the fictitious noticeboard fixture.",
+      "data_zone_id": "internal_record"
+    },
+    {
+      "id": "urn:xenia:example:evidence:receipt-1",
+      "kind": "provider_receipt",
+      "ref": "https://example.invalid/evidence/receipt-1",
+      "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "description": "Fictitious provider response receipt.",
+      "observed_at": "2026-08-03T11:07:00Z",
+      "recorded_by_actor_id": "urn:xenia:example:actor:helper",
+      "scope": "Provider response bytes for the one recorded invocation.",
+      "data_zone_id": "internal_record"
+    },
+    {
+      "id": "urn:xenia:example:evidence:observation-1",
+      "kind": "observation",
+      "ref": "https://example.invalid/evidence/observation-1",
+      "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "description": "Fictitious separate observation of the public notice.",
+      "observed_at": "2026-08-03T11:08:00Z",
+      "recorded_by_actor_id": "urn:xenia:example:actor:steward",
+      "scope": "A separate read of the declared notice target after the invocation.",
+      "data_zone_id": "internal_record",
+      "causal_scope": {
+        "run_id": "urn:xenia:example:run:lantern-notice",
+        "proposal_event_id": "proposal-1",
+        "proposal_digest": "sha256:947e94eeaa472840d3f57be3dea035dafe39edd8f0b01ed13dd2b429b5a2d02e",
+        "execution_event_id": "execution-1",
+        "receipt_event_id": "receipt-1",
+        "target": "urn:xenia:example:resource:lantern-board",
+        "expected_effect": {
+          "kind": "create",
+          "summary": "Create one public notice on the fictitious lantern board.",
+          "target": "urn:xenia:example:resource:lantern-board",
+          "reversibility": "reversible",
+          "evidence_plan": "Read the target separately and retain a bounded observation reference.",
+          "affected_actor_ids": [
+            "urn:xenia:example:actor:steward"
+          ]
+        },
+        "observed_outcome": "confirmed",
+        "observed_summary": "The exact notice was separately observed at the declared target."
+      }
+    }
+  ],
+  "events": [
+    {
+      "id": "offer-1",
+      "sequence": 1,
+      "type": "work.offered",
+      "at": "2026-08-03T11:00:00Z",
+      "actor_id": "urn:xenia:example:actor:steward",
+      "previous_event_id": null,
+      "payload": {
+        "offered_to_actor_ids": ["urn:xenia:example:actor:helper"],
+        "requested_outcome": "Publish one fictitious welcome notice and observe whether it appears.",
+        "affected_actor_ids": ["urn:xenia:example:actor:steward"],
+        "data_zone_ids": ["public_content"],
+        "estimated_cost": {
+          "state": "known",
+          "unit": "USD",
+          "maximum_amount": "0.10"
+        },
+        "exit_options": ["decline", "pause", "rest", "ask", "handoff", "cancel"]
+      }
+    },
+    {
+      "id": "accept-1",
+      "sequence": 2,
+      "type": "work.accepted",
+      "at": "2026-08-03T11:01:00Z",
+      "actor_id": "urn:xenia:example:actor:helper",
+      "previous_event_id": "offer-1",
+      "payload": {
+        "offer_event_id": "offer-1",
+        "participation_scope": "Prepare the notice and execute only the separately approved proposal."
+      }
+    },
+    {
+      "id": "plan-1",
+      "sequence": 3,
+      "type": "plan.proposed",
+      "at": "2026-08-03T11:01:30Z",
+      "actor_id": "urn:xenia:example:actor:helper",
+      "previous_event_id": "accept-1",
+      "payload": {
+        "summary": "Publish one notice, retain the provider receipt, then observe the target.",
+        "steps": [
+          {
+            "id": "publish_notice",
+            "kind": "agent",
+            "description": "Publish the exact approved notice once.",
+            "depends_on": []
+          }
+        ],
+        "acceptance_tests": [
+          "The exact notice is separately observed at the declared target."
+        ],
+        "authority_created": false
+      }
+    },
+    {
+      "id": "authority-1",
+      "sequence": 4,
+      "type": "authority.claimed",
+      "at": "2026-08-03T11:02:00Z",
+      "actor_id": "urn:xenia:example:actor:steward",
+      "previous_event_id": "plan-1",
+      "payload": {
+        "binding": {
+          "binding_version": "xenia.work.authority-claim-binding/0.1",
+          "run_id": "urn:xenia:example:run:lantern-notice",
+          "claim_event_id": "authority-1",
+          "claimant_actor_id": "urn:xenia:example:actor:steward",
+          "executor_actor_id": "urn:xenia:example:actor:helper",
+          "purpose": "Publish the approved fictitious garden notice.",
+          "operations": ["notice.create"],
+          "resources": ["urn:xenia:example:resource:lantern-board"],
+          "data_zones": [
+            {
+              "id": "public_content",
+              "classification": "public",
+              "purpose": "Publish the approved example notice.",
+              "audience": {
+                "mode": "public"
+              },
+              "retention": {
+                "mode": "external_policy",
+                "policy_ref": "https://example.invalid/policy/noticeboard-terms-1"
+              }
+            }
+          ],
+          "valid_from": "2026-08-03T11:02:00Z",
+          "expires_at": "2026-08-03T12:00:00Z",
+          "revocable": true,
+          "bases": [
+            {
+              "kind": "technical_control",
+              "subject_actor_ids": [],
+              "evidence_state": "tested",
+              "outcome": "pass",
+              "evidence": [
+                {
+                  "id": "urn:xenia:example:evidence:permission-1",
+                  "kind": "permission_record",
+                  "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                  "observed_at": "2026-08-03T11:02:00Z",
+                  "recorded_by_actor_id": "urn:xenia:example:actor:steward",
+                  "scope": "Technical control and provider permission claimed for one notice creation.",
+                  "data_zone": {
+                    "id": "internal_record",
+                    "classification": "internal",
+                    "purpose": "Validate and retain this bounded development fixture.",
+                    "audience": {
+                      "mode": "actors",
+                      "actor_ids": [
+                        "urn:xenia:example:actor:steward",
+                        "urn:xenia:example:actor:helper"
+                      ]
+                    },
+                    "retention": {
+                      "mode": "until",
+                      "until": "2026-08-10T11:00:00Z"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "affected_party_consent",
+              "subject_actor_ids": ["urn:xenia:example:actor:steward"],
+              "evidence_state": "attested",
+              "outcome": "pass",
+              "evidence": [
+                {
+                  "id": "urn:xenia:example:evidence:consent-1",
+                  "kind": "consent_record",
+                  "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                  "observed_at": "2026-08-03T11:02:00Z",
+                  "recorded_by_actor_id": "urn:xenia:example:actor:steward",
+                  "scope": "Consent claimed for this one notice, target and stated public audience.",
+                  "data_zone": {
+                    "id": "internal_record",
+                    "classification": "internal",
+                    "purpose": "Validate and retain this bounded development fixture.",
+                    "audience": {
+                      "mode": "actors",
+                      "actor_ids": [
+                        "urn:xenia:example:actor:steward",
+                        "urn:xenia:example:actor:helper"
+                      ]
+                    },
+                    "retention": {
+                      "mode": "until",
+                      "until": "2026-08-10T11:00:00Z"
+                    }
+                  },
+                  "consent_subject_actor_ids": [
+                    "urn:xenia:example:actor:steward"
+                  ],
+                  "action_scope": {
+                    "run_id": "urn:xenia:example:run:lantern-notice",
+                    "purpose": "Publish the approved fictitious garden notice.",
+                    "operation": "notice.create",
+                    "target": "urn:xenia:example:resource:lantern-board",
+                    "data_zone_ids": ["public_content"],
+                    "expected_effect": {
+                      "kind": "create",
+                      "summary": "Create one public notice on the fictitious lantern board.",
+                      "target": "urn:xenia:example:resource:lantern-board",
+                      "reversibility": "reversible",
+                      "evidence_plan": "Read the target separately and retain a bounded observation reference.",
+                      "affected_actor_ids": [
+                        "urn:xenia:example:actor:steward"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "representative_authority",
+              "subject_actor_ids": [],
+              "evidence_state": "none",
+              "outcome": "not_applicable",
+              "evidence": []
+            },
+            {
+              "kind": "legal_basis",
+              "subject_actor_ids": [],
+              "evidence_state": "none",
+              "outcome": "not_applicable",
+              "evidence": []
+            },
+            {
+              "kind": "provider_permission",
+              "subject_actor_ids": [],
+              "evidence_state": "tested",
+              "outcome": "pass",
+              "evidence": [
+                {
+                  "id": "urn:xenia:example:evidence:permission-1",
+                  "kind": "permission_record",
+                  "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                  "observed_at": "2026-08-03T11:02:00Z",
+                  "recorded_by_actor_id": "urn:xenia:example:actor:steward",
+                  "scope": "Technical control and provider permission claimed for one notice creation.",
+                  "data_zone": {
+                    "id": "internal_record",
+                    "classification": "internal",
+                    "purpose": "Validate and retain this bounded development fixture.",
+                    "audience": {
+                      "mode": "actors",
+                      "actor_ids": [
+                        "urn:xenia:example:actor:steward",
+                        "urn:xenia:example:actor:helper"
+                      ]
+                    },
+                    "retention": {
+                      "mode": "until",
+                      "until": "2026-08-10T11:00:00Z"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "claim_digest": "sha256:2dfac684591e3cf00a43463fbf6a02146805f07fa76450fd20ac62d6e17127a9"
+      }
+    },
+    {
+      "id": "proposal-1",
+      "sequence": 5,
+      "type": "action.proposed",
+      "at": "2026-08-03T11:03:00Z",
+      "actor_id": "urn:xenia:example:actor:helper",
+      "previous_event_id": "authority-1",
+      "payload": {
+        "binding": {
+          "binding_version": "xenia.work.action-proposal-binding/0.1",
+          "run_id": "urn:xenia:example:run:lantern-notice",
+          "proposal_event_id": "proposal-1",
+          "plan_event_id": "plan-1",
+          "plan_step_id": "publish_notice",
+          "executor_actor_id": "urn:xenia:example:actor:helper",
+          "tool": {
+            "id": "urn:xenia:example:tool:noticeboard",
+            "version": "1.0"
+          },
+          "operation": "notice.create",
+          "target": "urn:xenia:example:resource:lantern-board",
+          "inputs": [
+            {
+              "name": "notice_text",
+              "kind": "literal",
+              "value": "Welcome to the Lantern Garden.",
+              "data_zone_id": "public_content",
+              "purpose": "Supply the exact public notice text."
+            }
+          ],
+          "purpose": "Publish the approved fictitious garden notice.",
+          "recipient_actor_ids": ["urn:xenia:example:actor:steward"],
+          "data_zones": [
+            {
+              "id": "public_content",
+              "classification": "public",
+              "purpose": "Publish the approved example notice.",
+              "audience": {
+                "mode": "public"
+              },
+              "retention": {
+                "mode": "external_policy",
+                "policy_ref": "https://example.invalid/policy/noticeboard-terms-1"
+              }
+            }
+          ],
+          "expected_effect": {
+            "kind": "create",
+            "summary": "Create one public notice on the fictitious lantern board.",
+            "target": "urn:xenia:example:resource:lantern-board",
+            "reversibility": "reversible",
+            "evidence_plan": "Read the target separately and retain a bounded observation reference.",
+            "affected_actor_ids": ["urn:xenia:example:actor:steward"]
+          },
+          "possible_side_effects": [
+            {
+              "summary": "The public notice may remain visible until separately removed.",
+              "likelihood": "likely",
+              "reversibility": "reversible"
+            }
+          ],
+          "risk": {
+            "class": "low",
+            "reasons": ["The fixture is fictitious and the declared text is public."]
+          },
+          "cost": {
+            "state": "known",
+            "unit": "USD",
+            "maximum_amount": "0.00"
+          },
+          "license": {
+            "state": "declared",
+            "required_licenses": ["Example Noticeboard API Terms 1.0"],
+            "terms": [
+              {
+                "ref": "https://example.invalid/policy/noticeboard-terms-1",
+                "digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "observed_at": "2026-08-03T11:02:00Z"
+              }
+            ]
+          },
+          "idempotency_key": "lantern-notice-0001",
+          "authority_claims": [
+            {
+              "event_id": "authority-1",
+              "digest": "sha256:2dfac684591e3cf00a43463fbf6a02146805f07fa76450fd20ac62d6e17127a9"
+            }
+          ],
+          "required_approvals": [
+            {
+              "actor_id": "urn:xenia:example:actor:steward",
+              "nonce": "approve-lantern-0001",
+              "expires_at": "2026-08-03T12:00:00Z"
+            }
+          ],
+          "retry_policy": {
+            "automatic": false,
+            "max_attempts": 1
+          }
+        },
+        "proposal_digest": "sha256:947e94eeaa472840d3f57be3dea035dafe39edd8f0b01ed13dd2b429b5a2d02e"
+      }
+    },
+    {
+      "id": "approval-1",
+      "sequence": 6,
+      "type": "execution.approved",
+      "at": "2026-08-03T11:05:00Z",
+      "actor_id": "urn:xenia:example:actor:steward",
+      "previous_event_id": "proposal-1",
+      "payload": {
+        "proposal_event_id": "proposal-1",
+        "proposal_digest": "sha256:947e94eeaa472840d3f57be3dea035dafe39edd8f0b01ed13dd2b429b5a2d02e",
+        "approver_actor_id": "urn:xenia:example:actor:steward",
+        "nonce": "approve-lantern-0001",
+        "decision": "approved",
+        "statement": "Approve this exact proposal once before its stated expiry."
+      }
+    },
+    {
+      "id": "execution-1",
+      "sequence": 7,
+      "type": "execution.started",
+      "at": "2026-08-03T11:06:00Z",
+      "actor_id": "urn:xenia:example:actor:helper",
+      "previous_event_id": "approval-1",
+      "payload": {
+        "execution_id": "urn:xenia:example:execution:lantern-notice-1",
+        "proposal_event_id": "proposal-1",
+        "proposal_digest": "sha256:947e94eeaa472840d3f57be3dea035dafe39edd8f0b01ed13dd2b429b5a2d02e",
+        "approval_event_ids": ["approval-1"],
+        "authority_claim_event_ids": ["authority-1"],
+        "executor_actor_id": "urn:xenia:example:actor:helper"
+      }
+    },
+    {
+      "id": "receipt-1",
+      "sequence": 8,
+      "type": "execution.receipt",
+      "at": "2026-08-03T11:07:00Z",
+      "actor_id": "urn:xenia:example:actor:helper",
+      "previous_event_id": "execution-1",
+      "payload": {
+        "execution_event_id": "execution-1",
+        "proposal_event_id": "proposal-1",
+        "proposal_digest": "sha256:947e94eeaa472840d3f57be3dea035dafe39edd8f0b01ed13dd2b429b5a2d02e",
+        "provider": {
+          "id": "urn:xenia:example:provider:noticeboard",
+          "version": "1.0"
+        },
+        "outcome": "pass",
+        "summary": "The fictitious provider reported one notice created.",
+        "actual_cost": {
+          "state": "known",
+          "unit": "USD",
+          "amount": "0.00"
+        },
+        "provider_receipt_evidence_ids": ["urn:xenia:example:evidence:receipt-1"]
+      }
+    },
+    {
+      "id": "observation-1",
+      "sequence": 9,
+      "type": "effect.observed",
+      "at": "2026-08-03T11:08:00Z",
+      "actor_id": "urn:xenia:example:actor:steward",
+      "previous_event_id": "receipt-1",
+      "payload": {
+        "execution_event_id": "execution-1",
+        "receipt_event_id": "receipt-1",
+        "proposal_event_id": "proposal-1",
+        "proposal_digest": "sha256:947e94eeaa472840d3f57be3dea035dafe39edd8f0b01ed13dd2b429b5a2d02e",
+        "outcome": "confirmed",
+        "summary": "The exact notice was separately observed at the declared target.",
+        "evidence_state": "tested",
+        "evidence_ids": ["urn:xenia:example:evidence:observation-1"],
+        "causal_claim": {
+          "state": "tested",
+          "statement": "The observed notice matches the exact approved proposal.",
+          "evidence_ids": ["urn:xenia:example:evidence:observation-1"]
+        },
+        "limitations": [
+          "This fixture is fictitious and the checker does not fetch or verify the observation bytes."
+        ]
+      }
+    },
+    {
+      "id": "complete-1",
+      "sequence": 10,
+      "type": "work.completed",
+      "at": "2026-08-03T11:09:00Z",
+      "actor_id": "urn:xenia:example:actor:steward",
+      "previous_event_id": "observation-1",
+      "payload": {
+        "summary": "The bounded example effect was proposed, approved, attempted and observed.",
+        "satisfied_acceptance_tests": [
+          "The exact notice is separately observed at the declared target."
+        ]
+      }
+    }
+  ],
+  "not_established": [
+    "The record does not prove actor identity, consciousness, consent, legal authority, provider truth or causality.",
+    "The declared data zone and evidence references do not prove privacy, retention or deletion.",
+    "A matching digest establishes exact bytes only; it does not establish approval or authorship.",
+    "Work Profile validity does not establish whole-XENIA conformance."
+  ]
+}

@@ -33,6 +33,9 @@ Attribution-ShareAlike 4.0 International license. This includes `README.md`,
 JSON Schemas, the Surface example manifest, and the Covenant profile README,
 normative JSON, and JSON Schemas.
 This also includes `observe/0.1/README.md` and its development result schema.
+`MICROSOFT-ROADMAP.md` and the Work Profile README, JSON Schemas, example
+records, and normative conformance fixtures under `work/0.1/` are also CC BY-SA
+4.0.
 The exact informative rights index in `src/rights-0.1-data.ts` and its generated
 `dist/` forms remain CC BY-SA 4.0; the verifier wrapped around that data is
 software under MPL 2.0.
@@ -56,6 +59,8 @@ TypeScript configuration files. The Covenant cross-document validator at
 adjacent normative JSON, schemas, and generated prose remain CC BY-SA 4.0.
 The Observe implementation, tests, and private package metadata are software
 under MPL 2.0; its adjacent README and result schema remain CC BY-SA 4.0.
+Work Profile checker and test programs, type declarations, package metadata,
+and build configuration under `work/0.1/` are software under MPL 2.0.
 
 The full legal text is in [LICENSE-CODE](LICENSE-CODE). SPDX-tagged source files
 also identify this boundary directly.

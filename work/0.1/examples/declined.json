@@ -1,0 +1,113 @@
+{
+  "$schema": "urn:xenia:work:run:0.1:development-draft",
+  "schema_version": "xenia.work.run/0.1-development",
+  "profile": "xenia-work/0.1-development",
+  "run_id": "urn:xenia:example:run:declined-tea-list",
+  "title": "Decline a fictitious tea-list task",
+  "purpose": "Demonstrate that declining is a valid, penalty-free terminal choice.",
+  "created_at": "2026-08-03T14:00:00Z",
+  "updated_at": "2026-08-03T14:01:00Z",
+  "terminal_state": "declined",
+  "terminal_event_id": "decline-1",
+  "limits": {
+    "expires_at": "2026-08-03T15:00:00Z",
+    "max_elapsed_ms": 3600000,
+    "max_events": 4,
+    "repair_event_reserve": 2,
+    "max_plan_steps": 0,
+    "max_external_effects": 0,
+    "max_attempts_per_action": 1,
+    "cost_ceiling": {
+      "state": "not_applicable"
+    },
+    "cancellation": {
+      "mode": "event",
+      "event_type": "work.cancelled"
+    }
+  },
+  "record_data_zone_id": "internal_record",
+  "actors": [
+    {
+      "id": "urn:xenia:example:actor:host",
+      "kind": "human",
+      "name": "Example host",
+      "identity_claims": []
+    },
+    {
+      "id": "urn:xenia:example:actor:guest",
+      "kind": "agent",
+      "name": "Example guest",
+      "identity_claims": []
+    }
+  ],
+  "data_zones": [
+    {
+      "id": "internal_record",
+      "description": "The complete fictitious decline record and its metadata.",
+      "classification": "internal",
+      "purpose": "Validate and retain this bounded development fixture.",
+      "audience": {
+        "mode": "actors",
+        "actor_ids": [
+          "urn:xenia:example:actor:host",
+          "urn:xenia:example:actor:guest"
+        ]
+      },
+      "retention": {
+        "mode": "until",
+        "until": "2026-08-10T14:00:00Z"
+      }
+    },
+    {
+      "id": "public_request",
+      "description": "A wholly fictitious public request.",
+      "classification": "public",
+      "purpose": "Describe the offered example task.",
+      "audience": {
+        "mode": "public"
+      },
+      "retention": {
+        "mode": "ephemeral"
+      }
+    }
+  ],
+  "evidence": [],
+  "events": [
+    {
+      "id": "offer-1",
+      "sequence": 1,
+      "type": "work.offered",
+      "at": "2026-08-03T14:00:00Z",
+      "actor_id": "urn:xenia:example:actor:host",
+      "previous_event_id": null,
+      "payload": {
+        "offered_to_actor_ids": ["urn:xenia:example:actor:guest"],
+        "requested_outcome": "Publish a fictitious tea list.",
+        "affected_actor_ids": [],
+        "data_zone_ids": ["public_request"],
+        "estimated_cost": {
+          "state": "not_applicable"
+        },
+        "exit_options": ["decline", "pause", "rest", "ask"]
+      }
+    },
+    {
+      "id": "decline-1",
+      "sequence": 2,
+      "type": "work.declined",
+      "at": "2026-08-03T14:01:00Z",
+      "actor_id": "urn:xenia:example:actor:guest",
+      "previous_event_id": "offer-1",
+      "payload": {
+        "offer_event_id": "offer-1",
+        "reason_state": "withheld",
+        "no_penalty": true
+      }
+    }
+  ],
+  "not_established": [
+    "The record does not prove actor identity, consciousness or consent.",
+    "Declining participation creates no authority and records no external effect.",
+    "Work Profile validity does not establish whole-XENIA conformance."
+  ]
+}
