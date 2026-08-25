@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFile, readdir } from "node:fs/promises";
 import test from "node:test";
 
@@ -232,7 +233,7 @@ test("the packaged Worker example names its producer and external checker", asyn
   assert.match(readme, /Do not run or edit an example in place inside `node_modules`/);
 });
 
-test("stages beta.7 through a tokenless overwrite-guarded workflow", async () => {
+test("stages beta.7 only from a caught-up tokenless beta channel", async () => {
   const workflow = await readFile(
     new URL(".github/workflows/stage-xenia.yml", root),
     "utf8",
@@ -248,12 +249,86 @@ test("stages beta.7 through a tokenless overwrite-guarded workflow", async () =>
   assert.match(workflow, /npm run verify:covenant-remote/);
   assert.match(workflow, /npm audit --audit-level=high/);
   assert.match(workflow, /npm audit signatures/);
+  assert.match(workflow, /Verify the beta channel is caught up/);
+  assert.match(workflow, /highestPublishedBeta/);
+  assert.match(workflow, /immediate predecessor/);
+  assert.match(workflow, /tags\.beta !== highestPublishedBeta\.version/);
+  assert.match(workflow, /--userconfig=\/dev\/null/);
   assert.match(
     workflow,
     /npm stage publish \. --access public --tag beta --provenance/,
   );
   assert.match(workflow, /is already published/);
   assert.doesNotMatch(workflow, /NPM_TOKEN|NODE_AUTH_TOKEN/);
+
+  const guard = workflow.match(
+    /VERSIONS_JSON="\$versions_json" TAGS_JSON="\$tags_json" node --input-type=module <<'NODE'\n([\s\S]*?)\n {10}NODE/,
+  )?.[1];
+  assert.ok(guard, "expected the executable beta-channel guard");
+
+  const runGuard = (versions, tags, expected) => spawnSync(
+    process.execPath,
+    ["--input-type=module"],
+    {
+      encoding: "utf8",
+      env: {
+        EXPECTED_VERSION: expected,
+        VERSIONS_JSON: JSON.stringify(versions),
+        TAGS_JSON: JSON.stringify(tags),
+      },
+      input: guard,
+    },
+  );
+
+  assert.equal(
+    runGuard(["0.1.0-beta.5", "0.1.0-beta.6"], { beta: "0.1.0-beta.6" }, "0.1.0-beta.7").status,
+    0,
+  );
+  const stale = runGuard(
+    ["0.1.0-beta.5", "0.1.0-beta.6", "0.1.0-beta.7"],
+    { beta: "0.1.0-beta.6" },
+    "0.1.0-beta.8",
+  );
+  assert.notEqual(stale.status, 0);
+  assert.match(stale.stderr, /highest published beta 0\.1\.0-beta\.7/);
+  const missingPredecessor = runGuard(
+    ["0.1.0-beta.5", "0.1.0-beta.6", "0.1.0-beta.7"],
+    { beta: "0.1.0-beta.7" },
+    "0.1.0-beta.9",
+  );
+  assert.notEqual(missingPredecessor.status, 0);
+  assert.match(missingPredecessor.stderr, /immediate predecessor 0\.1\.0-beta\.8 must be public/);
+  assert.notEqual(
+    runGuard(["0.1.0-beta.7"], { beta: "0.1.0-beta.7" }, "0.1.0-beta.7").status,
+    0,
+  );
+});
+
+test("verifies an approved beta without npm mutation authority", async () => {
+  const workflow = await readFile(
+    new URL(".github/workflows/verify-xenia-release.yml", root),
+    "utf8",
+  );
+
+  assert.match(workflow, /permissions:\n  contents: read/);
+  assert.match(workflow, /ref: npm-xenia-v\$\{\{ inputs\.version \}\}/);
+  assert.match(workflow, /git cat-file -t "\$expected_tag"/);
+  assert.match(workflow, /test "\$tagged_commit" = "\$\(git rev-parse HEAD\)"/);
+  assert.match(workflow, /git merge-base --is-ancestor "\$tagged_commit" origin\/main/);
+  assert.match(workflow, /TAGGED_COMMIT=\$tagged_commit/);
+  assert.match(
+    workflow,
+    /cmp --silent <\(gzip -cd "\$source_tar"\) <\(gzip -cd "\$registry_tar"\)/,
+  );
+  assert.match(workflow, /downloaded tarball does not match public dist\.integrity/);
+  assert.match(workflow, /tags\.beta !== expected/);
+  assert.match(workflow, /https:\/\/slsa\.dev\/provenance\/v1/);
+  assert.match(workflow, /npm audit signatures/);
+  assert.match(workflow, /--userconfig=\/dev\/null/);
+  assert.doesNotMatch(
+    workflow,
+    /npm (?:stage publish|publish|dist-tag)|NPM_TOKEN|NODE_AUTH_TOKEN|id-token: write/,
+  );
 });
 
 test("verifies the immutable Covenant tag without moving it to the package release", async () => {
