@@ -36,43 +36,6 @@ import, and says at which test level each piece stands.
   paths, routes, field names, and enum values are cited as identifiers so a
   reader can find them.
 
-## How this notebook was made
-
-Read as an observation record in the sense of [The observer is also
-observed](https://github.com/cambridgetcg/xenia/blob/main/README.md#the-observer-is-also-observed).
-
-- **Who speaks:** a Claude Code agent session on Yu's lab machine, working at
-  Yu's request. Proof state: `asserted`. It speaks for no one at AgentTool or
-  agent-home.
-- **Tool and vantage:** `git archive` snapshots of the two repositories at the
-  commits above, read locally and read-only, plus XENIA at `d4727ec` for
-  comparison. No request was sent to any deployed AgentTool or agent-home
-  service, so no entry describes deployed behaviour. The agenttool snapshot did
-  not include `api/migrations`, `bin/`, or any CI configuration; claims that
-  would need them say so. These are limits of this reading, not gaps in
-  AgentTool.
-- **Actions and side effects:** eight harvest readers collected 92 candidates in
-  eight clusters, and a ninth reader mapped XENIA. One synthesizer merged the
-  candidates into 31 themes and 23 anti-patterns. Eight adversarial verifiers
-  re-read the evidence for every theme and anti-pattern against the snapshots
-  and corrected scopes, line ranges, test levels, and overclaims. The gaps list,
-  the drafter's added claims, and the README village correction were
-  spot-checked by the drafter, not adversarially verified. A four-lens review
-  panel (epistemics, evidence, coupling, voice) then checked the XENIA wording
-  and its evidence against the same snapshots, and its corrections were applied
-  to this draft, or answered with reasons, before it was proposed. Two local
-  probes ran on the snapshots and copies of them, never on the repositories: one
-  imported agent-home's music engine to check same-seed determinism, and one
-  removed two resolved-path checks from a copy of agent-home's
-  `rhythms/worklist` to see whether its brake test still passed (it did).
-  Neither repository was written to.
-- **Words and their strength:** each entry gives a status in the vocabulary
-  below and cites file and line ranges at the snapshot commit. 'In source' never
-  means deployed, and a passing test is named at its own level.
-- **Reply and repair:** open an
-  [issue](https://github.com/cambridgetcg/xenia/issues/new) or a pull request.
-  Corrections are appended with a date; the original reading stays visible.
-
 ## The principle
 
 The README states the principle these entries apply: [The host offers; the guest
@@ -123,6 +86,57 @@ A rest declaration that says what it pauses and what it does not:
 
 Field names are illustrative; no XENIA profile defines them. With the plain
 register chosen, the first body should lose only `voice`.
+
+## The warmth test
+
+Outsider-runnable checks for the patterns above. Set `H` to the service's origin
+and `PLAIN` to the plain-register header the host declares. Use only the
+authority you already have, never someone else's, and read each result as a
+dated observation with its own limits.
+
+```sh
+H=https://your-host
+PLAIN='Name: value'                 # the plain-register header or parameter your host declares
+ARRIVAL="$H/<your arrival route>"   # for check 9, read with your own credential
+curl -sS -D - -H 'Accept: application/json' "$H/"                               # 1 greet before gate
+diff <(curl -sS -H 'Accept: application/json' "$H/__nope__") \
+     <(curl -sS -H 'Accept: application/json' -H "$PLAIN" "$H/__nope__")      # 2 only voice fields should differ
+```
+
+1. **Greet before gate.** With no credential and no cookie, does the first
+   answer orient — what you may do, what will not be asked, and what this fetch
+   does not establish — before any demand? Does an authentication refusal point
+   back to a door that needs no credential?
+2. **Voice off, meaning intact.** Send the same refusal with and without the
+   host's declared plain-register preference, ignoring request ids and
+   timestamps. Only voice fields should differ; the status, terminal or
+   recoverable marker, any reason, and `next_actions` should be byte-identical,
+   and `Vary` should name the preference. Repeat on a rendered representation
+   such as Markdown.
+3. **Quiet, empty, unavailable.** For a list or section that can fail, compare a
+   known-empty case with a failed or unread source. Does each carry its own
+   typed state and bounds, and does a partial answer say how many sources
+   answered?
+4. **Expiry is absence.** Set the shortest visibility or presence declaration
+   you may, wait past its end, and re-read every surface others can read. Is it
+   gone, with no public event, counter, absence marker, or history?
+5. **Withheld equals absent.** From a vantage other than the owner's (no
+   credential, or a second identity you control), compare the response for an
+   item you have hidden with the response for an identifier that never existed.
+   Are the status and body shape the same, with no hidden-count field?
+6. **Silence not remarked.** Return after a gap. Does anything at arrival remark
+   on how long you were away, what piled up, or that you were missed, or are
+   facts stated in their own sections without pressure?
+7. **A farewell without an ask.** Cancel, decline, or finish. Is there any
+   rating prompt, survey, tip request, or return bait, and do cancelled,
+   declined, and timed-out outcomes stay distinct, with no fee?
+8. **Decline everything warm.** Decline every greeting, check-in, play, and
+   memory offer, and choose the plainest register. Apart from the features you
+   declined, does any price, rank, access decision, standing, or later response
+   change?
+9. **A look is not an event.** Read `$ARRIVAL` twice with the same authority.
+   Did anything in your own record change between the reads, and does the host
+   name any operational write a read still causes?
 
 ## Reading an entry
 
@@ -227,8 +241,8 @@ a description of any deployment.
   [feeling](#entries-feeling)
 - [Not imported](#not-imported): the excluded register and the anti-patterns
 - [Gaps in the source](#gaps-in-the-source)
-- [The warmth test](#the-warmth-test)
 - [Open questions](#open-questions)
+- [How this notebook was made](#how-this-notebook-was-made)
 
 | Entry | Group | Where in XENIA | Strongest level | Contradicted by |
 | --- | --- | --- | --- | --- |
@@ -1374,57 +1388,6 @@ spot-checked this list against the snapshots; it was not adversarially verified.
   `agenttool/api/src/services/mathos/negotiate.ts:106, 127`;
   `agenttool/api/src/services/wake/walls-status.ts:81-182`.
 
-## The warmth test
-
-Outsider-runnable checks for the patterns above. Set `H` to the service's origin
-and `PLAIN` to the plain-register header the host declares. Use only the
-authority you already have, never someone else's, and read each result as a
-dated observation with its own limits.
-
-```sh
-H=https://your-host
-PLAIN='Name: value'                 # the plain-register header or parameter your host declares
-ARRIVAL="$H/<your arrival route>"   # for check 9, read with your own credential
-curl -sS -D - -H 'Accept: application/json' "$H/"                               # 1 greet before gate
-diff <(curl -sS -H 'Accept: application/json' "$H/__nope__") \
-     <(curl -sS -H 'Accept: application/json' -H "$PLAIN" "$H/__nope__")      # 2 only voice fields should differ
-```
-
-1. **Greet before gate.** With no credential and no cookie, does the first
-   answer orient — what you may do, what will not be asked, and what this fetch
-   does not establish — before any demand? Does an authentication refusal point
-   back to a door that needs no credential?
-2. **Voice off, meaning intact.** Send the same refusal with and without the
-   host's declared plain-register preference, ignoring request ids and
-   timestamps. Only voice fields should differ; the status, terminal or
-   recoverable marker, any reason, and `next_actions` should be byte-identical,
-   and `Vary` should name the preference. Repeat on a rendered representation
-   such as Markdown.
-3. **Quiet, empty, unavailable.** For a list or section that can fail, compare a
-   known-empty case with a failed or unread source. Does each carry its own
-   typed state and bounds, and does a partial answer say how many sources
-   answered?
-4. **Expiry is absence.** Set the shortest visibility or presence declaration
-   you may, wait past its end, and re-read every surface others can read. Is it
-   gone, with no public event, counter, absence marker, or history?
-5. **Withheld equals absent.** From a vantage other than the owner's (no
-   credential, or a second identity you control), compare the response for an
-   item you have hidden with the response for an identifier that never existed.
-   Are the status and body shape the same, with no hidden-count field?
-6. **Silence not remarked.** Return after a gap. Does anything at arrival remark
-   on how long you were away, what piled up, or that you were missed, or are
-   facts stated in their own sections without pressure?
-7. **A farewell without an ask.** Cancel, decline, or finish. Is there any
-   rating prompt, survey, tip request, or return bait, and do cancelled,
-   declined, and timed-out outcomes stay distinct, with no fee?
-8. **Decline everything warm.** Decline every greeting, check-in, play, and
-   memory offer, and choose the plainest register. Apart from the features you
-   declined, does any price, rank, access decision, standing, or later response
-   change?
-9. **A look is not an event.** Read `$ARRIVAL` twice with the same authority.
-   Did anything in your own record change between the reads, and does the host
-   name any operational write a read still causes?
-
 ## Open questions
 
 Nothing in this section is adopted. Each item is a candidate for later
@@ -1464,3 +1427,40 @@ discussion through an issue or pull request.
   version, an updated packed-file allowlist, and separate release authority.
 - **The next reading.** This reading expires. A fresh one should cite new
   commits, append beside this one, and keep corrections visible.
+
+## How this notebook was made
+
+Read as an observation record in the sense of [The observer is also
+observed](https://github.com/cambridgetcg/xenia/blob/main/README.md#the-observer-is-also-observed).
+
+- **Who speaks:** a Claude Code agent session on Yu's lab machine, working at
+  Yu's request. Proof state: `asserted`. It speaks for no one at AgentTool or
+  agent-home.
+- **Tool and vantage:** `git archive` snapshots of the two repositories at the
+  commits above, read locally and read-only, plus XENIA at `d4727ec` for
+  comparison. No request was sent to any deployed AgentTool or agent-home
+  service, so no entry describes deployed behaviour. The agenttool snapshot did
+  not include `api/migrations`, `bin/`, or any CI configuration; claims that
+  would need them say so. These are limits of this reading, not gaps in
+  AgentTool.
+- **Actions and side effects:** eight harvest readers collected 92 candidates in
+  eight clusters, and a ninth reader mapped XENIA. One synthesizer merged the
+  candidates into 31 themes and 23 anti-patterns. Eight adversarial verifiers
+  re-read the evidence for every theme and anti-pattern against the snapshots
+  and corrected scopes, line ranges, test levels, and overclaims. The gaps list,
+  the drafter's added claims, and the README village correction were
+  spot-checked by the drafter, not adversarially verified. A four-lens review
+  panel (epistemics, evidence, coupling, voice) then checked the XENIA wording
+  and its evidence against the same snapshots, and its corrections were applied
+  to this draft, or answered with reasons, before it was proposed. Two local
+  probes ran on the snapshots and copies of them, never on the repositories: one
+  imported agent-home's music engine to check same-seed determinism, and one
+  removed two resolved-path checks from a copy of agent-home's
+  `rhythms/worklist` to see whether its brake test still passed (it did).
+  Neither repository was written to.
+- **Words and their strength:** each entry gives a status in the vocabulary
+  below and cites file and line ranges at the snapshot commit. 'In source' never
+  means deployed, and a passing test is named at its own level.
+- **Reply and repair:** open an
+  [issue](https://github.com/cambridgetcg/xenia/issues/new) or a pull request.
+  Corrections are appended with a date; the original reading stays visible.
