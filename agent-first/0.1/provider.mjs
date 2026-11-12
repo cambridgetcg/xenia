@@ -1,0 +1,119 @@
+// SPDX-License-Identifier: MPL-2.0
+// Optional, explicit code-loading boundary. The runtime itself imports no provider.
+import fs from 'node:fs';
+import path from 'node:path';
+import {tmpdir} from 'node:os';
+import {createHash} from 'node:crypto';
+import {pathToFileURL} from 'node:url';
+import {ModuleError} from './runtime.mjs';
+
+// A pin mismatch says where it differed, never the observed bytes.
+const pin=mismatch=>Object.assign(new ModuleError('PROVIDER_PIN_MISMATCH'),{mismatch});
+const FILES=['package.json','dist/core.mjs','dist/files.mjs','LICENSE','NOTICE'];
+
+// Containment is decided by filesystem identity (device and inode of each
+// ancestor), not by spelling. Letter case, symlinks and bind-style aliases
+// then cannot make one directory look like two. Both paths must be real paths
+// of existing directories.
+const identity=p=>{const stat=fs.statSync(p,{bigint:true});return `${stat.dev}:${stat.ino}`;};
+const lineage=p=>{
+  const ids=new Set();
+  for(let current=p;;){
+    ids.add(identity(current));
+    const up=path.dirname(current);
+    if(up===current)break;
+    current=up;
+  }
+  return ids;
+};
+// Is `inner` the same directory as `outer`, or somewhere beneath it?
+const within=(inner,outer)=>lineage(inner).has(identity(outer));
+
+// The host knows both roots here; the data-only adapter cannot infer where its
+// supplied namespace was installed. Resolve aliases before importing any code,
+// and refuse containment in either direction.
+export function separateContextRoots(packageDir,notesDir){
+  let packageRoot,notesRoot,notesExists=false;
+  try{
+    packageRoot=fs.realpathSync.native(packageDir);
+    if(!fs.statSync(packageRoot).isDirectory())throw new Error('not a package directory');
+  }catch{throw new ModuleError('PROVIDER_UNAVAILABLE');}
+  try{
+    const selected=path.resolve(notesDir);
+    let stat;
+    try{stat=fs.lstatSync(selected);}catch(error){if(error.code!=='ENOENT')throw error;}
+    if(stat){
+      if(!stat.isDirectory()||stat.isSymbolicLink())throw new Error('not a regular directory');
+      notesRoot=fs.realpathSync.native(selected);
+      notesExists=true;
+    }else{
+      const parent=fs.realpathSync.native(path.dirname(selected));
+      if(!fs.statSync(parent).isDirectory())throw new Error('not a parent directory');
+      notesRoot=path.join(parent,path.basename(selected));
+    }
+  }catch{throw new ModuleError('INVALID_CONTEXT_ROOT');}
+  // A notes root that does not exist yet is judged by its existing parent: a
+  // new name inside the package is inside it. A package cannot sit inside a
+  // root that does not exist.
+  const anchor=notesExists?notesRoot:path.dirname(notesRoot);
+  if(within(anchor,packageRoot)||(notesExists&&within(packageRoot,notesRoot)))throw new ModuleError('CONTEXT_ROOT_OVERLAP');
+  return {packageDir:packageRoot,dir:notesRoot};
+}
+
+// The checked bytes are copied to the system temp directory. If that directory
+// is inside the package or the notes, the copy would land in what the caller
+// is separating from code. Refuse that before any copy is made.
+function assertSnapshotOutside(packageDir,notesDir){
+  let temp,roots=[];
+  try{
+    temp=fs.realpathSync.native(tmpdir());
+    roots.push(fs.realpathSync.native(packageDir));
+    if(typeof notesDir==='string'&&fs.existsSync(notesDir))roots.push(fs.realpathSync.native(notesDir));
+  }catch{return;}   // an unusable temp or package directory fails later, in its own words
+  if(roots.some(root=>within(temp,root)))throw new ModuleError('SNAPSHOT_LOCATION_OVERLAP');
+}
+
+export async function loadReviewedStarter(packageDir,{notesDir}={}){
+  if(typeof packageDir!=='string'||!path.isAbsolute(packageDir))throw new ModuleError('INVALID_PROVIDER');
+  assertSnapshotOutside(packageDir,notesDir);
+  const lock=JSON.parse(fs.readFileSync(new URL('./agenttool.lock.json',import.meta.url),'utf8')).local_starter;
+  if(JSON.stringify(Object.keys(lock.files).sort())!==JSON.stringify([...FILES].sort()))throw pin({field:'lock.files'});
+  const copies=new Map();
+  let snapshot;
+  try{
+    const root=fs.realpathSync(packageDir);
+    for(const name of FILES){
+      const file=path.join(root,name),relative=path.relative(root,fs.realpathSync(file));
+      if(relative.startsWith('..'+path.sep)||path.isAbsolute(relative))throw pin({file:name,aspect:'path'});
+      if(!fs.lstatSync(file).isFile())throw pin({file:name,aspect:'type'});
+      const fd=fs.openSync(file,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|(fs.constants.O_NONBLOCK??0));
+      let bytes;
+      try{
+        const limit=256*1024,stat=fs.fstatSync(fd);
+        if(!stat.isFile()||stat.size>limit)throw pin({file:name,aspect:stat.isFile()?'size':'type'});
+        const buffer=Buffer.alloc(limit+1);let used=0;
+        while(used<buffer.length){const count=fs.readSync(fd,buffer,used,buffer.length-used,null);if(!count)break;used+=count;}
+        if(used>limit)throw pin({file:name,aspect:'size'});
+        bytes=buffer.subarray(0,used);
+      }
+      finally{fs.closeSync(fd);}
+      if(createHash('sha256').update(bytes).digest('hex')!==lock.files[name])throw pin({file:name,aspect:'sha256'});
+      copies.set(name,bytes);
+    }
+    const metadata=JSON.parse(copies.get('package.json').toString('utf8'));
+    if(metadata.name!==lock.name)throw pin({file:'package.json',aspect:'name'});
+    if(metadata.version!==lock.version)throw pin({file:'package.json',aspect:'version'});
+    // Import only an owned snapshot of the bytes just checked. No provider
+    // install script, MCP bundle, hosted companion or mutable source path runs.
+    snapshot=fs.mkdtempSync(path.join(tmpdir(),'xenia-reviewed-provider-'));
+    fs.mkdirSync(path.join(snapshot,'dist'),{mode:0o700});
+    for(const [name,bytes]of copies)fs.writeFileSync(path.join(snapshot,name),bytes,{flag:'wx',mode:0o600});
+    const starter=await import(pathToFileURL(path.join(snapshot,'dist/core.mjs')).href);
+    let disposed=false;
+    return {starter,release:lock,dispose(){if(!disposed){disposed=true;fs.rmSync(snapshot,{recursive:true,force:true});}}};
+  }catch(error){
+    if(snapshot)fs.rmSync(snapshot,{recursive:true,force:true});
+    if(error instanceof ModuleError)throw error;
+    throw new ModuleError('PROVIDER_UNAVAILABLE');
+  }
+}

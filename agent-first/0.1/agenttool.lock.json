@@ -1,0 +1,24 @@
+{
+  "schema": "xenia.agent-first.integrations/0.1-development",
+  "observed_date": "2026-10-09",
+  "agenttool_source": {
+    "revision": "91a6aecfeb95dc73c8a5dd4005dbf3c539295493",
+    "scope": "Authorized private source snapshot, not evidence of publication or deployment."
+  },
+  "local_starter": {
+    "name": "@agenttool/local-starter",
+    "version": "0.1.0-dev.0",
+    "license": "Apache-2.0",
+    "source": "https://github.com/cambridgetcg/agenttool-local-starter/releases/tag/local-starter-v0.1.0-dev.0",
+    "archive_url": "https://github.com/cambridgetcg/agenttool-local-starter/releases/download/local-starter-v0.1.0-dev.0/agenttool-local-starter-0.1.0-dev.0.tgz",
+    "archive_sha256": "b5deb1f9411f1c0d4fff94e2428c7332d3ed0c02a0fd771bc2c1578629bd6a9c",
+    "files": {
+      "package.json": "8be3e51f4015da21768f24c08e6a85201fe2e7812caf20a6c42431890b81de93",
+      "dist/core.mjs": "ad330358b3fa985d7cc1360876510bc3483007b51e7b406fe182786290855668",
+      "dist/files.mjs": "123f432fa57fd7c83e5744b623d4e8394a81bb835f01e5f90a503805e944769f",
+      "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "NOTICE": "a14d8585de84fc67c785229278bbb701a5fcb4442fcfccb70729cc3499befb7c"
+    },
+    "scope": "Public GitHub prerelease artifact. Checksum consistency is not authorship, authority, or whole-framework conformance. Source templates may differ from these immutable distribution bytes."
+  }
+}

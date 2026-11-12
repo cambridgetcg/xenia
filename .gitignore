@@ -2,3 +2,6 @@ node_modules/
 dist/
 *.tgz
 .DS_Store
+
+# Vendored, hash-pinned provider build: must travel with the kit
+!agent-first/0.1/adapters/telescope/provider/dist/

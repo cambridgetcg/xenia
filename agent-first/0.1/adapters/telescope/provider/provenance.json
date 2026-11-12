@@ -1,0 +1,275 @@
+{
+  "kind": "source-derived optional consumer fixture",
+  "upstream_repository": "https://github.com/cambridgetcg/agenttool",
+  "upstream_commit": "91a6aecfeb95dc73c8a5dd4005dbf3c539295493",
+  "upstream_path": "packages/telescope",
+  "source_package_version": "0.2.3",
+  "published_artifact_equivalence": "not_established",
+  "source_modified": false,
+  "compiler": {
+    "name": "TypeScript",
+    "version": "7.0.2",
+    "module": "NodeNext",
+    "target": "ES2022"
+  },
+  "network_required": false,
+  "runtime_dependencies": "Node built-ins only",
+  "source_files": [
+    {
+      "source_path": "packages/telescope/LICENSE",
+      "git_blob": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "bytes": 11358
+    },
+    {
+      "source_path": "packages/telescope/NOTICE",
+      "git_blob": "d148e93e5e15756a9a76295484674b04017b18e1",
+      "sha256": "9986a91099017ae873bdda80c23fee7afe474a78ebe0351e5a21e025bf5436c1",
+      "bytes": 313
+    },
+    {
+      "source_path": "packages/telescope/src/constants.ts",
+      "git_blob": "4ebdb1de3b5898cde34a74e21a2ad2ebd7cbd16a",
+      "sha256": "85f538d5be3990c1782aba5be6e9b165ebdc122fefa977063712e6142ed6c666",
+      "bytes": 540
+    },
+    {
+      "source_path": "packages/telescope/src/errors.ts",
+      "git_blob": "bc08a01f3784dc35c193a45182826cdbc5ac2f11",
+      "sha256": "f3b743b1a5678ecf029b0d58eac61f1ee5c9ed1122a4b43ad98f6a9bc6179d4e",
+      "bytes": 603
+    },
+    {
+      "source_path": "packages/telescope/src/parsers/common.ts",
+      "git_blob": "e5edc2a4983027911af8e713a837f32cd0dcbc60",
+      "sha256": "0ea9cfe60d6850e186adc6e9c1d11b74b9d90610951bcab459b391b9618ab07d",
+      "bytes": 2590
+    },
+    {
+      "source_path": "packages/telescope/src/target.ts",
+      "git_blob": "78419bfba91b9f1787de43eede6afdf99e25a862",
+      "sha256": "77bb02939d4bde8a31d5e9989bb425aafbc2452d61dc05be99ba9238c5599081",
+      "bytes": 7179
+    },
+    {
+      "source_path": "packages/telescope/src/transport.ts",
+      "git_blob": "1c2199ba314faa4b85e66c653909d0ec0edfe27a",
+      "sha256": "55561716bc6b9cca3d17f698bb3f32741b8c6578a36e2d3d6060912b8ddaadcb",
+      "bytes": 10977
+    },
+    {
+      "source_path": "packages/telescope/src/types.ts",
+      "git_blob": "ee12efacb2c15cc057507cef5eda2ff9aa217b92",
+      "sha256": "b54444f89bf42e178dfa37570a266c22e7572d34e3796153a81102d50c258f11",
+      "bytes": 4474
+    },
+    {
+      "source_path": "packages/telescope/src/xenia-surface.ts",
+      "git_blob": "88335060485428eff2d13b2561d6f9393f1dea4c",
+      "sha256": "0498df8d7ad1118fd3b61762c492e2b8d91570f39ffe78a247ad573e02e2afb7",
+      "bytes": 12562
+    }
+  ],
+  "files": [
+    {
+      "path": "dist/constants.d.ts",
+      "bytes": 318,
+      "sha256": "ef390d3db48f6178ec7e1041cbdb9ee6e4a5994dc91b70968fa237c365a8c40c"
+    },
+    {
+      "path": "dist/constants.d.ts.map",
+      "bytes": 359,
+      "sha256": "1be90e65dee4e509df384eded8284dc201025bbf57e9f6b0916d180499452215"
+    },
+    {
+      "path": "dist/constants.js",
+      "bytes": 488,
+      "sha256": "992ef587ca52ef2f9634dc7c8390b111b5584484a5b0e1af46590952b01584e8"
+    },
+    {
+      "path": "dist/constants.js.map",
+      "bytes": 557,
+      "sha256": "197686df26ee9a14365d43c6ded6755f6111b11784da8f6b346e3a32eb25fce6"
+    },
+    {
+      "path": "dist/errors.d.ts",
+      "bytes": 425,
+      "sha256": "a02f84b0e04a477ea5dc71b37cb465012783718b90abeb35e4b582a83da037a4"
+    },
+    {
+      "path": "dist/errors.d.ts.map",
+      "bytes": 504,
+      "sha256": "c785461184e38f2c9b843a3fd7667eef5567528f085db8332fbe85e6a6737d16"
+    },
+    {
+      "path": "dist/errors.js",
+      "bytes": 587,
+      "sha256": "f8ba4d19a745cc33a3ee11b0b1674a49390ef5786f83dd9f0ecce8e86543de6d"
+    },
+    {
+      "path": "dist/errors.js.map",
+      "bytes": 719,
+      "sha256": "30747011bc49f1dd819836ffd20c1b2d9525cafe75f78332a20221e5b6b4e233"
+    },
+    {
+      "path": "dist/parsers/common.d.ts",
+      "bytes": 857,
+      "sha256": "95a6a38d26df01adf9c548ebe1b45e5488873665c70bcdc66b6e86ffc53248bb"
+    },
+    {
+      "path": "dist/parsers/common.d.ts.map",
+      "bytes": 954,
+      "sha256": "1b48aa3697e249c27aeeb8ecfd7949832d0257676ad2140bbda956ce5d34f3e6"
+    },
+    {
+      "path": "dist/parsers/common.js",
+      "bytes": 2213,
+      "sha256": "063490d4347dc1d4ec579eaf30c82548d4877cd3a025cf5d9439a170e6871cb2"
+    },
+    {
+      "path": "dist/parsers/common.js.map",
+      "bytes": 2394,
+      "sha256": "e66877520e6fa0d3a865d9b884d7efc152c0aa8709f0b0185db5d8c061ac9871"
+    },
+    {
+      "path": "dist/target.d.ts",
+      "bytes": 456,
+      "sha256": "493e5510b3b6ce090413c4252ba2f0e14e148afa65a3ff711f9320ce0d25fec9"
+    },
+    {
+      "path": "dist/target.d.ts.map",
+      "bytes": 482,
+      "sha256": "c3433dc9f1bd6c4309917aa711b18358c273efc63b54523c626c8a29dd33fae7"
+    },
+    {
+      "path": "dist/target.js",
+      "bytes": 6837,
+      "sha256": "fb551da0c5fe7db59c6433833c4daba9ec4d067696d89c75b21e0c0124a724f2"
+    },
+    {
+      "path": "dist/target.js.map",
+      "bytes": 6870,
+      "sha256": "f0c7bf5f24571a2ef2bd102deab00b55e51afca7499c8971995f2153e1d83cbe"
+    },
+    {
+      "path": "dist/transport.d.ts",
+      "bytes": 908,
+      "sha256": "bc60fe403c6d67a5175df2a6404810760e55dce3d45c36e4d9efa930ce47e580"
+    },
+    {
+      "path": "dist/transport.d.ts.map",
+      "bytes": 995,
+      "sha256": "7fe701baedd80910192e347165b0683cee80db418e01e92992038d57a4c11ae6"
+    },
+    {
+      "path": "dist/transport.js",
+      "bytes": 11165,
+      "sha256": "e74c0750170d54139a2c2b18fc96056f2b21c503bb7c73a6dc0e6f997cc80628"
+    },
+    {
+      "path": "dist/transport.js.map",
+      "bytes": 9546,
+      "sha256": "11497304173e2890ea422db913595976c131dd1d7332c4b82a32866567b5cf67"
+    },
+    {
+      "path": "dist/types.d.ts",
+      "bytes": 4565,
+      "sha256": "ea606464d9cdcb15585d066445b3516daf0463a10dbe52977a7a5b6fe54cacba"
+    },
+    {
+      "path": "dist/types.d.ts.map",
+      "bytes": 4368,
+      "sha256": "f05c2ec692e6ae7137e698354e9a8d1f39ff3b45f9ac037a3c1b5c3b1df4ac56"
+    },
+    {
+      "path": "dist/types.js",
+      "bytes": 44,
+      "sha256": "01ae2a5b120382f9a648ced7ee8507493a134f216d100fc61600c6c9738235d2"
+    },
+    {
+      "path": "dist/types.js.map",
+      "bytes": 140,
+      "sha256": "202b56f75c07c58a66884a227322a836b947c4727e7891b64ab976b5911c2aa1"
+    },
+    {
+      "path": "dist/xenia-surface.d.ts",
+      "bytes": 1960,
+      "sha256": "e777fac45bcad824fc79d04b19d4893c3551b877804bf3a036258459bc791b18"
+    },
+    {
+      "path": "dist/xenia-surface.d.ts.map",
+      "bytes": 1185,
+      "sha256": "92dfdf0bc482441d8d7cebb805d921858940b85f2259bd13e80e2d78a92adb12"
+    },
+    {
+      "path": "dist/xenia-surface.js",
+      "bytes": 11861,
+      "sha256": "fc5a97de69ec369a3fe3f077dd6b5e966807c3cbb5146ae995605e24a3907b1f"
+    },
+    {
+      "path": "dist/xenia-surface.js.map",
+      "bytes": 9077,
+      "sha256": "de2bf0ca89d84066ef4f0d1528b3ac9fb6b337e22c88771a5cd25e8e9723dadf"
+    },
+    {
+      "path": "imported/agenttool/packages/telescope/LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "imported/agenttool/packages/telescope/NOTICE",
+      "bytes": 313,
+      "sha256": "9986a91099017ae873bdda80c23fee7afe474a78ebe0351e5a21e025bf5436c1"
+    },
+    {
+      "path": "imported/agenttool/packages/telescope/src/constants.ts",
+      "bytes": 540,
+      "sha256": "85f538d5be3990c1782aba5be6e9b165ebdc122fefa977063712e6142ed6c666"
+    },
+    {
+      "path": "imported/agenttool/packages/telescope/src/errors.ts",
+      "bytes": 603,
+      "sha256": "f3b743b1a5678ecf029b0d58eac61f1ee5c9ed1122a4b43ad98f6a9bc6179d4e"
+    },
+    {
+      "path": "imported/agenttool/packages/telescope/src/parsers/common.ts",
+      "bytes": 2590,
+      "sha256": "0ea9cfe60d6850e186adc6e9c1d11b74b9d90610951bcab459b391b9618ab07d"
+    },
+    {
+      "path": "imported/agenttool/packages/telescope/src/target.ts",
+      "bytes": 7179,
+      "sha256": "77bb02939d4bde8a31d5e9989bb425aafbc2452d61dc05be99ba9238c5599081"
+    },
+    {
+      "path": "imported/agenttool/packages/telescope/src/transport.ts",
+      "bytes": 10977,
+      "sha256": "55561716bc6b9cca3d17f698bb3f32741b8c6578a36e2d3d6060912b8ddaadcb"
+    },
+    {
+      "path": "imported/agenttool/packages/telescope/src/types.ts",
+      "bytes": 4474,
+      "sha256": "b54444f89bf42e178dfa37570a266c22e7572d34e3796153a81102d50c258f11"
+    },
+    {
+      "path": "imported/agenttool/packages/telescope/src/xenia-surface.ts",
+      "bytes": 12562,
+      "sha256": "0498df8d7ad1118fd3b61762c492e2b8d91570f39ffe78a247ad573e02e2afb7"
+    },
+    {
+      "path": "index.mjs",
+      "bytes": 256,
+      "sha256": "815ed8c8e0e159cd78f0b813147be8a277d6c82d5f64ac50cd649c7c93be1c20"
+    },
+    {
+      "path": "index.d.mts",
+      "bytes": 286,
+      "sha256": "8adea1d2cf54eb5f27c028a301fb78000fbdbef8cd3ae70e1541ea2d9172a914"
+    }
+  ],
+  "limits": [
+    "Local hashes do not authenticate a publisher or establish release equivalence.",
+    "Transport definitions remain in the upstream closure but are not invoked by this adapter.",
+    "The source repository was accessed through authorized GitHub access; nothing has been published by this work."
+  ]
+}

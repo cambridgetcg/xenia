@@ -1,0 +1,13 @@
+{
+  "name": "@xenia-dev/telescope-source-fixture",
+  "version": "0.0.0-source.91a6aec",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "types": "./index.d.mts",
+      "import": "./index.mjs"
+    }
+  }
+}

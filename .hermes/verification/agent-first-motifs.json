@@ -1,0 +1,60 @@
+{
+  "scope": "Current uncommitted Xenia agent-first development; local synthetic execution, not hosted conformance",
+  "observed_at": "2026-10-09T23:44:22.635900+00:00",
+  "base_revision": "7a6794e1e17dc80770a6ad4294d55cf7171e3de5",
+  "full_gate": {
+    "command": "XENIA_STARTER_TEST_PACKAGE=<reviewed-local-package> npm test",
+    "exit_code": 0,
+    "counts": {
+      "tests": 212,
+      "pass": 211,
+      "fail": 0,
+      "skipped": 1,
+      "cancelled": 0
+    },
+    "log_sha256": "e5c455c9eec870993af7057a7a11c876091bed276dda2f195552c004b1c5910f",
+    "log": "/Users/yuai/.cache/sol/workspaces/20261009-170838-xenia-agent-first.6AOI4r/xenia-motifs-final-tests.log"
+  },
+  "skip": "Separate optional real Skills provider; no XENIA_AGENTTOOL_SKILLS_MODULE supplied",
+  "covenant_generated_checks": "Both --check commands exited 0",
+  "real_starter": "init/status/handoff/render, fresh processes, stale-hash refusal, disabled content, root isolation, provider removal, retained notes; actual pinned package with no network or model",
+  "review": {
+    "initial": "/Users/yuai/.cache/sol/workspaces/20261009-170838-xenia-agent-first.6AOI4r/review-agent-first-current.md",
+    "followup": "/Users/yuai/.cache/sol/workspaces/20261009-170838-xenia-agent-first.6AOI4r/review-agent-first-followup.md",
+    "original_four_findings": "confirmed fixed by follow-up review",
+    "followup_fifo": "Reviewed older context reader; subsequently reproduced and fixed by parent; final suite includes passing FIFO regression",
+    "reviewed_context_sha256": "95a3434bf47d14cb1ed61cdf90e3fd5446ce6f9345537ea4e2c05ee72538e0ea",
+    "current_context_changed": true
+  },
+  "sha256": {
+    "README.md": "5f9834ef3c55d3dd478a244e5d717949cb6ff6a64fe83f567647fe085f8a5e23",
+    "package.json": "257053d67afda6795d98ce0ee13cd1aa1ded73d0831b7d8cea08291e922c8a63",
+    "agent-first/0.1/runtime.mjs": "18f1f840145d267ee94544a7804bad35f8ac492d4a9f9ece188ac3fb69bed43e",
+    "agent-first/0.1/modules.mjs": "dd868f09f9cd15d040386b671442eda4ac4c4429826897004f449aa355df1701",
+    "agent-first/0.1/provider.mjs": "cefbffc1d46d874a30e1bed83fbdcc56a8b0e2911a91cc9cfe9def08ebfb6af7",
+    "agent-first/0.1/context.mjs": "a4bf678182f62b2375ecc18ca7ceaa0b07aaf5a47904128fa7cfc228c1c3b413",
+    "agent-first/0.1/command-state.mjs": "591c062a9eae15d29d3149b2c0821e365e19864d330a779b9db89c653a2c4fc0",
+    "agent-first/0.1/cli.mjs": "59c90e64537f9cb3e972f64ca1009876a55cbe40f483aeb43bcf8181656a0fcc",
+    "agent-first/0.1/adapters/local-starter.mjs": "cdf8a3801ec0758afca205efb5ad8d796ceac032ece9aa801dfe80bd87ff09c2",
+    "agent-first/0.1/agenttool.lock.json": "8d60a87303ae6ea53178f74364478f71ce841356440e6789426bd1e0b53bb6bb",
+    "agent-first/0.1/motifs.json": "db93e870a060f8893683cdecc2a754e4499911b484554d5c1969334c6f0c43ed",
+    "agent-first/0.1/README.md": "9228937b3f152a73054b817b2a037cdfe94972e784aa894f82ed74bdeee35c24",
+    "tests/agent-first-runtime.test.mjs": "17b10bdf92d0297300b0c763e57adde123d86749a9416c750c60b8ded85cffe1",
+    "tests/agent-first-modules.test.mjs": "36e0ffc85d44492a7fc264f3cfa2a09f1c1fc29a674418ee8081f27cc6839c88",
+    "tests/agent-first-starter.test.mjs": "3c7312675ac01d9ac7284a4ccdc4554c6269913880dd714a31689bca70a43400",
+    "tests/agent-first-cli.test.mjs": "e3e1d62de49d4041c68dd2f43472d30765b6768b4490be42279437f7bb03d170",
+    "tests/agent-first-context.test.mjs": "0f9be5a7f2267e1dd5a7b04d070082bc93044e5f82ea9bfcd1a37a7b44dc3f17",
+    "tests/agent-first-motifs.test.mjs": "b4cdf7b422818936c8716f130a6811a720473e04ae77320a07c3e1d7e839a504",
+    "tests/agent-first-boundaries.test.mjs": "70ecc9ddec66c7d05193d6be8f1bbf001864421f4e831e0c0e32491574f6c56c"
+  },
+  "not_performed": [
+    "commit",
+    "publication",
+    "deployment",
+    "host activation",
+    "real personal-note access",
+    "model inference",
+    "full Work runtime",
+    "independent native Skills-provider verification"
+  ]
+}

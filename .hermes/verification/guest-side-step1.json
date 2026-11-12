@@ -1,0 +1,117 @@
+{
+  "scope": "Guest-side step 1 (a no that tells the truth): typed refusal channel, problem-shaped CLI errors, arrive, invoke, executable Standing floor, truthful README. Local synthetic execution, not hosted conformance.",
+  "observed_at": "2026-11-12",
+  "base_revision": "bbb40d8ef86797db83722013f0f02c619b8b4b26",
+  "head_before_record": "9727188321ae8f5b2dbdff7e01bb1119c493b296",
+  "supersedes": ".hermes/verification/agent-first-motifs.json (see agent-first-motifs.superseded.md; that file is unchanged)",
+  "gate": {
+    "default_run": {
+      "command": "npm test",
+      "exit_code": 0,
+      "note": "npm test runs three test groups; totals per group in order",
+      "groups": [
+        {
+          "tests": 238,
+          "pass": 231,
+          "fail": 0,
+          "skipped": 7,
+          "cancelled": 0
+        },
+        {
+          "tests": 47,
+          "pass": 47,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        },
+        {
+          "tests": 10,
+          "pass": 10,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        }
+      ]
+    },
+    "with_real_starter": {
+      "command": "XENIA_STARTER_TEST_PACKAGE=<reviewed-local-package> npm test",
+      "env_var": "XENIA_STARTER_TEST_PACKAGE",
+      "exit_code": 0,
+      "groups": [
+        {
+          "tests": 238,
+          "pass": 237,
+          "fail": 0,
+          "skipped": 1,
+          "cancelled": 0
+        },
+        {
+          "tests": 47,
+          "pass": 47,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        },
+        {
+          "tests": 10,
+          "pass": 10,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        }
+      ]
+    },
+    "skip_explained": "Default run skips the opt-in real Local Starter tests and the optional Skills provider test; with the package supplied only the Skills provider test (no XENIA_AGENTTOOL_SKILLS_MODULE) is skipped.",
+    "render_checks": {
+      "node tools/render-covenant.mjs --check": 0,
+      "node tools/render-adoption-schema.mjs --check": 0
+    }
+  },
+  "sha256": {
+    "agent-first/0.1/README.md": "112226ef963211ce132e50b0ad6ab0e8a66983946510e381eb056f130bd58b8c",
+    "agent-first/0.1/adapter-catalog.mjs": "14afe0c017281bf9bffc92b43490806bf9f4be6252e528e3f7ef58cce766c64f",
+    "agent-first/0.1/adapters/local-starter.mjs": "32ac2e41beae4a4069be7275b4019f1b06e9e6990575c2100dd1b005d8eec5ea",
+    "agent-first/0.1/adapters/skills-inspector.mjs": "e9038116f8a0ecd1581872d9e93d1c08625db99a5434c29670313669cce82d11",
+    "agent-first/0.1/adapters/telescope/index.mjs": "1f24df458c8eb371d9ed32a1749a1c6ef35e943715e4acf21c27e25f69186eb0",
+    "agent-first/0.1/arrive.mjs": "9f5ffa7fdd6557457daba97b02c1a652e96d3edf720397f9b5ccf252a3520e96",
+    "agent-first/0.1/cli.mjs": "03a47b456f5cc731b7b320428fd9f4bcd7b878c246716f36f994041cfad115e5",
+    "agent-first/0.1/command-state.mjs": "dd907a7b5d9d3d176489bf17dfe133505779e8890a07c5dc80a95e3ea48e3d6b",
+    "agent-first/0.1/context.mjs": "730378fa860287286721b32d88ceb6516de7dc6c0691f47411dd21c1c46ff456",
+    "agent-first/0.1/input-file.mjs": "a65762920f1f6b8fb955b79e1fe2f1b1f5c8022b6df85517ee09f8096ebce7d0",
+    "agent-first/0.1/invoke.mjs": "8921aade18fe850e917ed01a32be17a83a947b67d0521cbfbfdf727cdc01602c",
+    "agent-first/0.1/modules.mjs": "da50c150d1edf887d608fb2def0a1e3bede8b6689647e5849f8915e8f6349cab",
+    "agent-first/0.1/motif-studies.mjs": "c7be11f5c40f7738c690958e8243954507d47ab3c6c7ff42f855d1f28b265002",
+    "agent-first/0.1/motifs.json": "7582196b21c8e8104be2aa88bd63fab73498a6609ebfbd7852f4bc3f3eb32e3d",
+    "agent-first/0.1/problems.mjs": "ee0db31f079c1415631edb8d7e698f2e87a4e29f50ad0e032000797ae77503df",
+    "agent-first/0.1/provider.mjs": "560884a43108bea08005dbf4bcafc6377bad7c505e349ddcedc4a48afa43b185",
+    "agent-first/0.1/runtime.mjs": "7673863b0a85bc8846494672516218466218ce574b78a4ba27f867c2537b96a9",
+    "tests/agent-first-arrive.test.mjs": "47584e79bc8367ba530018b7e9fb0546614a4e87a465d856378d4aca165b2638",
+    "tests/agent-first-boundaries.test.mjs": "32ab90f73609d30e7c33f1226b592371e66bc16e7a650f61f6a9c6a70665e148",
+    "tests/agent-first-cli.test.mjs": "5a12cd8054786d06555900a17d2a50c2aa7ae04c324071e1b952e6b0b0cf082e",
+    "tests/agent-first-context.test.mjs": "fe1e613415fbd5598febde73b708ccbb2c5713fcf3383fe1da627f6cbce9c7bb",
+    "tests/agent-first-floor.test.mjs": "952b2be47fdae39a8095811240e0cbdddf8d6a2108d27162715eac4299624bfa",
+    "tests/agent-first-invoke.test.mjs": "62af11d56c37376a09be6c8628e1d1d0dac505cfb9c154fcfb3d1dd82e4b2b69",
+    "tests/agent-first-modules.test.mjs": "cfa0daebe10f922c83dc97a592c50220f4a1b89094729ad71842bc3f61d7cde5",
+    "tests/agent-first-motif-studies.test.mjs": "cd77e8da226ed2d0dcc6de50af021115be807ae2d904dcf4e9bd7c093e6d11bd",
+    "tests/agent-first-problems.test.mjs": "763ce405b7f2c974b94093a2c429b1125e0faa5e85ad8c7f7d45158629aee7fc",
+    "tests/agent-first-review-fixes.test.mjs": "864936602f77f1a7cb75f2814ad4d50ec3ebf92a82b6e646f8218f3ed37c0459",
+    "tests/agent-first-roots.test.mjs": "99958089d6d0432afc488ceb3071f2090b6ed8c435d3ae2dbf15b51b43c3f412",
+    "tests/agent-first-runtime.test.mjs": "baf706282217b5b187421738dc50eabe9fb793fd6850cb1a881cfcf23e7050db",
+    "tests/agent-first-starter.test.mjs": "e8a9f83a48dd264ca24a7302497121ff66cfaa94c338ce5911aff9bea09dbc37"
+  },
+  "cli_walk": "arrive, help, explain, catalog, motifs, motifs study list, invoke (success and HOST_GATE_REQUIRED), then unknown command, unknown module, missing input file, wrong arguments; every suggested next action was run and exited 0; stderr empty throughout.",
+  "not_established": [
+    "that an agent other than the author can follow the door without guessing; no outside agent has used it",
+    "behaviour of the Skills inspector and Telescope adapters beyond their static catalog entries",
+    "hosted AgentTool, network, model inference, publication or whole-Xenia conformance",
+    "that the real Local Starter package behaves the same in any other build than the one the pin names",
+    "Windows or non-macOS behaviour; observations are from one macOS machine",
+    "that problem next_actions remain correct after later changes: tests pin them only for the cases they cover",
+    "that exit codes 1 and 2 are divided the way every caller expects (an unusable --input file exits 1)"
+  ],
+  "process_notes": [
+    "The refusal-channel task wrote its implementation before its tests; the other tasks wrote tests first.",
+    "Review-fix commit: each fix was written as a failing test first (tests/agent-first-review-fixes.test.mjs), seen failing 10/10, then implemented."
+  ],
+  "record_note": "This record is committed after head_before_record; it describes the working tree of that commit plus the review-fix commit that carries this file, and its sha256 map is of that final tree."
+}

@@ -1,0 +1,84 @@
+{
+  "schema": "xenia.agent-first.motifs/0.1-development",
+  "status": "informative-development-map",
+  "license": "CC-BY-SA-4.0",
+  "activation": false,
+  "understanding": "Each piece should make its purpose, inputs, effects, evidence, limits and exit answerable. These connections explain a design; they do not execute a workflow or establish an inner state.",
+  "motifs": [
+    {
+      "id": "standing",
+      "name": "A floor you do not have to earn",
+      "question": "What remains true when a capability is unavailable or retired?",
+      "practice": "Keep standing rights separate from technical access. In the kit that is a floor you can run: describe, catalog, explain, motifs, help and arrive read in every module state and after every refusal, never ask the host gate and take no caller identity. The Covenant helper is secondary: it creates an explicitly unverified draft, not a grant of rights or an active undertaking.",
+      "limit": "A helper, declaration or passing checker does not establish practice, authority, consent or whole-framework conformance.",
+      "sources": ["RIGHTS.md#the-ground", "covenant/0.1/covenant.json"],
+      "implementation": ["agent-first/0.1/runtime.mjs", "agent-first/0.1/cli.mjs", "agent-first/0.1/modules.mjs", "covenant/0.1/create-adoption.mjs"],
+      "checks": ["tests/agent-first-floor.test.mjs", "tests/agent-first-modules.test.mjs", "tests/covenant-starter.test.mjs"]
+    },
+    {
+      "id": "legibility",
+      "name": "A door that explains itself",
+      "question": "Can a caller discover what is offered without accidentally using it?",
+      "practice": "Describe contracts, operations, declared effects, versions and examples before activation. Reuse Surface's existing manifest builder rather than invent another discovery protocol.",
+      "limit": "Registration is not readiness; discovery is not authorization. A constructed manifest is not an observed service.",
+      "sources": ["README.md#how-to-read-this-standard", "surface/0.1/README.md"],
+      "implementation": ["agent-first/0.1/cli.mjs", "agent-first/0.1/runtime.mjs", "src/surface-0.1.ts"],
+      "checks": ["tests/agent-first-cli.test.mjs", "tests/agent-first-motifs.test.mjs"]
+    },
+    {
+      "id": "bounded-work",
+      "name": "Work that can reach an ending",
+      "question": "What was offered, attempted, returned, observed, or left unresolved?",
+      "practice": "Keep a plan, a host gate, an attempted operation and evidence of its effect separate: the runtime records whether an operation started and what is known of its effect, and a composite command names the phase it reached. Reuse the Work reference checker for finite records; do not replay a record as instructions.",
+      "limit": "This kit checks records and calls trusted local handlers. It has no deadline or cancellation: a handler that never settles leaves its module retiring. It is not the roadmap's durable Work execution engine or an authority verifier.",
+      "sources": ["work/0.1/README.md", "MICROSOFT-ROADMAP.md"],
+      "implementation": ["agent-first/0.1/runtime.mjs", "agent-first/0.1/command-state.mjs", "agent-first/0.1/modules.mjs", "work/0.1/check.mjs"],
+      "checks": ["tests/agent-first-runtime.test.mjs", "tests/agent-first-modules.test.mjs", "tests/work-0.1.test.mjs"]
+    },
+    {
+      "id": "continuity",
+      "name": "A thread that can travel",
+      "question": "What is deliberately carried, and what remains outside the selection?",
+      "practice": "Use AgentTool's existing files-only Local Starter. The provider owns the fixed slots, selection, freshness, budgets and hashes; this kit owns the boundary around it: an explicit root, a byte-pinned package, notes kept apart from code, and a hash-guarded handoff. Notes stay separate from dependency code.",
+      "limit": "Freshness and budgets are the provider's behaviour, not tested by this kit. A rendered selection is not a full export. Retained prose is not new authority, automatic memory, host delivery or personal continuity.",
+      "sources": ["RIGHTS.md#6-privacy-and-data-care", "agent-first/0.1/agenttool.lock.json"],
+      "implementation": ["agent-first/0.1/adapters/local-starter.mjs", "agent-first/0.1/context.mjs"],
+      "checks": ["tests/agent-first-starter.test.mjs", "tests/agent-first-context.test.mjs"]
+    },
+    {
+      "id": "change",
+      "name": "Change that stays attributable",
+      "question": "Which implementation answered, and has it changed since this decision began?",
+      "practice": "Capture invocation-time version/revision, require the expected current revision for replacement, and fence late decisions after an upgrade or pause/resume. Keep old results with their caller.",
+      "limit": "Matching declared contracts and effects does not prove semantic compatibility. This is in-process control, not durable migration or package authentication.",
+      "sources": ["RIGHTS.md#8-credit-and-provenance", "RIGHTS.md#9-repair-and-appeal"],
+      "implementation": ["agent-first/0.1/runtime.mjs", "agent-first/0.1/provider.mjs"],
+      "checks": ["tests/agent-first-runtime.test.mjs", "tests/agent-first-cli.test.mjs"]
+    },
+    {
+      "id": "exit",
+      "name": "An exit that takes nothing with it",
+      "question": "Can this capability stop without taking unrelated capabilities or retained records with it?",
+      "practice": "Close new admission immediately, let admitted work drain, and keep notes independently readable. Remove code and retained data only through their separate, explicit lifecycles.",
+      "limit": "Retirement is terminal in this runtime: a retired module cannot be reactivated, upgraded or registered again under the same id. Any return is a new process with a new runtime, reading the notes that were kept. It does not kill arbitrary JavaScript, revoke external credentials, erase backups, or retire a being's rights.",
+      "sources": ["RIGHTS.md#rights-permissions-consent-and-covenants", "covenant/0.1/covenant.json"],
+      "implementation": ["agent-first/0.1/runtime.mjs", "agent-first/0.1/context.mjs"],
+      "checks": ["tests/agent-first-runtime.test.mjs", "tests/agent-first-context.test.mjs"]
+    }
+  ],
+  "connections": [
+    {"from":"standing","to":"legibility","meaning":"A standing floor calls for understandable conditions, not an eligibility test."},
+    {"from":"legibility","to":"bounded-work","meaning":"Visible contracts help a caller choose work; they do not authorize it."},
+    {"from":"bounded-work","to":"continuity","meaning":"Chosen context may be carried after work; no automatic transcript collection is required."},
+    {"from":"continuity","to":"change","meaning":"Retained evidence can inform a replacement without binding the next encounter."},
+    {"from":"change","to":"exit","meaning":"Replaceable code and independently held data make departure practical."},
+    {"from":"exit","to":"standing","meaning":"Closing a capability does not withdraw the floor beneath its users."}
+  ],
+  "self_sufficiency": {
+    "motifs_and_catalog": "Node 22+ and this checkout; no provider or build required.",
+    "reference_demo": "The normal prepared Xenia build and the Work checker's installed development dependencies.",
+    "chosen_context": "An explicitly supplied, locally pinned Local Starter distribution and a separately selected notes directory.",
+    "not_required": ["hosted account", "model call", "database", "MCP", "network after local preparation"],
+    "not_promised": ["OS sandbox", "durable workflow scheduling", "automatic host activation", "whole-framework conformance"]
+  }
+}
