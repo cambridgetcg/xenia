@@ -21,6 +21,8 @@ export function createXeniaModules() {
       description:'Build a Surface 0.1 manifest. This does not serve a site or observe conformance. Requires the existing root library build.',
       source:'Xenia src/surface-0.1.ts / defineSurfaceManifest',
       operations:{manifest:{description:'Create a manifest from an explicit definition; no network or publication.',effects:[],refusals:invalidInput,
+        input:{summary:'One JSON object: service {name, canonicalUrl, description} and resources [{id, href}].',
+          example:{service:{name:'Local example',canonicalUrl:'https://example.com/',description:'An unserved reference example.'},resources:[{id:'about',href:'https://example.com/about'}]}},
         async run(input){const {defineSurfaceManifest}=await import('../../dist/surface-0.1.js');return native(defineSurfaceManifest,input);}}},
     },
     {
@@ -29,6 +31,8 @@ export function createXeniaModules() {
       description:'Prepare the existing all-unknown Covenant draft. Retiring this helper does not retire anyone’s rights.',
       source:'Xenia covenant/0.1/create-adoption.mjs / createUnknownCovenantAdoption',
       operations:{draft:{description:'Generate an explicitly unverified draft; no adoption, signature or activation.',effects:[],refusals:invalidInput,
+        input:{summary:'One JSON object: hostName, canonicalUrl, speakerId and reviewedAt (an RFC 3339 time).',
+          example:{hostName:'Local example',canonicalUrl:'https://example.com/',speakerId:'https://example.com/#operator',reviewedAt:'2026-10-09T00:00:00Z'}},
         async run(input){const {createUnknownCovenantAdoption}=await import('../../covenant/0.1/create-adoption.mjs');return native(createUnknownCovenantAdoption,input);}}},
     },
     {
@@ -37,6 +41,7 @@ export function createXeniaModules() {
       description:'Check an in-memory Work 0.1 draft record with the existing checker. This is not a Work executor or proof of authority.',
       source:'Xenia work/0.1/check.mjs / validateWorkRun',
       operations:{check:{description:'Check schema and cross-record consistency; no provider action or evidence retrieval.',effects:[],refusals:invalidInput,
+        input:{summary:'One complete parsed Work 0.1 record (a JSON object). Too large to show here; see example_ref.',example_ref:'work/0.1/examples/declined.json'},
         async run(input){const {validateWorkRun}=await import('../../work/0.1/check.mjs');return native(validateWorkRun,input);}}},
     },
   ];

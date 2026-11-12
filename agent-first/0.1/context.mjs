@@ -1,28 +1,13 @@
 // SPDX-License-Identifier: MPL-2.0
 // Explicit CLI host for chosen local context; no ambient root/package discovery.
-import fs from 'node:fs';
 import path from 'node:path';
 import {createModuleRuntime,ModuleError} from './runtime.mjs';
 import {loadReviewedStarter,separateContextRoots} from './provider.mjs';
 import {createLocalStarterModule} from './adapters/local-starter.mjs';
 import {commandFailure,finishProvider} from './command-state.mjs';
+import {readBoundedBytes,decodeUtf8} from './input-file.mjs';
 
-function chosenText(file){
-  let fd;
-  try{
-    if(!fs.lstatSync(file).isFile())throw new ModuleError('INVALID_INPUT');
-    fd=fs.openSync(file,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|(fs.constants.O_NONBLOCK??0));
-    const limit=16384,stat=fs.fstatSync(fd);
-    if(!stat.isFile()||stat.size>limit)throw new ModuleError('INVALID_INPUT');
-    const buffer=Buffer.alloc(limit+1);let used=0;
-    while(used<buffer.length){const count=fs.readSync(fd,buffer,used,buffer.length-used,null);if(!count)break;used+=count;}
-    if(used>limit)throw new ModuleError('INVALID_INPUT');
-    return new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(buffer.subarray(0,used));
-  }catch(error){
-    if(error instanceof ModuleError)throw error;
-    throw new ModuleError('INVALID_INPUT');
-  }finally{if(fd!==undefined)fs.closeSync(fd);}
-}
+const chosenText=file=>decodeUtf8(readBoundedBytes(file,16384));
 
 export async function runContextCommand(args){
   const [operation,...rest]=args;

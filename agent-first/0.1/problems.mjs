@@ -12,6 +12,8 @@ export const COMMANDS={
   catalog:{usage:'catalog',summary:'List the registered modules. Activates nothing.',probe:['catalog']},
   explain:{usage:'explain <module-id>',summary:'Describe one module and give an input example.',probe:['explain','xenia.surface']},
   demo:{usage:'demo [--full]',summary:'Run the local reference tools; a step list by default, complete bodies with --full. Needs the Xenia build.',probe:['demo']},
+  invoke:{usage:'invoke <module-id> <operation-id> --input <file>',
+    summary:'Register, activate, invoke once and retire a core module in this process, with your JSON file as input; prints a receipt. Only operations that declare no effects run here.',probe:['help','invoke']},
   context:{usage:'context <init|status|render> --package <reviewed-package-dir> --dir <notes-dir>',
     summary:'Run one explicit command on chosen local notes.',probe:['help','context']},
   'starter-smoke':{usage:'starter-smoke --package <reviewed-package-dir> --dir <new-notes-dir>',
@@ -52,6 +54,11 @@ export function checkArgv(argv,needs=[]){
     }
     return rest.length===1&&!rest[0].startsWith('-')?{ok:true}:bad('motifs usage');
   }
+  if(command==='invoke'){
+    const [moduleId,operation,...flags]=rest;
+    if(!moduleId||!operation||moduleId.startsWith('-')||operation.startsWith('-'))return bad('invoke needs a module id and an operation id');
+    return flagsOk(flags,['--input'])?{ok:true}:bad('invoke flags');
+  }
   if(command==='context'){
     const [op,...flags]=rest;
     if(!['init','status','render','handoff'].includes(op))return bad('unknown context operation');
@@ -89,6 +96,7 @@ function contextAction(ctx,operation,why){
   return pkg&&dir?{argv:['context',operation,'--package',pkg,'--dir',dir],why}:{argv:['context',operation],why,needs:NEEDS};
 }
 const usesContext=ctx=>['context','starter-smoke'].includes((ctx.argv??[])[0]);
+const helpInvoke={argv:['help','invoke'],why:'Read the usage of the invoke command.'};
 const helpContext={argv:['help','context'],why:'Read the usage of the context command.'};
 const moduleAction=(error,ctx)=>ctx.moduleIds?.includes(error.module)?
   {argv:['explain',error.module],why:'Read what this module declares it does and refuses.'}:
@@ -157,11 +165,20 @@ const TABLE={
     ...(usesContext(c)?{next:[contextAction(c,'status','Read the current notes state.')]}:{terminal:true})}),
   CONTEXT_ROOT_OVERLAP:()=>({detail:'The notes root is inside the provider package, or the package is inside the notes. Nothing was read, written or loaded. Choose a notes directory outside the package.',next:[helpContext]}),
   INVALID_CONTEXT_ROOT:()=>({detail:'The notes root is not a usable directory path (it must be a regular directory, or a new name in an existing parent). Nothing was read or written.',next:[helpContext]}),
-  INVALID_INPUT:()=>({detail:'The chosen input file or value is not usable: a missing or unsafe file, text over the size limit, not valid UTF-8, or a hash that is not 64 lowercase hex characters. Nothing was written.',next:[helpContext]}),
+  INVALID_INPUT:(e,c)=>(c.argv??[])[0]==='invoke'?
+    {detail:'The input file is not usable: it is missing, not a regular file, a symbolic link, over 1 MiB, not valid UTF-8, has a byte-order mark, is not exactly one JSON value, repeats an object key, or is nested or large beyond the input limits. Nothing was run.',next:[helpInvoke]}:
+    {detail:'The chosen input file or value is not usable: a missing or unsafe file, text over the size limit, not valid UTF-8, or a hash that is not 64 lowercase hex characters. Nothing was written.',next:[helpContext]},
   INVALID_PROVIDER:()=>({detail:'The provider package path was not usable as given. No provider code was run.',next:[helpContext]}),
   PROVIDER_UNAVAILABLE:()=>({detail:'The provider package directory could not be read or loaded. No notes were read or changed. Check the --package path and try again.',next:[helpContext]}),
   PROVIDER_PIN_MISMATCH:(e,c)=>({detail:`The package given as --package is not the reviewed one.${c.lock?` Expected ${c.lock.name} ${c.lock.version} from ${c.lock.source}.`:''} It differed at ${pinWhere(e.mismatch)}. No provider code was run and no notes were read or changed. Supply the reviewed package.`,
     next:[helpContext]}),
+  HOST_GATE_REQUIRED:(e,c)=>{
+    const effects=Array.isArray(e.effects)&&e.effects.length?` (${e.effects.join(', ')})`:'';
+    const dedicated=e.module==='agenttool.local-context';
+    return {detail:`This operation declares effects${effects}. The invoke command has no host gate to consult, so it never runs an operation that has effects. Nothing was run.${dedicated?' The dedicated command for this module is `context`, which takes an explicit reviewed package and notes directory.':' A host that supplies its own gate can run it programmatically.'}`,
+      next:[...(dedicated?[helpContext]:[]),moduleAction(e,c)]};
+  },
+  MODULE_NOT_BOUND:(e,c)=>({detail:'This module is described by the catalog but is not bound by this command line: it needs a provider that a programmatic host supplies. Nothing was run.',next:[moduleAction(e,c)]}),
   MODULE_EXISTS:retiredOrBusy('A module with that id is already registered. Nothing was changed.'),
   INVALID_MODULE:()=>({detail:'The module definition is not valid. Nothing was registered.',next:[catalogAction]}),
   MODULE_INACTIVE:retiredOrBusy('The module is registered but not active, so the call was not admitted. Nothing ran.'),

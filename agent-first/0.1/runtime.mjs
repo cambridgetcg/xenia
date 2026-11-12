@@ -48,6 +48,18 @@ function prepareRefusals(list){
   }
   return Object.freeze(out.sort((a,b)=>a.code<b.code?-1:1));
 }
+// An operation may describe what it expects: a short summary, and optionally an
+// example value and/or a repository path to a larger example. Informative only:
+// the native function still validates. The summary (not the example) is part
+// of the upgrade signature, because it is what a caller relies on.
+function prepareInputNote(note){
+  if(note===undefined)return undefined;
+  record(note,['summary','example','example_ref']);
+  if(!text(note.summary,512)||(note.example_ref!==undefined&&!text(note.example_ref,256)))throw new ModuleError('INVALID_MODULE');
+  let example;
+  if(note.example!==undefined){try{example=freezeData(snapshotInput(note.example));}catch{throw new ModuleError('INVALID_MODULE');}}
+  return Object.freeze({summary:note.summary,...(example===undefined?{}:{example}),...(note.example_ref===undefined?{}:{example_ref:note.example_ref})});
+}
 function prepareDefinition(input){
   record(input,['id','version','contract','title','motif','description','source','operations']);
   for(const key of ['id','version','contract','title','motif','description'])if(!text(input[key]))throw new ModuleError('INVALID_MODULE');
@@ -59,17 +71,17 @@ function prepareDefinition(input){
   record(input.operations,names);
   const operations={};
   for(const name of names.sort()){
-    const op=input.operations[name];record(op,['description','effects','run','refusals']);
+    const op=input.operations[name];record(op,['description','effects','run','refusals','input']);
     if(!text(op.description)||typeof op.run!=='function'||!Array.isArray(op.effects)||isProxy(op.effects)||
       op.effects.some(effect=>!['local-read','local-write'].includes(effect))||new Set(op.effects).size!==op.effects.length)throw new ModuleError('INVALID_MODULE');
     operations[name]={description:op.description,effects:Object.freeze([...op.effects].sort()),run:op.run,
-      refusals:prepareRefusals(op.refusals)};
+      refusals:prepareRefusals(op.refusals),input:prepareInputNote(op.input)};
     Object.freeze(operations[name]);
   }
   return {id:input.id,version:input.version,contract:input.contract,title:input.title,
     motif:input.motif,description:input.description,...(input.source===undefined?{}:{source:input.source}),operations};
 }
-const signature=definition=>JSON.stringify(Object.entries(definition.operations).map(([id,op])=>[id,op.effects,op.refusals.map(r=>[r.code,r.effect])]));
+const signature=definition=>JSON.stringify(Object.entries(definition.operations).map(([id,op])=>[id,op.effects,op.refusals.map(r=>[r.code,r.effect]),op.input?.summary??null]));
 
 export const MODULE_INPUT_LIMITS=Object.freeze({maxBytes:1024*1024,maxDepth:32,maxNodes:65536});
 function freezeData(value){
@@ -122,7 +134,7 @@ export function createModuleRuntime({authorize=()=>false}={}) {
     return {id:d.id,version:d.version,contract:d.contract,title:d.title,motif:d.motif,
       description:d.description,state:entry.state,revision:entry.revision,in_flight:entry.inFlight,
       ...(d.source===undefined?{}:{source:d.source}),
-      operations:[...entry.operations].map(([id,op])=>({id,description:op.description,effects:[...op.effects],refusals:op.refusals.map(r=>({...r}))}))};
+      operations:[...entry.operations].map(([id,op])=>({id,description:op.description,effects:[...op.effects],refusals:op.refusals.map(r=>({...r})),...(op.input?{input:structuredClone(op.input)}:{})}))};
   };
   return {
     register(input){

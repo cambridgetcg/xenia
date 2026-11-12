@@ -171,7 +171,7 @@ test('metadata stands alone without a build or provider, and removing studies le
   const base = mkdtempSync(join(realpathSync(tmpdir()), 'xenia-motif-independence-'));
   try {
     const folder = join(base, 'agent-first', '0.1'); mkdirSync(folder, { recursive: true });
-    for (const name of ['cli.mjs', 'runtime.mjs', 'modules.mjs', 'command-state.mjs', 'problems.mjs', 'adapter-catalog.mjs', 'arrive.mjs', 'motif-studies.mjs']) {
+    for (const name of ['cli.mjs', 'runtime.mjs', 'modules.mjs', 'command-state.mjs', 'invoke.mjs', 'input-file.mjs', 'problems.mjs', 'adapter-catalog.mjs', 'arrive.mjs', 'motif-studies.mjs']) {
       copyFileSync(new URL(`../agent-first/0.1/${name}`, import.meta.url), join(folder, name));
     }
     const absentHome = join(base, 'absent-home');

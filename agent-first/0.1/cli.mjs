@@ -8,14 +8,11 @@ import {createXeniaModules} from './modules.mjs';
 import {commandFailure,finishProvider} from './command-state.mjs';
 import {adapterRows,describeAdapter,ADAPTER_IDS} from './adapter-catalog.mjs';
 import {buildArrival} from './arrive.mjs';
+import {runInvoke} from './invoke.mjs';
 import {COMMANDS,EXIT_CODES,USAGE_CODES,buildProblem,usageHelp} from './problems.mjs';
 
-export const EXAMPLES={
-  'xenia.surface':{service:{name:'Local example',canonicalUrl:'https://example.com/',description:'An unserved reference example.'},resources:[{id:'about',href:'https://example.com/about'}]},
-  'xenia.covenant':{hostName:'Local example',canonicalUrl:'https://example.com/',speakerId:'https://example.com/#operator',reviewedAt:'2026-10-09T00:00:00Z'},
-  'xenia.work':{reference:'work/0.1/examples/declined.json',input:'a complete parsed Work 0.1 record, not this explanatory object'},
-};
 const makeRuntime=()=>{const runtime=createModuleRuntime();for(const module of createXeniaModules())runtime.register(module);return runtime;};
+const exampleOf=(runtime,id)=>runtime.describe(id).operations[0].input.example;
 const envelope=(fields)=>({schema:'xenia.agent-first/0.1-development',...fields});
 
 const digest=value=>{const text=JSON.stringify(value)??'';return {bytes:Buffer.byteLength(text),sha256:createHash('sha256').update(text).digest('hex')};};
@@ -51,8 +48,8 @@ async function demo(full){
     steps.push({call:'invoke example.echo echo (after retire)',module_version:error.module_version,revision:error.module_revision,effects:[],outcome:'blocked',error_code:error.code,effect_outcome:error.effect_outcome});
   }
   for(const {id}of runtime.catalog())if(id.startsWith('xenia.'))runtime.activate(id);
-  const surface=(await invoke('xenia.surface','manifest',EXAMPLES['xenia.surface'])).value;
-  const covenant=(await invoke('xenia.covenant','draft',EXAMPLES['xenia.covenant'])).value;
+  const surface=(await invoke('xenia.surface','manifest',exampleOf(runtime,'xenia.surface'))).value;
+  const covenant=(await invoke('xenia.covenant','draft',exampleOf(runtime,'xenia.covenant'))).value;
   const fixture=JSON.parse(fs.readFileSync(new URL('../../work/0.1/examples/declined.json',import.meta.url),'utf8'));
   const work=(await invoke('xenia.work','check',fixture)).value;
   const not_established=['hosted-service conformance','actor authority','consent','external effects','persistent runtime state'];
@@ -110,7 +107,7 @@ async function starterSmoke(args){
 }
 
 const isHelp=arg=>arg==='-h'||arg==='--help';
-const GENERAL_HELP=['arrive','help [command]','motifs [motif-id]','motifs study [list|show <study-id|motif-id>|run <study-id>|journey]','catalog','explain <module-id>','demo [--full]',
+const GENERAL_HELP=['arrive','help [command]','motifs [motif-id]','motifs study [list|show <study-id|motif-id>|run <study-id>|journey]','catalog','explain <module-id>','invoke <module-id> <operation-id> --input <file>','demo [--full]',
   'context <init|status|render> --package <reviewed-package-dir> --dir <notes-dir>',
   'context handoff --package <reviewed-package-dir> --dir <notes-dir> --input <chosen-file> --expect <current-sha256>',
   'starter-smoke --package <reviewed-package-dir> --dir <new-notes-dir>'];
@@ -169,13 +166,19 @@ export async function main(args){
     return buildArrival({lock,core,adapters:adapterRows()});
   }
   if(command==='catalog'&&!rest.length)return envelope({modules:runtime.catalog(),adapters:adapterRows(),
+    runtime:{scope:'this process only',note:'state, revision and in_flight describe a runtime this command just created; they are not live shared state. Every module here starts as registered, revision 1, nothing in flight.',
+      not_established:['the state of any runtime in another process or host']},
     adapters_note:'Adapters are present in this checkout but not bound: no provider was imported and none is registered here. Each lists what must be supplied.',limits:MODULE_INPUT_LIMITS});
   if(command==='explain'&&rest.length===1){
     const adapter=describeAdapter(rest[0]);
     if(adapter)return envelope(adapter);
-    return envelope({module:runtime.describe(rest[0]),example:EXAMPLES[rest[0]],
+    const module=runtime.describe(rest[0]);
+    const first=module.operations[0]?.input;
+    return envelope({module,example:first?.example??(first?.example_ref?{reference:first.example_ref}:undefined),
+      runtime_note:'state, revision and in_flight describe a runtime this command just created, not live shared state.',
       interpretation:'Descriptions and examples are informative. Native profile functions validate their own inputs; reading does not activate anything.'});
   }
+  if(command==='invoke')return envelope(await runInvoke(rest,{runtime,adapters:adapterRows()}));
   if(command==='demo'&&!rest.length)return demo(false);
   if(command==='demo'&&rest.length===1&&rest[0]==='--full')return demo(true);
   if(!COMMANDS[command])throw unknownCommand(command);
@@ -199,7 +202,7 @@ function failureEnvelope(error,argv){
     body:envelope({error:{code:safe.code,operation_started:safe.operation_started,effect_outcome:safe.effect_outcome,retryable:problem.retryable,module:safe.module,operation:safe.operation,
       module_version:safe.module_version,module_revision:safe.module_revision,refusal:safe.refusal,
       phase:safe.phase,returned_operations:safe.returned_operations,verification:safe.verification,snapshot_cleanup:safe.snapshot_cleanup},
-      problem,not_established})};
+      problem,...(safe.receipt?{receipt:safe.receipt}:{}),not_established})};
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){

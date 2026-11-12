@@ -27,7 +27,7 @@ const synthetic=(code,extra={})=>({code,operation_started:false,effect_outcome:'
 
 test('the problem table covers every code the sources can throw',()=>{
   const found=new Set();
-  const files=['cli.mjs','command-state.mjs','context.mjs','modules.mjs','motif-studies.mjs','provider.mjs','runtime.mjs','adapters/local-starter.mjs'];
+  const files=['cli.mjs','invoke.mjs','input-file.mjs','command-state.mjs','context.mjs','modules.mjs','motif-studies.mjs','provider.mjs','runtime.mjs','adapters/local-starter.mjs'];
   for(const file of files){
     const text=fs.readFileSync(new URL(file,dir),'utf8');
     for(const m of text.matchAll(/ModuleError\('([A-Z_]+)'/g))found.add(m[1]);
