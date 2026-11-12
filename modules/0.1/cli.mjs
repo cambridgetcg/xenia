@@ -4,6 +4,7 @@ import {readFile, mkdir, open, stat} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import path from 'node:path';
 import {planUpgrade, createModuleHost} from './host.mjs';
+import {compositionDemo, compositionCommand, listMotifs, invokeMotif} from './composition-cli.mjs';
 import {createCollabConnector} from './adapters/agenttool-collab/adapter.mjs';
 
 const readLocal = async name => JSON.parse(await readFile(new URL(name, import.meta.url), 'utf8'));
@@ -12,11 +13,14 @@ const failure = code => ({ok: false, error: {code, retryable: false}});
 const help = {
   commands: {
     list: 'list (default): inert source catalog',
-    motifs: 'motifs [id]: read source-grounded design cards; no activation',
     describe: 'describe <component-id>: inert module card or catalog entry',
     'upgrade-plan': 'upgrade-plan <candidate-json> [state]: review only; state defaults to unknown',
     demo: 'demo --bundle ABS --sha256 HEX --state-dir ABS: new private synthetic store only',
     session: 'session --config ABS_JSON [--allow-local-state]: explicit local JSONL session',
+    motifs: 'motifs: inert, independently callable profile capabilities',
+    invoke: 'invoke <motif-id> <operation> --input JSON_FILE: native local-profile operation',
+    compose: 'compose PLAN_JSON [--run] [--jobs 1..8]: preview by default; explicit finite execution',
+    'compose-demo': 'compose-demo: native Surface → all-unknown Covenant draft; synthetic local input',
   },
   session_protocol: {
     request: '{id:string|integer,method:inspect|activate|invoke|retire,operation?,input?}',
@@ -268,17 +272,11 @@ export async function dispatch(args = []) {
   try {
     const command = args[0] ?? 'list';
     if (command === 'list' && args.length <= 1) return readLocal('./catalog.json');
-    if (command === 'motifs' && (args.length === 1 || args.length === 2)) {
-      const atlas = await readLocal('./motifs.json');
-      if (args.length === 1) return atlas;
-      const motif = atlas.motifs.find(item => item.id === args[1]);
-      return motif ? {schema: atlas.schema, status: atlas.status, license: atlas.license,
-        source: atlas.source, self_sufficiency: atlas.self_sufficiency,
-        verification_boundary: atlas.verification_boundary, motif,
-        connections: atlas.connections.filter(edge => edge.from === motif.id || edge.to === motif.id)}
-        : failure('unknown_motif');
-    }
     if (command === 'help' && args.length === 1) return help;
+    if (command === 'compose-demo' && args.length === 1) return await compositionDemo();
+    if (command === 'compose') return await compositionCommand(args.slice(1), readConfiguration);
+    if (command === 'motifs' && args.length === 1) return listMotifs();
+    if (command === 'invoke') return await invokeMotif(args.slice(1), readConfiguration);
     if (command === 'demo') return await demo(args.slice(1));
     if (command === 'session') return await session(args.slice(1));
     if (command === 'describe' && args.length === 2) {

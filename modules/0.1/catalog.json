@@ -4,9 +4,6 @@
   "observation": "declarations_not_runtime_state",
   "orientation": "Understand before acting; choose explicit capabilities; keep evidence; leave cleanly.",
   "guide": "AGENT-FIRST.md",
-  "motif_atlas": "modules/0.1/motifs.json",
-  "motif_guide": "MOTIFS.md",
-  "host_runtime": "Node 22+ target; built-ins only; no provider dependency; not browser-portable",
   "rights_floor": "RIGHTS.md — retiring software does not retire anyone's rights",
   "components": [
     {

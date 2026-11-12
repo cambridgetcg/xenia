@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {existsSync,readFileSync,realpathSync} from 'node:fs';
+import {existsSync} from 'node:fs';
 import {mkdtemp,mkdir,writeFile,readFile,readdir,rm,stat,symlink} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
@@ -9,7 +9,8 @@ import {spawnSync,spawn} from 'node:child_process';
 import {createInterface} from 'node:readline';
 const cli=new URL('./cli.mjs',import.meta.url);
 const bundle=process.env.XENIA_COLLAB_BUNDLE;
-const digest='fdfd99b20fa21a69c368a8027bb972fd1a3509c8e5f90882c5742cd9ebe053cd';
+// A reviewed alternate bundle needs an explicit alternate pin; never accept its bytes implicitly.
+const digest=process.env.XENIA_COLLAB_SHA256??'fdfd99b20fa21a69c368a8027bb972fd1a3509c8e5f90882c5742cd9ebe053cd';
 const children=new WeakMap();
 async function temporary(t){
  const dir=await mkdtemp(path.join(tmpdir(),'xenia-cli-test-'));
@@ -50,7 +51,7 @@ function sessionClient(t,filename,allow=false,env={PATH:'',HOME:'/nonexistent-xe
    waiting.set(id,{resolve:row=>{clearTimeout(timer);resolve(row);},reject:error=>{clearTimeout(timer);reject(error);}});
   });
  }
- const client={child,closed,rows,response,filename,request(id,method,extra={}){
+ const client={child,closed,rows,response,request(id,method,extra={}){
   const promise=response(id);child.stdin.write(JSON.stringify({id,method,...extra})+'\n');return promise;
  }};
  children.get(t).push(client);return client;
@@ -64,19 +65,10 @@ function run(args,env={PATH:'',HOME:'/nonexistent-xenia-test-home'}){
 function backendPid(client){
  const result=spawnSync('/bin/ps',['-axo','pid=,ppid=,command='],{encoding:'utf8'});
  assert.equal(result.status,0);
- const config=JSON.parse(readFileSync(client.filename,'utf8'));
- const home=realpathSync(config.homeDir);
- const prefixes=[config.homeDir,home].map(dir=>dir+path.sep+'xenia-collab-source-');
- const rows=result.stdout.split('\n').map(line=>line.match(/^\s*(\d+)\s+(\d+)\s+(.+)$/)).filter(Boolean)
-  .filter(row=>{
-   if(Number(row[2])!==client.child.pid)return false;
-   const prefix=prefixes.find(value=>row[3].includes(value));if(!prefix)return false;
-   try{
-    const executable=realpathSync(row[3].slice(row[3].lastIndexOf(prefix)));
-    return path.basename(executable)==='bundle.js'&&path.dirname(path.dirname(executable))===home&&path.basename(path.dirname(executable)).startsWith('xenia-collab-source-');
-   }catch{return false;}
-  });
- assert.equal(rows.length,1,'This synthetic controller must own exactly one verified-snapshot backend process');return Number(rows[0][1]);
+ // The adapter executes its verified private snapshot, not the mutable source path.
+ const rows=result.stdout.split('\n').map(line=>line.trim().split(/\s+/))
+  .filter(fields=>Number(fields[1])===client.child.pid&&/\/xenia-collab-source-[^/\s]+\/bundle\.js(?:\s|$)/.test(fields.slice(2).join(' ')));
+ assert.equal(rows.length,1,'This synthetic controller must own exactly one snapshotted backend process');return Number(rows[0][0]);
 }
 function gone(pid){try{process.kill(pid,0);return false;}catch(error){return error.code==='ESRCH';}}
 test('JSONL pending limit reserves retirement; partial EOF input remains bounded',async t=>{

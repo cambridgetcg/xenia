@@ -72,7 +72,7 @@ export function planUpgrade(current, candidate, { state = 'disabled' } = {}) {
 
 // Admission accepts only detached plain JSON: <=64 KiB encoded, 10,000 values,
 // depth <=32 (root depth 0). Descriptors avoid getters/toJSON; proxies are refused.
-function snapshotInput(input) {
+export function snapshotInput(input) {
   if (input === undefined) return undefined; // Existing omitted-input calls remain valid.
   let bytes = 0, nodes = 0;
   const ancestors = new Set();

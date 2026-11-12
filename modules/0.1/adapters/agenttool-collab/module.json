@@ -7,7 +7,7 @@
     "contract_version": "xenia.module/0.1-dev",
     "state_schema_version": 1,
     "operations": ["status", "next", "acknowledge", "report", "createTask", "getTask", "claimTask", "releaseTask"],
-    "effects": ["local-process-start", "verified-backend-snapshot-write", "selected-local-journal-initialize-or-migrate", "bound-session-credential-create-and-end", "explicit-coordination-writes", "local-git-metadata-inspection"]
+    "effects": ["local-process-start", "selected-local-journal-initialize-or-migrate", "bound-session-credential-create-and-end", "explicit-coordination-writes", "local-git-metadata-inspection"]
   },
   "input_schemas": {
     "status": {

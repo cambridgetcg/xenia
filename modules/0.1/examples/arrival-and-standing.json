@@ -1,0 +1,64 @@
+{
+  "schema": "xenia.composition/0.1-dev",
+  "steps": [
+    {
+      "id": "draft",
+      "use": "xenia-covenant",
+      "operation": "draft",
+      "input": {
+        "speakerId": "https://example.com/#operator",
+        "reviewedAt": "2026-10-09T00:00:00Z"
+      }
+    },
+    {
+      "id": "manifest",
+      "use": "xenia-surface",
+      "operation": "manifest",
+      "input": {
+        "service": {
+          "name": "A synthetic composition example",
+          "canonicalUrl": "https://example.com/",
+          "description": "Local, unserved demonstration."
+        },
+        "resources": [
+          {
+            "id": "about",
+            "href": "https://example.com/about"
+          }
+        ]
+      }
+    }
+  ],
+  "links": [
+    {
+      "from": {
+        "step": "manifest",
+        "path": [
+          "service",
+          "name"
+        ]
+      },
+      "to": {
+        "step": "draft",
+        "path": [
+          "hostName"
+        ]
+      }
+    },
+    {
+      "from": {
+        "step": "manifest",
+        "path": [
+          "service",
+          "canonical_url"
+        ]
+      },
+      "to": {
+        "step": "draft",
+        "path": [
+          "canonicalUrl"
+        ]
+      }
+    }
+  ]
+}

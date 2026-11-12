@@ -8,7 +8,6 @@ This is a small host seam beside Xenia's existing library and profiles—not a n
 From the checkout, `npm run --silent xenia:modules -- help` describes the commands. `list` is the safe default; `describe agenttool-collab` returns the complete machine-readable card, including input schemas, effects and exit steps.
 
 - `list` / `describe`: read declarations only, with no provider startup.
-- `motifs [id]`: read the connected design atlas or one self-contained card. The canonical data also renders [MOTIFS.md](../../MOTIFS.md).
 - `upgrade-plan <candidate-json> [state]`: inert comparison. Omitted state is unknown. The supplied state is a caller assertion, not observation of a running host.
 - `demo --bundle ABS --sha256 HEX --state-dir ABS`: one real, finite, synthetic Collab exercise. The state directory must not already exist. It is retained for inspection afterward.
 - `session --config ABS_JSON [--allow-local-state]`: a stateful JSONL door for agents. Without the explicit flag, the host refuses activation. Reading its configuration is not provider startup.
@@ -26,7 +25,7 @@ The Node command delegates lifecycle to the same [host.mjs](host.mjs) that progr
 | `adapters/agenttool-collab/adapter.mjs` | Bind a selected native endpoint; translate the small declared operation set |
 | `adapters/agenttool-collab/stdio.mjs` | Optional bounded local JSON-RPC transport; no shell or automatic retry |
 
-Code, tests and runtime configuration use MPL 2.0 under the root license map. This prose and the interpretive design data in `motifs.json` use CC BY-SA 4.0. The separately selected AgentTool implementation is Apache-2.0 and is not vendored into this module.
+Code, tests and configuration use MPL 2.0 under the root license map. This prose uses CC BY-SA 4.0. The separately selected AgentTool implementation is Apache-2.0 and is not vendored into this module.
 
 ## Programmatic contract
 
@@ -37,8 +36,6 @@ Code, tests and runtime configuration use MPL 2.0 under the root license map. Th
 - `invoke(operation, input)` admits only declared operations, with fresh authorization and no concurrent mutation queue.
 - `retire()` closes admission synchronously, then bounds waiting/cleanup/disconnect. Its `{complete}` result is cached; a repeated call does not replay cleanup.
 - `planUpgrade(current, candidate, {state})` returns declared compatibility, changes, blocking state and review requirements. It neither replaces a running module nor migrates data.
-
-Invocation input is validated, detached and recursively frozen before policy evaluation. `authorize` receives `{phase, module_id, operation, effects, input}` for invocation; policy and provider see the same admitted snapshot.
 
 An authorization callback is supplied by the actual host. The finite demo's affirmative callback is scoped to its newly created synthetic workspace; it is not a production policy to copy indiscriminately.
 
@@ -71,9 +68,9 @@ The JSON configuration supplies:
 - `actor`: a display label, not an authenticated person/model identity;
 - optional `timeoutMs`: a bounded request deadline.
 
-Activation checks the selected bytes and peer/tool metadata. Verified bytes are copied into a fresh private directory under the selected HOME before execution. The snapshot is retained as source/recovery evidence, not deleted on retirement. The child receives a narrow environment, automatic `.env` loading and package installation are disabled, and stderr is not echoed into results. The selected backend still executes local code and can initialize/migrate the chosen database. This is not an OS sandbox. Review code and make a backup before choosing an existing provider store.
+Activation checks the selected bytes and peer/tool metadata. The child receives a narrow environment, automatic `.env` loading and package installation are disabled, and stderr is not echoed into results. The selected backend still executes local code and can initialize/migrate the chosen database. This is not an OS sandbox. Review code and make a backup before choosing an existing provider store.
 
-The supplied CLI and hardened module host target Node 22+. The host uses Node built-ins for strict input admission; it imports no provider, database or transport code and is not browser-portable. Actual tested versions are recorded in verification evidence. The optional native Collab bundle also needs its compatible Bun runtime. The motif data and pure `motifs.mjs` formatter depend on neither host nor provider.
+The module and catalog need only modern Node for their supplied CLI. The optional native Collab bundle requires Bun 1.3 or newer. The pure host itself imports neither runtime, database nor transport code.
 
 ## Operations
 

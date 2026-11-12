@@ -11,7 +11,7 @@ Start here, from this checkout:
 npm run --silent xenia:modules -- list
 ```
 
-The same door provides `motifs`, `describe`, `upgrade-plan`, a finite `demo`, and a stateful JSONL `session`. The [verification record](VERIFICATION.md) distinguishes actual local execution from examples and broader claims. Metadata commands do not launch a provider. See [the module guide](modules/0.1/README.md) for the operational contract.
+The same door provides `describe`, `upgrade-plan`, a finite `demo`, and a stateful JSONL `session`. Metadata commands do not launch a provider. See [the module guide](modules/0.1/README.md) for the operational contract.
 
 ## What each part is for
 
@@ -26,13 +26,7 @@ The same door provides `motifs`, `describe`, `upgrade-plan`, a finite `demo`, an
 
 The catalog is an orientation map, not a claim that every provider is installed or running.
 
-## The motif atlas
-
-Read [MOTIFS.md](MOTIFS.md), generated from one canonical set of [design cards](modules/0.1/motifs.json). Arrival, legibility, choice, witness, continuity and release each carry a purpose, needs, output, example, checks, boundaries, change rule and exit. Each can be used alone; connections are not prerequisites or automatic execution.
-
-`npm run --silent xenia:modules -- motifs` reads the map; append `release` (or another motif ID) to read one complete card. No backend is activated.
-
-## Five implementation patterns made concrete
+## Five motifs made concrete
 
 ### 1. Understand before acting
 
@@ -42,7 +36,7 @@ Inspecting a card does not import arbitrary code, start a process or open a data
 
 ### 2. Bind capabilities, not the whole framework
 
-The original Xenia core remains runtime-neutral and unchanged. This optional module-host implementation uses Node built-ins (`node:util/types` and `node:buffer`) for strict input admission: it is Node-based, not browser-portable. It has no third-party runtime dependency. A connector receives host-selected configuration separately; process/stdio and Bun/SQLite stay in the optional adapter. The core and motif cards remain usable without that adapter.
+The module host is plain JavaScript with no imports or runtime dependencies. A connector receives its host-selected configuration separately. Node process/stdio handling and Bun/SQLite remain inside the optional Collab adapter; the Xenia core remains usable when it is absent or retired.
 
 This is the useful meaning of self-sufficient here: a component carries its own contract, examples, tests, version and exit story. It is not a claim that an adapter has no provider dependency or can invent its own authority.
 
