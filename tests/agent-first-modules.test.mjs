@@ -39,3 +39,18 @@ test('a local catalog and useful Xenia operations work with no AgentTool provide
     hostName:'Still local',canonicalUrl:'https://example.com/',speakerId:'https://example.com/#operator',reviewedAt:'2026-10-09T00:00:00Z',
   })).value.declaration.status,'draft');
 });
+
+test('invalid input to the pure builders is a declared refusal with bounded native detail',async()=>{
+  const runtime=createModuleRuntime();
+  for(const module of await modules())runtime.register(module);
+  for(const {id} of runtime.catalog())runtime.activate(id);
+  for(const [id,op] of [['xenia.surface','manifest'],['xenia.covenant','draft']]){
+    assert.deepEqual(runtime.describe(id).operations[0].refusals.map(r=>r.code),['invalid_input']);
+    await assert.rejects(runtime.invoke(id,op,{}),e=>{
+      assert.equal(e.code,'DECLINED');assert.equal(e.effect_outcome,'not_applied');
+      assert.equal(e.refusal.code,'invalid_input');
+      assert.ok(e.refusal.detail.length>0&&e.refusal.detail.length<=200);return true;});
+  }
+  // a Work record that fails the checker is a normal report, not a refusal
+  assert.equal((await runtime.invoke('xenia.work','check',{})).value.valid,false);
+});

@@ -7,7 +7,12 @@ import {ModuleError} from './runtime.mjs';
 export function commandFailure(error,state,phase=state.phase){
   const started=state.returned.length>0||(error instanceof ModuleError&&error.operation_started);
   const fallback=phase==='cleanup'?'CLEANUP_FAILED':phase==='verification'?'VERIFICATION_FAILED':'CLI_FAILED';
-  const failure=new ModuleError(error instanceof ModuleError?error.code:fallback,started);
+  const known=error instanceof ModuleError;
+  const failure=new ModuleError(known?error.code:fallback,started,known?{module:error.module,operation:error.operation,
+    module_version:error.module_version,module_revision:error.module_revision}:{});
+  // A declared refusal keeps its own meaning, unless earlier operations of this
+  // command already returned (then the command-level outcome stays unknown).
+  if(known&&error.refusal){failure.refusal=error.refusal;if(!state.returned.length)failure.effect_outcome=error.effect_outcome;}
   failure.phase=phase;
   failure.returned_operations=[...state.returned];
   failure.verification=state.verification??'not_run';

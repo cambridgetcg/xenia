@@ -43,7 +43,10 @@ test('real selected context survives consumer restart, rejects stale writes, and
     assert.equal(rendered.sources.find(s=>s.id==='handoff').content,text);
     fs.writeFileSync(input,'this stale candidate must not replace the chosen context');
     const stale=run('context','handoff',...args,'--input',input,'--expect',oldHash);
-    assert.notEqual(stale.status,0);assert.equal(JSON.parse(stale.stdout).error.code,'OPERATION_FAILED');
+    assert.notEqual(stale.status,0);
+    const staleError=JSON.parse(stale.stdout).error;
+    assert.equal(staleError.code,'DECLINED');assert.equal(staleError.refusal.code,'write_conflict');
+    assert.equal(staleError.effect_outcome,'not_applied');assert.equal(staleError.operation_started,true);
     assert.equal(fs.readFileSync(path.join(notes,'handoff.md'),'utf8'),text);
     fs.writeFileSync(path.join(notes,'memories.md'),'DISABLED_FIXTURE_MUST_NOT_BE_RENDERED');
     const selectedView=success('context','render',...args);
@@ -54,6 +57,8 @@ test('real selected context survives consumer restart, rejects stale writes, and
     assert.equal(JSON.stringify(isolated).includes('A question may travel'),false);
     const existing=run('context','init',...args);
     assert.notEqual(existing.status,0);
+    const existingError=JSON.parse(existing.stdout).error;
+    assert.equal(existingError.refusal.code,'already_exists');assert.equal(existingError.effect_outcome,'not_applied');
     assert.equal(fs.readFileSync(path.join(notes,'handoff.md'),'utf8'),text);
     fs.renameSync(provider,path.join(parent,'removed-provider'));
     const unavailable=run('context','render',...args);

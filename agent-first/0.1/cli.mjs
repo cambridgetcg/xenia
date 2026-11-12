@@ -117,7 +117,8 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1]
   try{console.log(JSON.stringify(await main(process.argv.slice(2)),null,2));}
   catch(error){
     const safe=error instanceof ModuleError?error:new ModuleError('CLI_FAILED');
-    console.log(JSON.stringify(envelope({error:{code:safe.code,operation_started:safe.operation_started,effect_outcome:safe.effect_outcome,retryable:false,
+    console.log(JSON.stringify(envelope({error:{code:safe.code,operation_started:safe.operation_started,effect_outcome:safe.effect_outcome,retryable:safe.retryable,module:safe.module,operation:safe.operation,
+      module_version:safe.module_version,module_revision:safe.module_revision,refusal:safe.refusal,
       phase:safe.phase,returned_operations:safe.returned_operations,verification:safe.verification,snapshot_cleanup:safe.snapshot_cleanup},
       guidance:'Inspect the selected module, paths and current provider state. For the local demo, prepare the root dependencies/build. No mutation is retried automatically.'}),null,2));
     process.exitCode=1;

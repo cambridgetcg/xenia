@@ -181,3 +181,88 @@ test('arguments are bounded JSON data, not shared memory, accessors, or executab
   assert.equal(calls,0);assert.equal(getters,0);
   assert.deepEqual((await runtime.invoke('example.echo','echo',{nested:[null,true,3,'text']})).value,{nested:[null,true,3,'text']});
 });
+
+function refusing(throwIt,refusals){
+  return {...definition(),operations:{echo:{description:'Declines.',effects:[],refusals,run:throwIt}}};
+}
+const declared=[{code:'too_big',meaning:'Input is too large.',effect:'not_applied',next:'Send less.'}];
+
+test('a declared refusal is a distinct DECLINED result, not OPERATION_FAILED',async()=>{
+  const {createModuleRuntime,Decline}=await api();
+  const runtime=createModuleRuntime();
+  const d=refusing(()=>{throw new Decline('too_big','x'.repeat(500));},declared);
+  runtime.register(d);runtime.activate(d.id);
+  assert.deepEqual(runtime.describe(d.id).operations[0].refusals,declared);
+  await assert.rejects(runtime.invoke(d.id,'echo',{}),e=>{
+    assert.equal(e.code,'DECLINED');assert.equal(e.operation_started,true);assert.equal(e.effect_outcome,'not_applied');
+    assert.equal(e.retryable,false);
+    assert.deepEqual({...e.refusal,detail:undefined},{code:'too_big',meaning:'Input is too large.',next:'Send less.',detail:undefined});
+    assert.equal(e.refusal.detail.length,200);
+    assert.equal(e.module,'example.echo');assert.equal(e.operation,'echo');
+    assert.equal(e.module_version,'1.0.0');assert.equal(e.module_revision,1);return true;});
+  assert.equal(runtime.describe(d.id).in_flight,0);
+});
+
+test('an undeclared or malformed refusal is not trusted',async()=>{
+  const {createModuleRuntime,Decline}=await api();
+  for(const thrown of [()=>new Decline('other_code'),()=>new Decline(42),()=>new Decline(undefined),()=>({refusal_code:'too_big'}),()=>new Error('too_big')]){
+    const runtime=createModuleRuntime();
+    const d=refusing(()=>{throw thrown();},declared);runtime.register(d);runtime.activate(d.id);
+    await assert.rejects(runtime.invoke(d.id,'echo',{}),{code:'OPERATION_FAILED',effect_outcome:'unknown',operation_started:true});
+  }
+});
+
+test('refusal declarations are validated and part of the upgrade signature',async()=>{
+  const {createModuleRuntime}=await api();
+  const runtime=createModuleRuntime();
+  for(const bad of [[{code:'Bad Code',meaning:'m',effect:'not_applied'}],[{code:'a',meaning:'m',effect:'unknown'}],
+    [{code:'a',meaning:'m',effect:'not_applied'},{code:'a',meaning:'m',effect:'not_applied'}],[{code:'a',meaning:'',effect:'not_applied'}],
+    [{code:'a',meaning:'m',effect:'not_applied',extra:1}],'nope'])
+    assert.throws(()=>runtime.register({...refusing(()=>1,bad),id:'example.bad'}),{code:'INVALID_MODULE'});
+  const d=refusing(()=>'ok',declared);runtime.register(d);runtime.activate(d.id);
+  assert.throws(()=>runtime.upgrade(d.id,refusing(()=>'ok',[]),{expectedRevision:1}),{code:'CONTRACT_MISMATCH'});
+  assert.throws(()=>runtime.upgrade(d.id,{...refusing(()=>'ok',[...declared,{code:'more',meaning:'m',effect:'not_applied'}])},{expectedRevision:1}),{code:'CONTRACT_MISMATCH'});
+  runtime.upgrade(d.id,{...refusing(()=>'ok',declared),version:'1.1.0'},{expectedRevision:1});
+  assert.equal((await runtime.invoke(d.id,'echo',{})).value,'ok');
+});
+
+test('errors name module, operation and admission-time version; retryable is per code',async()=>{
+  const {createModuleRuntime}=await api();
+  let release;
+  const runtime=createModuleRuntime();
+  runtime.register(definition('1.0.0',()=>new Promise(r=>{release=r;})));runtime.activate('example.echo');
+  const pending=runtime.invoke('example.echo','echo',null);
+  const busy=(()=>{try{runtime.upgrade('example.echo',definition('1.1.0'),{expectedRevision:1});}catch(e){return e;}})();
+  assert.equal(busy.code,'MODULE_BUSY');assert.equal(busy.retryable,true);assert.equal(busy.module,'example.echo');assert.equal(busy.module_revision,1);
+  // busy is checked before staleness; drain, then check stale
+  release('x');await pending;
+  const stale2=(()=>{try{runtime.upgrade('example.echo',definition('1.1.0'),{expectedRevision:9});}catch(e){return e;}})();
+  assert.equal(stale2.code,'STALE_REVISION');assert.equal(stale2.retryable,true);
+  await assert.rejects(runtime.invoke('example.echo','nope',null),e=>e.code==='OPERATION_NOT_FOUND'&&e.operation==='nope'&&e.module_version==='1.0.0'&&e.retryable===false);
+  await assert.rejects(runtime.invoke('missing.mod','echo',null),e=>e.code==='MODULE_NOT_FOUND'&&e.module==='missing.mod');
+  runtime.retire('example.echo');
+  await assert.rejects(runtime.invoke('example.echo','echo',null),e=>e.code==='MODULE_RETIRED'&&e.retryable===false&&e.module_revision===1);
+  // ADMISSION_CHANGED reports the revision the call was admitted under
+  let approve;
+  const gated=createModuleRuntime({authorize:()=>new Promise(r=>{approve=r;})});
+  const d=definition();d.operations.echo.effects=['local-read'];gated.register(d);gated.activate(d.id);
+  const p=gated.invoke(d.id,'echo',{});gated.upgrade(d.id,{...d,version:'1.1.0'},{expectedRevision:1});approve(true);
+  await assert.rejects(p,e=>e.code==='ADMISSION_CHANGED'&&e.retryable===true&&e.module_version==='1.0.0'&&e.module_revision===1);
+});
+
+test('stored operation records are frozen and handlers run with no receiver',async()=>{
+  const {createModuleRuntime}=await api();
+  const runtime=createModuleRuntime();let seen='unset';
+  runtime.register(definition('1.0.0',function(){seen=this;return 1;}));runtime.activate('example.echo');
+  await runtime.invoke('example.echo','echo',null);
+  assert.equal(seen,undefined);
+  const view=runtime.describe('example.echo').operations[0];
+  view.effects.push('local-write');view.description='changed';
+  assert.deepEqual(runtime.describe('example.echo').operations[0].effects,[]);
+  assert.equal(runtime.describe('example.echo').operations[0].description,'Return the input.');
+  // the handler cannot reach and edit the stored record through a receiver
+  const sneaky=definition('1.0.0',function(){try{this.effects.push('local-write');}catch{}return 'done';});
+  const other=createModuleRuntime();other.register({...sneaky,id:'example.sneaky'});other.activate('example.sneaky');
+  await other.invoke('example.sneaky','echo',null);
+  assert.deepEqual(other.describe('example.sneaky').operations[0].effects,[]);
+});
