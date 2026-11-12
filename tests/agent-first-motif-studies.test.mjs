@@ -40,7 +40,7 @@ test('motifs explain independent questions, mechanisms and connections without a
   cards[0].question = 'changed'; cards[0].sources[0].path = 'changed';
   assert.notEqual(describeStudy('arrival').question, 'changed');
   assert.notEqual(describeStudy('arrival').sources[0].path, 'changed');
-  assert.throws(() => describeStudy('not-a-motif'), { code: 'MOTIF_NOT_FOUND' });
+  assert.throws(() => describeStudy('not-a-motif'), { code: 'STUDY_NOT_FOUND' });
 });
 
 test('arrival constructs a native manifest response with no invented assurance claims', async () => {
@@ -154,11 +154,11 @@ test('one existing CLI exposes motif metadata, standalone studies and the compos
   assert.ok(cliRun(cli, ['help']).value.commands.some(command => command.startsWith('motifs study')));
   assert.equal(cliRun(cli, ['motifs', 'study', '--help']).value.kind, 'motif-help');
   const unknown = cliRun(cli, ['motifs', 'study', 'run', 'private-untrusted-value']);
-  assert.equal(unknown.status, 1);
-  assert.equal(unknown.value.error.code, 'MOTIF_NOT_FOUND');
+  assert.equal(unknown.status, 2);
+  assert.equal(unknown.value.error.code, 'STUDY_NOT_FOUND');
   assert.equal(unknown.stdout.includes('private-untrusted-value'), false);
   const invalid = cliRun(cli, ['motifs', 'study', 'journey', 'extra']);
-  assert.equal(invalid.status, 1);
+  assert.equal(invalid.status, 2);
   assert.equal(invalid.value.error.code, 'MOTIF_INVALID_ARGUMENTS');
   assert.equal(cliRun(cli, ['catalog']).value.modules.length, 3);
 });
@@ -169,7 +169,7 @@ test('metadata stands alone without a build or provider, and removing studies le
   const base = mkdtempSync(join(realpathSync(tmpdir()), 'xenia-motif-independence-'));
   try {
     const folder = join(base, 'agent-first', '0.1'); mkdirSync(folder, { recursive: true });
-    for (const name of ['cli.mjs', 'runtime.mjs', 'modules.mjs', 'command-state.mjs', 'motif-studies.mjs']) {
+    for (const name of ['cli.mjs', 'runtime.mjs', 'modules.mjs', 'command-state.mjs', 'problems.mjs', 'motif-studies.mjs']) {
       copyFileSync(new URL(`../agent-first/0.1/${name}`, import.meta.url), join(folder, name));
     }
     const absentHome = join(base, 'absent-home');
@@ -184,7 +184,7 @@ test('metadata stands alone without a build or provider, and removing studies le
     assert.deepEqual(readdirSync(folder).sort(), before);
     const missingBuild = cliRun(cli, ['motifs', 'study', 'run', 'ending'], options);
     assert.equal(missingBuild.status, 1);
-    assert.equal(missingBuild.value.error.code, 'MOTIF_BUILD_REQUIRED');
+    assert.equal(missingBuild.value.error.code, 'BUILD_REQUIRED');
     assert.equal(existsSync(absentHome), false);
     rmSync(join(folder, 'motif-studies.mjs'));
     const core = cliRun(cli, ['catalog'], options);

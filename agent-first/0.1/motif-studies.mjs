@@ -2,6 +2,8 @@
 // Informative, repository-only studies of existing Xenia mechanisms.
 // Metadata is inert. Studies use synthetic inputs, not remote service evidence.
 
+import { readFileSync } from 'node:fs';
+
 const cards = [
   {
     id: 'arrival', title: 'An arrival can orient',
@@ -57,8 +59,8 @@ const cards = [
   },
 ];
 
-function problem(code) {
-  return Object.assign(new Error(code), { code });
+function problem(code, extra = {}) {
+  return Object.assign(new Error(code), { code }, extra);
 }
 
 function copyCard(card) {
@@ -78,7 +80,7 @@ export function listStudies() {
 
 export function describeStudy(id) {
   const card = cards.find(candidate => candidate.id === id);
-  if (!card) throw problem('MOTIF_NOT_FOUND');
+  if (!card) throw problem('STUDY_NOT_FOUND', { valid: cards.map(c => c.id) });
   return copyCard(card);
 }
 
@@ -93,7 +95,7 @@ const limits = [
 
 async function nativeSurface() {
   try { return await import('../../dist/surface-0.1.js'); }
-  catch { throw problem('MOTIF_BUILD_REQUIRED'); }
+  catch { throw problem('BUILD_REQUIRED'); }
 }
 
 function fixtureManifest(api) {
@@ -129,17 +131,38 @@ function study(id, fields) {
   };
 }
 
+// Studies that relate to a motif id from the broader map. Motif ids come from
+// motifs.json when present, and otherwise from the studies' own relations.
+function motifIds() {
+  try { return JSON.parse(readFileSync(new URL('./motifs.json', import.meta.url), 'utf8')).motifs.map(m => m.id); }
+  catch { return [...new Set(cards.flatMap(card => card.relates_to.map(r => r.id)))]; }
+}
+
+export function studiesForMotif(id) {
+  const related = cards.flatMap(card => card.relates_to.filter(r => r.id === id)
+    .map(r => ({ id: card.id, title: card.title, relation: r.relation, limit: r.limit })));
+  return {
+    kind: 'motif-studies', motif_id: id, studies: related, none_exist_yet: related.length === 0,
+    meaning: related.length ? 'These studies relate to the motif; each states its own limit.'
+      : 'No study relates to this motif yet. The motif map still describes it: motifs <motif-id>.',
+    not_established: ['that these are all the ways to examine the motif', 'that a study demonstrates the whole motif'],
+  };
+}
+
 export async function studyCommand(args = []) {
   if (!Array.isArray(args) || args.length > 2 || args.some(arg => typeof arg !== 'string')) {
     throw problem('MOTIF_INVALID_ARGUMENTS');
   }
   const [command = 'list', id] = args;
-  if ((command === 'help' || command === '--help') && args.length === 1) {
-    return { kind: 'motif-help', commands: ['motifs study', 'motifs study show <id>', 'motifs study run <id>', 'motifs study journey'],
+  if (['help', '--help', '-h'].includes(command) && args.length === 1) {
+    return { kind: 'motif-help', commands: ['motifs study', 'motifs study show <study-id|motif-id>', 'motifs study run <id>', 'motifs study journey'],
       ids: cards.map(card => card.id), meaning: 'Metadata is inert; run/journey execute native helpers only on local synthetic inputs.' };
   }
   if (command === 'list' && args.length <= 1) return { kind: 'motif-study-catalog', status: 'informative repository-only studies, not the whole motif map', studies: listStudies() };
-  if (command === 'show' && args.length === 2) return { kind: 'motif-description', motif: describeStudy(id) };
+  if (command === 'show' && args.length === 2) {
+    if (!cards.some(card => card.id === id) && motifIds().includes(id)) return studiesForMotif(id);
+    return { kind: 'motif-description', motif: describeStudy(id) };
+  }
   if (command === 'run' && args.length === 2) return runStudy(id);
   if (command === 'journey' && args.length === 1) return composeJourney();
   throw problem('MOTIF_INVALID_ARGUMENTS');

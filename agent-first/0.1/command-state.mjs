@@ -13,6 +13,7 @@ export function commandFailure(error,state,phase=state.phase){
   // A declared refusal keeps its own meaning, unless earlier operations of this
   // command already returned (then the command-level outcome stays unknown).
   if(known&&error.refusal){failure.refusal=error.refusal;if(!state.returned.length)failure.effect_outcome=error.effect_outcome;}
+  if(known){for(const key of ['mismatch','valid'])if(error[key]!==undefined)failure[key]=error[key];}
   failure.phase=phase;
   failure.returned_operations=[...state.returned];
   failure.verification=state.verification??'not_run';

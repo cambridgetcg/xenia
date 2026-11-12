@@ -7,6 +7,8 @@ import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 import {ModuleError} from './runtime.mjs';
 
+// A pin mismatch says where it differed, never the observed bytes.
+const pin=mismatch=>Object.assign(new ModuleError('PROVIDER_PIN_MISMATCH'),{mismatch});
 const FILES=['package.json','dist/core.mjs','dist/files.mjs','LICENSE','NOTICE'];
 
 // The host knows both roots here; the data-only adapter cannot infer where its
@@ -38,31 +40,32 @@ export function separateContextRoots(packageDir,notesDir){
 export async function loadReviewedStarter(packageDir){
   if(typeof packageDir!=='string'||!path.isAbsolute(packageDir))throw new ModuleError('INVALID_PROVIDER');
   const lock=JSON.parse(fs.readFileSync(new URL('./agenttool.lock.json',import.meta.url),'utf8')).local_starter;
-  if(JSON.stringify(Object.keys(lock.files).sort())!==JSON.stringify([...FILES].sort()))throw new ModuleError('PROVIDER_PIN_MISMATCH');
+  if(JSON.stringify(Object.keys(lock.files).sort())!==JSON.stringify([...FILES].sort()))throw pin({field:'lock.files'});
   const copies=new Map();
   let snapshot;
   try{
     const root=fs.realpathSync(packageDir);
     for(const name of FILES){
       const file=path.join(root,name),relative=path.relative(root,fs.realpathSync(file));
-      if(relative.startsWith('..'+path.sep)||path.isAbsolute(relative))throw new ModuleError('PROVIDER_PIN_MISMATCH');
-      if(!fs.lstatSync(file).isFile())throw new ModuleError('PROVIDER_PIN_MISMATCH');
+      if(relative.startsWith('..'+path.sep)||path.isAbsolute(relative))throw pin({file:name,aspect:'path'});
+      if(!fs.lstatSync(file).isFile())throw pin({file:name,aspect:'type'});
       const fd=fs.openSync(file,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|(fs.constants.O_NONBLOCK??0));
       let bytes;
       try{
         const limit=256*1024,stat=fs.fstatSync(fd);
-        if(!stat.isFile()||stat.size>limit)throw new ModuleError('PROVIDER_PIN_MISMATCH');
+        if(!stat.isFile()||stat.size>limit)throw pin({file:name,aspect:stat.isFile()?'size':'type'});
         const buffer=Buffer.alloc(limit+1);let used=0;
         while(used<buffer.length){const count=fs.readSync(fd,buffer,used,buffer.length-used,null);if(!count)break;used+=count;}
-        if(used>limit)throw new ModuleError('PROVIDER_PIN_MISMATCH');
+        if(used>limit)throw pin({file:name,aspect:'size'});
         bytes=buffer.subarray(0,used);
       }
       finally{fs.closeSync(fd);}
-      if(createHash('sha256').update(bytes).digest('hex')!==lock.files[name])throw new ModuleError('PROVIDER_PIN_MISMATCH');
+      if(createHash('sha256').update(bytes).digest('hex')!==lock.files[name])throw pin({file:name,aspect:'sha256'});
       copies.set(name,bytes);
     }
     const metadata=JSON.parse(copies.get('package.json').toString('utf8'));
-    if(metadata.name!==lock.name||metadata.version!==lock.version)throw new ModuleError('PROVIDER_PIN_MISMATCH');
+    if(metadata.name!==lock.name)throw pin({file:'package.json',aspect:'name'});
+    if(metadata.version!==lock.version)throw pin({file:'package.json',aspect:'version'});
     // Import only an owned snapshot of the bytes just checked. No provider
     // install script, MCP bundle, hosted companion or mutable source path runs.
     snapshot=fs.mkdtempSync(path.join(tmpdir(),'xenia-reviewed-provider-'));

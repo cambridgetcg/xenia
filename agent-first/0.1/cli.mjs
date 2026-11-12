@@ -5,6 +5,7 @@ import {pathToFileURL} from 'node:url';
 import {createModuleRuntime,ModuleError,MODULE_INPUT_LIMITS} from './runtime.mjs';
 import {createXeniaModules} from './modules.mjs';
 import {commandFailure,finishProvider} from './command-state.mjs';
+import {COMMANDS,EXIT_CODES,USAGE_CODES,buildProblem,usageHelp} from './problems.mjs';
 
 export const EXAMPLES={
   'xenia.surface':{service:{name:'Local example',canonicalUrl:'https://example.com/',description:'An unserved reference example.'},resources:[{id:'about',href:'https://example.com/about'}]},
@@ -15,6 +16,9 @@ const makeRuntime=()=>{const runtime=createModuleRuntime();for(const module of c
 const envelope=(fields)=>({schema:'xenia.agent-first/0.1-development',...fields});
 
 async function demo(){
+  // The reference tools import the root build and the Work checker's dev dependencies.
+  const root=new URL('../../',import.meta.url);
+  if(!fs.existsSync(new URL('dist/surface-0.1.js',root))||!fs.existsSync(new URL('node_modules/ajv/package.json',root)))throw new ModuleError('BUILD_REQUIRED');
   const runtime=makeRuntime();for(const {id}of runtime.catalog())runtime.activate(id);
   const surface=(await runtime.invoke('xenia.surface','manifest',EXAMPLES['xenia.surface'])).value;
   const covenant=(await runtime.invoke('xenia.covenant','draft',EXAMPLES['xenia.covenant'])).value;
@@ -82,17 +86,48 @@ async function starterSmoke(args){
   return output;
 }
 
+const isHelp=arg=>arg==='-h'||arg==='--help';
+const GENERAL_HELP=['help [command]','motifs [motif-id]','motifs study [list|show <study-id|motif-id>|run <study-id>|journey]','catalog','explain <module-id>','demo',
+  'context <init|status|render> --package <reviewed-package-dir> --dir <notes-dir>',
+  'context handoff --package <reviewed-package-dir> --dir <notes-dir> --input <chosen-file> --expect <current-sha256>',
+  'starter-smoke --package <reviewed-package-dir> --dir <new-notes-dir>'];
+
+function unknownCommand(word){return Object.assign(new ModuleError('UNKNOWN_COMMAND'),{word});}
+
 export async function main(args){
   const [command,...rest]=args;
-  if(command==='motifs'&&!rest.length)return JSON.parse(fs.readFileSync(new URL('./motifs.json',import.meta.url),'utf8'));
   if(command==='motifs'&&rest[0]==='study'){
     const {studyCommand}=await import('./motif-studies.mjs');
-    try{return envelope(await studyCommand(rest.slice(1)));}
-    catch(error){
-      const known=['MOTIF_NOT_FOUND','MOTIF_INVALID_ARGUMENTS','MOTIF_BUILD_REQUIRED','MOTIF_NATIVE_CONTRACT_CHANGED','MOTIF_STUDY_UNAVAILABLE'];
+    try{
+      const sub=rest.slice(1);
+      return envelope(await studyCommand(sub.length>1&&sub.some(isHelp)?['help']:sub));
+    }catch(error){
+      const known=['STUDY_NOT_FOUND','MOTIF_INVALID_ARGUMENTS','BUILD_REQUIRED','MOTIF_NATIVE_CONTRACT_CHANGED','MOTIF_STUDY_UNAVAILABLE'];
       const code=known.includes(error?.code)?error.code:'MOTIF_STUDY_FAILED';
-      throw new ModuleError(code,!['MOTIF_NOT_FOUND','MOTIF_INVALID_ARGUMENTS'].includes(code));
+      const failure=new ModuleError(code,['MOTIF_NATIVE_CONTRACT_CHANGED','MOTIF_STUDY_FAILED'].includes(code));
+      if(code==='STUDY_NOT_FOUND'&&Array.isArray(error.valid))failure.valid=[...error.valid];
+      throw failure;
     }
+  }
+  const wantsHelp=args.some(isHelp);
+  if(!command||command==='help'||wantsHelp){
+    const words=args.filter(arg=>!isHelp(arg));
+    if(words[0]==='help')words.shift();
+    if(!wantsHelp&&command==='help'&&words.length>1)throw new ModuleError('INVALID_ARGUMENTS');
+    if(!wantsHelp&&command==='help'&&words.length===1&&!COMMANDS[words[0]])throw unknownCommand(words[0]);
+    if(words.length&&COMMANDS[words[0]]&&(wantsHelp||command==='help'))return envelope(usageHelp(words[0]));
+    return envelope({title:'Xenia agent-first module kit',status:'repository-only development',commands:GENERAL_HELP,
+      principle:'Inspect → activate deliberately → invoke through the host gate → pause, upgrade or retire.',
+      exit_codes:EXIT_CODES,output:'stdout is one JSON document; stderr is silent. A failure has error (what happened) and problem (what you may do next).',
+      limits:MODULE_INPUT_LIMITS,notes:['No automatic installs, services, host hooks, accounts, publication or model calls.','Runtime state is in-process; the caller owns persistence.','Trusted module code is not an OS sandbox.'],
+      not_established:['that any listed command will succeed here','that this list is every capability of the host']});
+  }
+  if(command==='motifs'&&!rest.length)return JSON.parse(fs.readFileSync(new URL('./motifs.json',import.meta.url),'utf8'));
+  if(command==='motifs'&&rest.length===1&&!rest[0].startsWith('-')){
+    const {motifs}=JSON.parse(fs.readFileSync(new URL('./motifs.json',import.meta.url),'utf8'));
+    const card=motifs.find(item=>item.id===rest[0]);
+    if(!card)throw Object.assign(new ModuleError('MOTIF_NOT_FOUND'),{valid:motifs.map(item=>item.id)});
+    return envelope({kind:'motif-card',motif:card,not_established:['that this card describes a running service',card.limit]});
   }
   if(command==='starter-smoke')return starterSmoke(rest);
   if(command==='context'){
@@ -100,27 +135,40 @@ export async function main(args){
     return envelope(await runContextCommand(rest));
   }
   const runtime=makeRuntime();
-  if(!command||command==='help'||command==='--help')return envelope({title:'Xenia agent-first module kit',status:'repository-only development',
-    commands:['motifs','motifs study [list|show <id>|run <id>|journey]','catalog','explain <module-id>','demo','context <init|status|render> --package <reviewed-package-dir> --dir <notes-dir>',
-      'context handoff --package <reviewed-package-dir> --dir <notes-dir> --input <chosen-file> --expect <current-sha256>',
-      'starter-smoke --package <reviewed-package-dir> --dir <new-notes-dir>'],
-    principle:'Inspect → activate deliberately → invoke through the host gate → pause, upgrade or retire.',
-    limits:MODULE_INPUT_LIMITS,notes:['No automatic installs, services, host hooks, accounts, publication or model calls.','Runtime state is in-process; the caller owns persistence.','Trusted module code is not an OS sandbox.']});
   if(command==='catalog'&&!rest.length)return envelope({modules:runtime.catalog(),limits:MODULE_INPUT_LIMITS});
   if(command==='explain'&&rest.length===1)return envelope({module:runtime.describe(rest[0]),example:EXAMPLES[rest[0]],
     interpretation:'Descriptions and examples are informative. Native profile functions validate their own inputs; reading does not activate anything.'});
   if(command==='demo'&&!rest.length)return demo();
+  if(!COMMANDS[command])throw unknownCommand(command);
   throw new ModuleError('INVALID_ARGUMENTS');
 }
 
-if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){
-  try{console.log(JSON.stringify(await main(process.argv.slice(2)),null,2));}
-  catch(error){
-    const safe=error instanceof ModuleError?error:new ModuleError('CLI_FAILED');
-    console.log(JSON.stringify(envelope({error:{code:safe.code,operation_started:safe.operation_started,effect_outcome:safe.effect_outcome,retryable:safe.retryable,module:safe.module,operation:safe.operation,
+function failureEnvelope(error,argv){
+  const safe=error instanceof ModuleError?error:new ModuleError('CLI_FAILED');
+  const ctx={argv,word:safe.word};
+  if(safe.code==='PROVIDER_PIN_MISMATCH'){
+    try{const {name,version,source}=JSON.parse(fs.readFileSync(new URL('./agenttool.lock.json',import.meta.url),'utf8')).local_starter;ctx.lock={name,version,source};}catch{}
+  }
+  if(safe.code==='MODULE_NOT_FOUND'||safe.module!==undefined){
+    try{ctx.moduleIds=makeRuntime().catalog().map(module=>module.id);}catch{}
+  }
+  const problem=buildProblem(safe,ctx);
+  const not_established=['that a suggested next action will succeed'];
+  if(safe.effect_outcome==='unknown')not_established.push('whether the failed operation changed anything');
+  if(safe.effect_outcome==='not_applied')not_established.push('anything about state beyond this one declined operation');
+  return {exit:USAGE_CODES.includes(safe.code)?2:1,
+    body:envelope({error:{code:safe.code,operation_started:safe.operation_started,effect_outcome:safe.effect_outcome,retryable:problem.retryable,module:safe.module,operation:safe.operation,
       module_version:safe.module_version,module_revision:safe.module_revision,refusal:safe.refusal,
       phase:safe.phase,returned_operations:safe.returned_operations,verification:safe.verification,snapshot_cleanup:safe.snapshot_cleanup},
-      guidance:'Inspect the selected module, paths and current provider state. For the local demo, prepare the root dependencies/build. No mutation is retried automatically.'}),null,2));
-    process.exitCode=1;
+      problem,not_established})};
+}
+
+if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){
+  const argv=process.argv.slice(2);
+  try{console.log(JSON.stringify(await main(argv),null,2));}
+  catch(error){
+    const {exit,body}=failureEnvelope(error,argv);
+    console.log(JSON.stringify(body,null,2));
+    process.exitCode=exit;
   }
 }
