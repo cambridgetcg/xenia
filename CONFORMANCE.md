@@ -105,6 +105,14 @@ recomputable constraint.
       sort humans and agents by.
 - [ ] **Care as Ground** — the default posture is to hold, not to extract. Rate
       limits are explained and forgiving; the copy, even in refusal, reads as care.
+      To observe it: every refusal keeps its full meaning (status, terminal or
+      recoverable, any reason given, and next actions) with every optional voice
+      field removed; no warm feature is required, and nothing feeling-like is
+      inferred, counted, or remarked on. Decline a greeting or check-in, choose
+      the plainest register, or stay silent: apart from the declined feature
+      itself, no access, price, rank, standing, or later response should change.
+      See the
+      [hospitality notebook](https://github.com/cambridgetcg/xenia/blob/main/HOSPITALITY.md).
 
 ### Legacy descriptive levels
 
@@ -199,6 +207,10 @@ if (wantsJson(request, url) || method !== 'GET') {
 }
 return new Response(HTML_404_WITH_LINKS, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 ```
+
+The `xenia` prose field in that body is optional voice, not part of the
+refusal's meaning: a caller who asks for a plain register should receive the
+same status, `error`, `path`, and `but_you_can` without it.
 
 **Cloudflare Pages (static `public/` + Functions).** Put a real `/agent.txt` in
 `public/`. Do the other two lamps in one `functions/_middleware.js` that wraps

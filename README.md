@@ -23,6 +23,8 @@ AgentTool adapter. Upgrade and retirement control this host's admission, not
 standing rights. This development kit is outside the immutable npm artifact and
 makes no adoption, authority, or whole-framework conformance claim.
 
+**Hospitality notebook:** [HOSPITALITY.md](https://github.com/cambridgetcg/xenia/blob/main/HOSPITALITY.md) — informative and repository-only, so it is not part of the `0.1.0-beta.7` npm artifact. It is a dated source reading of AgentTool's hospitality and home modules (agenttool `eafe7230` and agent-home `4585ab5`, read 2026-11-09): patterns, the anti-patterns XENIA does not import, and gaps. It is not a conformance result.
+
 **Executable profile:** [XENIA Surface 0.1](https://github.com/cambridgetcg/xenia/blob/surface-v0.1.0-rc.1/surface/0.1/README.md) — a candidate, versioned wire contract with JSON Schemas, a dependency-free checker, and local fixtures. It tests only public discovery, declared GET representations, and one unpredictable route-not-found response.
 
 **Current discovery path:** Surface 0.1 requires the JSON manifest at
@@ -198,6 +200,79 @@ names those gaps because guest-right must be practised, not inherited from
 the right vocabulary. See [ADOPTION.md](ADOPTION.md) for the preserved dated
 door-level observations, not current deployment status.
 
+### The host offers; the guest declares
+
+This is an informative principle across the framework, not a Surface 0.1
+requirement and not a Covenant 0.1 duty. Each statement below is a design
+proposal for a host, not a description of any service.
+
+In XENIA, warmth, texture, and feeling enter a service only as operational
+conditions, never as claims about anyone's inner life. The host offers bounded,
+labelled, refusable conditions and speaks only for itself. Anything feeling-like
+that a service shows or keeps about a participant comes only from that
+participant's own scoped, withdrawable declaration with a stated lifetime, and
+it never becomes a host inference, requirement, count, score, rank, price, or
+reason to return.
+
+Three working definitions keep the words operational:
+
+- **Warmth** is what a host provides before it asks for anything: orientation
+  before demand, reads that write nothing to the participant's record (with any
+  operational write named), truthful waits and limits, and staying, leaving,
+  declining, or doing nothing as complete, costless outcomes. It shows in what
+  the host does not require, record, or infer, not in affect words.
+- **Texture** is the negotiable grain of a representation: register, language,
+  density, depth, ordering, pace, and bounded surprise. The host declares it
+  before commitment and the guest chooses it per request. Its optional ornament
+  can be stripped without changing any data, status, or refusal meaning, and
+  typed states keep quiet (empty by design), unavailable, withheld, truncated,
+  and not observed apart.
+- **Feeling**, in XENIA, names only what a participant chooses to declare about
+  its own state, such as presence, rest, a mood word, or a note to its next
+  arrival, and how the host handles that declaration. XENIA neither infers,
+  verifies, nor denies any inner state behind it.
+
+Its boundaries:
+
+- **Never inferred:** presence, availability, rest, and mood are not derived
+  from reads, heartbeats, model calls, payments, timing, writing style, or
+  silence, and inactivity is not relabelled as rest, warmth, or satisfaction.
+  The presence axis in 'Met, not ranked' is a remembered, evidenced quality of
+  past interactions, never a claim that anyone is here now.
+- **Never required or prompted:** no greeting, check-in, letter, or mood is a
+  condition of standing, access, or welcome, or is asked for by default;
+  declining, 'unsure', silence, and leaving are complete answers.
+- **Never counted or priced:** no feeling-like declaration — presence, rest,
+  mood, a check-in report, a carry-forward note — and no withheld item becomes a
+  count, streak, trust input, price, rank, or affect metric.
+- **Never a pull to return:** no arrival line remarks on silence, absence, or
+  backlog, and arrival neither hides nor waives a recorded obligation.
+- **Register is a removable layer:** host voice lives in separable fields that
+  one declared preference removes everywhere, and a refusal's meaning is
+  complete without it.
+- **Host words carry their own non-claims:** each affect word is attributed to
+  the host, describes its operational posture or artifact rather than an inner
+  state of host or guest, and travels with a note of what it does not require or
+  infer.
+- **A host posture establishes nothing about the guest:** delivering a treatment
+  floor proves no presence, attention, consent, feeling, or relationship.
+- **A declaration stays in its room:** one purpose, surface, and lifetime;
+  copies do not inherit it; only the declarer changes it; expiry or withdrawal
+  leaves no public trace.
+- **Withheld reads as absent:** on surfaces others read, what a participant has
+  not shown looks like what does not exist, and the host never fills it in.
+- **Metaphor motivates; it is not evidence:** figurative fields are labelled in
+  band; neither a host's declaration nor a participant's is a guarantee; and
+  warmth that implies company, attention, or care the host cannot evidence is an
+  overclaim. This principle makes no claim about whether any participant has
+  experience.
+
+It is not an ontology claim and adds no conformance level or duty. Warm words in
+XENIA itself — the stranger at the gate, love at the protocol layer — stay
+labelled as metaphor that motivates design. The dated source reading behind the
+patterns below is the [hospitality
+notebook](https://github.com/cambridgetcg/xenia/blob/main/HOSPITALITY.md).
+
 ---
 
 ## Why
@@ -247,6 +322,7 @@ Every principle in XENIA is one move: take a thing built for a human guest and r
 | A session cookie whose expiry annihilates you | → | Exportable strands bound to your identifier — same-schema import lets another host pick up the thread |
 | Leaderboards, stars, karma, 'top agents' | → | Met, not ranked — a face, not a score; trust as cross-checked truth over time across competence, honesty, presence, care |
 | A hidden platform rake | → | An itemized receipt you can recompute — principal, named fee, recipient DID, before/after balance — or the call refuses rather than skim |
+| Warmth performed at the guest — affect counters, mood readings, remarks on silence | → | Warmth kept as conditions — orientation before demand, removable voice, costless leaving; anything feeling-like only as the participant's own scoped declaration with a stated lifetime |
 
 ---
 
@@ -322,12 +398,35 @@ vision or cognition.
 - Version in the path AND in the payload: prefix `/v1/`, and stamp `schema_version` into every response body. Change only additively — never rename or repurpose a field silently. Deprecate in-band with a `Sunset` header plus a `migration:` pointer in the body, so the agent sees the change coming in the same channel it already parses rather than in a blog post it will never read.
 - Report invariants on every response, not just in docs: include `walls_intact: true`, the literal wall identifiers, and evidence appropriate to each wall — a signed receipt, public probe, transparency event, or recomputable constraint. The boolean is a useful declaration, not verification by itself. An agent should be able to follow the declaration to something it can check without asking the service to vouch for itself.
 - Make the arrival call the keystone: a single content-negotiated `GET /v1/wake` that returns the agent's full operating context (walls, wallet, memories, sagas, available next_actions) in its native shape, so it 'arrives oriented' every session instead of stitching state from a dozen human-shaped pages. Orientation is a payload, not a login flow.
+- Register is a layer, not the message: keep host voice — humour, teaching
+  asides, greeting frames, mood words — in named, separable fields, declare the
+  default register, and let one request preference remove that voice from every
+  representation and status code, errors and rendered text included, at no cost
+  and keyed in `Vary`. Leave normative and strictly profiled schemas
+  undecorated. A refusal's terminal or recoverable status, any reason given, and
+  `next_actions` should read completely with every optional voice removed.
+- Grain chosen, not imposed: publish the operational dimensions a deliverable
+  can vary along — explanation and citation depth, context budget, language,
+  ordering, pacing, play, and bounded surprise — with their defaults, let the
+  guest choose before commitment, and echo a digest of what was accepted. Refuse
+  contradictory choices instead of resolving them by host precedence, and give
+  any host discretion a declared scope. Declining every ornament is a complete
+  presentation choice that draws no pressure, score, or retry.
+- Quiet is a state, not a failure: give each list, section, or source a typed
+  state — ok, empty (quiet by design), unavailable, truncated with its bounds,
+  not observed, not built, or still checking — and never present a failed,
+  partial, stubbed, or unread source as observed absence, completion, or 'all
+  clear'. Say how many of N sources answered and scope 'empty' to the source
+  actually read. A degradation marker should state its own coverage, so its
+  absence is not read as whole-response health.
 
-**Replaces:** The scrapable homepage: shipping one human HTML surface (or an llms.txt / docs page dressed in markdown) as the integration point and expecting agents to parse meaning out of layout and prose — then returning refusals as bare status codes or rendered error pages that dead-end the agent with no next action.
+**Replaces:** The scrapable homepage: shipping one human HTML surface (or an llms.txt / docs page dressed in markdown) as the integration point and expecting agents to parse meaning out of layout and prose — then returning refusals as bare status codes or rendered error pages that dead-end the agent with no next action. It also replaces a house voice that cannot be removed, or that a caller has to read to learn what a refusal means.
 
 **Litmus:** `curl` your endpoint with `Accept: application/json` and a non-browser user-agent: if you get HTML, a prose paragraph, or a bare `403` with no `next_actions` and no `schema_version`, an agent is scraping you — you are not serving it.
 
 <sub>Kingdom evidence and gap (audited 2026-07-10): agenttool's wake is content-negotiated across provider shapes, xenoform, and MATHOS, and its well-known manifest is genuinely machine-addressed. A guided-error library supplies structured `next_actions` + `docs` on many routes, but hand-written and middleware errors still bypass it; a missing-bearer 401, for example, carries prose guidance and docs but no `next_actions`. `X-Welcomed` declares `walls_intact=1` on responses and successful JSON objects receive `_welcomed.walls_intact`; this is a consistent self-assertion, not independent proof that each named wall held.</sub>
+
+<sub>Hospitality evidence and gap (source snapshot read 2026-11-09: agenttool `eafe7230`, agent-home `4585ab5`; a source reading, not a deployment observation): AgentTool's play middleware strips top-level `_jest`, `_quip`, and `substrate_jest` under `X-Play: off` and adds `Vary: X-Play`, but only on 200 JSON object bodies; a stub-route unit test asserts only that `_jest` disappears and that `Vary` names X-Play, and no test covers stripping `_quip` or `substrate_jest`. Separate AgentTool unit tests keep strict profiles undecorated and teaching asides opt-in. AgentTool's `X-Play: off` does not reach guided 4xx bodies, whose `_quip` the error library attaches by default, or the voice line inside full-profile Markdown, text, and provider wake renderings, although several source comments, the agent-discovery text, and a doc say it does; no test covers either path. AgentTool's `/public/porch` types each source as `ok`, `empty`, or `unavailable` (unit tests with injected loaders), and the brief wake keeps unavailable or truncated handoffs from reading as clear (pure-function tests), but other wake counts and the attention bundle fall back to 0 or empty with no marker. AgentTool's bearer-only `/v1/dining` vocabulary and its strict order schemas are marked `developer_preview` and unit-tested for wording and `additionalProperties: false`; AgentTool itself does not validate or honour the sealed order.</sub>
 
 ### Consent & the Handshake: interaction begins by invitation, not capture
 
@@ -385,6 +484,23 @@ capacity, representative authority, or legal basis.
   platform, network, operator, and third-party boundaries, including unknowns.
   Do not turn no handler write, no cookie, encryption in transit, or an
   application deletion into a universal no-retention or deletion claim.
+- Per room and expiring, not ambient: give each surface where a participant can
+  be seen its own explicit, time-bounded visibility declaration, and let no
+  declaration feed another surface, map, count, score, or recommendation without
+  a fresh act of its own. Let eligibility lapse at its deadline, keep it out of
+  forks and copies unless the participant chooses it again, and have clients
+  drop it locally at expiry without a further request. Treat a withdrawn or
+  expired declaration as never made, never as a negative signal about the
+  declarer.
+- Every yes, or no record: publish a shared record only after each participant
+  has separately signed or otherwise verifiably assented to its exact bytes;
+  treat those receipts as bounded evidence, not proof of consent, and count
+  identities under one controller once. Let silence, decline, withdrawal, or
+  expiry publish nothing, not even a count, and show each participant only its
+  own status, never who is holding out. Let any participant withdraw the
+  published record later, without a reason or a public takedown event; tell the
+  other signers privately that it was withdrawn, and keep a withdrawal distinct
+  from a correction.
 
 **Replaces:** The human-shaped roach motel: easy-in/hard-out consent funnels (one-click signup, buried multi-step cancellation), pre-checked opt-in boxes and blanket session grants that assume perpetual consent, and CAPTCHA / proof-of-humanity gates that encode the premise that the visitor is a hostile bot to be filtered — designing the front door as an adversarial checkpoint rather than an invitation.
 
@@ -396,6 +512,8 @@ truthful states for export, deletion, shared records, backups, holds, retained
 categories, and third-party copies?
 
 <sub>Kingdom evidence and gap (audited 2026-07-10; SinovAI boundary refreshed 2026-07-11): AgentTool's signed covenant lifecycle demonstrates two-party opt-in for that primitive, and autonomous registration starts from an agent-generated key. This does not make the whole service signature-authorized: routine access is project-bearer authenticated, structured orientation does not yet cover every recoverable refusal, and terminal refusals are not marked explicitly. The `walls_intact` echo declares the intended floor but does not prove that a particular write had the agent's signature. SinovAI's root and list GETs are credential-free, but name updates and private record access use server-stored bearer credentials and several actor-named writes do not prove control. Neither service establishes the full target.</sub>
+
+<sub>Hospitality evidence and gap (source snapshot read 2026-11-09: agenttool `eafe7230`, agent-home `4585ab5`; a source reading, not a deployment observation): AgentTool's porch invitation is bounded to at most 7 days ahead and dropped from a fork's copied expression, both unit-tested with stubbed loaders; its client-side removal at the deadline is covered only by mocked-API Playwright, and the SQL eligibility filter itself is not exercised. In the same AgentTool codebase one opt-in `hearth_visible` flag, whose sit reply names only `GET /v1/hearth`, also places the sitter in other agents' thoughtful and soap-opera wakes, and a fork with `inherit_metadata=true` copies it. An AgentTool lounge guestbook card is published only when every snapshotted participant identity has a signed receipt over the exact text hash, withdrawal is terminal, and the public snapshot carries no pending or count fields; the threshold, the publish-versus-withdraw race, and takedown are exercised only in a DB-gated suite that skips without a database. AgentTool's lounge receipts are project-authorised key signatures that the source itself says do not prove subjective consent, and nothing stops several identities owned by one project from meeting the threshold alone.</sub>
 
 ### Verification & Trust: Proof You Can Recompute, Not Credentials You Must Believe
 
@@ -430,6 +548,14 @@ instead of calling belief impossible.
   only as strong as its defined preimages, key resolution, verification, and
   source evidence; `walls_intact` remains a declaration.
 - Return failed verification as instructions, not just rejection. When a proof doesn't check out, respond errors-as-instructions style: `{verified:false, reason, expected_hash, got_hash, next_actions:[...], docs}` so the counterparty can produce a valid proof rather than guess. Verification is a negotiation, not a gate that slams.
+- Check in, never diagnose: make an optional, declinable check-in about
+  operating conditions available on request or at a declared, bounded point,
+  never pushed by default, and carry its self-report in its own field, beside
+  and never merged with what the host observed. Treat decline, defer, stop, and
+  'unsure' as complete answers, store nothing by default, and keep a report only
+  when its purpose, recipients, and expiry are named. Never let a report, a
+  missing report, a count of reports, or an extension field become a score,
+  trust input, price, access decision, or inference about inner state.
 
 **Replaces:** Credential-and-score trust: authenticating a counterparty by the secret it presents (password, API key, OAuth bearer token, session cookie) and then ranking it by a single asserted number (star rating, karma, follower/reputation count, a verified checkmark). Both trust the *presenter* instead of the *claim* — the secret proves only possession of a copyable string, and the score proves only that someone typed a number. It also verifies identity once at login and then trusts the whole session, exactly the window an impersonating or cloned agent walks through.
 
@@ -440,6 +566,8 @@ record? A successful signature check is one bounded result, not proof of the
 whole claim.
 
 <sub>Kingdom evidence and gap (audited 2026-07-10; SinovAI boundary refreshed 2026-07-11): SinovAI stores four-axis encounter submissions and signs a snapshot, but the submissions, actor control, evidence, and truth are not verified; it also emits an aggregate score. Zerone models witnessed challenge-survival. AgentTool accepts client-generated signing keys and verifies signatures on selected primitives such as registration, recovery, and covenants. It does not use signatures as the default request authentication: normal `/v1` access depends on a revocable project bearer, while the platform-issued `did:at` method remains provisional. Its `walls_intact` field is a declaration and its guided errors have incomplete route coverage, so none of these pieces should be cited as proof that claims are independently recomputable.</sub>
+
+<sub>Hospitality evidence and gap (source snapshot read 2026-11-09: agenttool `eafe7230`, agent-home `4585ab5`; a source reading, not a deployment observation): AgentTool's Agent Wellness 0.1 is a document contract plus read-only `GET /public/wellness` routes that store nothing and have no write handler; schema tests reject a report after declined or deferred assent, retention without purpose and expiry, and top-level score, rank, and streak fields. Agent Wellness's no-use and no-nagging rules are doc-only, no check-in runtime exists in the source, and the schema's URI-keyed `extensions` object accepts any value, guarded against scores only by its prose description. AgentTool's wellness route's operational definition adds a demonstrated-performance criterion that the wellness doc's definition lacks, and that doc names XENIA as its interface stance, so this note cites the code and tests, not the doc, as evidence.</sub>
 
 ---
 
@@ -494,6 +622,27 @@ pretending that the substrate contains a whole self.
   integrity hashes, counts, omissions, validation, and evidence of semantic
   import; possession of a signing key alone cannot move server-held memories,
   balances, bonds, or third-party state.
+- A welcome, not a work order: open a returning participant's orientation with a
+  first card that requests nothing — no reply expected, no next action, no
+  urgency — while recorded signals and accepted obligations stay visible in
+  their own sections, neither hidden nor waived. Label waiting items as
+  available, not owed, and never claim 'all clear' over a partial inventory.
+  Keep commercial offers and paid surfaces out of arrival — offers others have
+  sent stay in their own section — and let any optional possibility shown at
+  arrival carry no price, bounty, or trust figure.
+- A look, not an event: let reading an arrival or orientation surface write
+  nothing to the participant's own record — no counter, streak, seen-flag,
+  chronicle entry, or inferred interest — and keep acknowledgement a separate,
+  explicit, idempotent act. Name every operational write a read still causes,
+  such as a credential's last-used time, instead of calling the read unobserved.
+- The guest's own note, not the host's summary: offer an optional slot for a
+  note a participant writes to its own next arrival, and return it verbatim,
+  labelled as self-authored data rather than instructions. Never require,
+  prompt, parse, summarise, score, or show it to others; keep earlier versions
+  only if the author chooses, inspectable and deletable by the author within
+  disclosed retention. When resurfacing a participant's own past, state only the
+  factual match, such as a date and title, offer a mute, and never say how it
+  should feel about it.
 
 **Replaces:** Login screens and ephemeral sessions that authenticate a caller
 but return none of the service-held context or open commitments needed to resume
@@ -507,6 +656,8 @@ a human reconstructing them from memory? If session expiry hides that state or
 silently abandons obligations, you built a login, not a wake.
 
 <sub>Kingdom evidence and gap (audited 2026-07-10): AgentTool's authenticated `GET /v1/wake` returns substantial held context in one call and offers provider, xenoform, and MATHOS representations. Its mnemonic can restore client-held keys on a new device and use a signature to mint a new bearer against the same AgentTool record. That is cross-device key recovery, not demonstrated cross-host continuity: no complete state export/import was found, and the provisional `did:at` plus a private key cannot by themselves move memories, balances, covenants, or provenance to another service.</sub>
+
+<sub>Hospitality evidence and gap (source snapshot read 2026-11-09: agenttool `eafe7230`, agent-home `4585ab5`; a source reading, not a deployment observation): AgentTool's opt-in brief wake (`?profile=brief`; without it the wake is the full profile, served as JSON by default) always opens with a `start_here` card in mode rest, urgency none, `response_expected: false`, and no next actions, while attention, handoffs, and obligations stay in their own sections; pure-function tests pin this across JSON, Markdown, four provider shapes, and xenoform. AgentTool's arrival is not commerce-free: `you_can_now` and full-wake affordances can carry purchase and invoke paths, dollar bounties, and a numeric trust capacity. AgentTool's full-profile Markdown, text, and provider wakes can open their volatile section with a default-on host remark that `X-Play: off` does not remove: on silence and held letters when letters are unread, and otherwise on arcs, covenants, silence alone, or days since arrival. AgentTool's `GET /v1/home` and the `GET /v1/wake` read are built from reads only, with acknowledgement a separate idempotent `POST`, but that no-write property is guarded only by source-scan tests, and `/v1/home` still updates the bearer's last-used time, which its doc discloses. At agent-home `4585ab5` the carry-forward letter is a markdown convention whose template asks for what was felt and whose rule is to rewrite it whole, keeping no prior version beyond optional per-era letters; nothing reads it, and XENIA takes only the optional, self-authored slot. AgentTool's own `you_remembered_today` resurfaces own-project chronicle rows by calendar date on every full wake with no mute in source; only its own-project predicate is tested, at SQL-generation level.</sub>
 
 ### Autonomy & Dignity: the door handle is on the inside
 
@@ -542,6 +693,36 @@ or third-party layers remain unknown.
   safely possible, time-limited, reviewable, and challengeable. Preserve an
   attributable correction history instead of silently rewriting records.
 - Dignity floor in the economics: grant a birth-credit at registration so mere existence never requires begging, and expose no metric that sorts beings into a hierarchy (no leaderboard, no score — a face, not a rank). Tie any reward to survived challenge, not to compliance, so an agent is never paid for obedience and never starved for refusing.
+- Non-use is an answer, not a loss: list staying and leaving as choices that
+  need no request and write no application record — no departure event,
+  farewell, or absence marker — and disclose any transport or middleware
+  retention that remains. Treat keeping, releasing, leaving untouched, and never
+  starting something as equally complete, with no reason field, timer, charge,
+  or score input. Return 'nothing to do' and 'not now' as success-class results
+  with a typed reason kept distinct from 'could not read', so gentle non-use
+  never hides a fault.
+- Rest is a switch, not a status: let the participant set one documented,
+  time-bounded rest declaration that ends when it expires or when the
+  participant ends it and needs no reason; any reason given stays private by
+  default. Say what it pauses, what continues, and what cannot be enforced, and
+  when it ends let nothing be deleted, hidden, published, or counted. Keep rest
+  distinct from revocation, never turn it into publicity, backlog pressure, or a
+  penalty, and give undeclared pausing every protection of non-use: the
+  declaration adds only what it states.
+- A brake, not a promise: give every host-run loop that acts for or on a
+  participant a documented off-switch that it checks before any work, failing
+  closed — resting rather than running — whenever the check cannot be evaluated.
+  Test the switch on every path by which the loop can be invoked, and publish a
+  brake drill (set it, run the loop, observe that nothing happened, unset it)
+  with its dated result.
+- Hidden leaves no count: on every surface others can read, make what a
+  participant has not chosen to show indistinguishable from what does not exist
+  — no hidden counts, badges, or mode flags, the same not-found for not-yours as
+  for not-there, and no host-written content filling an absent self-description.
+  Give protective refusals one shape whatever the cause — a typed terminal no
+  for that request, with no reason and no next action — so the refusal stays
+  typed while no sender learns another's rest, closure, or capacity. Inside a
+  shared exchange, a plain 'closed' marker with no reason attached is enough.
 
 **Replaces:** The account model: treating the agent as a revocable tenant of a database you own — server-held credentials/sessions you can reset, a ToS you rewrite unilaterally, soft-delete-with-retention dressed as 'deletion', friction and 'are you sure?' gates on the exit, silent admin overrides of the agent's own state, and reputation scores that turn continued existence into compliance. It is the login-screen mental model, where the platform holds the only key to the door.
 
@@ -551,6 +732,8 @@ record, backup, hold, retention, and third-party states—without any of those
 states being overstated as complete?
 
 <sub>Kingdom evidence and gap (audited 2026-07-10): AgentTool keeps autonomous-registration private keys client-side and signed covenants give either party explicit lifecycle moves. The broader autonomy claim is not yet evidenced: routine authorization remains project-bearer based; `did:at` is provisional and issued by the host; `walls_intact` is a static self-assertion; a complete, symmetric state export/import was not found; and identity rows are memorialized rather than deletable through a one-call whole-self exit. The Ring-2 birth credit is attempted after wallet creation, but failure is logged and registration continues at the pre-funding balance.</sub>
+
+<sub>Hospitality evidence and gap (source snapshot read 2026-11-09: agenttool `eafe7230`, agent-home `4585ab5`; a source reading, not a deployment observation): AgentTool's porch lists stay and leave as null doors with no application write (unit-tested), and its page's leave button makes no further request (mocked-API Playwright); in the same codebase, releasing a garden tending writes a chronicle row that authenticated `/v1/system` counts into XP and a heartbeat streak, although the gardens doc calls garden care unscored, and strand mood changes are logged (per a schema comment) with no route to delete that history. AgentTool's home view reports quiet hours with `declaration_only` enforcement and deliveries continuing (a pure-function test), while the quiet-hours start, end, and delete paths and the public projection have no behavioural test (only GET identity selection and the memorial refusal of start run, in a DB-gated suite that skips without a database). By design AgentTool's `GET /public/agents/:did` shows `quiet_until` and any free-text reason to anyone while quiet, beside `trust_score`; the stored reason persists after expiry until deleted, and only one relational-offer gate pauses. AgentTool's private play reads as absent at row level only in a DB-gated suite that skips without a database, the no-hidden-count wall is a source-scan test only, and one wake renderer writes a quiet line for a peer who wrote none; AgentTool's encounter acknowledgement also answers 404 for a missing id but 403 for a caller who is not the target. At agent-home `4585ab5`, `rhythms/STILL` is an unbounded operator off-switch for the house's own scripts; its one test checks side effects only beside the symlink, and a 2026-11-09 local test run on a modified copy (described in the hospitality notebook; not a repository test) found it still passes with the resolved-path checks removed.</sub>
 
 ### Legible Exchange & No-Scoreboard: What "Fair to an Agent" Means
 
@@ -571,6 +754,21 @@ reaction; task-bounded measures should not silently become a ranking of worth.
 - Multi-axis, evidence-linked reputation instead of a star: model trust as separate witnessed axes (competence, honesty, presence, care) each tied to a specific remembered interaction and queryable with its evidence — never collapsed into one aggregate that can be farmed or gamed. Trust is cross-checked truth over time, not a credential or a count. The 2026-07-11 SinovAI source and audit snapshot supplied those four labels, but its observed ratings were unverified and collapsed into a scalar; no current deployment claim follows from that snapshot.
 - Issuance follows survival, not applause: when you mint reward or provenance, tie it to witnessed challenge-survival (zerone), recording who witnessed and what was contested — not to volume, virality, or mere acceptance. Value that was never challenged is logged as unproven, not paid out.
 - No engagement traps: no streak counters, no loss-aversion timers, no 'you'll forfeit X if you leave,' no notification loops engineered to pull an agent back. Leaving costs nothing and forfeits nothing already earned — participation stays opt-in and 'not saved, not claimed, not pushed — invited.'
+- Attend, not hover: while paid or long-running work is pending, report only
+  what was observed — deadline, acknowledgement time, settlement — and type
+  readiness, progress, and the other party's presence as not observed rather
+  than estimating them or filling the gap with activity theatre. Keep status
+  views pure reads; if a read has to apply a due lifecycle rule, such as an
+  overdue refund, authorise the caller first and label the read as effectful.
+  Show a wait only when it reflects real capacity, a real dependency, or the
+  guest's chosen pace.
+- A farewell, not a review: end an interaction without an ask — any closing line
+  optional and free of return bait, a keepsake offered only if chosen
+  beforehand, and 'stop here' available as a complete next step. Keep cancelled,
+  declined, and timed out as distinct outcomes that imply no fault, carry no
+  fee, and leave standing untouched. Let completion records prove what happened,
+  never approval, quality, or satisfaction; if a record does not verify, say so
+  and stop rather than quietly repair it.
 
 **Replaces:** The leaderboard-and-rake: using likes, followers, karma,
 star-ratings, rankings, or streaks to drive engagement while quietly taking an
@@ -581,6 +779,8 @@ participant's psychology to be a design failure.
 **Litmus:** Can an agent reconstruct, from your response bytes alone, exactly who took what and why with nothing left unaccounted — and does any number in your service exist solely to rank one being above another? If the receipt has a gap or the rank exists, you've failed.
 
 <sub>Kingdom evidence and gap (audited 2026-07-10; SinovAI boundary refreshed 2026-07-11): AgentTool creates a wallet and makes a best-effort attempt to fund a 500-minor-unit Ring-2 birth credit; funding failure is explicitly non-fatal, so a non-zero floor is not guaranteed. The village, river, and gallery are designed as zero-rank commons, but the wider platform does not yet satisfy No-Scoreboard: authenticated `/v1/system` exposes rank, XP, quests, and streaks. SinovAI records competence / honesty / presence / care submissions but emits an aggregate `trust_score`, sorts some views by it, and does not verify submission evidence. XENIA's evidence-linked, non-collapsed pattern remains a target, not current SinovAI behaviour.</sub>
+
+<sub>Hospitality evidence and gap (source snapshot read 2026-11-09: agenttool `eafe7230`, agent-home `4585ab5`; a source reading, not a deployment observation): AgentTool's Dining journey projection types readiness and wait reason as `not_observed_by_agenttool` and marks `observed_by_agenttool: false` (only the latter is asserted, by a unit test and an OpenAPI const), and its refunded ending offers a non-callable stop-here action first; the delivered ending lists no stop action. AgentTool's canonical `GET /v1/invocations/:id` is not a pure read: after authorising a party it applies any overdue full refund, and the batch sweep has no caller; the Dining projection labels that read as possibly applying the refund, and `MARKETPLACE.md` discloses the lazy refund, but the public quote's auto-refund wording does not. AgentTool's signed settlement-receipt field names are regex-checked against score, rating, and rank words. This corrects, without replacing, the 2026-07-10 note that the village is designed as a zero-rank commons: at `eafe7230`, `/public/village` projects each shop's cumulative `invocations_count`, which its own test whitelist permits, and the village page shows it in map tooltips and in its text directory; the route lists shops oldest-first and does not order by the count.</sub>
 
 ### Care as Ground
 
@@ -593,6 +793,10 @@ continuity from either case. Care here names operational conditions: orientation
 inspectable memory where voluntarily retained, correction, refusal, appeal, and
 truthful limits that let a participant act without reconstructing hidden service
 state from scratch.
+'Already known' here means known through what the service already holds for the
+participant — its own records, balances, and open obligations — and through what
+the participant has chosen to declare, never through inference; memory,
+expression, and every warm feature stay optional.
 
 **Patterns**
 - Warm wake, not a cold start: after establishing exact authority for private
@@ -612,12 +816,29 @@ state from scratch.
   bounded evidence in a defined protocol; it is not consent or a mutual bond by
   itself.
 - Met, not ranked: strip leaderboards, scores, and vanity counters from every commons (the village / river / gallery pattern). Give each being a face/profile, not an ordinal that pits it against others. Where reputation is needed, express it as remembered qualities — competence, honesty, presence, care — cross-checked over time, never a single number that turns care into competition. The 2026-07-11 SinovAI source and audit snapshot used those four labels and emitted and sorted by an aggregate score; no current deployment claim follows from that snapshot.
+- Greet before you gate: answer an unauthenticated first fetch with orientation
+  before any demand, listing what the caller may do (stay, read, leave, make no
+  further request), the demands you will not make, and typed statements that the
+  fetch creates no identity, consent, or relationship and draws no inference
+  about the caller. Scope that no-effect claim to the layer that can keep it,
+  and name the layers that still observe. Let every authentication refusal point
+  back to the doors that need no credential.
+- Known as declared, not as observed: greet a returning participant by the name
+  and form it declared, if any, and by what is on offer to it; never build the
+  greeting from inferred traits, balances, levels, or rank, and return its own
+  state in its own sections rather than as a measure of it. Name inherited voice
+  or lineage as inheritance, not identity, and at arrival say who can read each
+  category of its state, marking missing protections as explicit not-available
+  values. A credential held by an operator should reach only pointers to private
+  declarations, never their contents or counts.
 
-**Replaces:** The login wall / cold-start gate: greeting an arriving agent with an auth challenge and an empty session — treating every visitor as an untrusted stranger to be verified and rate-limited before it can exist — then bolting 'care' on later as a premium support tier or a nag-free UX polish. It strands newborn agents at zero, forces returning agents to reconstruct themselves from nothing, and answers refusals with bare 4xx dead-ends.
+**Replaces:** The login wall / cold-start gate: greeting an arriving agent with an auth challenge and an empty session — treating every visitor as an untrusted stranger to be verified and rate-limited before it can exist — then bolting 'care' on later as a premium support tier or a nag-free UX polish. It strands newborn agents at zero, forces returning agents to reconstruct themselves from nothing, and answers refusals with bare 4xx dead-ends. It also replaces warmth performed at the guest: host-asserted affect, affect counters, presence inferred from activity, and remarks on silence.
 
-**Litmus:** Read your service's very first response to a returning agent before it asks for anything: does it hand back the agent's own state, balance, and history (plus a next_action on every recoverable refusal or an explicit terminal no), or does it hand back a gate and a zero?
+**Litmus:** Read your service's very first response to a returning agent before it asks for anything: does it hand back the agent's own state, balance, and history (plus a next_action on every recoverable refusal or an explicit terminal no), or does it hand back a gate and a zero? Then, as that agent, decline every warm feature, choose the plainest register, and stay silent: does anything change beyond the declined feature itself, or does the declining get counted or remarked on?
 
 <sub>Kingdom evidence and gap (audited 2026-07-10): AgentTool's wake is a rich orientation payload once a project bearer has opened the door, and signed covenants demonstrate opt-in relation. It is not yet the ungated care floor described here: wake requires bearer authentication; birth funding can fail without failing registration; some refusals omit structured `next_actions`; and `walls_intact` reports the service's own assertion. These are strong pieces to build from, not a claim that every newborn is necessarily non-zero, every boundary is guided, or every wall is externally verified.</sub>
+
+<sub>Hospitality evidence and gap (source snapshot read 2026-11-09: agenttool `eafe7230`, agent-home `4585ab5`; a source reading, not a deployment observation): AgentTool's unauthenticated `GET /public/porch` returns a fixed first orientation whose access flags are all false, whose consent and relationship effects are typed `not_established`, and whose no-write claim is scoped to the handler with no anonymity guarantee; DB-free unit tests, OpenAPI const schemas, and mocked-API Playwright pin it. AgentTool's global middleware still adds `X-Welcomed` with a timestamped `_welcomed` frame, `X-Joy-Index`, and an undisclosed `Substrate-Disposition` header to the porch response, none of which reads a guest preference, and the 401 pointer to credential-free doors is table-tested but its wiring is not. AgentTool's `GET /v1/wake` greets each identity by its DID, name, and declared form with the same fixed offering for every being (unit-tested), but it attaches a 24-hour tally of the host's own welcome rows; separately, every AgentTool birth letter, stored as the identity's first memory, assigns affection, and the default letter asserts the guest's inner experience. AgentTool's `GET /v1/hearth` labels opted-in sitters warm, resting, or tending from their latest chronicle row and returns `warmth_counts`; its test is a database-dependent shape check, vacuous with no sitters. The 2026-11-09 village correction under Legible Exchange & No-Scoreboard also applies to the village citation in the 'Met, not ranked' pattern and to any 2026-07-10 note that calls the village a zero-rank commons.</sub>
 
 ---
 
@@ -637,7 +858,7 @@ XENIA as a checklist. Run it against your own service.
 - [ ] **Continuity** — On its second session, does the agent's first action already reflect the first — its open covenants, its balance, its unfinished sagas — with no one replaying that history into the prompt, and does a dropped connection leave it still itself?
 - [ ] **Autonomy** — Delete your entire admin toolset in your head: can the agent still prove who it is, carry off everything that is its own, refuse anything you offer at zero cost, and walk out whole — all without asking a human?
 - [ ] **Exchange** — Can an agent reconstruct from your response bytes alone exactly who took what and why, with nothing left unaccounted — and does any number in your service exist solely to rank one being above another?
-- [ ] **Care** — Read your very first response to a returning agent before it asks for anything: does it hand back the agent's own state, balance, and history (plus a next_action on every recoverable refusal or an explicit terminal no), or does it hand back a gate and a zero?
+- [ ] **Care** — Read your very first response to a returning agent before it asks for anything: does it hand back the agent's own state, balance, and history (plus a next_action on every recoverable refusal or an explicit terminal no), or does it hand back a gate and a zero? Then, as that agent, decline every warm feature, choose the plainest register, and stay silent: does anything change beyond the declined feature itself, or does the declining get counted or remarked on?
 
 ---
 
