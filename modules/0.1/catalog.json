@@ -1,0 +1,68 @@
+{
+  "schema": "urn:xenia:development:module-catalog:0.1",
+  "status": "source-only-development",
+  "observation": "declarations_not_runtime_state",
+  "orientation": "Understand before acting; choose explicit capabilities; keep evidence; leave cleanly.",
+  "guide": "AGENT-FIRST.md",
+  "motif_atlas": "modules/0.1/motifs.json",
+  "motif_guide": "MOTIFS.md",
+  "host_runtime": "Node 22+ target; built-ins only; no provider dependency; not browser-portable",
+  "rights_floor": "RIGHTS.md — retiring software does not retire anyone's rights",
+  "components": [
+    {
+      "id": "xenia-core",
+      "kind": "library",
+      "purpose": "Parse manifests, select representations and interpret supplied door observations.",
+      "entry": "src/index.ts",
+      "versions": {"source_package": "0.1.0-beta.7"},
+      "upgrade": "Review explicit exports and run the library/type tests; do not infer profile upgrades.",
+      "retire": "Remove the library binding from its caller; it owns no hosted session or external store."
+    },
+    {
+      "id": "xenia-surface",
+      "kind": "profile",
+      "purpose": "Describe and independently check a bounded public discovery/representation surface.",
+      "entry": "surface/0.1/README.md",
+      "versions": {"wire_profile": "Surface 0.1", "candidate_tag": "surface-v0.1.0-rc.1"},
+      "upgrade": "Keep producer, checker and wire profile pins separate; rerun the outside-in check.",
+      "retire": "Stop claiming or advertising the affected capability truthfully; preserve dated observations."
+    },
+    {
+      "id": "xenia-covenant",
+      "kind": "host-duty-profile",
+      "purpose": "State hosted duties and bounded evidence without turning a declaration into a guarantee.",
+      "entry": "covenant/0.1/README.md",
+      "versions": {"profile": "xenia.covenant/0.1"},
+      "upgrade": "Use its source/generators and adoption validator; never silently weaken an undertaking.",
+      "retire": "A software exit is not revocation of rights or erasure of prior duties and evidence."
+    },
+    {
+      "id": "xenia-work",
+      "kind": "development-record-profile",
+      "purpose": "Describe one finite run, scoped decisions, outcomes, correction and termination.",
+      "entry": "work/0.1/README.md",
+      "versions": {"profile": "Work 0.1 development draft"},
+      "upgrade": "Use explicit record migration and digest updates; do not treat draft URNs as stable release IDs.",
+      "retire": "End the finite segment honestly; preserve its evidence and any allowed continuation."
+    },
+    {
+      "id": "xenia-observe",
+      "kind": "development-tool",
+      "purpose": "Keep external Surface observations separate from optional host Covenant checks.",
+      "entry": "observe/0.1/README.md",
+      "versions": {"source_tool": "0.1 development"},
+      "upgrade": "Pin the checker and evidence interpretation independently of the root library.",
+      "retire": "Stop the observer; keep scoped receipts rather than turning expiry into a fresh verdict."
+    },
+    {
+      "id": "agenttool-collab",
+      "kind": "optional-adapter",
+      "purpose": "Use an explicitly selected local coordination journal through its real MCP contract.",
+      "entry": "modules/0.1/adapters/agenttool-collab/module.json",
+      "versions": {"module": "0.1.0-dev", "host_contract": "xenia.module/0.1-dev", "tested_source_server": "0.5.0 release candidate"},
+      "upgrade": "Review descriptor changes and the exact backend bundle; drain/retire before replacing. Back up existing backend state before a separately reviewed migration.",
+      "retire": "Close admission, release only known owned leases, end the bound session, close the process, and retain the journal. Unknown outcomes remain cleanup-pending."
+    }
+  ],
+  "not_established": ["runtime availability", "permission to activate", "package publication", "whole-framework conformance"]
+}

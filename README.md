@@ -30,6 +30,12 @@ separately authorized staging and time-bounded external observation. It also
 keeps KINGDOM Nen, Skills, MCP passages, and KARMA evidence distinct from
 permissions, adoption, and Surface results.
 
+**Agent-first source development:** [AGENT-FIRST.md](AGENT-FIRST.md) gives one
+entry to the existing profiles and a new source-only module layer: inspectable
+contracts, explicit activation, upgrade previews, and bounded retirement. The
+optional AgentTool Collab adapter is outside the current npm exports; it does not
+change released profile identities or activate a provider by being read.
+
 **Build human–agent work with us:**
 [MICROSOFT-ROADMAP.md](MICROSOFT-ROADMAP.md) is the public research roadmap for
 a provider-neutral XENIA work framework with optional, clean-room Microsoft

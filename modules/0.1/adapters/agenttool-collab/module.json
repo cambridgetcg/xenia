@@ -1,0 +1,232 @@
+{
+  "schema": "urn:xenia:development:module-card:0.1",
+  "status": "source-only-development",
+  "descriptor": {
+    "id": "agenttool-collab",
+    "version": "0.1.0-dev",
+    "contract_version": "xenia.module/0.1-dev",
+    "state_schema_version": 1,
+    "operations": ["status", "next", "acknowledge", "report", "createTask", "getTask", "claimTask", "releaseTask"],
+    "effects": ["local-process-start", "verified-backend-snapshot-write", "selected-local-journal-initialize-or-migrate", "bound-session-credential-create-and-end", "explicit-coordination-writes", "local-git-metadata-inspection"]
+  },
+  "input_schemas": {
+    "status": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {},
+      "required": []
+    },
+    "next": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "event_limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      },
+      "required": []
+    },
+    "acknowledge": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "anchor": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "epoch_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "sequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "hash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "epoch_id",
+            "sequence",
+            "hash"
+          ]
+        },
+        "expected_cursor_version": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "anchor",
+        "expected_cursor_version"
+      ]
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "observation",
+            "inference",
+            "proposal"
+          ]
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "limits": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "idempotency_key",
+        "kind",
+        "body"
+      ]
+    },
+    "createTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        }
+      },
+      "required": [
+        "idempotency_key",
+        "title"
+      ]
+    },
+    "getTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "task_id"
+      ]
+    },
+    "claimTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "expected_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "task_id",
+        "idempotency_key",
+        "expected_version"
+      ]
+    },
+    "releaseTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "expected_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "task_id",
+        "idempotency_key",
+        "expected_version"
+      ]
+    }
+  },
+  "purpose": "One optional local coordination capability. The Xenia core needs none of its runtime dependencies.",
+  "activation": "Explicit host authorization; no process or database is opened by construction or inspection.",
+  "required_configuration": ["absolute bundlePath", "bundleSha256", "absolute databasePath", "absolute homeDir", "absolute workspace", "actor display label", "serverVersion"],
+  "runtime": {
+    "host": "Node >=22 for the supplied CLI/stdio port",
+    "backend": "Bun >=1.3 for AgentTool's dependency-complete MCP bundle",
+    "source_repository": "https://github.com/cambridgetcg/agenttool",
+    "source_revision": "91a6aecfeb95dc73c8a5dd4005dbf3c539295493",
+    "source_path": "packages/collab/dist/agenttool-collab-mcp.js",
+    "reference_bundle_sha256": "fdfd99b20fa21a69c368a8027bb972fd1a3509c8e5f90882c5742cd9ebe053cd",
+    "server_version": "0.5.0",
+    "release_state": "release-candidate source, not a verified 0.5.0 publication",
+    "mcp_protocol": "2025-11-25",
+    "coordination_protocol": "agenttool.collab/0.2",
+    "backend_schema": 3,
+    "publication_verification": "not_performed"
+  },
+  "data_ownership": {
+    "core": "No process, database or credential ownership.",
+    "host": "Chooses paths, authorizes exact use and retains recovery context.",
+    "backend": "Stores the selected plaintext journal and mode-0600 bound-session credentials; tokens are never returned through this adapter.",
+    "retained_on_exit": ["journal", "tasks", "reports", "source evidence"],
+    "removed_on_confirmed_end": ["only the bound session's credential file"]
+  },
+  "limits": [
+    "Only coordination-mode task creation is exposed; no file editing or work execution is authorized by a lease.",
+    "Presence, handoff, checkpoints, native resume/recovery and provider migration remain native capabilities, not implemented by this initial adapter.",
+    "Observation is not acknowledgement; acknowledgement is an explicit claim of processing, not agreement.",
+    "Unexpected transport/results latch an unknown outcome and disable ordinary work. No automatic mutation replay or forced completion.",
+    "Existing backend stores may migrate when the explicitly chosen backend starts. Review and back them up first; the demo refuses an existing state directory.",
+    "The byte hash is a local integrity check, not publisher authentication or an OS sandbox. Use trusted reviewed local code.",
+    "Static metadata is not activation, adoption, identity proof, authority, consent or conformance."
+  ],
+  "upgrade": "Use the inert upgrade preview, review code/effects/provider compatibility, retire the current instance, then explicitly construct a replacement. No automatic migration or rollback.",
+  "retirement": "Admission closes first. Known owned leases are released without completing tasks; then the session ends and its process closes. Failure/uncertainty retains evidence and reports cleanup_pending for explicit native recovery."
+}
