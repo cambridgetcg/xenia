@@ -1,0 +1,270 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:xenia:arrival:result:0.1:development-draft",
+  "$comment": "SPDX-License-Identifier: CC-BY-SA-4.0",
+  "title": "XENIA Arrival 0.1 checker result development draft",
+  "description": "What a checker of one Arrival 0.1 fixture reports: twenty checks in a fixed order, each with one outcome, and a result word that follows from them. A result says, per check, whether the exchanges recorded in the fixture agree with that check. It does not establish anything in its own not_established list, and it copies no value from the fixture.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "schema_version",
+    "profile",
+    "artifact",
+    "fixture_origin",
+    "verifier",
+    "observed_at",
+    "result",
+    "scope",
+    "output_handling",
+    "limits",
+    "counts",
+    "exercised",
+    "checks",
+    "issues",
+    "not_established"
+  ],
+  "properties": {
+    "$schema": { "const": "urn:xenia:arrival:result:0.1:development-draft" },
+    "schema_version": { "const": "xenia.arrival.result/0.1-development" },
+    "profile": { "const": "xenia-arrival/0.1-development" },
+    "artifact": {
+      "type": "object",
+      "required": ["complete", "observed_bytes"],
+      "properties": {
+        "complete": { "type": "boolean" },
+        "observed_bytes": { "type": "integer", "minimum": 0 },
+        "sha256": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "complete": { "const": true } },
+            "required": ["complete"]
+          },
+          "then": {
+            "properties": { "sha256": true },
+            "required": ["sha256"]
+          },
+          "else": { "not": { "required": ["sha256"] } }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "fixture_origin": {
+      "description": "The fixture's own origin word, or null when the fixture did not pass I.SHAPE and was not read.",
+      "enum": ["hand_written", "host_bytes", "projected_by_recorder", null]
+    },
+    "verifier": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "xenia-arrival-check" },
+        "version": { "const": "0.1.0-development" }
+      },
+      "additionalProperties": false
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 40,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T(?:(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]+)?|23:59:60(?:\\.[0-9]+)?)Z$"
+    },
+    "result": {
+      "description": "check_failed when any check failed; otherwise indeterminate when any check is unknown or not_run; otherwise checks_passed.",
+      "enum": ["checks_passed", "check_failed", "indeterminate"]
+    },
+    "scope": {
+      "const": "Offline comparison of the exchanges recorded in one supplied XENIA Arrival 0.1 fixture with the Arrival 0.1 checks; no host, network, credential, or other system was contacted."
+    },
+    "output_handling": {
+      "const": "Treat this result at least as restrictively as the fixture; the artifact digest, issue paths, and counts may remain sensitive."
+    },
+    "limits": {
+      "type": "object",
+      "required": [
+        "max_input_bytes",
+        "max_orientation_bytes",
+        "max_view_bytes",
+        "max_json_depth",
+        "max_issues"
+      ],
+      "properties": {
+        "max_input_bytes": { "const": 262144 },
+        "max_orientation_bytes": { "const": 8192 },
+        "max_view_bytes": { "const": 65536 },
+        "max_json_depth": { "const": 64 },
+        "max_issues": { "const": 256 }
+      },
+      "additionalProperties": false
+    },
+    "counts": {
+      "type": "object",
+      "required": ["pass", "fail", "unknown", "not_run"],
+      "properties": {
+        "pass": { "$ref": "#/$defs/tally" },
+        "fail": { "$ref": "#/$defs/tally" },
+        "unknown": { "$ref": "#/$defs/tally" },
+        "not_run": { "$ref": "#/$defs/tally" }
+      },
+      "additionalProperties": false
+    },
+    "exercised": {
+      "description": "How much the comparison had to work with, so a pass that compared nothing can be told from one that compared something.",
+      "type": "object",
+      "required": ["items_compared_equal", "differences_found", "differences_named", "states_seen"],
+      "properties": {
+        "items_compared_equal": {
+          "description": "Unacknowledged first-read items found deep-equal on the second read.",
+          "$ref": "#/$defs/tally"
+        },
+        "differences_found": {
+          "description": "Decidable differences between the two views found by the checker's own comparison.",
+          "$ref": "#/$defs/tally"
+        },
+        "differences_named": {
+          "description": "How many of those differences the second view's changes named.",
+          "$ref": "#/$defs/tally"
+        },
+        "states_seen": {
+          "description": "How many section and changes envelopes in valid views reported each state.",
+          "type": "object",
+          "required": ["ok", "quiet", "partial", "unavailable", "withheld"],
+          "properties": {
+            "ok": { "$ref": "#/$defs/tally" },
+            "quiet": { "$ref": "#/$defs/tally" },
+            "partial": { "$ref": "#/$defs/tally" },
+            "unavailable": { "$ref": "#/$defs/tally" },
+            "withheld": { "$ref": "#/$defs/tally" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 20,
+      "maxItems": 20,
+      "prefixItems": [
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "I.SIZE" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "I.UTF8" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "I.JSON" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "I.SHAPE" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "I.NO_CREDENTIAL" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "I.RECORD" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "R1.ORIENTATION" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "R1.REFUSAL" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "R1.VIEW" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "P.PAIR" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "R2.DECLARED_EFFECTS" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "R2.SHOWN_AGAIN" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "R3.STATES" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "R3.SECTIONS_KEPT" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "R4.CURSOR" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "R4.CHANGES" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "R4.BAD_CURSOR" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "R5.FRESHNESS" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "R6.NO_OBLIGATION" } } },
+        { "$ref": "#/$defs/check", "type": "object", "properties": { "id": { "const": "R7.NON_CLAIMS" } } }
+      ],
+      "items": false
+    },
+    "issues": {
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/issue" }
+    },
+    "not_established": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "prefixItems": [
+        { "const": "that any host sent these exchanges, or behaves this way now" },
+        { "const": "that a read wrote nothing on the host; only declarations and the two recorded views were compared" },
+        { "const": "that nothing was acknowledged or written between the two reads; that statement is the recorder's own, and acts by other holders of the same credential are not ruled out" },
+        { "const": "that a difference between the reads was caused by reading" },
+        { "const": "that a section reported ok or quiet was read successfully, or that the view lists every section the host has" },
+        { "const": "who the reader is, that one reader or one credential made both reads, or that time passed between them" },
+        { "const": "whether the cursor is self-contained or a key to state the host keeps" },
+        { "const": "the truth of any time, count, summary or reference, or whether free text presses the reader" },
+        { "const": "how an acknowledgement behaves, or that any listed obligation is valid or binds anyone" },
+        { "const": "conformance, authority, consent, safety, or anything about a caller's inner state" }
+      ],
+      "items": false
+    }
+  },
+  "if": {
+    "properties": {
+      "checks": {
+        "type": "array",
+        "contains": {
+          "type": "object",
+          "properties": { "outcome": { "const": "fail" } },
+          "required": ["outcome"]
+        }
+      }
+    },
+    "required": ["checks"]
+  },
+  "then": {
+    "properties": { "result": { "const": "check_failed" } }
+  },
+  "else": {
+    "if": {
+      "properties": {
+        "checks": {
+          "type": "array",
+          "contains": {
+            "type": "object",
+            "properties": { "outcome": { "enum": ["unknown", "not_run"] } },
+            "required": ["outcome"]
+          }
+        }
+      },
+      "required": ["checks"]
+    },
+    "then": {
+      "properties": { "result": { "const": "indeterminate" } }
+    },
+    "else": {
+      "properties": { "result": { "const": "checks_passed" } }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "tally": { "type": "integer", "minimum": 0 },
+    "check": {
+      "type": "object",
+      "required": ["id", "outcome", "expected", "observed"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9._-]{0,63}$"
+        },
+        "outcome": {
+          "description": "unknown: recorded but undecidable. not_run: the exchange is absent or a check this one depends on did not pass.",
+          "enum": ["pass", "fail", "unknown", "not_run"]
+        },
+        "expected": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "observed": { "type": "string", "minLength": 1, "maxLength": 2000 }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "path", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "path": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "message": { "type": "string", "minLength": 1, "maxLength": 2000 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

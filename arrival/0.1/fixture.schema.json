@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:xenia:arrival:fixture:0.1:development-draft",
+  "$comment": "SPDX-License-Identifier: CC-BY-SA-4.0",
+  "title": "XENIA Arrival 0.1 two-visit fixture development draft",
+  "description": "A record of up to five GET exchanges with one host: an orientation, a view address asked without a credential, a view, a later view, and a view asked with a cursor the host did not hand back. Each exchange is optional. A response body is any JSON object or null, so a malformed host document is a failed check and not a broken fixture. There is no slot for headers or for the credential. A fixture is the recorder's account; matching this schema does not establish that any host sent these exchanges, that one reader made both visits, or that time passed between them.",
+  "type": "object",
+  "required": ["schema_version", "origin", "between_visits", "visits"],
+  "properties": {
+    "schema_version": { "const": "xenia.arrival.fixture/0.1-development" },
+    "origin": {
+      "description": "How the fixture came to be: written by hand, the bytes a host sent, or a host's answers mapped into these shapes by the recorder.",
+      "enum": ["hand_written", "host_bytes", "projected_by_recorder"]
+    },
+    "between_visits": {
+      "type": "object",
+      "required": ["acknowledged_by_recorder"],
+      "properties": {
+        "acknowledged_by_recorder": {
+          "description": "The recorder's own statement of whether it acknowledged anything between the two views. It says nothing about other holders of the same credential.",
+          "enum": ["no", "yes", "not_stated"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "visits": {
+      "type": "object",
+      "required": ["first", "second"],
+      "properties": {
+        "first": {
+          "type": "object",
+          "properties": {
+            "orientation": { "$ref": "#/$defs/exchange" },
+            "view_without_credential": { "$ref": "#/$defs/exchange" },
+            "view": { "$ref": "#/$defs/exchange" }
+          },
+          "additionalProperties": false
+        },
+        "second": {
+          "type": "object",
+          "properties": {
+            "view": { "$ref": "#/$defs/exchange" },
+            "bad_cursor": { "$ref": "#/$defs/exchange" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 40,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T(?:(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]+)?|23:59:60(?:\\.[0-9]+)?)Z$"
+    },
+    "href": {
+      "type": "string",
+      "format": "uri",
+      "maxLength": 2048,
+      "pattern": "^(https://(?![^/?#]*@)|http://(?:localhost|127(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|\\[::1\\])(?::[0-9]+)?(?:/|$))"
+    },
+    "cursor": {
+      "description": "Opaque to the caller. Whether it is self-contained or a key to state the host keeps is not stated.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "exchange": {
+      "type": "object",
+      "required": ["requested_at", "request", "response"],
+      "properties": {
+        "requested_at": {
+          "description": "When the recorder sent the request, by the recorder's clock.",
+          "$ref": "#/$defs/timestamp"
+        },
+        "request": {
+          "type": "object",
+          "required": ["method", "href", "credential", "cursor"],
+          "properties": {
+            "method": { "const": "GET" },
+            "href": {
+              "description": "The address asked, without the cursor.",
+              "$ref": "#/$defs/href"
+            },
+            "credential": {
+              "description": "Whether a credential was presented. The credential itself is never recorded.",
+              "enum": ["none", "presented"]
+            },
+            "cursor": {
+              "description": "The cursor presented with the request, or null.",
+              "anyOf": [{ "$ref": "#/$defs/cursor" }, { "type": "null" }]
+            }
+          },
+          "additionalProperties": false
+        },
+        "response": {
+          "type": "object",
+          "required": ["status", "body"],
+          "properties": {
+            "status": { "type": "integer", "minimum": 100, "maximum": 599 },
+            "body": {
+              "description": "The JSON object the host answered with, or null when it answered with none.",
+              "anyOf": [{ "type": "object" }, { "type": "null" }]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
