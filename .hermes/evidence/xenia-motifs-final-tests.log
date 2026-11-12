@@ -1,0 +1,271 @@
+
+> @agenttool/xenia@0.1.0-beta.7 test
+> npm run build && npm run test:types && npm run test:examples && npm run test:library && npm run test:surface && npm run test:observe
+
+
+> @agenttool/xenia@0.1.0-beta.7 build
+> npm run clean && tsc -p tsconfig.json
+
+
+> @agenttool/xenia@0.1.0-beta.7 clean
+> node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})"
+
+
+> @agenttool/xenia@0.1.0-beta.7 test:types
+> tsc -p tsconfig.type-tests.json
+
+
+> @agenttool/xenia@0.1.0-beta.7 test:examples
+> tsc -p examples/cloudflare-worker/tsconfig.json
+
+
+> @agenttool/xenia@0.1.0-beta.7 test:library
+> node --test tests/*.test.mjs
+
+✔ a provider FIFO is refused without blocking the event loop (61.603042ms)
+✔ context and smoke refuse notes inside provider code, including a symlinked parent (217.57675ms)
+✔ smoke readback failure does not claim its earlier writes were unattempted (99.158542ms)
+✔ smoke cleanup failure does not claim its earlier writes were unattempted (103.095375ms)
+✔ context cleanup failure preserves its acknowledged operation boundary (89.235042ms)
+✔ a chosen handoff FIFO is refused promptly without changing notes (153.119083ms)
+✔ the CLI exposes an inert catalog, usable examples and the real local lifecycle (335.64075ms)
+✔ an unreviewed provider package is refused before any provider code is imported (11.743792ms)
+✔ real selected context survives consumer restart, rejects stale writes, and outlives provider removal (830.506625ms)
+✔ a local catalog and useful Xenia operations work with no AgentTool provider (175.422166ms)
+✔ motifs explain their sources, connections and limits without activation or a provider (42.887459ms)
+✔ registration is inert, legible, and requires explicit activation before invocation (3.843833ms)
+✔ compatible upgrades require the current revision and preserve earlier result attribution (1.189334ms)
+✔ retirement closes admission immediately, drains calls, and leaves other modules usable (0.34125ms)
+✔ local IO requires an explicit positive host gate and a pending gate cannot outlive retirement (0.282542ms)
+✔ upgrade or pause/resume invalidates a pending gate instead of silently using its old approval (0.204208ms)
+✔ module contracts are copied, validated before mutation, and cannot upgrade their effect surface silently (0.242958ms)
+✔ the deferred host gate sees deeply immutable input matching the dispatched snapshot (1.649042ms)
+✔ operation errors are opaque, mark outcome unknown, and still drain the module (0.397708ms)
+✔ arguments are bounded JSON data, not shared memory, accessors, or executable objects (2.257625ms)
+✔ a chosen inspector is inert until activation and affirmative host permission (6.094042ms)
+✔ construction rejects unsupported inputs without inspecting files or invoking getters (0.805959ms)
+✔ an invocation cannot change the host-selected root or inspector function (2.69975ms)
+✔ report compatibility is fenced and successful reports are retained as snapshots (6.497916ms)
+✔ provider replacement uses a revision boundary and retirement drains only the existing call (1.927208ms)
+✔ the reference host explains itself without a provider and rejects incomplete or relative paths (220.195666ms)
+✔ the reference summary omits unconsumed producer metadata and hides provider-loading errors (92.713667ms)
+✔ file targets and symlink roots are refused before the provider can broaden their scope (6.179209ms)
+﹣ real selected provider inspects synthetic files without executing them and survives retirement (0.134417ms) # set XENIA_AGENTTOOL_SKILLS_MODULE to an explicitly reviewed provider module
+✔ AgentTool integration binds one explicit root and does not run during discovery (5.283083ms)
+✔ the adapter rejects an incomplete provider instead of discovering credentials or substituting a backend (0.2115ms)
+✔ the reader is an optional inert module until explicitly activated (2.54975ms)
+✔ an absent provider is explicit and does not trigger package discovery (0.170292ms)
+✔ only well-formed JSON text input enters the provider (0.113792ms)
+✔ the UTF-8 byte cap is checked before provider parsing (0.169042ms)
+✔ recognition projects bounded facts and never upgrades declared claims into proof (1.50775ms)
+✔ a malformed provider return is unknown, not a false document verdict or private diagnostic (0.265375ms)
+✔ the selected parser is fixed until an explicit module upgrade (0.107708ms)
+✔ retiring the reader makes no later provider call and preserves the admitted receipt (0.300875ms)
+✔ the optional local provider is the real source-derived AgentTool reader (9.733125ms)
+✔ a local machine-readable contract describes inputs and actual result variants (69.452708ms)
+✔ an explicit wrapper upgrade preserves prior real-reader attribution and rejects stale replacement (0.763125ms)
+✔ creates a complete all-unknown Covenant draft without implied authority or evidence (18.083667ms)
+✔ prints the same safe draft from the stdout-only CLI (47.241542ms)
+✔ rejects ambiguous or unsafe starter inputs (3.158083ms)
+✔ counts generator input bounds in Unicode code points like JSON Schema (1.294667ms)
+✔ the normative covenant is structurally valid and keeps stable unique identifiers (2.802083ms)
+✔ rights are intrinsic while authority, ontology, consent, and evidence remain separate (0.306334ms)
+✔ the framework registers Covenant separately from Surface and the informative baseline (0.085ms)
+✔ a complete ordered ledger can remain honest about partial assessment (20.215458ms)
+✔ the schema forbids badge-shaped extras and conditional recognition (3.918583ms)
+✔ right, duty, and protective-limit order is fixed by the Covenant (12.82375ms)
+✔ not_applicable cannot erase an intrinsic right or duty (0.6685ms)
+✔ aggregate states are derived from outcomes and bounded assessment scope (2.088833ms)
+✔ pass, failure, assertion, test, and attestation evidence remain distinct (13.624667ms)
+✔ evidence cannot postdate the review that relies on it (1.424375ms)
+✔ nested evidence artifacts cannot postdate their evidence or review (0.644792ms)
+✔ a leap-second review cannot bypass evidence chronology (0.64875ms)
+✔ an unannounced leap second cannot bypass chronology (0.29075ms)
+✔ a pass cannot rely on evidence expired by declaration review (0.532625ms)
+✔ restriction event identifiers are unique across the protective-limit ledger (1.145791ms)
+✔ restriction event timestamps are checked independently of JSON shape (0.815834ms)
+✔ active-shaped records require exact release identities and verified authority declarations (4.884167ms)
+✔ remote Covenant verification reports passes only for exact no-redirect bytes (21.715417ms)
+✔ remote Covenant verification rejects non-200 responses (2.078292ms)
+✔ remote Covenant verification rejects redirect and effective-URL drift (0.812667ms)
+✔ remote Covenant verification rejects changed bytes (0.201917ms)
+✔ the human Covenant and adoption schema are generated from normative data (52.375625ms)
+✔ parses comments, CRLF, Unicode, colons, and ordered repeated keys (0.914583ms)
+✔ keeps profile rules separate and never includes field values in issues (0.212417ms)
+✔ reports malformed and empty lines without their contents (0.080833ms)
+✔ enforces the byte limit before parsing fields (0.065833ms)
+✔ formats a stable repeated manifest and round-trips it (0.146583ms)
+✔ formatter rejects newline injection and invalid keys (0.188125ms)
+✔ records the current Sinovai manifest migration boundary (8.003917ms)
+✔ defaults to HTML and honors an explicit query representation (1.2855ms)
+✔ handles q-values, wildcards, vendor JSON, and explicit q=0 (0.530416ms)
+✔ merges Vary values case-insensitively (0.928958ms)
+✔ publishes through the authorized scope without narrowing software licensing (6.732917ms)
+✔ publishes the open-act and binding-act consent boundary in spec data (6.570417ms)
+✔ packages chronicle continuity as attributed evidence, not current authority (4.439334ms)
+✔ keeps current discovery, signature, exit, and historical evidence boundaries explicit (7.186375ms)
+✔ publishes rights as a floor distinct from permissions and credentials (4.287084ms)
+✔ marks implementation sources with their software license (2.35225ms)
+✔ the packaged Worker example names its producer and external checker (1.4395ms)
+✔ stages beta.7 only from a caught-up tokenless beta channel (178.69575ms)
+✔ verifies an approved beta without npm mutation authority (0.769917ms)
+✔ verifies the immutable Covenant tag without moving it to the package release (0.542834ms)
+✔ exports the exact informative rights index without becoming a second canon (0.763125ms)
+✔ looks up only installed baseline identifiers (0.082292ms)
+✔ verifies exact baseline data while reporting drift without overclaiming (0.342ms)
+✔ rejects malformed and unreadable candidates without throwing (0.09ms)
+✔ practise-xenia-rights skill has a bounded instruction-only contract (1.046666ms)
+✔ the source skill stays outside the immutable beta.7 npm artifact (0.165084ms)
+✔ defines a minimal manifest with immutable RC1 pins and honest default boundaries (7.890167ms)
+✔ normalizes camel-case claim evidence without weakening the wire contract (1.921625ms)
+✔ rejects cross-origin, queried, duplicate, and internally inconsistent resources (0.211458ms)
+✔ rejects URL spellings that the platform parser normalizes beyond the schema (0.7885ms)
+✔ rejects malformed claim states, duplicate claims, and invalid evidence (0.244542ms)
+✔ negotiates the exact HTML and JSON matrix, including q=0 and wildcards (0.452333ms)
+✔ negotiates JSON-only resources without letting a wildcard revive q=0 JSON (0.145167ms)
+✔ response helpers serialize the right wire bodies and never mutate caller headers (11.239375ms)
+✔ creates exact generic, 406, and discoverable 404 Surface problems (0.954542ms)
+✔ the authoring helpers pass the independent RC1 checker end to end (6.753459ms)
+✔ the independent checker still detects a response that bypasses Vary: Accept (4.347334ms)
+✔ lights three visible-door lamps but never promotes to Threshold (1.5465ms)
+✔ rejects an SPA fallback masquerading as agent.txt (0.111292ms)
+✔ labels a well-known-only document as present, not mirrored (0.231ms)
+✔ requires structured JSON, an honest media type, and Vary: Accept (0.206417ms)
+✔ lets a known legibility failure dominate an unavailable counterpart (0.090375ms)
+✔ does not mistake redirects or partial MIME matches for a manifest (0.070625ms)
+✔ requires a usable door or capability reference in a manifest (0.124667ms)
+✔ does not infer verification from incidental or negated prose (0.230916ms)
+✔ aggregates documentation observed across both manifest locations (0.096ms)
+✔ requires actionable wrong-door links in both representations (2.335416ms)
+✔ rejects empty or non-actionable JSON recovery placeholders (0.152583ms)
+✔ bounds deeply nested recovery JSON without throwing (0.469916ms)
+✔ keeps unavailable evidence unknown instead of calling it failure (0.070958ms)
+✔ treats malformed runtime status samples as unknown (0.056542ms)
+✔ sanitizes the report target and never returns raw bodies or errors (0.0865ms)
+✔ Work development schemas compile strictly and accept their examples (18.055417ms)
+✔ the conformance fixture manifest names every hardened boundary (0.524959ms)
+✔ the completed and declined runs pass every bounded checker layer (10.572042ms)
+✔ the published example carries its currently computed digest vectors (0.272875ms)
+✔ canonical Work JSON is deterministic and rejects ambiguous host values (0.295625ms)
+✔ validation does not mutate an already parsed run (1.747375ms)
+✔ the byte checker fails safely before semantic validation (0.614375ms)
+✔ checker results preserve opaque input privacy across parse and semantic failures (4.154208ms)
+✔ finite limits, ordering and exact digest binding reject mutations (5.9235ms)
+✔ authority evidence is immutable in the binding and cannot arrive after the claim (2.444542ms)
+✔ merely asserted authority cannot authorize execution (1.382875ms)
+✔ execution needs at least one positive authority basis (0.742458ms)
+✔ an attested title or role claim is not implicitly promoted into authority (1.5425ms)
+✔ executed proposals select evidence from each and only passing authority basis (3.345ms)
+✔ title evidence explicitly selected as authority still needs a matching action scope (1.205208ms)
+✔ selected authority scope is exact while unselected supporting evidence may stay broad (13.443083ms)
+✔ non-revocable authority cannot support an execution start (0.931459ms)
+✔ authority diagnostics follow claim IDs when execution lists them in another order (1.248917ms)
+✔ affected-party consent uses consent-specific evidence (0.879166ms)
+✔ affected-party consent evidence binds exact subjects and action scope (2.602709ms)
+✔ credential-shaped and restricted literals fail without echoing their values (3.435792ms)
+✔ credential references cannot carry secret material or echo it (1.433542ms)
+✔ a human-agent pair is descriptive, not an execution or approval principal (1.845625ms)
+✔ a work-choice event must be advertised by the offer (0.882792ms)
+✔ post-acceptance cancellation is not held hostage by the offer allowlist (0.802125ms)
+✔ the whole-record data zone protects embedded non-public material (0.861541ms)
+✔ the whole-record zone covers every non-public declared zone, including unused zones (0.779833ms)
+✔ action recipients stay within every bound data-zone audience (0.885125ms)
+✔ the terminal event leaves the two declared repair slots unused (1.778291ms)
+✔ tested causal evidence is appropriate and post-receipt (2.108458ms)
+✔ provider response, observed effect and terminal state remain separate (1.58425ms)
+✔ a proposal cannot be rejected after its execution has started (1.05375ms)
+✔ corrections append but must target an earlier event (1.548416ms)
+✔ the CLI has pure JSON output and stable exit classes (506.187334ms)
+✔ the checker has no network, credential or environment dependency (2.9635ms)
+ℹ tests 155
+ℹ suites 0
+ℹ pass 154
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 1285.364875
+
+> @agenttool/xenia@0.1.0-beta.7 test:surface
+> node --test surface/0.1/*.test.mjs
+
+✔ published examples and fixture problems match the JSON Schemas (6.348375ms)
+✔ a JSON and HTML resource is conformant (27.275959ms)
+✔ a JSON-only resource is conformant and rejects a q=0 JSON range (6.858167ms)
+✔ a terminal route-not-found problem fails because discovery is available (3.809167ms)
+✔ naive quality selection is a definite failure (3.584875ms)
+✔ Vary: X-Accept does not satisfy Vary: Accept (3.253833ms)
+✔ a JSON response without schema_version fails (3.241083ms)
+✔ a declared application/json resource cannot return an arbitrary +json type (3.104416ms)
+✔ an unsupported-only Accept value must return 406 (3.9235ms)
+✔ a 406 recovery action must point to the same resource (2.96425ms)
+▶ an SPA 200 and a bare JSON 404 both fail the problem contract
+  ✔ SPA fallback (3.3485ms)
+  ✔ bare error (3.193791ms)
+✔ an SPA 200 and a bare JSON 404 both fail the problem contract (6.736958ms)
+✔ terminal true and a next action are mutually exclusive (2.742625ms)
+✔ tested manifest claims require evidence (1.730583ms)
+✔ valid resource IDs remain distinct in report test IDs (4.350125ms)
+✔ the manifest canonical origin must match the target (0.590041ms)
+✔ the canonical manifest must return exactly application/json (0.502958ms)
+✔ agent.txt cannot substitute for the canonical JSON manifest (0.475041ms)
+▶ transport and body-limit failures are indeterminate
+  ✔ socket close (0.82425ms)
+  ✔ oversized manifest (0.798ms)
+  ✔ known bad status survives an oversized body (0.648167ms)
+  ✔ representation 406 problems use the metadata body limit (2.411458ms)
+✔ transport and body-limit failures are indeterminate (4.849958ms)
+▶ invalid UTF-8 JSON and problem bodies are definite failures
+  ✔ manifest (0.660667ms)
+  ✔ resource (3.734208ms)
+  ✔ problem (3.434ms)
+✔ invalid UTF-8 JSON and problem bodies are definite failures (7.969375ms)
+✔ total-timeout observations report the effective configured limit (133.914959ms)
+✔ response duration includes body transfer time (68.490375ms)
+✔ validators reject an attestation without binding evidence (0.50575ms)
+✔ hand validators enforce published length, time, and uniqueness bounds (0.32025ms)
+✔ hand date-time validation matches the published schema at calendar edges (1.012333ms)
+✔ evidence expiry ordering handles leap seconds and precise fractions (0.171958ms)
+✔ Unicode length limits count code points like JSON Schema (0.206292ms)
+✔ hand validators reject schema-invalid URL and optional evidence fields (0.254125ms)
+✔ URL validation rejects every schema-invalid normalization edge (0.319667ms)
+✔ manifest schema encodes static representation invariants (0.125208ms)
+✔ validators report invalid collection shapes without throwing (0.085833ms)
+✔ CLI JSON output is one parseable result document (74.7745ms)
+✔ CLI misuse exits 2 (30.341833ms)
+✔ public plaintext HTTP targets are rejected (0.410125ms)
+✔ npm package metadata preserves the Surface RC1 release boundary (2.704375ms)
+✔ explicit epoch time is preserved by the programmatic checker (1.382041ms)
+✔ all public package files are present and non-empty (1.877417ms)
+✔ package licence texts are exact copies of the canonical repository texts (1.158791ms)
+✔ programmatic import does not assume argv points to a real file (34.795833ms)
+ℹ tests 47
+ℹ suites 0
+ℹ pass 47
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 499.713958
+
+> @agenttool/xenia@0.1.0-beta.7 test:observe
+> node --test observe/0.1/*.test.mjs
+
+✔ records a complete no-adoption bundle without inventing a verdict (10.371625ms)
+✔ preserves and separately validates an exact same-origin adoption (9.590333ms)
+✔ records invalid or differently scoped adoption input with exit one (3.570041ms)
+✔ records nonconformant and indeterminate Surface outcomes as evidence (1.638417ms)
+✔ refuses an existing output directory before observing or mutating it (0.542125ms)
+✔ leaves no final bundle for invalid checker output or oversized adoption input (1.635708ms)
+✔ rejects malformed UTF-8 instead of validating replacement characters (0.101292ms)
+✔ preflights the output parent before making external observations (0.347958ms)
+✔ keeps Observe private until a separately authorized release exists (2.365ms)
+✔ publishes no badge or whole-framework result in its development contract (1.176542ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 163.876333
