@@ -164,6 +164,7 @@ const TABLE={
   CLEANUP_FAILED:(e,c)=>({detail:'The operations returned, but removing the temporary copy of the reviewed package failed. A temporary copy may remain in the system temp directory. The notes are separate and unaffected by this step.',
     ...(usesContext(c)?{next:[contextAction(c,'status','Read the current notes state.')]}:{terminal:true})}),
   CONTEXT_ROOT_OVERLAP:()=>({detail:'The notes root is inside the provider package, or the package is inside the notes. Nothing was read, written or loaded. Choose a notes directory outside the package.',next:[helpContext]}),
+  SNAPSHOT_LOCATION_OVERLAP:()=>({detail:'The system temp directory (TMPDIR) is inside the provider package or the notes root, so the checked copy of the package would be written there. Nothing was loaded, read or written. Set TMPDIR to a directory outside both and repeat.',next:[helpContext]}),
   INVALID_CONTEXT_ROOT:()=>({detail:'The notes root is not a usable directory path (it must be a regular directory, or a new name in an existing parent). Nothing was read or written.',next:[helpContext]}),
   INVALID_INPUT:(e,c)=>(c.argv??[])[0]==='invoke'?
     {detail:'The input file is not usable: it is missing, not a regular file, a symbolic link, over 1 MiB, not valid UTF-8, has a byte-order mark, is not exactly one JSON value, repeats an object key, or is nested or large beyond the input limits. Nothing was run.',next:[helpInvoke]}:

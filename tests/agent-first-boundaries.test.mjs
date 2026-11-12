@@ -26,16 +26,18 @@ function run(f,args,hook){
 
 test('a provider FIFO is refused without blocking the event loop',{skip:process.platform==='win32'},()=>{
   const root=fs.mkdtempSync(path.join(tmpdir(),'xenia-fifo-'));
+  // TMPDIR must be outside the package root, which is now refused otherwise.
+  const temp=fs.mkdtempSync(path.join(tmpdir(),'xenia-fifo-tmp-'));
   try{
     const made=spawnSync('mkfifo',[path.join(root,'package.json')],{encoding:'utf8'});
     assert.equal(made.status,0,made.stderr);
     const code=`import {loadReviewedStarter} from ${JSON.stringify(loader)};try{await loadReviewedStarter(process.argv[1]);process.exitCode=2;}catch(e){console.log(JSON.stringify({code:e.code}));}`;
-    const result=spawnSync(process.execPath,['--input-type=module','-e',code,root],{encoding:'utf8',timeout:2000,env:{PATH:process.env.PATH,HOME:root,TMPDIR:root}});
+    const result=spawnSync(process.execPath,['--input-type=module','-e',code,root],{encoding:'utf8',timeout:2000,env:{PATH:process.env.PATH,HOME:root,TMPDIR:temp}});
     assert.equal(result.error,undefined,'a nonregular provider file must reject promptly, not time out');
     assert.equal(result.status,0,result.stderr);
     assert.equal(JSON.parse(result.stdout).code,'PROVIDER_PIN_MISMATCH');
     assert.deepEqual(fs.readdirSync(root),['package.json']);
-  }finally{fs.rmSync(root,{recursive:true,force:true});}
+  }finally{fs.rmSync(root,{recursive:true,force:true});fs.rmSync(temp,{recursive:true,force:true});}
 });
 
 test('context and smoke refuse notes inside provider code, including a symlinked parent',{skip:!selected},()=>{

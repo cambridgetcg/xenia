@@ -64,7 +64,7 @@ async function starterSmoke(args){
   const {loadReviewedStarter,separateContextRoots}=await import('./provider.mjs');
   const {packageDir,dir}=separateContextRoots(path.resolve(args[1]),path.resolve(args[3]));
   const {createLocalStarterModule}=await import('./adapters/local-starter.mjs');
-  const provider=await loadReviewedStarter(packageDir);
+  const provider=await loadReviewedStarter(packageDir,{notesDir:dir});
   const state={phase:'register',returned:[],verification:'not_run'};
   const id='agenttool.local-context';
   const runtime=createModuleRuntime({authorize:request=>request.module.id===id&&['init','status','render','handoff'].includes(request.operation)});

@@ -9,11 +9,11 @@
       "id": "standing",
       "name": "A floor you do not have to earn",
       "question": "What remains true when a capability is unavailable or retired?",
-      "practice": "Keep standing rights separate from technical access. The Covenant helper creates an explicitly unverified draft, not a grant of rights or an active undertaking.",
+      "practice": "Keep standing rights separate from technical access. In the kit that is a floor you can run: describe, catalog, explain, motifs, help and arrive read in every module state and after every refusal, never ask the host gate and take no caller identity. The Covenant helper is secondary: it creates an explicitly unverified draft, not a grant of rights or an active undertaking.",
       "limit": "A helper, declaration or passing checker does not establish practice, authority, consent or whole-framework conformance.",
       "sources": ["RIGHTS.md#the-ground", "covenant/0.1/covenant.json"],
-      "implementation": ["agent-first/0.1/modules.mjs", "covenant/0.1/create-adoption.mjs"],
-      "checks": ["tests/agent-first-modules.test.mjs", "tests/covenant-starter.test.mjs"]
+      "implementation": ["agent-first/0.1/runtime.mjs", "agent-first/0.1/cli.mjs", "agent-first/0.1/modules.mjs", "covenant/0.1/create-adoption.mjs"],
+      "checks": ["tests/agent-first-floor.test.mjs", "tests/agent-first-modules.test.mjs", "tests/covenant-starter.test.mjs"]
     },
     {
       "id": "legibility",
@@ -29,18 +29,18 @@
       "id": "bounded-work",
       "name": "Work that can reach an ending",
       "question": "What was offered, attempted, returned, observed, or left unresolved?",
-      "practice": "Reuse the Work reference checker for finite records. Keep a plan, a host gate, an attempted operation and evidence of its effect separate; do not replay a record as instructions.",
-      "limit": "This kit checks records and calls trusted local handlers. It is not the roadmap's durable Work execution engine or an authority verifier.",
+      "practice": "Keep a plan, a host gate, an attempted operation and evidence of its effect separate: the runtime records whether an operation started and what is known of its effect, and a composite command names the phase it reached. Reuse the Work reference checker for finite records; do not replay a record as instructions.",
+      "limit": "This kit checks records and calls trusted local handlers. It has no deadline or cancellation: a handler that never settles leaves its module retiring. It is not the roadmap's durable Work execution engine or an authority verifier.",
       "sources": ["work/0.1/README.md", "MICROSOFT-ROADMAP.md"],
-      "implementation": ["agent-first/0.1/modules.mjs", "work/0.1/check.mjs"],
-      "checks": ["tests/agent-first-modules.test.mjs", "tests/work-0.1.test.mjs"]
+      "implementation": ["agent-first/0.1/runtime.mjs", "agent-first/0.1/command-state.mjs", "agent-first/0.1/modules.mjs", "work/0.1/check.mjs"],
+      "checks": ["tests/agent-first-runtime.test.mjs", "tests/agent-first-modules.test.mjs", "tests/work-0.1.test.mjs"]
     },
     {
       "id": "continuity",
       "name": "A thread that can travel",
       "question": "What is deliberately carried, and what remains outside the selection?",
-      "practice": "Use AgentTool's existing files-only Local Starter: fixed slots, explicit selection, freshness, budgets, hashes and guarded handoff replacement. Notes stay separate from dependency code.",
-      "limit": "A rendered selection is not a full export. Retained prose is not new authority, automatic memory, host delivery or personal continuity.",
+      "practice": "Use AgentTool's existing files-only Local Starter. The provider owns the fixed slots, selection, freshness, budgets and hashes; this kit owns the boundary around it: an explicit root, a byte-pinned package, notes kept apart from code, and a hash-guarded handoff. Notes stay separate from dependency code.",
+      "limit": "Freshness and budgets are the provider's behaviour, not tested by this kit. A rendered selection is not a full export. Retained prose is not new authority, automatic memory, host delivery or personal continuity.",
       "sources": ["RIGHTS.md#6-privacy-and-data-care", "agent-first/0.1/agenttool.lock.json"],
       "implementation": ["agent-first/0.1/adapters/local-starter.mjs", "agent-first/0.1/context.mjs"],
       "checks": ["tests/agent-first-starter.test.mjs", "tests/agent-first-context.test.mjs"]
@@ -57,10 +57,10 @@
     },
     {
       "id": "exit",
-      "name": "An exit that leaves room to return",
+      "name": "An exit that takes nothing with it",
       "question": "Can this capability stop without taking unrelated capabilities or retained records with it?",
       "practice": "Close new admission immediately, let admitted work drain, and keep notes independently readable. Remove code and retained data only through their separate, explicit lifecycles.",
-      "limit": "Retirement is terminal only in this runtime. It does not kill arbitrary JavaScript, revoke external credentials, erase backups, or retire a being's rights.",
+      "limit": "Retirement is terminal in this runtime: a retired module cannot be reactivated, upgraded or registered again under the same id. Any return is a new process with a new runtime, reading the notes that were kept. It does not kill arbitrary JavaScript, revoke external credentials, erase backups, or retire a being's rights.",
       "sources": ["RIGHTS.md#rights-permissions-consent-and-covenants", "covenant/0.1/covenant.json"],
       "implementation": ["agent-first/0.1/runtime.mjs", "agent-first/0.1/context.mjs"],
       "checks": ["tests/agent-first-runtime.test.mjs", "tests/agent-first-context.test.mjs"]

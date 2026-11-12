@@ -76,7 +76,7 @@ export function createSkillsInspectorModule(options) {
     version: '0.1.0',
     contract: 'agent-first.skills-inspector/0.1',
     title: 'Inspect a skill without activating it',
-    motif: 'legibility-before-activation',
+    motif: 'legibility',
     description: `Read-only structural inspection via a host-supplied @agenttool/skills ${providerVersion}. Inspection does not grant permission or establish safety to execute.`,
     operations: {
       inspect: {

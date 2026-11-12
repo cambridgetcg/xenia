@@ -28,7 +28,7 @@ Arrive, motifs, catalog and explanation need only Node 22+ and the source checko
 
 | Motif | The question it keeps answerable | Concrete behavior |
 |---|---|---|
-| **Standing** | What remains when a capability is unavailable? | Rights remain a floor. The Covenant helper makes an all-unknown draft, not an active undertaking. |
+| **Standing** | What remains when a capability is unavailable? | Rights remain a floor. Reading what a door offers (describe, catalog, explain, motifs, help, arrive) works in every module state and after every refusal, never asks the host gate and takes no caller identity; `tests/agent-first-floor.test.mjs` runs that. The Covenant helper makes an all-unknown draft, not an active undertaking. |
 | **Legibility** | Can I understand a door before using it? | Describe contracts, versions, effects and examples without invoking a handler. |
 | **Bounded work** | What was offered, attempted, returned or observed? | Reuse Work's checker; do not execute a document merely because it records work. |
 | **Continuity** | What do I choose to carry? | Use Local Starter's ordinary files, selection, freshness, budgets and guarded handoffs. |
@@ -96,7 +96,7 @@ Inputs are bounded JSON data. The host gate sees the deeply immutable snapshot d
 
 `retire(id)` closes new admission immediately. Admitted calls drain; it neither forcibly kills JavaScript nor undoes completed effects. The retired instance cannot be silently reactivated. The caller owns result retention and any cross-process lifecycle policy. Retiring software does not retire a being's standing rights.
 
-For the AgentTool adapter, data stays separate from package code. The CLI rejects notes inside the canonical provider tree, including through a symlinked parent. Programmatic hosts choosing their own namespace/root must enforce that separation too. Replacing code must not mean migrating or deleting notes; migrations, deletion, host hooks, MCP bindings, credentials and external copies have separate lifecycles.
+For the AgentTool adapter, data stays separate from package code. The CLI compares the notes root and the package root by filesystem identity (real paths, then device and inode of each ancestor), so letter case and symlinks cannot hide an overlap, and it refuses containment in either direction: notes inside the package, or the package inside the notes (`CONTEXT_ROOT_OVERLAP`). It also refuses a `TMPDIR` that resolves inside either root, because the checked copy of the package is written there (`SNAPSHOT_LOCATION_OVERLAP`). Programmatic hosts choosing their own namespace/root must enforce that separation too. Replacing code must not mean migrating or deleting notes; migrations, deletion, host hooks, MCP bindings, credentials and external copies have separate lifecycles.
 
 A different provider artifact must be reviewed and tested before changing its pin. No `latest` lookup or automatic pin relaxation is used. Byte matching does not prove behavior, rights, source authenticity or compatibility; trusted code and a cooperative filesystem remain host assumptions.
 

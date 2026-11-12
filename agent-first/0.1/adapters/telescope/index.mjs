@@ -51,7 +51,7 @@ export function createTelescopeSurfaceModule(telescope) {
     version: '0.1.0-dev.0',
     contract: 'xenia.telescope.recognition/0.1-development',
     title: 'AgentTool XENIA Surface reader',
-    motif: 'legibility-without-overclaim',
+    motif: 'legibility',
     description: 'Recognize supplied manifest text without observing a service; contract: agent-first/0.1/adapters/telescope/contract.json.',
     source: 'Host-supplied AgentTool-compatible parser; the adapter does not authenticate its origin.',
     operations: {

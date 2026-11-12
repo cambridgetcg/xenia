@@ -25,7 +25,7 @@ export async function runContextCommand(args){
     input={text:chosenText(path.resolve(flags.get('--input'))),expectedSha256:flags.get('--expect')};
   }
   const {packageDir,dir}=separateContextRoots(path.resolve(flags.get('--package')),path.resolve(flags.get('--dir')));
-  const provider=await loadReviewedStarter(packageDir);
+  const provider=await loadReviewedStarter(packageDir,{notesDir:dir});
   const id='agenttool.local-context';
   const writes=['init','handoff'].includes(operation);
   const runtime=createModuleRuntime({authorize:request=>request.module.id===id&&request.operation===operation&&
