@@ -1,0 +1,252 @@
+{
+  "schema_version": "xenia.agent-first.module-contract/0.1-development",
+  "status": "repository-only development",
+  "license": "CC-BY-SA-4.0",
+  "module_id": "agenttool.telescope-surface",
+  "contract": "xenia.telescope.recognition/0.1-development",
+  "operation": "recognize",
+  "input_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "manifest_text"
+    ],
+    "properties": {
+      "manifest_text": {
+        "type": "string",
+        "maxLength": 65536
+      }
+    }
+  },
+  "output_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "recognized": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "problem": {
+        "enum": [
+          null,
+          "invalid_input",
+          "input_too_large",
+          "invalid_utf8",
+          "invalid_json",
+          "json_complexity_limit",
+          "xenia_surface_manifest_not_object",
+          "xenia_surface_profile_mismatch",
+          "xenia_surface_manifest_shape_unrecognized",
+          "provider_contract_mismatch"
+        ]
+      },
+      "summary": {
+        "oneOf": [
+          {
+            "type": "null"
+          },
+          {
+            "$ref": "#/$defs/summary"
+          }
+        ]
+      },
+      "surface_conformance": {
+        "const": "not_tested"
+      },
+      "claims_verified": {
+        "const": false
+      },
+      "evidence_verified": {
+        "const": false
+      },
+      "covenant_adoption": {
+        "const": "not_assessed"
+      },
+      "authority": {
+        "const": "none"
+      }
+    },
+    "$defs": {
+      "summary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "xenia.surface.manifest/0.1"
+          },
+          "profile": {
+            "const": "xenia-surface/0.1"
+          },
+          "service_canonical_origin": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048,
+            "pattern": "^https://"
+          },
+          "resource_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "html_resource_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "declared_claim_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "declared_asserted_claim_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "declared_tested_claim_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "declared_attested_claim_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "declared_pass_claim_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "declared_fail_claim_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "declared_unknown_claim_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "not_covered_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          }
+        },
+        "required": [
+          "schema_version",
+          "profile",
+          "service_canonical_origin",
+          "resource_count",
+          "html_resource_count",
+          "declared_claim_count",
+          "declared_asserted_claim_count",
+          "declared_tested_claim_count",
+          "declared_attested_claim_count",
+          "declared_pass_claim_count",
+          "declared_fail_claim_count",
+          "declared_unknown_claim_count",
+          "not_covered_count"
+        ]
+      }
+    },
+    "required": [
+      "recognized",
+      "problem",
+      "summary",
+      "surface_conformance",
+      "claims_verified",
+      "evidence_verified",
+      "covenant_adoption",
+      "authority"
+    ],
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "recognized": {
+              "const": true
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "problem": {
+              "type": "null"
+            },
+            "summary": {
+              "$ref": "#/$defs/summary"
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "recognized": {
+              "const": false
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "problem": {
+              "enum": [
+                "invalid_input",
+                "input_too_large",
+                "invalid_utf8",
+                "invalid_json",
+                "json_complexity_limit",
+                "xenia_surface_manifest_not_object",
+                "xenia_surface_profile_mismatch",
+                "xenia_surface_manifest_shape_unrecognized"
+              ]
+            },
+            "summary": {
+              "type": "null"
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "recognized": {
+              "const": null
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "problem": {
+              "const": "provider_contract_mismatch"
+            },
+            "summary": {
+              "type": "null"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "runtime_constraints": [
+    "manifest_text must be well-formed Unicode and encode to at most 65536 UTF-8 bytes; maxLength alone is not a byte budget.",
+    "Summary origins must be exact credential-free HTTPS origins; count partitions and relationships are checked by the adapter.",
+    "Provider code is explicitly supplied trusted host code, not authenticated or sandboxed by this contract."
+  ],
+  "not_established": [
+    "live service behavior",
+    "complete schema validation",
+    "Surface conformance",
+    "Covenant adoption",
+    "evidence or claim truth",
+    "identity",
+    "consent",
+    "authority"
+  ]
+}

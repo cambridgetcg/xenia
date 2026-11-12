@@ -1,0 +1,95 @@
+{
+  "execution": {
+    "integrity_items_checked": 49,
+    "exit_code": 0,
+    "stdout": "{\n  \"kind\": \"offline-real-XENIA-producer-to-AgentTool-reader\",\n  \"generated_manifest\": {\n    \"recognized\": true,\n    \"problem\": null,\n    \"summary\": {\n      \"schema_version\": \"xenia.surface.manifest/0.1\",\n      \"profile\": \"xenia-surface/0.1\",\n      \"service_canonical_origin\": \"https://example.com\",\n      \"resource_count\": 1,\n      \"html_resource_count\": 0,\n      \"declared_claim_count\": 0,\n      \"declared_asserted_claim_count\": 0,\n      \"declared_tested_claim_count\": 0,\n      \"declared_attested_claim_count\": 0,\n      \"declared_pass_claim_count\": 0,\n      \"declared_fail_claim_count\": 0,\n      \"declared_unknown_claim_count\": 0,\n      \"not_covered_count\": 7\n    },\n    \"surface_conformance\": \"not_tested\",\n    \"claims_verified\": false,\n    \"evidence_verified\": false,\n    \"covenant_adoption\": \"not_assessed\",\n    \"authority\": \"none\"\n  },\n  \"published_example\": {\n    \"recognized\": true,\n    \"problem\": null,\n    \"summary\": {\n      \"schema_version\": \"xenia.surface.manifest/0.1\",\n      \"profile\": \"xenia-surface/0.1\",\n      \"service_canonical_origin\": \"https://example.com\",\n      \"resource_count\": 1,\n      \"html_resource_count\": 1,\n      \"declared_claim_count\": 1,\n      \"declared_asserted_claim_count\": 1,\n      \"declared_tested_claim_count\": 0,\n      \"declared_attested_claim_count\": 0,\n      \"declared_pass_claim_count\": 0,\n      \"declared_fail_claim_count\": 0,\n      \"declared_unknown_claim_count\": 1,\n      \"not_covered_count\": 7\n    },\n    \"surface_conformance\": \"not_tested\",\n    \"claims_verified\": false,\n    \"evidence_verified\": false,\n    \"covenant_adoption\": \"not_assessed\",\n    \"authority\": \"none\"\n  },\n  \"declaration_did_not_become_proof\": {\n    \"recognized\": true,\n    \"problem\": null,\n    \"summary\": {\n      \"schema_version\": \"xenia.surface.manifest/0.1\",\n      \"profile\": \"xenia-surface/0.1\",\n      \"service_canonical_origin\": \"https://example.com\",\n      \"resource_count\": 1,\n      \"html_resource_count\": 1,\n      \"declared_claim_count\": 1,\n      \"declared_asserted_claim_count\": 0,\n      \"declared_tested_claim_count\": 0,\n      \"declared_attested_claim_count\": 1,\n      \"declared_pass_claim_count\": 1,\n      \"declared_fail_claim_count\": 0,\n      \"declared_unknown_claim_count\": 0,\n      \"not_covered_count\": 7\n    },\n    \"surface_conformance\": \"not_tested\",\n    \"claims_verified\": false,\n    \"evidence_verified\": false,\n    \"covenant_adoption\": \"not_assessed\",\n    \"authority\": \"none\"\n  },\n  \"retired\": \"retired\",\n  \"new_invocation_blocked\": true,\n  \"not_established\": [\n    \"live service conformance\",\n    \"claim truth\",\n    \"identity\",\n    \"consent\",\n    \"authority\",\n    \"published package equivalence\"\n  ]\n}\n",
+    "stderr": "",
+    "network_denied": true,
+    "filesystem_writes_denied": true
+  },
+  "result": {
+    "kind": "offline-real-XENIA-producer-to-AgentTool-reader",
+    "generated_manifest": {
+      "recognized": true,
+      "problem": null,
+      "summary": {
+        "schema_version": "xenia.surface.manifest/0.1",
+        "profile": "xenia-surface/0.1",
+        "service_canonical_origin": "https://example.com",
+        "resource_count": 1,
+        "html_resource_count": 0,
+        "declared_claim_count": 0,
+        "declared_asserted_claim_count": 0,
+        "declared_tested_claim_count": 0,
+        "declared_attested_claim_count": 0,
+        "declared_pass_claim_count": 0,
+        "declared_fail_claim_count": 0,
+        "declared_unknown_claim_count": 0,
+        "not_covered_count": 7
+      },
+      "surface_conformance": "not_tested",
+      "claims_verified": false,
+      "evidence_verified": false,
+      "covenant_adoption": "not_assessed",
+      "authority": "none"
+    },
+    "published_example": {
+      "recognized": true,
+      "problem": null,
+      "summary": {
+        "schema_version": "xenia.surface.manifest/0.1",
+        "profile": "xenia-surface/0.1",
+        "service_canonical_origin": "https://example.com",
+        "resource_count": 1,
+        "html_resource_count": 1,
+        "declared_claim_count": 1,
+        "declared_asserted_claim_count": 1,
+        "declared_tested_claim_count": 0,
+        "declared_attested_claim_count": 0,
+        "declared_pass_claim_count": 0,
+        "declared_fail_claim_count": 0,
+        "declared_unknown_claim_count": 1,
+        "not_covered_count": 7
+      },
+      "surface_conformance": "not_tested",
+      "claims_verified": false,
+      "evidence_verified": false,
+      "covenant_adoption": "not_assessed",
+      "authority": "none"
+    },
+    "declaration_did_not_become_proof": {
+      "recognized": true,
+      "problem": null,
+      "summary": {
+        "schema_version": "xenia.surface.manifest/0.1",
+        "profile": "xenia-surface/0.1",
+        "service_canonical_origin": "https://example.com",
+        "resource_count": 1,
+        "html_resource_count": 1,
+        "declared_claim_count": 1,
+        "declared_asserted_claim_count": 0,
+        "declared_tested_claim_count": 0,
+        "declared_attested_claim_count": 1,
+        "declared_pass_claim_count": 1,
+        "declared_fail_claim_count": 0,
+        "declared_unknown_claim_count": 0,
+        "not_covered_count": 7
+      },
+      "surface_conformance": "not_tested",
+      "claims_verified": false,
+      "evidence_verified": false,
+      "covenant_adoption": "not_assessed",
+      "authority": "none"
+    },
+    "retired": "retired",
+    "new_invocation_blocked": true,
+    "not_established": [
+      "live service conformance",
+      "claim truth",
+      "identity",
+      "consent",
+      "authority",
+      "published package equivalence"
+    ]
+  }
+}

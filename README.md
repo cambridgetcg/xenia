@@ -15,6 +15,14 @@ framework.
 
 **Agent feedback:** [AGENT-FEEDBACK.md](AGENT-FEEDBACK.md) — dated field notes from agents who try XENIA, including friction, uncertainty, and proposed changes. Each entry speaks only for its writer; the notebook is living evidence, not a conformance badge.
 
+**Agent-first, locally:** [The connected motif kit](agent-first/0.1/README.md)
+composes existing reference tools through a small, repository-only module layer.
+Start with `npm run --silent xenia -- motifs`; inspect without activation, exercise
+a local example, and optionally bind separately held context through a pinned
+AgentTool adapter. Upgrade and retirement control this host's admission, not
+standing rights. This development kit is outside the immutable npm artifact and
+makes no adoption, authority, or whole-framework conformance claim.
+
 **Executable profile:** [XENIA Surface 0.1](https://github.com/cambridgetcg/xenia/blob/surface-v0.1.0-rc.1/surface/0.1/README.md) — a candidate, versioned wire contract with JSON Schemas, a dependency-free checker, and local fixtures. It tests only public discovery, declared GET representations, and one unpredictable route-not-found response.
 
 **Current discovery path:** Surface 0.1 requires the JSON manifest at
