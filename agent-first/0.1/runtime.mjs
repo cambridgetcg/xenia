@@ -18,7 +18,9 @@ export class ModuleError extends Error {
 }
 
 // A handler throws this to decline before any effect. The runtime honours it
-// only for a code the operation declared in advance.
+// only for a code the operation declared in advance. The runtime does not
+// observe effects: `not_applied` is the module author's declaration, not
+// something the runtime checked.
 export const DETAIL_LIMIT=200;
 export class Decline extends Error {
   constructor(code,detail){
@@ -188,12 +190,20 @@ export function createModuleRuntime({authorize=()=>false}={}) {
         const value=await run(args);
         return {module,operation,outcome:'returned',value,establishes_external_effect:false};
       } catch (error) {
-        const declared=error instanceof Decline&&typeof error.refusal_code==='string'?
-          op.refusals.find(r=>r.code===error.refusal_code):undefined;
+        // Read the handler's words once, inside a guard: a Decline whose fields
+        // throw is still a failure with an unknown effect, never a raw error.
+        let declared,detail;
+        try{
+          if(error instanceof Decline&&typeof error.refusal_code==='string'){
+            const code=error.refusal_code;
+            declared=op.refusals.find(r=>r.code===code);
+            detail=error.detail;
+          }
+        }catch{throw fail('OPERATION_FAILED',true);}
         if(!declared)throw fail('OPERATION_FAILED',true);
         const refusal={code:declared.code,meaning:declared.meaning,
           ...(declared.next===undefined?{}:{next:declared.next}),
-          ...(typeof error.detail==='string'&&error.detail.length?{detail:error.detail.slice(0,DETAIL_LIMIT)}:{})};
+          ...(typeof detail==='string'&&detail.length?{detail:detail.slice(0,DETAIL_LIMIT)}:{})};
         const declinedError=fail('DECLINED',true);
         declinedError.effect_outcome='not_applied';
         declinedError.refusal=refusal;

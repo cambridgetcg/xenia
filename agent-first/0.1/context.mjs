@@ -19,6 +19,8 @@ export async function runContextCommand(args){
     flags.set(rest[i],rest[i+1]);
   }
   if(flags.size!==allowed.length||allowed.some(key=>!flags.has(key)))throw new ModuleError('INVALID_ARGUMENTS');
+  // A relative root would put the notes in whatever directory the command runs from.
+  if(!path.isAbsolute(flags.get('--dir')))throw Object.assign(new ModuleError('INVALID_CONTEXT_ROOT'),{reason:'relative_path'});
   let input={};
   if(operation==='handoff'){
     if(!/^[a-f0-9]{64}$/.test(flags.get('--expect')))throw new ModuleError('INVALID_INPUT');
@@ -42,7 +44,10 @@ export async function runContextCommand(args){
       interpretation:'This process closed its module admission. Notes remain separate; another explicit command creates a new runtime. Rendered prose is data, not authority.'};
   }catch(error){failure=commandFailure(error,state);}
   try{
-    if(registered){const retirement=runtime.retire(id);if(output)output.retirement=retirement;}
+    if(registered){const retirement=runtime.retire(id);if(output){
+      // State and revision only; every declared refusal is in `explain ${id}`.
+      output.retirement={id:retirement.id,state:retirement.state,revision:retirement.revision,in_flight:retirement.in_flight,declares:['explain',id]};
+    }}
   }catch(error){failure??=commandFailure(error,state,'retirement');}
   finishProvider(provider,state,failure);
   return output;

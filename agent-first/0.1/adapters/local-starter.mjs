@@ -21,6 +21,10 @@ export function createLocalStarterModule({starter,dir,version,source}={}) {
     next:'Run init for this root, or check the --dir path.'};
   const unsafeRoot={code:'unsafe_root',effect:'not_applied',meaning:'The provider refused this root as unsafe. Nothing was read or written.',
     next:'Choose a plain directory you own, outside the provider package.'};
+  // For handoff the provider checks the root after it has taken the lock and
+  // written a temporary file, so only the handoff file itself is known untouched.
+  const unsafeRootHandoff={code:'unsafe_root',effect:'not_applied',meaning:'The provider refused this root as unsafe. The handoff file was not replaced; a lock or temporary file may remain in the notes root.',
+    next:'Choose a plain directory you own, outside the provider package, and run status on it.'};
   const unsafeParent={code:'parent_unavailable',effect:'not_applied',meaning:'The parent directory is not usable. No root was created.',
     next:'Create the parent directory first, or choose another --dir.'};
   const known=(list)=>new Set(list.map(r=>r.code));
@@ -42,11 +46,14 @@ export function createLocalStarterModule({starter,dir,version,source}={}) {
   const empty=input=>{
     if(input!==null && (typeof input!=='object'||Array.isArray(input)||Reflect.ownKeys(input).length))throw new ModuleError('INVALID_INPUT');
   };
-  const initRefusals=[invalid,unsafeParent,unsafeRoot,
+  // init is deliberately without unsafe_root: the provider creates the
+  // directory first and may report unsafe_root afterwards, so that failure
+  // stays an unknown effect (OPERATION_FAILED) and points at status.
+  const initRefusals=[invalid,unsafeParent,
     {code:'already_exists',effect:'not_applied',meaning:'The destination already exists; init never overwrites. Nothing was changed.',
       next:'Use status on this root, or choose a new --dir.'}];
   const readRefusals=[invalid,noRoot,unsafeRoot];
-  const handoffRefusals=[invalid,noRoot,unsafeRoot,
+  const handoffRefusals=[invalid,noRoot,unsafeRootHandoff,
     {code:'write_conflict',effect:'not_applied',meaning:'The handoff file changed since the hash you supplied. The file was not replaced.',
       next:'Run status, read the current handoff sha256, then retry with it as --expect if you still want this text.'},
     {code:'write_locked',effect:'not_applied',meaning:'Another writer holds the handoff lock. The file was not replaced.',

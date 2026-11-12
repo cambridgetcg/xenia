@@ -22,12 +22,12 @@ test('arrive is one bounded, inert document that expects no reply',()=>{
   assert.equal(a.kind,'arrival');assert.equal(a.reply_expected,false);
   assert.equal(typeof a.purpose,'string');
   assert.ok(Array.isArray(a.not_established)&&a.not_established.length>=2);
-  assert.ok(a.may_do_without_asking.length>=4);
-  for(const item of a.may_do_without_asking){
+  assert.ok(a.read_only_commands.length>=4);
+  for(const item of a.read_only_commands){
     assert.deepEqual(checkArgv(item.argv,item.needs),{ok:true},JSON.stringify(item));
     assert.equal(typeof item.what,'string');
   }
-  assert.ok(a.may_do_without_asking.some(i=>JSON.stringify(i.argv)==='["motifs","study","list"]'));
+  assert.ok(a.read_only_commands.some(i=>JSON.stringify(i.argv)==='["motifs","study","list"]'));
   assert.match(JSON.stringify(a.how_to_stop),/nothing is running/i);
   assert.match(JSON.stringify(a.report),/AGENT-FEEDBACK\.md/);
   assert.match(JSON.stringify(a.report),/pull request/i);

@@ -33,14 +33,14 @@ export async function runInvoke(args,{runtime,adapters}){
   const adapter=adapters.find(item=>item.id===id);
   if(adapter){
     const op=adapter.operations.find(item=>item.id===operation);
-    if(!op)throw new ModuleError('OPERATION_NOT_FOUND',false,context);
+    if(!op)throw Object.assign(new ModuleError('OPERATION_NOT_FOUND',false,context),{valid:adapter.operations.map(item=>item.id)});
     const failure=new ModuleError(op.effects.length?'HOST_GATE_REQUIRED':'MODULE_NOT_BOUND',false,context);
     failure.effects=[...op.effects];
     throw failure;
   }
   const described=runtime.describe(id);   // throws MODULE_NOT_FOUND
   const op=described.operations.find(item=>item.id===operation);
-  if(!op)throw new ModuleError('OPERATION_NOT_FOUND',false,{...context,module_version:described.version,module_revision:described.revision});
+  if(!op)throw Object.assign(new ModuleError('OPERATION_NOT_FOUND',false,{...context,module_version:described.version,module_revision:described.revision}),{valid:described.operations.map(item=>item.id)});
   if(op.effects.length){
     const failure=new ModuleError('HOST_GATE_REQUIRED',false,{...context,module_version:described.version,module_revision:described.revision});
     failure.effects=[...op.effects];
@@ -59,6 +59,7 @@ export async function runInvoke(args,{runtime,adapters}){
   try{result=await runtime.invoke(id,operation,value);}catch(error){failure=error;}
   runtime.retire(id);
   if(failure){
+    if(failure instanceof ModuleError&&failure.code==='INVALID_INPUT'&&failure.reason===undefined)failure.reason='beyond_limits';
     if(failure instanceof ModuleError&&failure.operation_started){
       failure.receipt=receipt({outcome:failure.code==='DECLINED'?'declined':'failed'});
     }

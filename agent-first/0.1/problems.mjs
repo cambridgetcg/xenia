@@ -1,9 +1,26 @@
 // SPDX-License-Identifier: MPL-2.0
 // What the door says when it says no. Pure data and functions: no filesystem,
-// network or timers. Each error code becomes a problem in Surface's shape:
-// terminal with no next actions, or not terminal with at least one. In this CLI
-// a next action is an argv array the caller can run, plus a one-line reason.
+// network or timers. Each error code becomes a kit-local CLI `problem`. It
+// borrows the meanings of Surface's problem (terminal with no next actions, or
+// not terminal with at least one; retryable) but it is NOT
+// xenia.surface.problem/0.1 and does not validate against
+// surface/0.1/problem.schema.json: codes are UPPER_SNAKE, and a next action is
+// an argv array the caller can run plus a one-line reason (`why`), not a link.
 // An action with `needs` is a command prefix: the caller adds the named flags.
+
+// Which rule an unusable input file broke; input-file.mjs sets the `reason` key.
+export const INPUT_REASONS=Object.freeze({
+  missing:'The input file is missing (no file at that path).',
+  not_regular_file:'The input path is not a regular file (a directory or special file).',
+  symbolic_link:'The input path is a symbolic link; this reader never follows links.',
+  unreadable:'The input file could not be read.',
+  too_large:'The input file is over its size limit (1 MiB for invoke, 16 KiB for a handoff).',
+  not_utf8:'The input file is not valid UTF-8.',
+  byte_order_mark:'The input file starts with a byte-order mark; remove it.',
+  not_json:'The input file is not exactly one JSON value.',
+  duplicate_key:'An object in the input file repeats a key.',
+  beyond_limits:'The input is nested or large beyond the input limits (32 levels deep, 65536 values, 1 MiB).',
+});
 
 export const COMMANDS={
   arrive:{usage:'arrive',summary:'Read one bounded orientation document. Expects no reply; activates nothing.',probe:['arrive']},
@@ -13,9 +30,12 @@ export const COMMANDS={
   explain:{usage:'explain <module-id>',summary:'Describe one module and give an input example.',probe:['explain','xenia.surface']},
   demo:{usage:'demo [--full]',summary:'Run the local reference tools; a step list by default, complete bodies with --full. Needs the Xenia build.',probe:['demo']},
   invoke:{usage:'invoke <module-id> <operation-id> --input <file>',
-    summary:'Register, activate, invoke once and retire a core module in this process, with your JSON file as input; prints a receipt. Only operations that declare no effects run here.',probe:['help','invoke']},
+    summary:'Register, activate, invoke once and retire a core module in this process, with your JSON file as input; prints a receipt. Only operations that declare no effects run here.',probe:['help','invoke'],
+    rules:['The input file must be a regular file, not a symbolic link, at most 1 MiB.','It must be valid UTF-8 with no byte-order mark, exactly one JSON value, with no repeated object key.','Nesting is limited to 32 levels and 65536 values.','`explain <module-id>` shows an input example for each module; a path in example_ref is relative to the repository root.']},
   context:{usage:'context <init|status|render> --package <reviewed-package-dir> --dir <notes-dir>',
-    summary:'Run one explicit command on chosen local notes.',probe:['help','context']},
+    also:['context handoff --package <reviewed-package-dir> --dir <notes-dir> --input <chosen-file> --expect <current-sha256>'],
+    summary:'Run one explicit command on chosen local notes.',probe:['help','context'],
+    rules:['--dir must be an absolute path to the notes root, and must be outside the --package directory.','init needs an existing parent and refuses a destination that exists.','handoff replaces only the handoff file; read its current sha256 with status and pass it as --expect.']},
   'starter-smoke':{usage:'starter-smoke --package <reviewed-package-dir> --dir <new-notes-dir>',
     summary:'Run the pinned provider smoke check on a new notes root.',probe:['help','starter-smoke']},
 };
@@ -116,7 +136,9 @@ const REFUSALS={
   invalid_handoff:{text:'The text is too large for the handoff slot or has disallowed characters, so nothing was written. Shorten or clean the file and repeat.',
     next:()=>helpContext},
   unsafe_handoff:{text:'The existing handoff file is not a safe regular file, so nothing was written. This door cannot repair it; the file has to be fixed by hand.',terminal:true},
-  unsafe_root:{text:'The provider refused this notes root as unsafe, so nothing was read or written. Choose another root.',next:()=>helpContext},
+  unsafe_root:{text:(e,c)=>(c.argv??[])[1]==='handoff'?
+    'The provider refused this notes root as unsafe. The handoff file was not replaced, but a lock or temporary file may remain in the notes root. Choose another root, or read the state of this one first.':
+    'The provider refused this notes root as unsafe, so nothing was read or written. Choose another root.',next:()=>helpContext},
   parent_unavailable:{text:'The parent of the notes root is not usable, so no root was created. Choose a root whose parent exists.',next:()=>helpContext},
   invalid_input:{text:'The input does not match this operation’s shape, so nothing was read, written or produced.',next:moduleAction},
 };
@@ -165,10 +187,15 @@ const TABLE={
     ...(usesContext(c)?{next:[contextAction(c,'status','Read the current notes state.')]}:{terminal:true})}),
   CONTEXT_ROOT_OVERLAP:()=>({detail:'The notes root is inside the provider package, or the package is inside the notes. Nothing was read, written or loaded. Choose a notes directory outside the package.',next:[helpContext]}),
   SNAPSHOT_LOCATION_OVERLAP:()=>({detail:'The system temp directory (TMPDIR) is inside the provider package or the notes root, so the checked copy of the package would be written there. Nothing was loaded, read or written. Set TMPDIR to a directory outside both and repeat.',next:[helpContext]}),
-  INVALID_CONTEXT_ROOT:()=>({detail:'The notes root is not a usable directory path (it must be a regular directory, or a new name in an existing parent). Nothing was read or written.',next:[helpContext]}),
-  INVALID_INPUT:(e,c)=>(c.argv??[])[0]==='invoke'?
-    {detail:'The input file is not usable: it is missing, not a regular file, a symbolic link, over 1 MiB, not valid UTF-8, has a byte-order mark, is not exactly one JSON value, repeats an object key, or is nested or large beyond the input limits. Nothing was run.',next:[helpInvoke]}:
-    {detail:'The chosen input file or value is not usable: a missing or unsafe file, text over the size limit, not valid UTF-8, or a hash that is not 64 lowercase hex characters. Nothing was written.',next:[helpContext]},
+  INVALID_CONTEXT_ROOT:(e)=>({detail:e.reason==='relative_path'?
+    'The notes root (--dir) must be an absolute path; a relative path would put the notes in whatever directory the command runs from. Nothing was read or written.':
+    'The notes root is not a usable directory path (it must be an absolute path to a regular directory, or a new name in an existing parent). Nothing was read or written.',next:[helpContext]}),
+  INVALID_INPUT:(e,c)=>{
+    const why=INPUT_REASONS[e.reason];
+    return (c.argv??[])[0]==='invoke'?
+    {detail:`${why??'The input file is not usable, or is nested or large beyond the input limits.'} Nothing was run. The input rules are in help invoke.`,next:[helpInvoke]}:
+    {detail:`${why??'The chosen input file or value is not usable: a missing or unsafe file, text over the size limit, not valid UTF-8, or a hash that is not 64 lowercase hex characters.'} Nothing was written.`,next:[helpContext]};
+  },
   INVALID_PROVIDER:()=>({detail:'The provider package path was not usable as given. No provider code was run.',next:[helpContext]}),
   PROVIDER_UNAVAILABLE:()=>({detail:'The provider package directory could not be read or loaded. No notes were read or changed. Check the --package path and try again.',next:[helpContext]}),
   PROVIDER_PIN_MISMATCH:(e,c)=>({detail:`The package given as --package is not the reviewed one.${c.lock?` Expected ${c.lock.name} ${c.lock.version} from ${c.lock.source}.`:''} It differed at ${pinWhere(e.mismatch)}. No provider code was run and no notes were read or changed. Supply the reviewed package.`,
@@ -183,7 +210,7 @@ const TABLE={
   MODULE_EXISTS:retiredOrBusy('A module with that id is already registered. Nothing was changed.'),
   INVALID_MODULE:()=>({detail:'The module definition is not valid. Nothing was registered.',next:[catalogAction]}),
   MODULE_INACTIVE:retiredOrBusy('The module is registered but not active, so the call was not admitted. Nothing ran.'),
-  OPERATION_NOT_FOUND:retiredOrBusy('The module has no such operation. Nothing ran.'),
+  OPERATION_NOT_FOUND:(e,c)=>({valid:e.valid,detail:`The module has no such operation.${e.valid?` Valid operations: ${e.valid.join(', ')}.`:''} Nothing ran.`,next:[moduleAction(e,c)]}),
   POLICY_BLOCKED:retiredOrBusy('The host gate did not allow this operation. This is an admission result, not a person’s refusal. Nothing ran.'),
   MODULE_RETIRED:()=>({detail:'This module is retired in this runtime and takes no new calls. That is complete; a later command starts a fresh runtime.',terminal:true}),
   MODULE_BUSY:retiredOrBusy('The module has calls in flight, so replacement was refused. Nothing changed. Retry after they drain.',true),
@@ -193,7 +220,7 @@ const TABLE={
   DECLINED:(e,c)=>{
     const r=e.refusal??{},known=REFUSALS[r.code];
     const prior=e.effect_outcome==='unknown';
-    const base=known?known.text:`The operation declined before any change${r.meaning?`: ${String(r.meaning).slice(0,200)}`:''}.`;
+    const base=known?(typeof known.text==='function'?known.text(e,c):known.text):`The operation declined before any change${r.meaning?`: ${String(r.meaning).slice(0,200)}`:''}.`;
     const lead=prior?'Earlier operations in this command had already returned, so the overall effect is unknown; the refusal itself applied no change. ':'';
     const extra=typeof r.detail==='string'&&r.detail?` Reported: ${r.detail.slice(0,200)}`:'';
     const out={detail:lead+base+extra,retryable:Boolean(known?.retryable)};
@@ -218,6 +245,6 @@ export function buildProblem(error,ctx={}){
 export function usageHelp(command){
   const entry=COMMANDS[command];
   if(!entry)return undefined;
-  return {command,usage:entry.usage,summary:entry.summary,exit_codes:EXIT_CODES,
+  return {command,usage:entry.usage,...(entry.also?{also:[...entry.also]}:{}),summary:entry.summary,...(entry.rules?{rules:[...entry.rules]}:{}),exit_codes:EXIT_CODES,
     not_established:['that the command will succeed','that other commands are described here']};
 }

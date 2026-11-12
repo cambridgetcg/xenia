@@ -61,6 +61,7 @@ async function demo(full){
 
 async function starterSmoke(args){
   if(args.length!==4||args[0]!=='--package'||args[2]!=='--dir')throw new ModuleError('INVALID_ARGUMENTS');
+  if(!path.isAbsolute(args[3]))throw Object.assign(new ModuleError('INVALID_CONTEXT_ROOT'),{reason:'relative_path'});
   const {loadReviewedStarter,separateContextRoots}=await import('./provider.mjs');
   const {packageDir,dir}=separateContextRoots(path.resolve(args[1]),path.resolve(args[3]));
   const {createLocalStarterModule}=await import('./adapters/local-starter.mjs');
@@ -174,9 +175,11 @@ export async function main(args){
     if(adapter)return envelope(adapter);
     const module=runtime.describe(rest[0]);
     const first=module.operations[0]?.input;
-    return envelope({module,example:first?.example??(first?.example_ref?{reference:first.example_ref}:undefined),
+    const runnable=module.operations.find(op=>!op.effects.length&&op.input);
+    return envelope({module,example:first?.example??(first?.example_ref?{reference:first.example_ref,note:'A path relative to the repository root; it is a file you can pass as --input.'}:undefined),
+      ...(runnable?{next:[{argv:['invoke',module.id,runnable.id],needs:['--input <file>'],why:'Run this operation once on your own JSON file; prints a receipt.'}]}:{}),
       runtime_note:'state, revision and in_flight describe a runtime this command just created, not live shared state.',
-      interpretation:'Descriptions and examples are informative. Native profile functions validate their own inputs; reading does not activate anything.'});
+      interpretation:'Descriptions and examples are informative. Native profile functions validate their own inputs; reading does not activate anything. A refusal an operation lists is the module’s own declaration that it applied nothing; the runtime does not observe that.'});
   }
   if(command==='invoke')return envelope(await runInvoke(rest,{runtime,adapters:adapterRows()}));
   if(command==='demo'&&!rest.length)return demo(false);
@@ -197,10 +200,11 @@ function failureEnvelope(error,argv){
   const problem=buildProblem(safe,ctx);
   const not_established=['that a suggested next action will succeed'];
   if(safe.effect_outcome==='unknown')not_established.push('whether the failed operation changed anything');
-  if(safe.effect_outcome==='not_applied')not_established.push('anything about state beyond this one declined operation');
+  if(safe.effect_outcome==='not_applied')not_established.push('anything about state beyond this one declined operation',
+    'that the operation did nothing before declining: not_applied is the module’s own declaration, and the runtime did not observe or verify it');
   return {exit:USAGE_CODES.includes(safe.code)?2:1,
     body:envelope({error:{code:safe.code,operation_started:safe.operation_started,effect_outcome:safe.effect_outcome,retryable:problem.retryable,module:safe.module,operation:safe.operation,
-      module_version:safe.module_version,module_revision:safe.module_revision,refusal:safe.refusal,
+      module_version:safe.module_version,module_revision:safe.module_revision,refusal:safe.refusal,reason:safe.reason,
       phase:safe.phase,returned_operations:safe.returned_operations,verification:safe.verification,snapshot_cleanup:safe.snapshot_cleanup},
       problem,...(safe.receipt?{receipt:safe.receipt}:{}),not_established})};
 }
