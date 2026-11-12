@@ -143,7 +143,9 @@ function cliRun(file, args, extra = {}) {
 test('one existing CLI exposes motif metadata, standalone studies and the composed journey', () => {
   const cli = fileURLToPath(new URL('../agent-first/0.1/cli.mjs', import.meta.url));
   const broadMap = cliRun(cli, ['motifs']);
-  assert.deepEqual(broadMap.value, JSON.parse(readFileSync(new URL('../agent-first/0.1/motifs.json', import.meta.url), 'utf8')));
+  const {next, ...mapOnly} = broadMap.value;
+  assert.ok(Array.isArray(next), 'the door adds a next list to the map');
+  assert.deepEqual(mapOnly, JSON.parse(readFileSync(new URL('../agent-first/0.1/motifs.json', import.meta.url), 'utf8')));
   const listed = cliRun(cli, ['motifs', 'study']);
   assert.equal(listed.status, 0);
   assert.equal(listed.value.kind, 'motif-study-catalog');
@@ -169,7 +171,7 @@ test('metadata stands alone without a build or provider, and removing studies le
   const base = mkdtempSync(join(realpathSync(tmpdir()), 'xenia-motif-independence-'));
   try {
     const folder = join(base, 'agent-first', '0.1'); mkdirSync(folder, { recursive: true });
-    for (const name of ['cli.mjs', 'runtime.mjs', 'modules.mjs', 'command-state.mjs', 'problems.mjs', 'motif-studies.mjs']) {
+    for (const name of ['cli.mjs', 'runtime.mjs', 'modules.mjs', 'command-state.mjs', 'problems.mjs', 'adapter-catalog.mjs', 'arrive.mjs', 'motif-studies.mjs']) {
       copyFileSync(new URL(`../agent-first/0.1/${name}`, import.meta.url), join(folder, name));
     }
     const absentHome = join(base, 'absent-home');

@@ -121,7 +121,7 @@ test('module and study not-found errors list the valid ids',()=>{
   const m=run(['explain','nope.module']);
   assert.equal(m.status,2);
   assert.equal(m.value.error.code,'MODULE_NOT_FOUND');
-  assert.deepEqual([...m.value.problem.valid].sort(),['xenia.covenant','xenia.surface','xenia.work']);
+  assert.deepEqual([...m.value.problem.valid].sort(),['agenttool.local-context','agenttool.skills-inspector','agenttool.telescope-surface','xenia.covenant','xenia.surface','xenia.work']);
   const s=run(['motifs','study','run','private-untrusted-value']);
   assert.equal(s.status,2);assert.equal(s.value.error.code,'STUDY_NOT_FOUND');
   assert.deepEqual([...s.value.problem.valid].sort(),['arrival','ending','recovery','representation']);

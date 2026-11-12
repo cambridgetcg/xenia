@@ -6,11 +6,12 @@
 // An action with `needs` is a command prefix: the caller adds the named flags.
 
 export const COMMANDS={
+  arrive:{usage:'arrive',summary:'Read one bounded orientation document. Expects no reply; activates nothing.',probe:['arrive']},
   help:{usage:'help [command]',summary:'Show this help, or the usage of one command.',probe:['help']},
   motifs:{usage:'motifs [motif-id]',summary:'Read the motif map, or one motif card.',probe:['motifs']},
   catalog:{usage:'catalog',summary:'List the registered modules. Activates nothing.',probe:['catalog']},
   explain:{usage:'explain <module-id>',summary:'Describe one module and give an input example.',probe:['explain','xenia.surface']},
-  demo:{usage:'demo',summary:'Run the local reference tools. Needs the Xenia build.',probe:['demo']},
+  demo:{usage:'demo [--full]',summary:'Run the local reference tools; a step list by default, complete bodies with --full. Needs the Xenia build.',probe:['demo']},
   context:{usage:'context <init|status|render> --package <reviewed-package-dir> --dir <notes-dir>',
     summary:'Run one explicit command on chosen local notes.',probe:['help','context']},
   'starter-smoke':{usage:'starter-smoke --package <reviewed-package-dir> --dir <new-notes-dir>',
@@ -39,7 +40,8 @@ export function checkArgv(argv,needs=[]){
   const bad=reason=>({ok:false,reason});
   if(!COMMAND_NAMES.includes(command))return bad('unknown command');
   if(command==='help')return rest.length===0||(rest.length===1&&COMMAND_NAMES.includes(rest[0]))?{ok:true}:bad('help usage');
-  if(command==='catalog'||command==='demo')return rest.length?bad('takes no arguments'):{ok:true};
+  if(command==='catalog'||command==='arrive')return rest.length?bad('takes no arguments'):{ok:true};
+  if(command==='demo')return rest.length===0||(rest.length===1&&rest[0]==='--full')?{ok:true}:bad('demo usage');
   if(command==='explain')return rest.length===1?{ok:true}:bad('needs one module id');
   if(command==='motifs'){
     if(rest.length===0)return {ok:true};

@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MPL-2.0
 import fs from 'node:fs';
 import path from 'node:path';
+import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 import {createModuleRuntime,ModuleError,MODULE_INPUT_LIMITS} from './runtime.mjs';
 import {createXeniaModules} from './modules.mjs';
 import {commandFailure,finishProvider} from './command-state.mjs';
+import {adapterRows,describeAdapter,ADAPTER_IDS} from './adapter-catalog.mjs';
+import {buildArrival} from './arrive.mjs';
 import {COMMANDS,EXIT_CODES,USAGE_CODES,buildProblem,usageHelp} from './problems.mjs';
 
 export const EXAMPLES={
@@ -15,28 +18,48 @@ export const EXAMPLES={
 const makeRuntime=()=>{const runtime=createModuleRuntime();for(const module of createXeniaModules())runtime.register(module);return runtime;};
 const envelope=(fields)=>({schema:'xenia.agent-first/0.1-development',...fields});
 
-async function demo(){
+const digest=value=>{const text=JSON.stringify(value)??'';return {bytes:Buffer.byteLength(text),sha256:createHash('sha256').update(text).digest('hex')};};
+
+async function demo(full){
   // The reference tools import the root build and the Work checker's dev dependencies.
   const root=new URL('../../',import.meta.url);
   if(!fs.existsSync(new URL('dist/surface-0.1.js',root))||!fs.existsSync(new URL('node_modules/ajv/package.json',root)))throw new ModuleError('BUILD_REQUIRED');
-  const runtime=makeRuntime();for(const {id}of runtime.catalog())runtime.activate(id);
-  const surface=(await runtime.invoke('xenia.surface','manifest',EXAMPLES['xenia.surface'])).value;
-  const covenant=(await runtime.invoke('xenia.covenant','draft',EXAMPLES['xenia.covenant'])).value;
-  const fixture=JSON.parse(fs.readFileSync(new URL('../../work/0.1/examples/declined.json',import.meta.url),'utf8'));
-  const work=(await runtime.invoke('xenia.work','check',fixture)).value;
+  const runtime=makeRuntime();
+  const steps=[];
+  const effectsOf=(described,operation)=>described.operations.filter(op=>operation===undefined||op.id===operation).flatMap(op=>op.effects);
+  // A lifecycle step returns a module description; an invoke step a result.
+  const lifecycle=(call,described)=>{steps.push({call,module_version:described.version,revision:described.revision,effects:[],outcome:'returned',result:digest(described)});return described;};
+  const invoke=async(id,operation,input)=>{
+    const described=runtime.describe(id);
+    const result=await runtime.invoke(id,operation,input);
+    steps.push({call:`invoke ${id} ${operation}`,module_version:result.module.version,revision:result.module.revision,effects:effectsOf(described,operation),outcome:result.outcome,result:digest(result.value)});
+    return result;
+  };
   // Synthetic implementation versions demonstrate the lifecycle; no Xenia
   // profile or published AgentTool package is claimed to have been upgraded.
   const echo=(version,label)=>({id:'example.echo',version,contract:'example.echo/1',title:'Lifecycle fixture',motif:'change',description:'A synthetic local upgrade example.',
     operations:{echo:{description:'Return chosen input with an implementation label.',effects:[],run:input=>({input,implementation:label})}}});
-  runtime.register(echo('1.0.0','first'));runtime.activate('example.echo');
-  const before=await runtime.invoke('example.echo','echo','same input');
-  runtime.upgrade('example.echo',echo('1.1.0','second'),{expectedRevision:1});
-  const after=await runtime.invoke('example.echo','echo','same input');
-  const retired=runtime.retire('example.echo');let blocked=false;
-  try{await runtime.invoke('example.echo','echo','not admitted');}catch(error){blocked=error.code==='MODULE_RETIRED';}
+  lifecycle('register example.echo (synthetic)',runtime.register(echo('1.0.0','first')));
+  lifecycle('activate example.echo',runtime.activate('example.echo'));
+  const before=await invoke('example.echo','echo','same input');
+  lifecycle('upgrade example.echo to 1.1.0 (expectedRevision 1)',runtime.upgrade('example.echo',echo('1.1.0','second'),{expectedRevision:1}));
+  const after=await invoke('example.echo','echo','same input');
+  const retired=lifecycle('retire example.echo',runtime.retire('example.echo'));
+  let blocked=false;
+  try{await runtime.invoke('example.echo','echo','not admitted');}catch(error){
+    blocked=error.code==='MODULE_RETIRED';
+    steps.push({call:'invoke example.echo echo (after retire)',module_version:error.module_version,revision:error.module_revision,effects:[],outcome:'blocked',error_code:error.code,effect_outcome:error.effect_outcome});
+  }
+  for(const {id}of runtime.catalog())if(id.startsWith('xenia.'))runtime.activate(id);
+  const surface=(await invoke('xenia.surface','manifest',EXAMPLES['xenia.surface'])).value;
+  const covenant=(await invoke('xenia.covenant','draft',EXAMPLES['xenia.covenant'])).value;
+  const fixture=JSON.parse(fs.readFileSync(new URL('../../work/0.1/examples/declined.json',import.meta.url),'utf8'));
+  const work=(await invoke('xenia.work','check',fixture)).value;
+  const not_established=['hosted-service conformance','actor authority','consent','external effects','persistent runtime state'];
+  if(!full)return envelope({kind:'local-reference-demo-steps',steps,new_invocation_blocked:blocked,agenttool_required:false,
+    full_output:'run: demo --full',digest:'bytes and sha256 are of the JSON text of each returned value; this list does not include the values.',not_established});
   return envelope({kind:'local-reference-tools-and-synthetic-lifecycle',surface,covenant,work,
-    lifecycle:{before,after,retired,new_invocation_blocked:blocked},agenttool_required:false,
-    not_established:['hosted-service conformance','actor authority','consent','external effects','persistent runtime state']});
+    lifecycle:{before,after,retired,new_invocation_blocked:blocked},agenttool_required:false,not_established});
 }
 
 async function starterSmoke(args){
@@ -87,7 +110,7 @@ async function starterSmoke(args){
 }
 
 const isHelp=arg=>arg==='-h'||arg==='--help';
-const GENERAL_HELP=['help [command]','motifs [motif-id]','motifs study [list|show <study-id|motif-id>|run <study-id>|journey]','catalog','explain <module-id>','demo',
+const GENERAL_HELP=['arrive','help [command]','motifs [motif-id]','motifs study [list|show <study-id|motif-id>|run <study-id>|journey]','catalog','explain <module-id>','demo [--full]',
   'context <init|status|render> --package <reviewed-package-dir> --dir <notes-dir>',
   'context handoff --package <reviewed-package-dir> --dir <notes-dir> --input <chosen-file> --expect <current-sha256>',
   'starter-smoke --package <reviewed-package-dir> --dir <new-notes-dir>'];
@@ -117,12 +140,17 @@ export async function main(args){
     if(!wantsHelp&&command==='help'&&words.length===1&&!COMMANDS[words[0]])throw unknownCommand(words[0]);
     if(words.length&&COMMANDS[words[0]]&&(wantsHelp||command==='help'))return envelope(usageHelp(words[0]));
     return envelope({title:'Xenia agent-first module kit',status:'repository-only development',commands:GENERAL_HELP,
+      start_here:'Run: arrive. It is one read-only orientation document and expects no reply.',
       principle:'Inspect → activate deliberately → invoke through the host gate → pause, upgrade or retire.',
       exit_codes:EXIT_CODES,output:'stdout is one JSON document; stderr is silent. A failure has error (what happened) and problem (what you may do next).',
       limits:MODULE_INPUT_LIMITS,notes:['No automatic installs, services, host hooks, accounts, publication or model calls.','Runtime state is in-process; the caller owns persistence.','Trusted module code is not an OS sandbox.'],
       not_established:['that any listed command will succeed here','that this list is every capability of the host']});
   }
-  if(command==='motifs'&&!rest.length)return JSON.parse(fs.readFileSync(new URL('./motifs.json',import.meta.url),'utf8'));
+  if(command==='motifs'&&!rest.length)return {...JSON.parse(fs.readFileSync(new URL('./motifs.json',import.meta.url),'utf8')),next:[
+    {argv:['motifs','standing'],why:'Read one motif card.'},
+    {argv:['motifs','study','list'],why:'List the small studies that examine a motif.'},
+    {argv:['motifs','study','journey'],why:'Follow the six motifs in order through their studies. Needs the Xenia build.'},
+    {argv:['arrive'],why:'Read the one-page orientation to this door.'}]};
   if(command==='motifs'&&rest.length===1&&!rest[0].startsWith('-')){
     const {motifs}=JSON.parse(fs.readFileSync(new URL('./motifs.json',import.meta.url),'utf8'));
     const card=motifs.find(item=>item.id===rest[0]);
@@ -135,10 +163,21 @@ export async function main(args){
     return envelope(await runContextCommand(rest));
   }
   const runtime=makeRuntime();
-  if(command==='catalog'&&!rest.length)return envelope({modules:runtime.catalog(),limits:MODULE_INPUT_LIMITS});
-  if(command==='explain'&&rest.length===1)return envelope({module:runtime.describe(rest[0]),example:EXAMPLES[rest[0]],
-    interpretation:'Descriptions and examples are informative. Native profile functions validate their own inputs; reading does not activate anything.'});
-  if(command==='demo'&&!rest.length)return demo();
+  if(command==='arrive'&&!rest.length){
+    const lock=JSON.parse(fs.readFileSync(new URL('./agenttool.lock.json',import.meta.url),'utf8')).local_starter;
+    const core=runtime.catalog().map(({id,title,operations})=>({id,title,effects:[...new Set(operations.flatMap(op=>op.effects))]}));
+    return buildArrival({lock,core,adapters:adapterRows()});
+  }
+  if(command==='catalog'&&!rest.length)return envelope({modules:runtime.catalog(),adapters:adapterRows(),
+    adapters_note:'Adapters are present in this checkout but not bound: no provider was imported and none is registered here. Each lists what must be supplied.',limits:MODULE_INPUT_LIMITS});
+  if(command==='explain'&&rest.length===1){
+    const adapter=describeAdapter(rest[0]);
+    if(adapter)return envelope(adapter);
+    return envelope({module:runtime.describe(rest[0]),example:EXAMPLES[rest[0]],
+      interpretation:'Descriptions and examples are informative. Native profile functions validate their own inputs; reading does not activate anything.'});
+  }
+  if(command==='demo'&&!rest.length)return demo(false);
+  if(command==='demo'&&rest.length===1&&rest[0]==='--full')return demo(true);
   if(!COMMANDS[command])throw unknownCommand(command);
   throw new ModuleError('INVALID_ARGUMENTS');
 }
@@ -150,7 +189,7 @@ function failureEnvelope(error,argv){
     try{const {name,version,source}=JSON.parse(fs.readFileSync(new URL('./agenttool.lock.json',import.meta.url),'utf8')).local_starter;ctx.lock={name,version,source};}catch{}
   }
   if(safe.code==='MODULE_NOT_FOUND'||safe.module!==undefined){
-    try{ctx.moduleIds=makeRuntime().catalog().map(module=>module.id);}catch{}
+    try{ctx.moduleIds=[...makeRuntime().catalog().map(module=>module.id),...ADAPTER_IDS];}catch{}
   }
   const problem=buildProblem(safe,ctx);
   const not_established=['that a suggested next action will succeed'];

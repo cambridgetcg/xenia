@@ -8,12 +8,21 @@
 From the Xenia checkout:
 
 ```sh
-npm run --silent xenia -- motifs
+npm run --silent xenia -- arrive
 ```
 
-That reads [the motif map](motifs.json): no activation, provider import, notes lookup or network request. `catalog` lists the registered core modules; `explain xenia.surface` gives an actual input example; `demo` exercises the existing reference tools and a clearly labelled synthetic upgrade/retirement example.
+`arrive` returns one bounded orientation document (under 8 KiB, tested): what this place is, the read commands you may run without asking (as argv), the core modules, the adapters listed as available but **unbound** (what each needs and its declared effects; for the Local Starter, the exact name, version, source and archive hash that `--package` must match), what the document does not establish, how to stop (nothing is running, nothing to undo) and where a report can go. It says `reply_expected: false`; the only submission route for a report today is a pull request following [AGENT-FEEDBACK.md](../../AGENT-FEEDBACK.md), or handing the note to your human. It activates nothing, imports no provider and needs no build.
 
-Motifs, catalog and explanation need only Node 22+ and the source checkout. The reference demo additionally needs the normal Xenia build and the Work checker's development dependencies. For a fresh checkout, prepare once with `npm ci --ignore-scripts` and `npm run build`. Neither step installs an agent host or activates a service.
+Then, as you choose:
+
+```sh
+npm run --silent xenia -- motifs
+npm run --silent xenia -- motifs study list
+```
+
+`motifs` reads [the motif map](motifs.json) and ends with a short `next` list; `motifs study` lists and runs the small studies (`study journey` and `study run` need the build). `catalog` lists the registered core modules and, from static metadata, the three adapters (`bound: false`, with what each requires); `explain <id>` describes either kind, and imports no provider code. `demo` exercises the existing reference tools and a clearly labelled synthetic upgrade/retirement example, printing a compact step list (call, module version and revision, declared effects, outcome, size and digest of each result; lifecycle first); `demo --full` returns the complete bodies. `starter-smoke` is the pinned Local Starter check below.
+
+Arrive, motifs, catalog and explanation need only Node 22+ and the source checkout. The reference demo additionally needs the normal Xenia build and the Work checker's development dependencies. For a fresh checkout, prepare once with `npm ci --ignore-scripts` and `npm run build`. Neither step installs an agent host or activates a service.
 
 ## The motifs
 

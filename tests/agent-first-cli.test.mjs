@@ -19,7 +19,7 @@ test('the CLI exposes an inert catalog, usable examples and the real local lifec
   assert.equal(catalog.modules.length,3);assert.ok(catalog.modules.every(m=>m.state==='registered'));
   const explained=run('explain','xenia.surface');assert.equal(explained.status,0,explained.stdout);
   assert.equal(JSON.parse(explained.stdout).example.resources[0].href,'https://example.com/about');
-  const demonstrated=run('demo');assert.equal(demonstrated.status,0,demonstrated.stderr+demonstrated.stdout);
+  const demonstrated=run('demo','--full');assert.equal(demonstrated.status,0,demonstrated.stderr+demonstrated.stdout);
   const demo=JSON.parse(demonstrated.stdout);
   assert.equal(demo.surface.profile,'xenia-surface/0.1');
   assert.equal(demo.covenant.declaration.status,'draft');
