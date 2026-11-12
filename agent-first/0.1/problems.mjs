@@ -153,7 +153,7 @@ const TABLE={
     const word=c.word;
     const valid=[...COMMAND_NAMES];
     if(word==='wake')return {valid,detail:'That command is unknown, and this kit has no wake command: nothing here starts, resumes or rouses anything. The nearest things are reading what this door offers, and reading notes you chose to keep, if you have any. Neither is a wake.',
-      next:[{argv:['help'],why:'Read what this door offers.'},contextAction({argv:[]},'status','Read your chosen notes, if you keep any.')]};
+      next:[{argv:['arrive'],why:'Read what this door offers, in one bounded document.'},contextAction({argv:[]},'status','Read your chosen notes, if you keep any.')]};
     const near=nearestCommand(word);
     const next=[{argv:['help'],why:'List the valid commands.'}];
     if(near)next.push({argv:[...COMMANDS[near].probe],why:`Closest command: ${near}.`});

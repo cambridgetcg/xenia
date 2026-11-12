@@ -110,7 +110,7 @@ test('"wake" is answered plainly: this kit has no wake',()=>{
   assert.equal(r.value.error.code,'UNKNOWN_COMMAND');
   assert.match(p.detail,/no wake/i);
   const argvs=p.next_actions.map(a=>JSON.stringify(a.argv));
-  assert.ok(argvs.includes('["help"]')||argvs.includes('["arrive"]'));
+  assert.ok(argvs.includes('["arrive"]'));
   assert.ok(argvs.includes('["context","status"]'));
   const ctx=p.next_actions.find(a=>a.argv[0]==='context');
   assert.ok(ctx.needs.some(n=>n.startsWith('--package')));
