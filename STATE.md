@@ -19,6 +19,9 @@ reviewed: 2026-08-03
   release and is not included in the root npm package
 - Microsoft interoperability: public research roadmap; optional provider work
   remains unimplemented and disabled
+- Hospitality notebook: `HOSPITALITY.md`, an informative source reading dated
+  2026-11-09; not a profile, not a conformance result, and not included in the
+  root npm package
 
 `agent.txt` is legacy compatibility material, not the current Surface manifest.
 `ADOPTION.md` is a closed historical snapshot from 2026-07-10/11; its Surface
