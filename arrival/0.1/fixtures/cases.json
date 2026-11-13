@@ -18,8 +18,9 @@
     "note": "What I.NO_CREDENTIAL looks for, with regular expressions in ECMAScript syntax and their flags. Adapted from work/0.1/check.mjs. A match is a failure whatever the value is; no match establishes nothing.",
     "secret_shapes": [
       {
-        "pattern": "(?<![A-Za-z0-9_-])sk-(?=[A-Za-z0-9_-]*[0-9])[A-Za-z0-9_-]{20,}\\b",
-        "flags": ""
+        "pattern": "\\bsk-(?=[A-Za-z0-9_-]*[0-9])[A-Za-z0-9_-]{20,}\\b",
+        "flags": "",
+        "start": "sk-"
       },
       {
         "pattern": "\\bgh[pousr]_[A-Za-z0-9]{16,}\\b",
@@ -38,11 +39,13 @@
         "flags": "i"
       },
       {
-        "pattern": "(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\b",
-        "flags": ""
+        "pattern": "\\beyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\b",
+        "flags": "",
+        "start": "eyJ"
       }
     ],
     "secret_shapes_read": "Every field name in the fixture, and every string value except the four places under not_read.",
+    "secret_shapes_applied": "A field name or string fails when any of the six patterns matches anywhere in it. Two patterns give a start. The three-part eyJ pattern is the one in work/0.1/check.mjs; the sk- pattern is that file's, asking for 20 or more token characters with a digit among them. Tried at every start in a long run of starts, each takes time that grows with the square of the run, so check.mjs tries them another way and gives the same answers: in each maximal run of the characters A to Z, a to z, 0 to 9, _ and -, it finds the first place where the start stands at the beginning of the run or straight after a -, and tries the pattern there only. A later such place in the same run can match only where that first one does. A start straight after a letter, a digit or _ is not at a word boundary, and neither pattern matches there.",
     "address_fields": ["href", "ref", "deeper_read", "manifest", "type", "docs"],
     "address_start": {
       "pattern": "^https?:\\/\\/",
@@ -56,13 +59,13 @@
       "A string value is in an address field when the nearest field name above it is one of address_fields: it is that field's value, or an entry of a list that is. Such a value that matches address_start is one address, taken whole. In every other string value that is read, each run that matches address_run is an address.",
       "An address in an address field fails when it does not parse as a URL by the WHATWG URL Standard (href_unparseable). An address inside other text is not asked to parse.",
       "An address fails when the text between :// and the next /, ? or # holds @ (href_userinfo).",
-      "An address fails when its query or its fragment holds a pair whose key is credential-named and whose value is not empty (href_credential_query_key, href_credential_fragment_key). The query is the text after the first ? and before the first #; the fragment is the text after the first #. Each is read as application/x-www-form-urlencoded pairs: split at &, each pair split at its first =, then + and percent-escapes decoded."
+      "An address fails when its query or its fragment holds a pair whose key is credential-named and whose value is not empty (href_credential_query_key, href_credential_fragment_key). The query is the text after the first ? and before the first #; the fragment is the text after the first #. Each is read as application/x-www-form-urlencoded pairs: split at &, each pair split at its first =, then + and percent-escapes decoded. A fragment that holds no such pair is not held against the fixture by this rule, whatever else it holds."
     ],
     "credential_named": {
       "normalise": "Put a break between a lower-case letter or a digit and an upper-case letter that follows it. Lower-case the key. Split it at every run of characters other than a to z and 0 to 9, drop empty parts, and join the parts with _.",
-      "pattern": "(?:^|_)(?:password|passwd|pwd|passphrase|secret|authorization|bearer|credentials?|jwt|signature|cookie|session(?:id)?|(?:api|access|private)_?key|(?<!page_)token)(?:_|$)|^(?:key|auth|sig|pass)$",
+      "pattern": "(?:^|_)(?:password|passwd|pwd|passphrase|passcode|secret|authorization|bearer|credentials?|jwt|signature|cookie|session(?:id)?|(?:api|access|private|auth|app|client|consumer|subscription)_?key|(?<!page_)token)(?:_|$)|^(?:key|auth|sig|pass|otp)$",
       "flags": "",
-      "note": "Applied to the normalised key. The name alone decides: token=USDC fails. key, auth, sig and pass count only as the whole key. code and state are not listed, and a token part straight after a page part is a paging key."
+      "note": "Applied to the normalised key. The name alone decides: token=USDC fails. key, auth, sig, pass and otp count only as the whole key. code, state, sid and PHPSESSID are not listed, and a token part straight after a page part is a paging key. A credential under a name that is not listed passes."
     },
     "not_read": [
       "request/cursor of each exchange",
@@ -585,10 +588,120 @@
       "issues": ["href_credential_query_key"]
     },
     {
+      "id": "credential-query-key-auth-key",
+      "description": "A deeper-read address has the query key auth_key, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&auth_key=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-authkey",
+      "description": "A deeper-read address has the query key authkey, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&authkey=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-app-key",
+      "description": "A deeper-read address has the query key app_key, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&app_key=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-client-key",
+      "description": "A deeper-read address has the query key client_key, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&client_key=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-consumer-key",
+      "description": "A deeper-read address has the query key consumer_key, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&consumer_key=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-subscription-key",
+      "description": "A deeper-read address has the query key subscription-key, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&subscription-key=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-passcode",
+      "description": "A deeper-read address has the query key passcode, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&passcode=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-otp",
+      "description": "A deeper-read address has the query key otp, with the value example. The name counts only as the whole key.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&otp=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
       "id": "credential-bearer-value",
       "description": "Free text carries a token-shaped Bearer value.",
       "edits": [
         {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"Send the header Authorization: Bearer example0000000000000000 to the view address."}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["secret_shape"]
+    },
+    {
+      "id": "credential-provider-key-shape-after-a-hyphen",
+      "description": "Free text carries the sk- shape straight after a hyphen, inside a longer run of token characters. The hyphen is a word boundary, so the pattern matches there.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"A note that holds live-sk-example0000000000000000 in its text."}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["secret_shape"]
+    },
+    {
+      "id": "credential-three-part-token-shape-after-a-hyphen",
+      "description": "Free text carries the three-part eyJ shape straight after a hyphen. The hyphen is a word boundary, so the pattern matches there.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"A note that holds x-eyJexample00.eyJexample00.example0000 in its text."}
       ],
       "targets": "I.NO_CREDENTIAL",
       "result": "check_failed",
@@ -1459,6 +1572,20 @@
       "exercised": { "items_compared_equal": 2, "differences_found": 3, "differences_named": 3 }
     },
     {
+      "id": "shown-again-one-change-unnamed-and-one-item-undecided",
+      "description": "Two entries are taken out of the changes list. One unacknowledged item is shown again changed in a section that lists everything, and nothing names it: a failure. Another is gone from a partial section, and nothing names it: it may only be out of the window, so that point is not decidable. The check fails, and the result keeps both issues.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/view/response/body/changes/items/2"},
+        {"op":"remove","path":"/visits/second/view/response/body/changes/items/1"},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":3}
+      ],
+      "targets": "R2.SHOWN_AGAIN",
+      "result": "check_failed",
+      "outcomes": { "R2.SHOWN_AGAIN": "fail" },
+      "issues": ["unacknowledged_item_changed_unnamed", "undecidable_difference"],
+      "exercised": { "items_compared_equal": 2, "differences_found": 3, "differences_named": 2 }
+    },
+    {
       "id": "state-unavailable-reported-as-zero",
       "description": "A section that could not be read reports count 0.",
       "edits": [
@@ -2165,6 +2292,19 @@
       "issues": ["as_of_went_back"]
     },
     {
+      "id": "freshness-second-view-older-and-not-compared",
+      "description": "The second view states another scope and is dated years before the first. The two views are not compared, so neither are their dates: each document is dated consistently on its own, and R5.FRESHNESS passes.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/audience/scope","value":"identity"},
+        {"op":"set","path":"/visits/second/view/response/body/as_of","value":"2020-01-01T00:00:00Z"},
+        {"op":"set","path":"/visits/second/view/response/body/valid_until","value":"2020-01-02T00:00:00Z"}
+      ],
+      "targets": "P.PAIR",
+      "result": "indeterminate",
+      "outcomes": { "P.PAIR": "unknown", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run" },
+      "issues": ["audience_differs"]
+    },
+    {
       "id": "obligation-reply-expected",
       "description": "A view says a reply is expected.",
       "edits": [
@@ -2744,6 +2884,56 @@
       "description": "A deeper-read address has the query key identity_id, with the value example. The name is not one the tripwire lists.",
       "edits": [
         {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&identity_id=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-sid",
+      "description": "A deeper-read address has the query key sid, with the value example. The name is not one the tripwire lists, though a session id can travel under it.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&sid=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-phpsessid",
+      "description": "A deeper-read address has the query key PHPSESSID, with the value example. The name is not one the tripwire lists, though a session id travels under it.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&PHPSESSID=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-otp-enabled",
+      "description": "A deeper-read address has the query key otp_enabled, with the value example. otp counts only as the whole key.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&otp_enabled=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-fragment-with-no-pair",
+      "description": "The manifest address ends in a fragment of 32 hexadecimal characters with no pair in it. A fragment fails only for a pair with a credential-named key and a value, or for a secret shape, so a secret with neither passes here.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/manifest","value":"https://house.example/.well-known/agent.json#00112233445566778899aabbccddeeff"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-provider-key-shape-after-an-underscore",
+      "description": "Free text carries the sk- shape straight after an underscore. An underscore is a word character, so no word boundary falls before the shape and the pattern does not match. The tripwire misses this text; the boundary is the one the pattern has in work/0.1/check.mjs.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"A note that holds live_sk-example0000000000000000 in its text."}
       ],
       "result": "checks_passed",
       "outcomes": {},

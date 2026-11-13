@@ -206,7 +206,7 @@ sorted. *Whole*: state `ok` or `quiet`; a null `changes` is not whole.
 | `I.UTF8` | a byte-order mark, or invalid UTF-8 | |
 | `I.JSON` | not one JSON value, a repeated key, or nesting over 64 | |
 | `I.SHAPE` | the fixture does not match its schema | |
-| `I.NO_CREDENTIAL` | a string or field name has a secret shape; an address, in an address field or inside other text, has userinfo, or a query or fragment pair with a credential-named key and a value; an address in an address field does not parse. The name alone decides: `token=USDC` fails. Cursors and `position` are not read; `fixtures/cases.json` gives the shapes, fields and names. A tripwire, not a guarantee | |
+| `I.NO_CREDENTIAL` | a string or field name has a secret shape; an address, in an address field or inside other text, has userinfo, or a query or fragment pair with a credential-named key and a value; an address in an address field does not parse. The name alone decides: `token=USDC` fails. A fragment with no such pair passes unless it has a secret shape. Cursors and `position` are not read; `fixtures/cases.json` gives the shapes, fields and names. A tripwire, not a guarantee | |
 | `I.RECORD` | a credential or cursor on the first two requests; no credential on one of the other three; a cursor on the first view request, or none on the bad-cursor one; the view requests not sharing one href, or the orientation having it; `requested_at` going back in slot order; a second-read cursor when a recorded first view was not served, or other than the one it handed back; a bad cursor a recorded view handed back | |
 | `R1.ORIENTATION` | status not 200; body not valid, or over its ceiling; `view.href` not the view address | 5xx |
 | `R1.REFUSAL` | status not 4xx; body not a Surface problem with that status; code not `credential_required`; terminal; first next action not the orientation's href | 5xx; no orientation recorded |
@@ -251,7 +251,7 @@ which every result repeats. Among them: that a host sent the exchanges or
 behaves so now; and conformance, authority, consent, safety or a caller's
 inner state.
 
-`fixtures/cases.json` holds 236 cases, each a list of edits to the example
+`fixtures/cases.json` holds 253 cases, each a list of edits to the example
 with the outcome expected for every check, and 15 more built from recipes.
 
 ## Beside Surface, Work and Covenant

@@ -1,10 +1,10 @@
 {
-  "scope": "Guest-side step 3 (Arrival 0.1): a repository-only development draft of an anonymous orientation and an authenticated continuity view, an offline checker for one recorded pair of reads with its cases and tests, the wording that joins the root README and spec.json to that draft, and the fixes made after three reviews of the step. Local runs on hand-written input only; no host was contacted, and nothing here is a conformance result.",
+  "scope": "Guest-side step 3 (Arrival 0.1): a repository-only development draft of an anonymous orientation and an authenticated continuity view, an offline checker for one recorded pair of reads with its cases and tests, the wording that joins the root README and spec.json to that draft, the fixes made after three reviews of the step, and the fixes made after a final check of those fixes. Local runs on hand-written input only; no host was contacted, and nothing here is a conformance result.",
   "step_began": "2026-11-12",
   "observed_at": "2026-11-13",
-  "date_note": "The step's baseline and first commit are dated 2026-11-12. The review fixes, and the gate totals, digests and read-through below, are of 2026-11-13.",
+  "date_note": "The step's baseline and first commit are dated 2026-11-12. The review fixes, the final-check fixes, and the gate totals, digests and read-through below, are of 2026-11-13.",
   "base_revision": "35c2d77b509c619e56645c20bedae00c638bdb00",
-  "head_before_record": "c43b6bd6b96dca03fff0303f0b1812a177c8199a",
+  "head_before_record": "f0113721a6a5e69e9611687ffe74f379b9ede61d",
   "earlier_commits_of_this_step": [
     {
       "task": "profile-and-schemas",
@@ -17,6 +17,10 @@
     {
       "task": "wording-pointer-and-recording-note",
       "commit": "c43b6bd6b96dca03fff0303f0b1812a177c8199a"
+    },
+    {
+      "task": "review-fixes",
+      "commit": "f0113721a6a5e69e9611687ffe74f379b9ede61d"
     }
   ],
   "gate": {
@@ -27,8 +31,8 @@
       "groups": [
         {
           "script": "test:library",
-          "tests": 302,
-          "pass": 295,
+          "tests": 305,
+          "pass": 298,
           "fail": 0,
           "skipped": 7,
           "cancelled": 0
@@ -81,12 +85,12 @@
     "arrival_tests": {
       "command": "node --test tests/arrival-*.test.mjs",
       "exit_code": 0,
-      "tests": 64,
-      "pass": 64,
+      "tests": 67,
+      "pass": 67,
       "fail": 0,
       "skipped": 0,
       "cancelled": 0,
-      "note": "tests/arrival-0.1.test.mjs (55) and tests/arrival-terms.test.mjs (9); both also run inside npm test through test:library. package.json has no script for them."
+      "note": "tests/arrival-0.1.test.mjs (58) and tests/arrival-terms.test.mjs (9); both also run inside npm test through test:library. package.json has no script for them."
     },
     "render_checks": {
       "node tools/render-covenant.mjs --check": 0,
@@ -111,11 +115,12 @@
           "why": "the wording of this step and interpretation.arrival_terms"
         }
       },
-      "note": "The list of packed paths is unchanged. The bytes of two packed files are not, README.md and spec.json: a package built from this tree is not byte-identical to one built from the base revision. package.json is byte-identical to the base revision again: the test:arrival script the step had added was removed after review. Version, exports and the files list are unchanged, and nothing was published.",
+      "note": "The list of packed paths is unchanged. The bytes of two packed files are not, README.md and spec.json: a package built from this tree is not byte-identical to one built from the base revision. Neither file was edited by the final-check fixes. package.json is byte-identical to the base revision: the test:arrival script the step had added was removed after review. Version, exports and the files list are unchanged, and nothing was published. pack:check runs npm test again before it lists the paths; that second run gave the same totals.",
       "packed_files_restored_to_the_base_revision": [
         "package.json"
       ]
-    }
+    },
+    "run_note": "The gate was run on this tree with this record in place, after the last edit to any file. The record is read by no test."
   },
   "wording": {
     "spec_json_paths": [
@@ -174,7 +179,7 @@
   },
   "draft_readme": {
     "path": "arrival/0.1/README.md",
-    "bytes": 18093,
+    "bytes": 18159,
     "pinned_maximum_bytes": 18432,
     "made_room_for_the_recording_note_by": [
       "shorter link text for the example and the tests",
@@ -192,21 +197,26 @@
     "pin_raised_after_review": {
       "from_bytes": 16384,
       "to_bytes": 18432,
-      "why": "The review asked the README to state more than it had room for: what happens to a served body that is not valid, the narrowed tripwire, the partial rows, the net change list and the position, what a recorder does at a house with no cursor, the Covenant duties its tokens touch, and four open questions. The agreed design pinned 16 KiB; this is a departure from it, made so that no sentence the review asked for was left out for want of bytes. It is the owner's to keep or reverse."
-    }
+      "why": "The review asked the README to state more than it had room for: what happens to a served body that is not valid, the narrowed tripwire, the partial rows, the net change list and the position, what a recorder does at a house with no cursor, the Covenant duties its tokens touch, and four open questions. The agreed design pinned 16 KiB; this is a departure from it, made so that no sentence the review asked for was left out for want of bytes.",
+      "decision": "Accepted: the 18 KiB pin stays. The acceptance is the owner's delegate's, as the fix task for the final check states it (finding G3); this record repeats that statement and does not establish who gave it."
+    },
+    "changed_by_the_final_check_fixes": [
+      "one sentence added to the I.NO_CREDENTIAL row: a fragment with no such pair passes unless it has a secret shape",
+      "the count of cases, 236 to 253"
+    ]
   },
   "sha256": {
     "README.md": "6bb1a19cd5f43f2742d7e9507926f6e4fb28d61387e27b8e7be9bd4c6a4108aa",
-    "arrival/0.1/README.md": "fde8bb2e935bff1434fe4c36986fa79e98509e5d7ee2f72ffe4f608bb1319492",
-    "arrival/0.1/check.mjs": "63ec0b7ff3461360c928fce86a96221dff7fd170a8c0a7b114358fa559f9b60f",
+    "arrival/0.1/README.md": "2d5c630a17460e223e4a8977f06e586ad1f36bb91e11f3e17ca9ee312e26cf08",
+    "arrival/0.1/check.mjs": "caa3b20c877ddcce3967edee4bec11021294fb801d21f9cad3d166318183a8e1",
     "arrival/0.1/examples/two-visits.json": "ac930630118bcfe9e5de3bffb7c392e4786470bc643d40444f65e77ab60e35ae",
     "arrival/0.1/fixture.schema.json": "b982e5c8cc61dff935e098f2d5b28fa1a9cfbe79b979aa91ae2f4251affe432f",
-    "arrival/0.1/fixtures/cases.json": "6635341efde968111453e44fa52df5b010423a52719fb19c1767b84c1cb4f99f",
+    "arrival/0.1/fixtures/cases.json": "e1c4701f3b66bc8f6c5529b0d7152c5e2501db85b32a4101de9d2d699cc2bdb8",
     "arrival/0.1/orientation.schema.json": "57cee3098886c4912931e518a72b40d00a34bbc682b36a52ff1e9f741064c595",
     "arrival/0.1/result.schema.json": "00e5ae04bed129169c28e9b717a0db09ee35ec7230d00ce3657e7e5ee864656a",
     "arrival/0.1/view.schema.json": "c16e29b91451621aaee8f30ab7bf78c734a19dae20cbbb1802db19ca1730d73f",
     "spec.json": "4bb733ef4884ddfba0a858ac7b81fed8e25a8e5b56002031aabaac68150a8d40",
-    "tests/arrival-0.1.test.mjs": "b4a8cc72d2c9acada3ff5dfc7f114381cca4a692d766aa1fb7a67e6ee81c479f",
+    "tests/arrival-0.1.test.mjs": "7431ef62edff59681563417b378559fcb61ff0aa35ee1dc32257403138c2eee7",
     "tests/arrival-terms.test.mjs": "637a6b87b570895ff128c98ca2ea4252a1a8243447e9f606910eb8b57962aef7"
   },
   "read_through": {
@@ -249,8 +259,9 @@
     "that a second implementation exists or would agree: the exit gate is unmet, and the checker, the cases, their expected outcomes and the tests have one author",
     "that the example and the cases fix every behaviour of check.mjs: a null acknowledgement counted as a null position, and addresses compared exactly as written, are held by no case, so an implementation could meet the exit gate and still differ there",
     "that an agent or a host other than the author can use the draft without guessing: the read-through is the author's own",
-    "that the tripwire's names are complete or right for any host: a name alone decides, so a harmless pair can fail and a credential under an unlisted name passes",
-    "that the fixes close every finding of the reviews: what was left is under review_fixes.left_open, and the fixes themselves have not been reviewed",
+    "that the tripwire's names are complete or right for any host: a name alone decides, so a harmless pair can fail (token_type does) and a credential under an unlisted name passes (code, state, sid and PHPSESSID are left out on purpose)",
+    "that check.mjs gives the answer of the sk- and eyJ patterns as cases.json writes them on every text: they agree on every text tried, and the reason they must is given in words, not proved by a machine",
+    "that the fixes close every finding of the reviews or of the final check: what was left is under review_fixes.left_open and final_check_fixes.left_open, and the final-check fixes have not been reviewed",
     "that the root README link resolves: it names the main branch, and this branch is neither pushed nor merged",
     "that a package built from this tree is byte-identical to one built from the base revision: the path list is; README.md and spec.json are not",
     "that the rewording leaves no one-call reading: the four places listed under wording keep their older words",
@@ -261,9 +272,10 @@
     "Task 3 (wording, pointer, recording note): tests/arrival-terms.test.mjs was written first and run before any edit: 8 of its 9 tests failed. The ninth, on LICENSES.md, pins a sentence that was already true, and the last test stopped at its first assertion, before its checker assertions ran. Both were then seen to fail in a scratch copy, where 13 small changes (five to check.mjs, one to LICENSES.md, seven to the three documents) were each caught by these tests.",
     "Tasks 1 and 2 report their own test order in their commit messages; task 2 was not test-first for most of the checker.",
     "The wording strings are the agreed ones. Prose added to README.md is wrapped like its neighbours, and the dated end of the first Continuity pattern keeps its bytes and line breaks.",
-    "Review fixes: see review_fixes.tests_first. The gate was run on the tree of the fix commit before this record was rewritten; the record is not read by any test."
+    "Review fixes: see review_fixes.tests_first. The gate was run on the tree of the fix commit before this record was rewritten; the record is not read by any test.",
+    "Final-check fixes: see final_check_fixes.tests_first. The gate was run again after this record was written; see gate.run_note."
   ],
-  "record_note": "This record was first committed with the third commit of the step and was rewritten with the commit that carries the review fixes; it describes that commit's tree. It cannot hold its own digest or the hash of the commit that carries it.",
+  "record_note": "This record was first committed with the third commit of the step, rewritten with the commit that carries the review fixes, and rewritten again with the commit that carries the final-check fixes; it describes that last commit's tree. It cannot hold its own digest or the hash of the commit that carries it.",
   "review_fixes": {
     "reviewed_commit": "c43b6bd6b96dca03fff0303f0b1812a177c8199a",
     "lenses": [
@@ -276,15 +288,11 @@
       "I.NO_CREDENTIAL names credentials by whole parts of a query or fragment key (key, auth, sig, pass, pwd, jwt, signature, credential, bearer and access_key among them), and no longer by any part of the key that contains a listed word: page_token, max_tokens and sort_key pass. A pair counts only when it has a value.",
       "I.NO_CREDENTIAL no longer fails an address for having a fragment. A fragment fails when it holds a pair with a credential-named key and a value. This departs from the agreed check table, which said an href with a fragment fails.",
       "I.NO_CREDENTIAL looks for addresses anywhere in free text and holds them to the userinfo and credential-pair rules; only a string in an address field (href, ref, deeper_read, manifest, type, an entry of docs) is asked to parse.",
-      "The sk- and eyJ shapes begin only where no token character comes before them. The built case tripwire-long-run-with-no-digit, 180,000 characters of sk- starts in a 188,652-byte fixture, took about 6.5 seconds with the checker of the reviewed commit and under 10 milliseconds with this one, three runs each on the machine named under not_established.",
+      "The sk- and eyJ shapes were made to begin only where no token character comes before them, which ended a slow case and also let through a shape written straight after a hyphen. The final check found that (G2). They again match what they matched at the reviewed commit, and are tried once in each run of token characters; see final_check_fixes.",
       "R3.STATES: in a partial envelope with no dropped count, a count is null or above the number of items listed; with reason limit, the list is full.",
       "R2.DECLARED_EFFECTS compares operational_writes as a set.",
       "When more than 256 issues arise, the first failure and the first undecidable point of each check are kept, and a check's observed sentence says how many of its issues the list holds.",
       "The command line looks at a path before opening it, so a named pipe is refused with exit code 2 and not waited on. work/0.1/check.mjs, from which the reader was copied, still opens first; it was not changed here."
-    ],
-    "departures_from_the_agreed_design": [
-      "The draft README pin went from 16 KiB to 18 KiB; see draft_readme.pin_raised_after_review.",
-      "A fragment alone no longer fails I.NO_CREDENTIAL; see what_changed_in_the_checker."
     ],
     "tests_first": "The cases, the tests and the README pins were changed before the checker, the schemas and the README. Run then, 19 of 64 arrival tests failed; after the changes 64 of 64 pass. 59 small falsifying edits (40 to check.mjs, 17 to the draft README, 2 to schema descriptions) were then tried one at a time on a scratch copy: 55 were caught at first, tests were added for the other 4, and all 59 are caught now. The edits were chosen by the author of the fixes.",
     "taken_off_the_read_through": [
@@ -300,7 +308,47 @@
       "The Care principle, the closing and CONFORMANCE.md still describe one arrival that already knows the caller, and arrival_terms does not name principles. Not edited: the wording was agreed.",
       "interpretation.arrival_terms carries no status label of its own, unlike its neighbours in spec.json.",
       "work/0.1/check.mjs waits on a named pipe, as this checker did.",
-      "The eyJ, gh and Bearer shapes were not measured beyond the worst texts tried in the tests."
+      "The gh, AKIA, PEM and Bearer/Basic shapes were timed only on the worst texts tried, and no bound is shown for them; see final_check_fixes.measurements."
     ]
-  }
+  },
+  "final_check_fixes": {
+    "checked_commit": "f0113721a6a5e69e9611687ffe74f379b9ede61d",
+    "what_it_was": "An independent final check of the review-fix commit returned seven findings, G1 to G7. Each was reproduced with that check's own scripts before anything was changed: the same 14 README edits and the same one checker edit passed every test, and the shape, key-name, fragment and freshness probes gave the outputs the findings quote.",
+    "per_finding": {
+      "G1-readme-pins-partial": "Fixed, in tests only. The whole draft README is now held word for word, heading by heading, with its first lines and its list of headings; the line that counts the cases is built from cases.json, and the bounds table is still built from the schemas. The field-list test now reads the README's own shapes and holds them to the schemas; its title says the README's two top-level lists leave out schema_version. The 27 edits of the final check, its 5 controls and 36 new README edits are all caught; at the checked commit 28 of the 35 new ones that could be made there passed every test. README bytes changed only for G4 and for the case count.",
+      "G2-shape-start-rule-undeclared": "Fixed in code. The sk- and three-part eyJ patterns in cases.json are again the ones of the reviewed commit: a word boundary, then the shape. check.mjs gives their answers in time that grows with the input: in each maximal run of token characters it finds the first start that stands at the beginning of the run or straight after a hyphen, and tries the pattern there only; a later start in the same run can match only where that one does. Both texts of the finding fail again and each has a case; a third case holds the boundary the patterns always had (a shape straight after an underscore passes). The checker and the patterns as written agree on 12,000 built texts inside the tests and on 1,360,799 outside them, with no disagreement. The 2-second bound holds over ten worst texts.",
+      "G3-readme-pin-raised": "Accepted, nothing changed: the 18 KiB pin stays, as the fix task for this check states. The README is 18,159 bytes against a pin of 18,432.",
+      "G4-fragment-rule-changed": "Accepted, the rule not changed: a fragment alone does not fail, as the fix task for this check states. Added: the case pass-fragment-with-no-pair (a bare fragment of 32 hexadecimal characters passes), one sentence in the README's I.NO_CREDENTIAL row, one in the address rules of cases.json, and tests that a fragment pair with a credential-named key and a secret shape in a fragment still fail.",
+      "G5-freshness-expected-sentence": "Fixed. The fixed sentence of R5.FRESHNESS now says the second view is not dated before the first 'where the two views are compared with each other', so it is true whenever the check passes. The observed sentence says when the order was not compared, and says nothing of an order when only one view was read. A test holds the fixed sentence and the three forms of the observed one word for word, and the case freshness-second-view-older-and-not-compared is the final check's probe. The README row gives the failing condition and already says 'P.PAIR passed'; it was not changed.",
+      "G6-compound-key-names": "Fixed. The words that make a credential name with key after them are now api, access, private, auth, app, client, consumer and subscription. passcode is a name, like passphrase. otp counts only as the whole key, so otp_enabled passes. Eight failing cases cover the seven added names, and three passing ones hold what is left out or narrowed (sid, PHPSESSID, otp_enabled). Left out on purpose: code, state, sid and PHPSESSID; a credential under one of them passes. The 20,000 honest-host fixtures of the soundness review give the totals they gave before (9,007 checks_passed, 10,993 indeterminate) and no failing check. Those fixtures carry no query key, so 283 harmless key names were also put to the old rule and the new: none changed its answer.",
+      "G7-held-count-untested": "Fixed, in tests only. The case shown-again-one-change-unnamed-and-one-item-undecided gives R2.SHOWN_AGAIN one failure and one undecidable difference; a test holds its observed sentence and both issues word for word, and a second fixture holds the sentence for two undecidable points with no failure. The final check's edit C24 is now caught."
+    },
+    "tests_first": "The cases and the tests were changed before check.mjs and the README. Run then, 9 of 67 arrival tests failed; after the changes 67 of 67 pass. Three things were not seen to fail as tests: the README pins (G1), the bare-fragment case (G4) and the held-count test (G7) guard text and behaviour that were already right, so they passed when written. What was seen to fail for them is the falsifying edit: it passed every test before and is caught now. Two texts with a start that is not at a word boundary were added after the checker change and passed at once.",
+    "falsifying_edits": {
+      "how": "One edit at a time on a scratch copy of the tree, then both arrival test files. An edit is caught when a test fails.",
+      "the_final_checks_own": "32 README edits and 30 check.mjs edits, with the text each replaces brought up to date where this round changed it: 62 caught, 0 survived. At the checked commit 14 README edits and one check.mjs edit survived. One edit, C23, could not be made as written, because the text it replaced is gone; the nearest edit was made in its place (a start may stand anywhere in a run).",
+      "new_in_this_round": "36 README edits, 20 check.mjs edits in the code this round changed, and 6 edits to cases.json: 62 caught, 0 survived. Two of the README edits are controls in text that was already held.",
+      "note": "The new edits were chosen by the author of these fixes."
+    },
+    "measurements": {
+      "machine": "the one macOS arm64 machine, Node 24.18.1, named under not_established",
+      "long_run_case": "tripwire-long-run-with-no-digit, 188,652 bytes, three runs each: 6.0 to 6.6 seconds with the checker of the reviewed commit, 2.7 to 7.1 milliseconds with the checker of the checked commit, 2.5 to 7.0 milliseconds with this one.",
+      "worst_texts": "The final check's 15 worst texts, each in a fixture near the input limit: 3 to 14 milliseconds per run with this checker.",
+      "shapes_compared": "400,000 built texts from four seeds and every text of 1 to 7 pieces from a set of seven (960,799 texts), each put through the checker in a fixture and through the six patterns as cases.json writes them: 103,077 matched, and the two never disagreed."
+    },
+    "left_open": [
+      "R1.ORIENTATION's fixed sentence says the orientation points at the view address. With no request to the view recorded there is no such address, and the check passes; its observed sentence says 'where one is recorded'. I.RECORD's fixed sentence says the second read presents only the cursor the first view handed back; with no first view recorded that is not compared, and the check passes. Both are gaps of the kind G5 was. No finding asked for them and neither sentence was changed.",
+      "The README's two top-level field lists leave out schema_version. The test that compares them says so; the README was not changed.",
+      "The naming rule passes a credential under a name it does not list. code, state, sid and PHPSESSID are left out on purpose. Other names, hmac and nonce among them, were not weighed.",
+      "A secret with no shape, carried as a bare fragment, passes (G4).",
+      "The sk- and eyJ patterns have a miss they have had since they were taken from work/0.1/check.mjs: a shape written straight after a letter, a digit or an underscore is not at a word boundary, and passes. A case states it.",
+      "The acceptance of G3 and G4 is taken from the fix task. This record does not establish who gave it.",
+      "These fixes have not been reviewed."
+    ]
+  },
+  "departures_from_the_agreed_design": [
+    "The draft README pin went from 16 KiB to 18 KiB; see draft_readme.pin_raised_after_review. Accepted at the final check (G3), as the fix task for that check states.",
+    "A fragment alone does not fail I.NO_CREDENTIAL, where the agreed check table lists an href with a fragment among the things that must fail. A fragment fails for a pair with a credential-named key and a value, or for a secret shape; a secret with neither passes there. Accepted at the final check (G4), as the fix task for that check states.",
+    "Not counted as departures: changes to the checks that the three reviews and the final check asked for. Each is stated under review_fixes.what_changed_in_the_checker or final_check_fixes.per_finding. They too differ from the words of the agreed check table. Among them: an address inside other text is read, and only an address field is asked to parse; a credential-named key is a whole part of the key and counts only with a value; a partial count given as a floor is above the items listed; operational writes are compared as a set; a served body that is not valid makes the checks that read every document unknown, where the table had them read the valid ones only. The owner has not been asked about these one by one."
+  ]
 }

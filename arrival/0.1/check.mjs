@@ -14,7 +14,7 @@
 //   value), the repeated-key preflight, the timestamp check and comparison,
 //   the bounded file read (here a path is looked at before it is opened, so
 //   a named pipe is refused and not waited on), the result shape, and the
-//   credential patterns, which are adapted (see SECRET_SHAPES).
+//   credential patterns, which are adapted (see hasSecretShape).
 // - surface/0.1/check.mjs: the address test and the problem rules of
 //   validateProblem, which here return rule names instead of sentences so
 //   that no field name or value from a fixture reaches a result.
@@ -71,7 +71,7 @@ const CHECKS = Object.freeze([
   ["R4.CURSOR", "each served view hands back a cursor, and a view answering a request with no cursor is full, with no basis cursor and no changes"],
   ["R4.CHANGES", "the basis echoes the presented cursor, no changes entry names a section in neither view or contradicts the two views, every decidable difference this check owns is named, and at least one decidable difference was found and named"],
   ["R4.BAD_CURSOR", "a 4xx XENIA Surface 0.1 problem with code cursor_not_accepted, not terminal, with a next action back to the view address"],
-  ["R5.FRESHNESS", "every served document states as_of and valid_until, valid_until is not before as_of, and the second view is not dated before the first; no time is compared with a request time or a clock"],
+  ["R5.FRESHNESS", "every served document states as_of and valid_until, valid_until is not before as_of, and, where the two views are compared with each other, the second is not dated before the first; no time is compared with a request time or a clock"],
   ["R6.NO_OBLIGATION", "every served document says no reply is expected, every served view says reading creates no obligation, and each view sets owed_to and due_at only in its one recorded_obligations section"],
   ["R7.NON_CLAIMS", "every served document lists every not_established token of its kind"],
 ]);
@@ -95,18 +95,44 @@ const REQUIRED_TOKENS = Object.freeze({
 // changed for a record whose prose may say "bearer" or "basic" and whose ids
 // may begin "sk-": the sk- and Bearer/Basic shapes need 20 or more token
 // characters with a digit among them, and the "token:" shape is dropped. The
-// sk- and three-part eyJ shapes begin only where no token character comes
-// before them, so a long run of such starts is read once and not once per
-// start. The gh?_, AKIA and PEM shapes are as they were. This is a tripwire.
-// A match is a failure whatever the value is; no match establishes nothing.
+// gh?_, AKIA, PEM and three-part eyJ shapes are as they were. This is a
+// tripwire. A match is a failure whatever the value is; no match establishes
+// nothing.
 const SECRET_SHAPES = Object.freeze([
-  /(?<![A-Za-z0-9_-])sk-(?=[A-Za-z0-9_-]*[0-9])[A-Za-z0-9_-]{20,}\b/,
   /\bgh[pousr]_[A-Za-z0-9]{16,}\b/,
   /\bAKIA[0-9A-Z]{16}\b/,
   /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
   /\b(?:Bearer|Basic)\s+(?=[A-Za-z0-9._~+/-]*[0-9])[A-Za-z0-9._~+/-]{20,}=*/i,
-  /(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/,
 ]);
+// The sk- and eyJ shapes are /\bsk-…/ and /\beyJ…/: a word boundary, then the
+// rest below. Written so and tried at every start, each takes time that grows
+// with the square of a long run of starts. They are tried another way that
+// gives the same answers. A start at a word boundary stands at the beginning
+// of a run of token characters or straight after a hyphen in one, and a later
+// start in the same run can match only where the first one does, because
+// everything that follows the later start also follows the first. So each run
+// is searched for its first start, and the shape is tried there only, held to
+// that place by its sticky flag.
+const TOKEN_RUN = /[A-Za-z0-9_-]+/g;
+const RUN_SHAPES = Object.freeze([
+  ["sk-", /sk-(?=[A-Za-z0-9_-]*[0-9])[A-Za-z0-9_-]{20,}\b/y],
+  ["eyJ", /eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/y],
+]);
+
+/** True when a string or field name matches a secret shape anywhere in it. */
+function hasSecretShape(text) {
+  if (SECRET_SHAPES.some((shape) => shape.test(text))) return true;
+  for (const run of text.matchAll(TOKEN_RUN)) {
+    for (const [start, shape] of RUN_SHAPES) {
+      let at = run[0].indexOf(start);
+      while (at > 0 && run[0][at - 1] !== "-") at = run[0].indexOf(start, at + 1);
+      if (at < 0) continue;
+      shape.lastIndex = run.index + at;
+      if (shape.test(text)) return true;
+    }
+  }
+  return false;
+}
 
 // Addresses. A field with one of these names holds an address in the three
 // schemas or in a Surface problem; a string there that begins as a web
@@ -119,8 +145,10 @@ const ADDRESS_RUN = /https?:\/\/[^\s"'<>]+/gi;
 // Applied to a query or fragment key once it is normalised (see
 // normalisedKey). Whole parts only, so page_token, max_tokens and sort_key do
 // not match; key, auth, sig and pass count only as the whole key, because
-// each is also an ordinary word. The name alone decides: token=USDC matches.
-const CREDENTIAL_NAMED = /(?:^|_)(?:password|passwd|pwd|passphrase|secret|authorization|bearer|credentials?|jwt|signature|cookie|session(?:id)?|(?:api|access|private)_?key|(?<!page_)token)(?:_|$)|^(?:key|auth|sig|pass)$/;
+// each is also an ordinary word, and so does otp, so that otp_enabled does
+// not match. The name alone decides: token=USDC matches. code, state, sid and
+// PHPSESSID are not listed, and a credential under an unlisted name passes.
+const CREDENTIAL_NAMED = /(?:^|_)(?:password|passwd|pwd|passphrase|passcode|secret|authorization|bearer|credentials?|jwt|signature|cookie|session(?:id)?|(?:api|access|private|auth|app|client|consumer|subscription)_?key|(?<!page_)token)(?:_|$)|^(?:key|auth|sig|pass|otp)$/;
 
 // The five exchange slots of a fixture, in the order their requests are read.
 const SLOTS = Object.freeze([
@@ -885,7 +913,7 @@ function checkNoCredential(fixture, known, report) {
   (function scan(value, path, shown, field) {
     if (typeof value === "string") {
       if (exempt.has(path)) return;
-      if (SECRET_SHAPES.some((shape) => shape.test(value))) {
+      if (hasSecretShape(value)) {
         tally.fail("secret_shape", shown, "A string has the shape of a secret. It was not copied.");
       }
       let addresses;
@@ -907,7 +935,7 @@ function checkNoCredential(fixture, known, report) {
       value.forEach((member, index) => scan(member, `${path}/${index}`, `${shown}/${index}`, field));
     } else if (isObject(value)) {
       for (const [key, member] of Object.entries(value)) {
-        if (SECRET_SHAPES.some((shape) => shape.test(key))) {
+        if (hasSecretShape(key)) {
           tally.fail("secret_shape", shown, "A field name has the shape of a secret. It was not copied.");
         }
         scan(member, pointer(path, key), known.has(key) ? pointer(shown, key) : `${shown}/*`, key);
@@ -1311,7 +1339,14 @@ function checkFreshness(documents, slots, views, pairPassed, report) {
     && compareTimestamp(views.second.as_of, views.first.as_of) < 0) {
     tally.fail("as_of_went_back", `${bodyPath(slots.second)}/as_of`, "The second view is dated before the first.");
   }
-  tally.settle(`${plural(read.length, "served document")}: each states as_of and valid_until, and valid_until is not before as_of${pairPassed ? "; the second view is not dated before the first" : ""}. Host times were compared with host times only: no request time and no clock was read, so a document already past its valid_until when it was requested is not held against the host.`);
+  // The order of the two views' dates is compared only where P.PAIR passed,
+  // and the sentence says which it was.
+  const order = pairPassed
+    ? "; the second view is not dated before the first."
+    : views.first && views.second
+      ? ". The two views were not compared with each other, so the order of their dates was not either."
+      : ".";
+  tally.settle(`${plural(read.length, "served document")}: each states as_of and valid_until, and valid_until is not before as_of${order} Host times were compared with host times only: no request time and no clock was read, so a document already past its valid_until when it was requested is not held against the host.`);
 }
 
 function checkNoObligation(documents, report) {
