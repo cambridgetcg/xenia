@@ -1993,6 +1993,10 @@ test("the tripwire shapes, fields and names listed in cases.json are the ones th
     assert.ok(new RegExp(pattern, flags) instanceof RegExp);
     assert.ok(checkerSource.includes(`/${pattern}/${flags}`), `check.mjs uses /${pattern}/${flags}`);
   }
+  // The two address patterns hold a pattern and its flags and nothing else, so
+  // no sentence can be added beside either and go unheld.
+  assert.deepEqual(Object.keys(tripwire.address_start), ["pattern", "flags"]);
+  assert.deepEqual(Object.keys(tripwire.address_run), ["pattern", "flags"]);
   for (const { pattern, flags, start } of byRun) {
     assert.ok(new RegExp(pattern, flags) instanceof RegExp);
     assert.equal(flags, "");
