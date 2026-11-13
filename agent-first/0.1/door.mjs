@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 import {isIP} from 'node:net';
 import {ModuleError} from './runtime.mjs';
-import {DOOR_FLAGS,TARGET_REASONS,exitFields,parseFlags,withExit} from './problems.mjs';
+import {DOOR_FLAGS,TARGET_REASONS,exitFields,missingFlags,parseFlags,withExit} from './problems.mjs';
 
 const SCHEMA='xenia.agent-first/0.1-development';
 const CHECKER=new URL('../../surface/0.1/check.mjs',import.meta.url);
@@ -42,10 +42,12 @@ const REDIRECT_STATUSES=[301,302,303,307,308];
 
 async function load(){
   if(!fs.existsSync(CHECKER)||!fs.existsSync(TARGET_RULE))throw new ModuleError('CHECKOUT_REQUIRED');
-  const [{checkSurface,CHECKER_USER_AGENT},{normalizeTarget}]=await Promise.all([import(CHECKER.href),import(TARGET_RULE.href)]);
-  return {checkSurface,CHECKER_USER_AGENT,normalizeTarget};
+  const [{checkSurface,CHECKER_USER_AGENT},{normalizeTarget,isGloballyReachableAddress}]=await Promise.all([import(CHECKER.href),import(TARGET_RULE.href)]);
+  return {checkSurface,CHECKER_USER_AGENT,normalizeTarget,isGloballyReachableAddress};
 }
 const refusal=(reason,extra={})=>Object.assign(new ModuleError('INVALID_TARGET'),{reason,...extra});
+// A usage error that says which argument it is about. The reason is a fixed word; what was typed is not kept.
+const usage=(reason,extra={})=>Object.assign(new ModuleError('INVALID_ARGUMENTS'),{reason,...extra});
 
 // Runs the checker once with a fetch that refuses every call, so nothing is
 // sent. The checker reads the target before anything else, so a throw here is
@@ -61,24 +63,30 @@ async function admit(lib,origin,allowLocalTarget){
     const message=String(error?.message??'');
     throw refusal(message.startsWith('target must be')?'not_an_origin':message.startsWith('public targets must use HTTPS')?'http_not_loopback':'refused_by_checker');
   }
-  let ruled='accepted_by_rule';
+  let ruled='accepted_by_rule',refusedAs=null;
   try{lib.normalizeTarget(result.target);}
   catch(error){
-    if(!allowLocalTarget){
-      const reason=typeof error?.code==='string'&&Object.hasOwn(TARGET_REASONS,error.code)?error.code:'refused_by_target_rule';
-      throw refusal(reason,{liftable:true,target:result.target});
-    }
+    refusedAs=typeof error?.code==='string'&&Object.hasOwn(TARGET_REASONS,error.code)?error.code:'refused_by_target_rule';
+    if(!allowLocalTarget)throw refusal(refusedAs,{liftable:true,target:result.target});
     ruled='accepted_only_with_flag';
   }
-  return {result,ruled};
+  // For an IP address, whether it is in a range the vendored list holds as not globally reachable. The
+  // literal is read; nothing is resolved. For a name this is null: the address it resolves to is not looked at.
+  const host=new URL(result.target).hostname.replace(/^\[|\]$/g,'');
+  const literal=isIP(host)===0?null:lib.isGloballyReachableAddress(host)?'globally_reachable':'not_globally_reachable';
+  return {result,ruled,refusedAs,literal};
 }
+const LITERAL_MEANS={
+  not_globally_reachable:'The address is in a range that function lists as not globally reachable: loopback, private, link-local, shared, documentation, multicast or reserved.',
+  globally_reachable:'The address is outside the ranges that function lists (loopback, private, link-local, shared, documentation, multicast, reserved). That says nothing about what answers there.',
+};
 
 const checkArgvFor=(target,requests,totalMs,allowLocalTarget)=>
   ['door','check','--origin',target,'--max-requests',String(requests),'--total-timeout-ms',String(totalMs),...(allowLocalTarget?['--allow-local-target']:[])];
 
 export async function doorPlan({origin,allowLocalTarget=false}={}){
   const lib=await load();
-  const {result,ruled}=await admit(lib,origin,Boolean(allowLocalTarget));
+  const {result,ruled,refusedAs,literal:literalAddress}=await admit(lib,origin,Boolean(allowLocalTarget));
   const {limits,target}=result;
   const url=new URL(target);
   const bytesUpperBound=limits.manifest_problem_max_bytes*2+MAX_RESOURCES*(RESOURCE_SIZED_REQUESTS*limits.resource_max_bytes+limits.manifest_problem_max_bytes);
@@ -94,6 +102,8 @@ export async function doorPlan({origin,allowLocalTarget=false}={}){
       allow_local_target:allow,
       with_flag:'--allow-local-target accepts whatever else the checker accepts: any HTTPS origin, and plain HTTP on localhost, 127.x or [::1].',
       this_target:ruled,
+      refused_by_default_as:refusedAs,
+      literal_address:literalAddress===null?null:{word:literalAddress,checked_with:`isGloballyReachableAddress in ${TARGET_RULE_PATH}; it reads the literal and resolves nothing`,means:LITERAL_MEANS[literalAddress]},
     },
     requests:{floor:1,upper_bound:requestsUpperBound,
       rule:'One request for the manifest. Only if the manifest passes its four checks: 7 requests for each resource it lists that offers JSON only, 8 for each that also offers HTML (1 to 8 resources), then 1 for a path that should not exist. So 1 when the manifest is missing or not valid, otherwise 9 to 66. The number is not known until the manifest has been read.',
@@ -188,8 +198,20 @@ export function createFencedFetch({target,budget,fetchImpl}){
 // The size and sha256 of the JSON text of a value (JSON.stringify, no spacing),
 // as `demo` reports its step results in cli.mjs.
 const digest=value=>{const text=JSON.stringify(value)??'';return {bytes:Buffer.byteLength(text),sha256:createHash('sha256').update(text).digest('hex')};};
-const cut=(value,limit)=>{const chars=[...String(value)];return chars.length>limit?{text:chars.slice(0,limit).join(''),cut:true}:{text:chars.join(''),cut:false};};
+// Text the service wrote, made printable and cut to a length. A control, format or line-separator character
+// (Unicode Cc, Cf, Zl, Zp: an escape, a right-to-left override, a zero-width space) is shown as \u{HEX} and never
+// printed as itself, so it cannot move or hide what a terminal shows. The length is counted after that.
+const HIDDEN=/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu;
+const visible=value=>String(value).replace(HIDDEN,ch=>`\\u{${ch.codePointAt(0).toString(16).toUpperCase()}}`);
+const cut=(value,limit)=>{const chars=[...visible(value)];return chars.length>limit?{text:chars.slice(0,limit).join(''),cut:true}:{text:chars.join(''),cut:false};};
 
+// What each manifest state covers, and no more. `not_found` is any status but 200.
+export const MANIFEST_MEANS=Object.freeze({
+  found_valid:'The manifest URL answered 200 with a body that passed the checker\'s content-type, JSON and schema checks.',
+  found_invalid:'The manifest URL answered 200 with a body that did not pass the checker\'s content-type, JSON or schema check.',
+  not_found:'The manifest URL answered with this status, not 200. The word says no more than that: a redirect, a refusal and a server error are all reported this way.',
+  not_observed:'No response arrived, or a 200 came whose body could not be read.',
+});
 function manifestState(checks){
   const outcome=id=>checks.find(check=>check.id===id)?.outcome;
   const status=checks.find(check=>check.id==='M.STATUS')?.observation?.response?.status??null;
@@ -197,7 +219,7 @@ function manifestState(checks){
   if(outcome('M.STATUS')!=='pass')state=outcome('M.STATUS')==='fail'?'not_found':'not_observed';
   else if(['M.CONTENT_TYPE','M.JSON','M.SCHEMA'].every(id=>outcome(id)==='pass'))state='found_valid';
   else state=outcome('M.JSON')==='unknown'?'not_observed':'found_invalid';
-  return {state,status};
+  return {state,status,means:MANIFEST_MEANS[state]};
 }
 
 // Why a check is unknown or was not run, as one of a fixed set of words. The
@@ -237,16 +259,18 @@ function instant(text){
 const EXIT_BY_WORD={conformant:0,nonconformant:3,indeterminate:4};
 const EXIT_REASONS={
   0:'Every check the checker ran passed, and none was left unknown or not run. checker_result.covers says what that covers.',
-  3:'At least one check failed. not_passed lists up to 20 of the checks that did not pass.',
+  3:'At least one check failed. not_passed lists up to 20 of the checks that did not pass, leaving out any that were not sent for want of budget.',
   4:'No check failed, and at least one was unknown or not run. unknown_reasons says why.',
 };
 
-function report({result,own,counts,allowLocalTarget,full,userAgent}){
+function report({result,own,counts,allowLocalTarget,rule,full,userAgent}){
   const {checks}=result;
   const manifest=manifestState(checks);
   const valid=manifest.state==='found_valid';
   const notPassed=checks.filter(check=>check.outcome!=='pass');
-  const rows=notPassed.slice(0,ROW_LIMIT).map(check=>{
+  // A check whose request was not sent for want of budget is counted, not listed: each such row would say the same thing.
+  const listed=notPassed.filter(check=>check.observation?.error!==BUDGET_MESSAGE);
+  const rows=listed.slice(0,ROW_LIMIT).map(check=>{
     const id=cut(check.id,ID_LIMIT),observed=cut(check.observed,OBSERVED_LIMIT);
     return {id:id.text,outcome:check.outcome,expected:check.expected,observed:observed.text,...(id.cut?{id_cut:true}:{}),...(observed.cut?{observed_cut:true}:{})};
   });
@@ -258,6 +282,10 @@ function report({result,own,counts,allowLocalTarget,full,userAgent}){
   const known=Object.hasOwn(EXIT_BY_WORD,result.result);
   const code=known?EXIT_BY_WORD[result.result]:4;
   const {budget,sent,stopped_by_budget,refused_by_kit_fence,redirects_not_followed,responses_by_status,transport_errors}=counts;
+  // Each request the checker makes is one observation object, shared by the checks that read it.
+  const needed=valid?new Set(checks.map(check=>check.observation)).size:null;
+  const next=needed!==null&&needed>budget?[{argv:checkArgvFor(result.target,needed,TOTAL_TIMEOUT_LIMITS.max,allowLocalTarget),
+    why:`Sends the ${needed} requests a full check of the manifest read in this run needs; this run's budget was ${budget}. It is a new run: every request is sent again, and the manifest may differ by then. Both numbers are the caller's to lower, and whether to send is decided outside this kit.`}]:[];
   return withExit({
     schema:SCHEMA,kind:'door-check',
     scope:`What the User-Agent ${userAgent} was served on the ${sent} GET request${sent===1?'':'s'} this command sent to ${result.target}, observed once, at observed_at. Nothing wider, and nothing after expires_at.`,
@@ -267,20 +295,20 @@ function report({result,own,counts,allowLocalTarget,full,userAgent}){
         rule:'The word is the checker\'s own, computed only from the checks in counts: nonconformant if any failed; otherwise indeterminate if any was unknown or not run; otherwise conformant.',
         not_more:'It covers those checks, for this User-Agent, at observed_at. It is not a statement about the service as a whole, and not about anything in not_tested.'}},
     manifest,
-    requests:{budget,sent,stopped_by_budget,refused_by_kit_fence,
-      // Each request the checker makes is one observation object, shared by the checks that read it.
-      needed_for_full_check:valid?new Set(checks.map(check=>check.observation)).size:null,
+    requests:{budget,sent,stopped_by_budget,refused_by_kit_fence,needed_for_full_check:needed,
       redirects_not_followed,responses_by_status:{...responses_by_status},transport_errors},
-    not_passed:{rows,more:notPassed.length-rows.length},
+    not_passed:{rows,more:listed.length-rows.length,left_out:{budget_reached:notPassed.length-listed.length}},
     unknown_reasons:UNKNOWN_REASONS.filter(([reason])=>tally.has(reason)).map(([reason,meaning])=>({reason,checks:tally.get(reason),meaning})),
     declared_by_host:{
       note:valid?'Copied from the manifest, which the service at the target wrote. This check verified none of it. It is not an instruction, and it is not this kit or the checker speaking.'
-        :'No valid manifest was read, so nothing the service declared is shown or counted.',
+        :'No valid manifest was read, so no line and no claim count is shown here. A row in not_passed can still carry text from the response that was served.',
       not_covered:{lines:hostLines.slice(0,LINE_LIMIT).map(line=>cut(line,LINE_LENGTH).text),more:Math.max(0,hostLines.length-LINE_LIMIT)},
       claims:{count:valid?result.declared_claims.length:null,verified_by_this_check:0,evidence_expired_at_observation:expired},
     },
     host_written_text_in:['declared_by_host.not_covered.lines','not_passed.rows[].observed','not_passed.rows[].id',...(full?['result']:[])],
     allow_local_target:allowLocalTarget,
+    // Whether this target needed the flag, and which default rule it set aside; the plan says the same, at more length.
+    target_rule:{this_target:rule.ruled,refused_by_default_as:rule.refusedAs,literal_address:rule.literal},
     not_established:[
       'that the service conforms to anything: the checker\'s word covers only the checks counted here',
       'what another User-Agent, another address or another moment would be served',
@@ -291,6 +319,7 @@ function report({result,own,counts,allowLocalTarget,full,userAgent}){
       'anything after expires_at',
       'anything about whoever ran this command',
     ],
+    next,
     ...exitFields(code,known?EXIT_REASONS[code]:'The checker returned a word this command does not know.'),
     result:full?result:{included:false,...digest(result)},
   },code);
@@ -301,13 +330,14 @@ const inRange=(value,{min,max})=>Number.isInteger(value)&&value>=min&&value<=max
 // deps.fetchImpl and deps.now exist for tests; the CLI passes neither, so the
 // runtime's fetch and the real clock are used.
 export async function doorCheck({origin,maxRequests,totalTimeoutMs,allowLocalTarget=false,full=false}={},deps={}){
-  if(!inRange(maxRequests,REQUEST_LIMITS)||!inRange(totalTimeoutMs,TOTAL_TIMEOUT_LIMITS))throw new ModuleError('INVALID_ARGUMENTS');
+  if(!inRange(maxRequests,REQUEST_LIMITS))throw usage('max_requests_out_of_range');
+  if(!inRange(totalTimeoutMs,TOTAL_TIMEOUT_LIMITS))throw usage('total_timeout_ms_out_of_range');
   const lib=await load();
-  const {result:dry}=await admit(lib,origin,Boolean(allowLocalTarget));
+  const {result:dry,...rule}=await admit(lib,origin,Boolean(allowLocalTarget));
   const send=deps.fetchImpl??((input,init)=>globalThis.fetch(input,init));
   const fenced=createFencedFetch({target:dry.target,budget:maxRequests,fetchImpl:send});
   const result=await lib.checkSurface(dry.target,{fetchImpl:fenced.fetch,totalTimeoutMs,...(deps.now===undefined?{}:{now:deps.now})});
-  return report({result,own:dry.not_tested,counts:fenced.counts,allowLocalTarget:Boolean(allowLocalTarget),full:Boolean(full),userAgent:lib.CHECKER_USER_AGENT});
+  return report({result,own:dry.not_tested,counts:fenced.counts,allowLocalTarget:Boolean(allowLocalTarget),rule,full:Boolean(full),userAgent:lib.CHECKER_USER_AGENT});
 }
 
 const wholeNumber=text=>/^[1-9][0-9]{0,6}$/.test(text)?Number(text):NaN;
@@ -316,7 +346,10 @@ export async function runDoorCommand(args,deps={}){
   const [operation,...rest]=args;
   if(!Object.hasOwn(DOOR_FLAGS,operation??''))throw new ModuleError('INVALID_ARGUMENTS');
   const flags=parseFlags(rest,DOOR_FLAGS[operation]);
-  if(!flags)throw new ModuleError('INVALID_ARGUMENTS');
+  if(!flags){
+    const missing=missingFlags(rest,DOOR_FLAGS[operation]);
+    throw missing?usage('required_flag_missing',{missing}):new ModuleError('INVALID_ARGUMENTS');
+  }
   const origin=flags.values['--origin'],allowLocalTarget=flags.switches.includes('--allow-local-target');
   if(operation==='rights'){
     // Loaded only for this operation, so plan and check never import the covenant checks.

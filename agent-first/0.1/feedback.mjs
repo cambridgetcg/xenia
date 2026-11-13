@@ -2,11 +2,14 @@
 // `feedback new` and `feedback check`: the form AGENT-FEEDBACK.md describes,
 // as a blank entry and as a line-by-line reading of a written one.
 //
-// The form is not invented here. The fields and their layout are those of the
-// entry already in the notebook (2026-07-11). The sections answer the eight
-// bullets under "When adding an entry, say:", and each part below quotes the
-// words of the bullet it answers; a test compares them with the notebook. A
-// file is read with the kit's bounded, no-follow reader (input-file.mjs).
+// The form is not invented here. The layout (a dated heading, then a list of
+// bold-labelled fields) and six of the eight fields are those of the entry
+// already in the notebook (2026-07-11). The other two, Network vantage and
+// Reply path, are not in that entry: they answer bullets 3 and 7. The
+// sections answer the eight bullets under "When adding an entry, say:", and
+// each part below quotes the words of the bullet it answers; a test compares
+// them with the notebook. A file is read with the kit's bounded, no-follow
+// reader (input-file.mjs).
 //
 // Neither command sends, delivers or decides anything, and neither reads a
 // clock. `feedback new --out` creates one file, and only when nothing is at
@@ -17,7 +20,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {ModuleError,MODULE_INPUT_LIMITS} from './runtime.mjs';
 import {readBoundedBytes,decodeUtf8} from './input-file.mjs';
-import {FEEDBACK_FLAGS,REPORT_ROUTE,exitFields,parseFlags,withExit} from './problems.mjs';
+import {FEEDBACK_FLAGS,REPORT_ROUTE,exitFields,missingFlags,parseFlags,withExit} from './problems.mjs';
 
 const SCHEMA='xenia.agent-first/0.1-development';
 const NOTEBOOK=new URL('../../AGENT-FEEDBACK.md',import.meta.url);
@@ -110,8 +113,10 @@ export function feedbackNew({out}={},deps={}){
     entry:{media_type:'text/markdown; charset=utf-8',...digest(bytes),...(written?{}:{text})},
     parts_note:'needed_for_exit_0 marks the five parts `feedback check` needs for exit 0; it also needs at least one section with text, whichever one. Every other part can be left out. '+
       'Speaker needs only some text: the notebook allows anonymous reports, and nothing is inferred from what is written there. '+
-      'bullet is the bullet under "When adding an entry, say:" in AGENT-FEEDBACK.md that the part answers, and asks quotes it; null means the part comes from the form of the entry already in the notebook.',
-    parts:PARTS.map(item=>({...item})),
+      'bullet is the bullet under "When adding an entry, say:" in AGENT-FEEDBACK.md that the part answers; null means the part comes from the form of the entry already in the notebook. '+
+      'What each part asks for is said once, in the entry itself, as the comment beside its label.',
+    // The hint each part carries is in the entry text and is not repeated here.
+    parts:PARTS.map(({asks,...item})=>item),
     next:[{argv:['feedback','check'],needs:['--input <file>'],why:'Read a written entry back: which labelled parts are found, and lines that match a few warning patterns. Sends nothing.'}],
     delivered:false,
     route:REPORT_ROUTE,
@@ -264,29 +269,45 @@ function entryIdIn(value){
 
 // Fixed patterns, applied to the raw line (a comment is scanned too). Each is
 // written so that a line that does not match is given up in about one pass.
+// - assigned_secret: one of six words, then up to 40 more name characters, an
+//   optional quote, a colon or equals sign, and 12 or more characters. So an
+//   environment name (GITHUB_TOKEN=...), an ini or YAML key and a JSON key are
+//   read, and `password: none` is not.
+// - A path is looked for at the start of a line and after white space, a
+//   quote, a bracket, `=`, `:`, and the marks an entry puts around one: `*`
+//   (bold), `|` (a table cell), `<`, `>` and a comma.
+// A row is a line to look at. Two shapes are flagged knowingly although they
+// can hold nothing: any 20 characters after `Bearer`, and `~/` before a digit.
+const PATH_START='(?:^|[\\s"\'`([=:*|<>,])';
 const PATTERNS=Object.freeze([
-  ['private_key_block',/-----BEGIN [A-Z ]*PRIVATE KEY-----/],
+  ['private_key_block',/-----BEGIN [A-Z ]*PRIVATE KEY(?: BLOCK)?-----/],
   ['aws_access_key_id',/\bAKIA[0-9A-Z]{16}\b/],
   ['github_token',/\b(?:gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{22,})\b/],
   ['bearer_value',/\bBearer\s+[A-Za-z0-9._~+/-]{20,}/],
-  ['prefixed_api_key',/\b(?:sk|pk|rk)-[A-Za-z0-9_-]{20,}\b|\bxox[abprs]-[A-Za-z0-9-]{10,}\b/],
+  ['prefixed_api_key',/\b(?:sk|pk|rk)-[A-Za-z0-9_-]{20,}\b|\bxox[abprs]-[A-Za-z0-9-]{10,}\b|\b(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]{16,}|\bwhsec_[A-Za-z0-9]{16,}|\bnpm_[A-Za-z0-9]{36}\b|\bAIza[0-9A-Za-z_-]{35}\b/],
   ['json_web_token',/(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/],
-  ['assigned_secret',/\b(?:api[_-]?key|secret|token|password|passwd|authorization)\b\s*[:=]\s*["']?[^\s"'`<>]{12,}/i],
-  ['unix_home_or_temp',/(?:^|[\s"'`([=:])\/(?:Users|home|root|private|var\/folders|tmp|Volumes|mnt)\/[^\s"'`)\]]+/],
-  ['tilde_home',/(?:^|[\s"'`([=:])~\/[^\s"'`)\]]+/],
+  ['assigned_secret',/(?:api[_-]?key|secret|token|password|passwd|authorization)[A-Za-z0-9_-]{0,40}["']?\s*[:=]\s*["']?[^\s"'`<>]{12,}/i],
+  ['url_credentials',/\b[a-z][a-z0-9+.-]{1,20}:\/\/[^\s/:@]{0,64}:[^\s/@]{3,}@/i],
+  ['basic_value',/\bBasic\s+[A-Za-z0-9+/]{16,}={0,2}/],
+  ['unix_home_or_temp',new RegExp(`${PATH_START}/(?:Users|home|root|private|var/folders|tmp|Volumes|mnt)/[^\\s"'\`)\\]]+`)],
+  ['tilde_home',new RegExp(`${PATH_START}~/[^\\s"'\`)\\]]+`)],
   ['windows_drive',/\b[A-Za-z]:\\[^\s"'`]+/],
+  ['windows_share',/(?:^|[^\\])\\\\[A-Za-z0-9._$-]+\\[^\s"'`]+/],
   ['file_url',/\bfile:\/\/\/?[^\s"'`)]+/i],
 ]);
-export const WARNING_KINDS=Object.freeze([...PATTERNS.map(([kind])=>kind),'line_not_fully_scanned','unclosed_comment','comment_over_several_lines','repeated_label']);
+const PATTERN_KINDS=PATTERNS.length;
+export const WARNING_KINDS=Object.freeze([...PATTERNS.map(([kind])=>kind),'line_not_fully_scanned','unclosed_comment','comment_over_several_lines','repeated_label','heading_date_does_not_exist']);
+const NUMBER_WORDS=['Zero','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen'];
 
 // One pass over the raw lines. Rows come out in line order without sorting, and
 // only the first ROW_LIMIT are kept; the rest are counted.
-function readWarnings(text,{unclosed,several},repeats){
+function readWarnings(text,{unclosed,several},repeats,noSuchDate){
   const extras=new Map();
   const extra=(line,kind)=>extras.set(line,[...(extras.get(line)??[]),kind]);
   for(const line of unclosed)extra(line,'unclosed_comment');
   for(const line of several)extra(line,'comment_over_several_lines');
   for(const line of repeats)extra(line,'repeated_label');
+  for(const line of noSuchDate)extra(line,'heading_date_does_not_exist');
   const rows=[],counts=new Map();
   let count=0;
   const add=(kind,line)=>{count+=1;counts.set(kind,(counts.get(kind)??0)+1);if(rows.length<ROW_LIMIT)rows.push({kind,line});};
@@ -301,8 +322,8 @@ function readWarnings(text,{unclosed,several},repeats){
   const byKind={};
   for(const kind of WARNING_KINDS)if(counts.has(kind))byKind[kind]=counts.get(kind);
   return {
-    note:'Each row is a kind and a line number, never the text. Eleven kinds are fixed patterns that look like a credential or a local path. '+
-      'Four are about how the file was read: a line too long to scan whole; a `<!--` that is not closed, which was read as text; a comment over more than one line, which was not read as content; a field label given twice, of which the first was read. '+
+    note:`Each row is a kind and a line number, never the text. ${NUMBER_WORDS[PATTERN_KINDS]} kinds are fixed patterns that look like a credential or a local path. `+
+      `${NUMBER_WORDS[WARNING_KINDS.length-PATTERN_KINDS]} are about how the file was read: a line too long to scan whole; a \`<!--\` that is not closed, which was read as text; a comment over more than one line, which was not read as content; a field label given twice, of which the first was read; a level-two heading that begins with a date that does not exist, which was not read as a dated heading. `+
       'A row is a line to look at before sharing the file, not a finding that it holds a secret, and finding none is not a finding that there are none.',
     looked_for:[...WARNING_KINDS],count,by_kind:byKind,rows,more:count-rows.length,
   };
@@ -338,7 +359,10 @@ export function feedbackCheck({file}={}){
   // A dated heading: level two, beginning with a date that exists.
   const level2=rows.filter(row=>row.heading?.level===2).map(row=>({row,date:dateAt(row.heading.title)}));
   const dated=level2.filter(item=>typeof item.date==='string');
-  const several=dated.length>1;
+  // A level-two heading that begins with a date that does not exist (31 November). It is not a dated heading; its line is
+  // given as a warning. Beside a dated heading it is a second place the entry could begin, and this command does not choose.
+  const noSuchDate=level2.filter(item=>item.date===null).map(item=>item.row.n);
+  const several=dated.length>1||(dated.length===1&&noSuchDate.length>0);
   // The entry runs from its heading to the next heading of level one or two. With no dated heading, the whole file is read.
   let first=rows.length?1:null,last=rows.length?rows.length:null;
   if(dated.length===1){
@@ -364,7 +388,7 @@ export function feedbackCheck({file}={}){
   const notRead={state:'not_read'};
   const status=fieldState('Status');
   const parts=several?Object.fromEntries(NEEDED.map(key=>[key,notRead])):{
-    dated_heading:dated.length===1?{state:'found',line:first,date:dated[0].date}:{state:level2.some(item=>item.date===null)?'not_well_formed':'not_found'},
+    dated_heading:dated.length===1?{state:'found',line:first,date:dated[0].date}:{state:noSuchDate.length?'not_well_formed':'not_found'},
     entry_id:shaped('Entry ID',entryIdIn,'value'),
     observed_at:shaped('Observed at',dateAt,'date'),
     speaker:(({value,...state})=>state)(fieldState('Speaker')),
@@ -378,8 +402,11 @@ export function feedbackCheck({file}={}){
     return !section?'not_found_by_label':section.text?'found':'empty';
   };
   const missing=several?[]:NEEDED.filter(key=>parts[key].state!=='found');
-  const [word,reason,code,exitReason]=several?
+  const [word,reason,code,exitReason]=dated.length>1?
     ['undetermined','more_than_one_dated_heading',4,`The file has ${dated.length} dated headings. This command reads one entry in a file and did not choose between them; no part was read.`]:
+    several?
+    ['undetermined','dated_heading_beside_one_with_no_such_date',4,`The file has one dated heading and ${noSuchDate.length} level-two heading${noSuchDate.length===1?' that begins':'s that begin'} with a date that does not exist; warnings gives ${noSuchDate.length===1?'its line':'their lines'}. `+
+      'This command reads one entry in a file and did not choose where it begins; no part was read.']:
     missing.length?
     ['parts_missing','parts_not_found',3,`Not found in the form this command reads: ${missing.join(', ')}. See parts. The notebook does not require this form, so this is a finding about the form, not about what the entry says.`]:
     ['parts_found','all_parts_found',0,'A dated heading, a well-formed Entry ID, Observed at starting with a date, Speaker, Status and at least one section with text were found. A 0 covers that and nothing else: see not_established.'];
@@ -407,7 +434,7 @@ export function feedbackCheck({file}={}){
       note:'Each label is one the blank entry from `feedback new` uses to answer a bullet under "When adding an entry, say:" in AGENT-FEEDBACK.md. found means a field or section with that label has text; it does not mean the text answers the bullet. '+
         'empty means the label is there with no text. not_found_by_label means only that the label was not found: the entry may say the same thing under a heading of its own. These never change the exit.',
       rows:[1,2,3,4,5,6,7,8].map(bullet=>({bullet,labels:PARTS.filter(item=>item.bullet===bullet).map(item=>({label:item.label,kind:item.kind,state:labelState(item)}))}))},
-    warnings:readWarnings(text,lines,fields.repeats),
+    warnings:readWarnings(text,lines,fields.repeats,noSuchDate),
     entry_id_in_notebook:several?notChecked('entry_not_read'):id===undefined?notChecked('entry_id_not_well_formed'):inNotebook(id),
     delivered:false,
     route:REPORT_ROUTE,
@@ -419,6 +446,10 @@ export function runFeedbackCommand(args,deps={}){
   const [operation,...rest]=args;
   if(!Object.hasOwn(FEEDBACK_FLAGS,operation??''))throw new ModuleError('INVALID_ARGUMENTS');
   const flags=parseFlags(rest,FEEDBACK_FLAGS[operation]);
-  if(!flags)throw new ModuleError('INVALID_ARGUMENTS');
+  if(!flags){
+    // A required flag that was left out is named; the reason is a fixed word and nothing typed is kept.
+    const missing=missingFlags(rest,FEEDBACK_FLAGS[operation]);
+    throw missing?Object.assign(new ModuleError('INVALID_ARGUMENTS'),{reason:'required_flag_missing',missing}):new ModuleError('INVALID_ARGUMENTS');
+  }
   return operation==='new'?feedbackNew({out:flags.values['--out']},deps):feedbackCheck({file:flags.values['--input']});
 }

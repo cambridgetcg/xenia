@@ -119,6 +119,8 @@ const GENERAL_HELP=['arrive','help [command]','motifs [motif-id]','motifs study 
   'starter-smoke --package <reviewed-package-dir> --dir <new-notes-dir>'];
 
 function unknownCommand(word){return Object.assign(new ModuleError('UNKNOWN_COMMAND'),{word});}
+// A command is a name in the table itself; a word such as `toString`, which every object answers to, is not one.
+const isCommand=word=>typeof word==='string'&&Object.hasOwn(COMMANDS,word);
 
 export async function main(args){
   const [command,...rest]=args;
@@ -139,9 +141,9 @@ export async function main(args){
   if(!command||command==='help'||wantsHelp){
     const words=args.filter(arg=>!isHelp(arg));
     if(words[0]==='help')words.shift();
-    if(!wantsHelp&&command==='help'&&words.length>1)throw new ModuleError('INVALID_ARGUMENTS');
-    if(!wantsHelp&&command==='help'&&words.length===1&&!COMMANDS[words[0]])throw unknownCommand(words[0]);
-    if(words.length&&COMMANDS[words[0]]&&(wantsHelp||command==='help'))return envelope(usageHelp(words[0]));
+    // `help door plan` is answered as `help door`: the words after a command name are not read.
+    if(!wantsHelp&&command==='help'&&words.length>=1&&!isCommand(words[0]))throw unknownCommand(words[0]);
+    if(words.length&&isCommand(words[0])&&(wantsHelp||command==='help'))return envelope(usageHelp(words[0]));
     return envelope({title:'Xenia agent-first module kit',status:'repository-only development',commands:GENERAL_HELP,
       start_here:'Run: arrive. It is one read-only orientation document and expects no reply.',
       principle:'Inspect → activate deliberately → invoke through the host gate → pause, upgrade or retire.',
@@ -200,7 +202,7 @@ export async function main(args){
   if(command==='invoke')return envelope(await runInvoke(rest,{runtime,adapters:adapterRows()}));
   if(command==='demo'&&!rest.length)return demo(false);
   if(command==='demo'&&rest.length===1&&rest[0]==='--full')return demo(true);
-  if(!COMMANDS[command])throw unknownCommand(command);
+  if(!isCommand(command))throw unknownCommand(command);
   throw new ModuleError('INVALID_ARGUMENTS');
 }
 

@@ -75,13 +75,16 @@ test('the first line says what this place is in the words `arrive` uses',()=>{
   assert.ok(flat(items()[0]).toLowerCase().includes(purpose.toLowerCase()),`the card's first line carries: ${purpose}`);
 });
 
-test('no file is tracked under .claude/, as the card says; other tools are named as not surveyed',t=>{
+test('no file is tracked under .claude/, as the card says, and no .mcp.json at the root; other tools are named as not surveyed',t=>{
   assert.match(flat(items()[1]),/^Reading this file starts nothing\b/);
   assert.match(flat(items()[1]),/no file is tracked under `\.claude\/`/i);
   assert.match(flat(items()[1]),/not surveyed/);
-  const r=spawnSync('git',['ls-files','-z','--','.claude'],{cwd:rootDir,encoding:'utf8',timeout:15000});
+  // `.mcp.json` at the root is where Claude Code reads project MCP servers from. The card does not name it; "starts nothing" rests on it too.
+  const r=spawnSync('git',['ls-files','-z','--','.claude','.mcp.json'],{cwd:rootDir,encoding:'utf8',timeout:15000});
   if(r.error||r.status!==0){t.skip('not a git checkout, or git is not available: tracked files could not be listed');return;}
-  assert.equal(r.stdout,'',`tracked under .claude/: ${r.stdout.split('\0').filter(Boolean).join(', ')}`);
+  assert.equal(r.stdout,'',`tracked under .claude/ or as .mcp.json: ${r.stdout.split('\0').filter(Boolean).join(', ')}`);
+  // The question can be answered with a yes: git lists a path that is tracked.
+  assert.equal(spawnSync('git',['ls-files','-z','--','AGENTS.md','.mcp.json'],{cwd:rootDir,encoding:'utf8',timeout:15000}).stdout,'AGENTS.md\0');
 });
 
 // Network, child processes and file writes off; one line in `marker` for each attempt.

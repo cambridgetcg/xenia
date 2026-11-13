@@ -30,8 +30,8 @@ import {CHECKER_USER_AGENT} from '../surface/0.1/check.mjs';
 const kit=new URL('../agent-first/0.1/',import.meta.url);
 const kitDir=fileURLToPath(kit);
 const cli=path.join(kitDir,'cli.mjs');
-const {doorPlan,doorCheck,runDoorCommand,createFencedFetch}=await import(new URL('door.mjs',kit).href);
-const {EXIT_CODES,NETWORK_NOTE,USAGE_CODES,PROBLEM_CODES,checkArgv,parseFlags,withExit,exitOf}=await import(new URL('problems.mjs',kit).href);
+const {doorPlan,doorCheck,runDoorCommand,createFencedFetch,MANIFEST_MEANS}=await import(new URL('door.mjs',kit).href);
+const {ARGUMENT_REASONS,EXIT_CODES,NETWORK_NOTE,USAGE_CODES,PROBLEM_CODES,buildProblem,checkArgv,parseFlags,usageHelp,withExit,exitOf}=await import(new URL('problems.mjs',kit).href);
 
 let realFetchCalls=0;
 globalThis.fetch=()=>{realFetchCalls+=1;throw new Error('the real fetch must not be used in this test file');};
@@ -66,8 +66,10 @@ const NOW='2026-11-12T10:00:00.000Z';
 const PLAN_KEYS=['schema','kind','sent_by_this_command','scope','not_tested','target','manifest_url','verifier','limits','target_rule','requests','bytes','time',
   'would_contact','will_not_do','does_not_guard','host_may_add','check','not_established','exit_code','exit_reason','exit_meaning'];
 const CHECK_KEYS=['schema','kind','scope','not_tested','expires_at','observed_at','target','checker_result','manifest','requests','not_passed','unknown_reasons',
-  'declared_by_host','host_written_text_in','allow_local_target','not_established','exit_code','exit_reason','exit_meaning','result'];
+  'declared_by_host','host_written_text_in','allow_local_target','target_rule','not_established','next','exit_code','exit_reason','exit_meaning','result'];
 const WORDS=/nonconformant|conformant|indeterminate/;
+// The manifest block: a state, the status served, and the fixed sentence that says what the state covers.
+const manifestOf=(state,status)=>({state,status,means:MANIFEST_MEANS[state]});
 
 // A door that answers from memory. `seen` records what the checker asked for.
 function makeDoor(origin,{resources=1,html=true,notCovered,claims,dropVary=false,plain404}={}){
@@ -220,9 +222,30 @@ test('at the CLI a refused target exits 2, never echoes a password, and every ne
         assert.deepEqual(checkArgv(action.argv,action.needs),{ok:true},JSON.stringify(action));
       }
       assert.equal(r.value.problem.next_actions.some(action=>action.argv.includes('--allow-local-target')),liftable,origin);
+      // The plan for another origin comes first; the one that lifts the rule, when there is one, comes after it.
+      assert.deepEqual(r.value.problem.next_actions[0].argv,['door','plan'],origin);
+      assert.deepEqual(r.value.problem.next_actions[0].needs,['--origin <origin>'],origin);
+      assert.equal(r.value.problem.next_actions.length,liftable?2:1,origin);
       assert.match(r.value.problem.detail,/Nothing was sent/);
       assert.equal(/secret|user:/.test(r.stdout),false,'userinfo is never echoed');
     }
+  }
+  // What a refusal repeats: for a target the flag could admit, its origin (scheme, host and port, as the checker
+  // normalised them) in the suggested plan, and nothing else that was typed. A path, a query and a fragment are never repeated.
+  const echoed=runCli(['door','plan','--origin','https://Door.Example.org:8443']);
+  assert.deepEqual(echoed.value.problem.next_actions[1].argv,['door','plan','--origin','https://door.example.org:8443/','--allow-local-target']);
+  assert.match(echoed.value.problem.detail,/repeats? the target's origin/);
+  for(const typed of ['https://door.example.org/PRIVATEPATH','https://door.example.org/?q=PRIVATEQUERY','https://door.example.org/#PRIVATEFRAGMENT','https://user:PRIVATEWORD@10.0.0.5']){
+    const r=runCli(['door','plan','--origin',typed]);
+    assert.equal(r.status,2,typed);assert.equal(r.value.error.reason,'not_an_origin',typed);
+    assert.equal(/PRIVATE|door\.example\.org|10\.0\.0\.5/.test(r.stdout),false,`nothing typed comes back: ${typed}`);
+  }
+  // The README and `help door` say what holds, and no longer say that nothing typed is copied.
+  const readme=fs.readFileSync(new URL('README.md',kit),'utf8'),rules=runCli(['help','door']).value.rules.join(' ');
+  for(const text of [readme,rules]){
+    assert.doesNotMatch(text,/the text given on the command line is not copied/);
+    assert.match(text,/user name, password, path, query or fragment is never copied/);
+    assert.match(text,/its origin \(scheme, host and port\) appears in the suggested `door plan` command/);
   }
   // The suggested plan runs, and records that the rule was lifted.
   const refused=runCli(['door','plan','--origin','https://10.0.0.5']);
@@ -232,6 +255,12 @@ test('at the CLI a refused target exits 2, never echoes a password, and every ne
   assert.equal(lifted.value.target_rule.allow_local_target,true);assert.equal(lifted.value.target_rule.this_target,'accepted_only_with_flag');
   assert.ok(lifted.value.check.first_look.argv.includes('--allow-local-target'));
   assert.match(lifted.value.would_contact.name_resolver,/none/);
+  // The lifted plan says which default rule was set aside, and what kind of address a literal is.
+  assert.equal(lifted.value.target_rule.refused_by_default_as,'ip_literal_not_allowed');
+  assert.deepEqual(Object.keys(lifted.value.target_rule.literal_address),['word','checked_with','means']);
+  assert.equal(lifted.value.target_rule.literal_address.word,'not_globally_reachable');
+  assert.match(lifted.value.target_rule.literal_address.checked_with,/isGloballyReachableAddress in agent-first\/0\.1\/adapters\/telescope\/provider\/dist\/target\.js/);
+  assert.match(lifted.value.target_rule.literal_address.means,/loopback, private, link-local/);
   // The flag lifts only the default rule, not the checker's own.
   const still=runCli(['door','plan','--origin','http://door.example.org','--allow-local-target']);
   assert.equal(still.status,2);assert.equal(still.value.error.reason,'http_not_loopback');
@@ -268,10 +297,12 @@ for(const [resources,html,expected] of [[1,false,9],[1,true,10],[8,false,58],[8,
       assert.equal(new URL(call.url).origin,ORIGIN);
       assert.ok(call.headers.every(name=>['accept','user-agent'].includes(name)),call.headers.join(','));
     }
-    assert.deepEqual(body.manifest,{state:'found_valid',status:200});
+    assert.deepEqual(body.manifest,manifestOf('found_valid',200));
     assert.equal(body.checker_result.word,'conformant');
     assert.equal(body.checker_result.counts.fail,0);assert.equal(typeof body.checker_result.covers,'object');
-    assert.deepEqual(body.not_passed,{rows:[],more:0});assert.deepEqual(body.unknown_reasons,[]);
+    assert.deepEqual(body.not_passed,{rows:[],more:0,left_out:{budget_reached:0}});assert.deepEqual(body.unknown_reasons,[]);
+    assert.deepEqual(body.next,[]);
+    assert.deepEqual(body.target_rule,{this_target:'accepted_by_rule',refused_by_default_as:null,literal_address:null});
     assert.equal(body.observed_at,NOW);assert.equal(body.expires_at,'2026-11-13T10:00:00.000Z');
     assert.equal(body.target,`${ORIGIN}/`);assert.equal(body.allow_local_target,false);
     assert.equal(body.not_tested.length,7);
@@ -290,7 +321,7 @@ test('the bounds in the plan are the checker’s own: nine resources are not a v
   let calls=0;
   const over=await doorCheck({origin:ORIGIN,maxRequests:66,totalTimeoutMs:20000},
     {fetchImpl:async()=>{calls+=1;return new Response(JSON.stringify(nine),{status:200,headers:{'content-type':'application/json'}});},now:NOW});
-  assert.equal(calls,1);assert.deepEqual(over.manifest,{state:'found_invalid',status:200});assert.equal(over.requests.needed_for_full_check,null);
+  assert.equal(calls,1);assert.deepEqual(over.manifest,manifestOf('found_invalid',200));assert.equal(over.requests.needed_for_full_check,null);
   // Eight resources that also offer HTML, and a door that never stops sending: the checker's
   // own message names the limit it applied to each request. Their sum is the plan's bound.
   const endless=()=>new Response(new ReadableStream({pull(controller){controller.enqueue(new Uint8Array(65536));}}),{status:200,headers:{'content-type':'application/json',vary:'Accept'}});
@@ -313,17 +344,32 @@ test('the budget is kept: what was not sent is counted, and the exit says it cou
     assert.equal(body.requests.needed_for_full_check,10);assert.equal(body.requests.budget,budget);
     assert.equal(body.checker_result.word,'indeterminate');
     assert.equal(body.exit_code,4);assert.equal(exitOf(body),4);assert.equal(body.exit_meaning,EXIT_CODES[4]);
-    assert.deepEqual(body.manifest,{state:'found_valid',status:200});
+    assert.deepEqual(body.manifest,manifestOf('found_valid',200));
     assert.deepEqual(body.unknown_reasons.map(item=>item.reason),['budget_reached']);
     assert.equal(body.unknown_reasons[0].checks,body.checker_result.counts.unknown);
-    assert.ok(body.not_passed.rows.every(row=>row.outcome==='unknown'&&/budget/.test(row.observed)));
+    // A check whose request was not sent for want of budget is counted, not listed: every such row would say the same thing.
+    assert.deepEqual(body.not_passed,{rows:[],more:0,left_out:{budget_reached:body.checker_result.counts.unknown}});
+    // The command a full check needs is given, with the number read from the manifest.
+    assert.deepEqual(body.next.map(item=>item.argv),[['door','check','--origin',`${ORIGIN}/`,'--max-requests','10','--total-timeout-ms','120000']]);
+    assert.deepEqual(checkArgv(body.next[0].argv),{ok:true});
+    assert.match(body.next[0].why,/10 requests/);assert.match(body.next[0].why,new RegExp(`budget was ${budget}\\b`));
+    assert.match(body.next[0].why,/sent again/);assert.match(body.next[0].why,/outside this kit/);
     assert.doesNotMatch(outsideWords(body),WORDS);
   }
-  // Rows are capped at 20; the rest are counted.
+  // With eight resources nothing but the manifest was fetched: 132 checks are counted, none is listed.
   const big=makeDoor(ORIGIN,{resources:8});
   const first=await check(big,{maxRequests:1});
   assert.equal(big.seen.length,1);assert.equal(first.requests.needed_for_full_check,66);assert.equal(first.requests.stopped_by_budget,65);
-  assert.equal(first.not_passed.rows.length,20);assert.equal(first.not_passed.more,112);
+  assert.deepEqual(first.not_passed,{rows:[],more:0,left_out:{budget_reached:132}});
+  assert.deepEqual(first.unknown_reasons.map(item=>[item.reason,item.checks]),[['budget_reached',132]]);
+  assert.equal(first.next[0].argv[first.next[0].argv.indexOf('--max-requests')+1],'66');
+  // A run that had the budget it needed has no next command.
+  assert.deepEqual((await check(makeDoor(ORIGIN))).next,[]);
+  // Rows of other kinds are still capped at 20, and the rest are counted in `more`.
+  const unreachable=await doorCheck({origin:ORIGIN,maxRequests:66,totalTimeoutMs:20000},
+    {fetchImpl:async(input,init)=>{if(new URL(String(input)).pathname==='/.well-known/agent.json')return big.fetchImpl(input,init);throw new TypeError('fetch failed');},now:NOW});
+  assert.deepEqual({rows:unreachable.not_passed.rows.length,more:unreachable.not_passed.more,left_out:unreachable.not_passed.left_out},{rows:20,more:112,left_out:{budget_reached:0}});
+  assert.deepEqual(unreachable.next,[],'the budget was not what stopped this run');
   // The plan's first look, run as printed, sends one request.
   const plan=await doorPlan({origin:ORIGIN});
   const door=makeDoor(ORIGIN);
@@ -345,7 +391,7 @@ test('a door that cannot be reached is not determined: exit 4, manifest not obse
   let calls=0;
   const body=await doorCheck({origin:ORIGIN,maxRequests:66,totalTimeoutMs:20000},{fetchImpl:async()=>{calls+=1;throw new TypeError('fetch failed');},now:NOW});
   assert.equal(calls,1);
-  assert.deepEqual(body.manifest,{state:'not_observed',status:null});
+  assert.deepEqual(body.manifest,manifestOf('not_observed',null));
   assert.equal(body.requests.sent,1);assert.equal(body.requests.transport_errors,1);assert.equal(body.requests.needed_for_full_check,null);
   assert.deepEqual(body.requests.responses_by_status,{});
   assert.equal(body.checker_result.word,'indeterminate');assert.equal(body.exit_code,4);
@@ -356,11 +402,11 @@ test('a door that cannot be reached is not determined: exit 4, manifest not obse
 test('a manifest that is missing or malformed is reported by state, with the status served',async()=>{
   const missing=await doorCheck({origin:ORIGIN,maxRequests:66,totalTimeoutMs:20000},
     {fetchImpl:async()=>new Response('nope',{status:404,headers:{'content-type':'text/plain'}}),now:NOW});
-  assert.deepEqual(missing.manifest,{state:'not_found',status:404});
+  assert.deepEqual(missing.manifest,manifestOf('not_found',404));
   assert.equal(missing.exit_code,3);assert.equal(missing.requests.sent,1);assert.equal(missing.requests.needed_for_full_check,null);
   const broken=await doorCheck({origin:ORIGIN,maxRequests:66,totalTimeoutMs:20000},
     {fetchImpl:async()=>new Response('{"profile":"something else"}',{status:200,headers:{'content-type':'application/json'}}),now:NOW});
-  assert.deepEqual(broken.manifest,{state:'found_invalid',status:200});
+  assert.deepEqual(broken.manifest,manifestOf('found_invalid',200));
   assert.equal(broken.exit_code,3);assert.equal(broken.declared_by_host.claims.count,null);
 });
 
@@ -370,7 +416,7 @@ test('a redirect is counted and not followed',async()=>{
     {fetchImpl:async input=>{urls.push(String(input));return new Response(null,{status:302,headers:{location:'https://elsewhere.example.org/.well-known/agent.json'}});},now:NOW});
   assert.deepEqual(urls,[`${ORIGIN}/.well-known/agent.json`]);
   assert.equal(body.requests.redirects_not_followed,1);assert.deepEqual(body.requests.responses_by_status,{'302':1});
-  assert.deepEqual(body.manifest,{state:'not_found',status:302});assert.equal(body.exit_code,3);
+  assert.deepEqual(body.manifest,manifestOf('not_found',302));assert.equal(body.exit_code,3);
   assert.equal(JSON.stringify(body).includes('elsewhere'),false,'the Location value is not copied into the output');
 });
 
@@ -510,6 +556,7 @@ test('one loopback door through the CLI: plan sends nothing, then exits 0, 3 and
     const good=await run(plan.value.check.full.argv);
     assert.equal(good.status,0,JSON.stringify(good.value.not_passed));
     assert.equal(good.value.exit_code,0);assert.equal(good.value.allow_local_target,true);
+    assert.deepEqual(good.value.target_rule,{this_target:'accepted_only_with_flag',refused_by_default_as:'https_required',literal_address:'not_globally_reachable'});
     assert.equal(good.value.requests.sent,10);assert.equal(hits.length,10,'the server received exactly what was counted as sent');
     assert.deepEqual(good.value.requests.responses_by_status,{'200':8,'404':1,'406':1});
     for(const hit of hits){
@@ -532,13 +579,19 @@ test('one loopback door through the CLI: plan sends nothing, then exits 0, 3 and
     assert.equal(look.status,4);assert.equal(look.value.exit_code,4);
     assert.equal(hits.length,1);assert.equal(hits[0].url,'/.well-known/agent.json');
     assert.equal(look.value.requests.needed_for_full_check,10);assert.equal(look.value.requests.stopped_by_budget,9);
+    // The first look ends with the command for the full check, flag kept; run as printed it sends ten requests and exits 0.
+    assert.deepEqual(look.value.next.map(item=>item.argv),[['door','check','--origin',`${main.origin}/`,'--max-requests','10','--total-timeout-ms','120000','--allow-local-target']]);
+    assert.deepEqual(look.value.not_passed.rows,[]);
+    hits.length=0;
+    const followed=await run(look.value.next[0].argv);
+    assert.equal(followed.status,0);assert.equal(hits.length,10);assert.deepEqual(followed.value.next,[]);
 
     hits.length=0;mode='redirect';
     const redirected=await run(plan.value.check.full.argv);
     assert.equal(redirected.status,3);
     assert.equal(hits.length,1);assert.equal(elsewhereHits.length,0,'the redirect target received nothing');
     assert.equal(redirected.value.requests.redirects_not_followed,1);
-    assert.deepEqual(redirected.value.manifest,{state:'not_found',status:302});
+    assert.deepEqual(redirected.value.manifest,manifestOf('not_found',302));
   }finally{await main.close();await elsewhere.close();}
 });
 
@@ -547,7 +600,7 @@ test('a closed loopback port is a transport error: exit 4, nothing claimed about
   const r=await runAsync(['door','check','--origin',origin,'--allow-local-target','--max-requests','3','--total-timeout-ms','5000']);
   assert.equal(r.stderr,'');assert.equal(r.status,4);
   const body=JSON.parse(r.stdout);
-  assert.deepEqual(body.manifest,{state:'not_observed',status:null});
+  assert.deepEqual(body.manifest,manifestOf('not_observed',null));
   assert.equal(body.requests.sent,1);assert.equal(body.requests.transport_errors,1);
 });
 
@@ -563,7 +616,7 @@ test('the budget counts calls handed to the runtime: a door that answers 421 can
     assert.ok(hits.length>=1&&hits.length<=2,`received ${hits.length}`);
     assert.ok(hits.every(url=>url==='/.well-known/agent.json'));
     assert.ok(body.not_established.some(line=>/421/.test(line)&&/on the wire/.test(line)));
-    assert.deepEqual(body.manifest,{state:'not_found',status:421});assert.equal(r.status,3);
+    assert.deepEqual(body.manifest,manifestOf('not_found',421));assert.equal(r.status,3);
   }finally{await door.close();}
 });
 
@@ -599,7 +652,7 @@ test('with fetch, sockets and name lookups made to fail, every other command sti
     assert.equal(r.stderr,'');assert.equal(r.status,4,r.stdout);
     assert.equal(fs.readFileSync(marker,'utf8'),'fetch\n','door check tried exactly once, and only through fetch');
     const body=JSON.parse(r.stdout);
-    assert.equal(body.requests.sent,1);assert.equal(body.requests.transport_errors,1);assert.deepEqual(body.manifest,{state:'not_observed',status:null});
+    assert.equal(body.requests.sent,1);assert.equal(body.requests.transport_errors,1);assert.deepEqual(body.manifest,manifestOf('not_observed',null));
   }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
 
@@ -677,6 +730,190 @@ test('door does not register or activate the Telescope adapter; it imports one v
     assert.deepEqual([...new Set(urls.map(url=>url.split('/adapters/')[1]))].sort(),['telescope/provider/dist/errors.js','telescope/provider/dist/target.js']);
     assert.ok(fs.readFileSync(seen,'utf8').includes('surface/0.1/check.mjs'),'the unchanged checker is what plans and checks');
   }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
+
+// ---- from the review of this step ----
+// Words that would bless a service. The same list the door rights test holds its output to, less the ones the
+// checker's own scope line uses in another sense.
+const BLESSING=/conform|complian|certif|trustworth|approv|endors|\bsafe\b/i;
+// Every string in a body, with the path to it, leaving out the parts named.
+function stringsOutside(body,skip){
+  const out=[];
+  const walk=(node,at)=>{
+    if(skip.includes(at.join('.')))return;
+    if(typeof node==='string')out.push({at:at.join('.'),text:node});
+    else if(Array.isArray(node))node.forEach((item,i)=>walk(item,[...at,String(i)]));
+    else if(node!==null&&typeof node==='object')for(const [key,item] of Object.entries(node))walk(item,[...at,key]);
+  };
+  walk(body,[]);
+  return out;
+}
+
+test('door check is held to what it will not say: no body blesses the service, and each limit it states is there by content',async()=>{
+  const bodies={
+    0:await check(makeDoor(ORIGIN)),
+    3:await check(makeDoor(ORIGIN,{dropVary:true})),
+    4:await check(makeDoor(ORIGIN),{maxRequests:1}),
+  };
+  for(const [code,body] of Object.entries(bodies)){
+    assert.equal(body.exit_code,Number(code));
+    // The kit's own voice: everything but the checker's result, the list of what is not established, and the fields that hold host text.
+    const own=stringsOutside(body,['checker_result','result','not_established','declared_by_host.not_covered','not_passed.rows']);
+    assert.ok(own.length>20,`${own.length} strings looked at`);
+    for(const {at,text} of own)assert.doesNotMatch(text,BLESSING,at);
+    // The scope: one User-Agent, these requests, one moment, nothing wider.
+    const sent=body.requests.sent;
+    assert.equal(body.scope,`What the User-Agent ${CHECKER_USER_AGENT} was served on the ${sent} GET request${sent===1?'':'s'} this command sent to ${ORIGIN}/, observed once, at observed_at. Nothing wider, and nothing after expires_at.`);
+    // What the checker's word covers, and that it is not more.
+    assert.match(body.checker_result.covers.rule,/computed only from the checks in counts/);
+    assert.match(body.checker_result.covers.not_more,/It is not a statement about the service as a whole/);
+    assert.match(body.checker_result.covers.not_more,/not about anything in not_tested/);
+    // The list of what is not established, line by line.
+    for(const pattern of [/that the service conforms to anything/,/another User-Agent, another address or another moment/,/true, current, or an instruction to follow/,
+      /identity, authority, consent, privacy or safety/,/inspected no DNS answer/,/on the wire/,/anything after expires_at/,/anything about whoever ran this command/])
+      assert.equal(body.not_established.filter(line=>pattern.test(line)).length,1,String(pattern));
+    assert.equal(body.not_established.length,8);
+    assert.equal(body.declared_by_host.claims.verified_by_this_check,0);
+  }
+  // The exit reasons: 0 points at what the word covers, and neither 3 nor 4 says more than the counts do.
+  assert.equal(bodies[0].exit_reason,'Every check the checker ran passed, and none was left unknown or not run. checker_result.covers says what that covers.');
+  assert.match(bodies[3].exit_reason,/^At least one check failed\./);
+  assert.match(bodies[4].exit_reason,/^No check failed, and at least one was unknown or not run\./);
+  // A plan is held to the same words.
+  const plan=await doorPlan({origin:ORIGIN});
+  // host_may_add is left out: it names an approval step the environment can add, which is not this kit approving anything.
+  for(const {at,text} of stringsOutside(plan,['not_established','host_may_add']))assert.doesNotMatch(text,BLESSING,at);
+  for(const pattern of [/nothing was sent/,/public address/,/permitted where this runs, or wanted by the service/,/whoever runs this command/])
+    assert.ok(plan.not_established.some(line=>pattern.test(line)),String(pattern));
+});
+
+test('the manifest state comes with a fixed sentence saying what it covers; `not_found` says only that the status was not 200',async()=>{
+  assert.deepEqual(Object.keys(MANIFEST_MEANS),['found_valid','found_invalid','not_found','not_observed']);
+  assert.match(MANIFEST_MEANS.not_found,/answered with this status, not 200/);
+  assert.match(MANIFEST_MEANS.not_found,/redirect/);assert.match(MANIFEST_MEANS.not_found,/refusal/);assert.match(MANIFEST_MEANS.not_found,/server error/);
+  assert.match(MANIFEST_MEANS.not_observed,/[Nn]o response arrived/);
+  for(const status of [301,403,410,421,500,503]){
+    const body=await doorCheck({origin:ORIGIN,maxRequests:66,totalTimeoutMs:20000},{fetchImpl:async()=>new Response('x',{status,headers:{'content-type':'text/plain'}}),now:NOW});
+    assert.deepEqual(body.manifest,manifestOf('not_found',status));
+    assert.deepEqual(Object.keys(body.manifest),['state','status','means']);
+  }
+});
+
+test('door check names the argument that was wrong, and repeats nothing that was typed',async()=>{
+  const cases=[
+    [['--origin',ORIGIN,'--total-timeout-ms','5000'],'required_flag_missing',['--max-requests']],
+    [['--origin',ORIGIN,'--max-requests','1'],'required_flag_missing',['--total-timeout-ms']],
+    [['--origin',ORIGIN],'required_flag_missing',['--max-requests','--total-timeout-ms']],
+    [['--max-requests','1','--total-timeout-ms','5000'],'required_flag_missing',['--origin']],
+    ...['0','67','TYPEDVALUE','1.5','-1','01'].map(n=>[['--origin',ORIGIN,'--max-requests',n,'--total-timeout-ms','5000'],'max_requests_out_of_range',undefined]),
+    ...['50','99','120001','TYPEDVALUE','5s','5e3'].map(ms=>[['--origin',ORIGIN,'--max-requests','1','--total-timeout-ms',ms],'total_timeout_ms_out_of_range',undefined]),
+  ];
+  for(const [flags,reason,missing] of cases){
+    let calls=0;
+    const error=await runDoorCommand(['check',...flags],{fetchImpl:()=>{calls+=1;throw new Error('no');}}).then(()=>undefined,thrown=>thrown);
+    assert.equal(error?.code,'INVALID_ARGUMENTS',flags.join(' '));assert.equal(error.reason,reason,flags.join(' '));assert.deepEqual(error.missing,missing,flags.join(' '));
+    assert.equal(calls,0);
+    const r=runCli(['door','check',...flags]);
+    assert.equal(r.status,2,flags.join(' '));assert.equal(r.value.error.reason,reason);
+    assert.deepEqual(r.value.problem.missing,missing,flags.join(' '));
+    for(const flag of missing??[])assert.ok(r.value.problem.detail.includes(flag),`${flag} is named`);
+    assert.deepEqual(r.value.problem.next_actions[0].argv,['help','door']);
+    assert.equal(r.stdout.includes('TYPEDVALUE'),false,'what was typed is not repeated');
+  }
+  assert.match(ARGUMENT_REASONS.max_requests_out_of_range,/--max-requests/);assert.match(ARGUMENT_REASONS.max_requests_out_of_range,/1 to 66/);
+  assert.match(ARGUMENT_REASONS.total_timeout_ms_out_of_range,/--total-timeout-ms/);assert.match(ARGUMENT_REASONS.total_timeout_ms_out_of_range,/100 to 120000/);
+  // The other door operations name a missing flag the same way; a flag that is not one of the command's own is never named.
+  assert.deepEqual(runCli(['door','plan']).value.problem.missing,['--origin']);
+  assert.deepEqual(runCli(['door','rights','--as-of','2026-11-13T00:00:00Z']).value.problem.missing,['--input']);
+  const made=buildProblem({code:'INVALID_ARGUMENTS',reason:'required_flag_missing',missing:['--origin','--TYPED-flag','rm -rf']},{argv:['door','plan']});
+  assert.deepEqual(made.missing,['--origin']);assert.equal(made.detail.includes('TYPED'),false);assert.equal(made.detail.includes('rm -rf'),false);
+});
+
+test('a lifted plan and a check say which default rule was set aside, and what kind of address a literal is',async()=>{
+  const lifted=async origin=>(await doorPlan({origin,allowLocalTarget:true})).target_rule;
+  const word=rule=>rule.literal_address===null?null:rule.literal_address.word;
+  for(const [origin,reason,address] of [
+    ['https://10.0.0.5','ip_literal_not_allowed','not_globally_reachable'],
+    ['https://169.254.169.254','ip_literal_not_allowed','not_globally_reachable'],
+    ['https://[fe80::1]','ip_literal_not_allowed','not_globally_reachable'],
+    ['https://[::1]','ip_literal_not_allowed','not_globally_reachable'],
+    ['http://127.0.0.1:8080','https_required','not_globally_reachable'],
+    ['https://8.8.8.8','ip_literal_not_allowed','globally_reachable'],
+    ['https://printer.local','local_or_reserved_host_not_allowed',null],
+    ['https://door.example.org:8443','unsafe_port',null],
+    ['http://localhost:8787','https_required',null],
+  ]){
+    const rule=await lifted(origin);
+    assert.deepEqual({as:rule.this_target,reason:rule.refused_by_default_as,address:word(rule)},{as:'accepted_only_with_flag',reason,address},origin);
+  }
+  // A literal the function lists as reachable gets a sentence that claims nothing about what answers there.
+  assert.match((await lifted('https://8.8.8.8')).literal_address.means,/says nothing about what answers/);
+  // A target the default rule accepts: nothing was set aside, with or without the flag.
+  for(const allowLocalTarget of [false,true]){
+    const rule=(await doorPlan({origin:ORIGIN,allowLocalTarget})).target_rule;
+    assert.deepEqual({as:rule.this_target,reason:rule.refused_by_default_as,address:rule.literal_address},{as:'accepted_by_rule',reason:null,address:null});
+  }
+  // A check carries the same three facts, the address as its word only.
+  const body=await doorCheck({origin:'https://10.0.0.5',maxRequests:1,totalTimeoutMs:5000,allowLocalTarget:true},{fetchImpl:async()=>{throw new TypeError('fetch failed');},now:NOW});
+  assert.equal(body.allow_local_target,true);
+  assert.deepEqual(body.target_rule,{this_target:'accepted_only_with_flag',refused_by_default_as:'ip_literal_not_allowed',literal_address:'not_globally_reachable'});
+  const unneeded=await check(makeDoor(ORIGIN),{allowLocalTarget:true});
+  assert.equal(unneeded.allow_local_target,true);
+  assert.deepEqual(unneeded.target_rule,{this_target:'accepted_by_rule',refused_by_default_as:null,literal_address:null});
+});
+
+test('text the service wrote is printed with its control and format characters made visible; --full leaves the checker’s result untouched',async()=>{
+  // U+202E right-to-left override, U+200B zero width space, U+009B a C1 control, U+0007 bell, U+2028 line separator.
+  const hidden='‮​\u009B\u0007 ';
+  const line=`HOSTLINE a‮b​c\u009Bd\u0007e f`;
+  const raw=text=>[...hidden].filter(ch=>text.includes(ch)).map(ch=>ch.codePointAt(0).toString(16));
+  const body=await check(makeDoor(ORIGIN,{notCovered:[line]}));
+  assert.equal(body.exit_code,0);
+  assert.deepEqual(raw(JSON.stringify(body,null,2)),[],'none of the five reaches the printed document');
+  assert.deepEqual(body.declared_by_host.not_covered.lines,['unprobed routes','HOSTLINE a\\u{202E}b\\u{200B}c\\u{9B}d\\u{7}e\\u{2028}f']);
+  // A row that carries host text: here a key of an invalid manifest, which the checker names in `observed`.
+  const door=makeDoor(ORIGIN);
+  const invalid=await doorCheck({origin:ORIGIN,maxRequests:66,totalTimeoutMs:20000},
+    {fetchImpl:async()=>new Response(JSON.stringify({...door.manifest,[`HOSTKEY‮${'x'.repeat(300)}`]:1}),{status:200,headers:{'content-type':'application/json'}}),now:NOW});
+  assert.deepEqual(invalid.manifest,manifestOf('found_invalid',200));
+  assert.deepEqual(raw(JSON.stringify(invalid,null,2)),[]);
+  const row=invalid.not_passed.rows.find(item=>item.observed.includes('HOSTKEY'));
+  assert.ok(row.observed.includes('HOSTKEY\\u{202E}xxx'));assert.equal([...row.observed].length,160);assert.equal(row.observed_cut,true);
+  // With no valid manifest the note speaks for its own section only, and says where host text can still be.
+  assert.doesNotMatch(invalid.declared_by_host.note,/nothing the service declared is shown/);
+  assert.match(invalid.declared_by_host.note,/no line and no claim count is shown here/);
+  assert.match(invalid.declared_by_host.note,/not_passed/);
+  assert.ok(invalid.host_written_text_in.includes('not_passed.rows[].observed'));
+  // --full: the checker's own object is as the checker made it.
+  const full=await check(makeDoor(ORIGIN,{notCovered:[line]}),{full:true});
+  assert.ok(full.result.not_tested.includes(line));
+  assert.deepEqual(raw(JSON.stringify({...full,result:null})),[]);
+});
+
+test('`help` gives exit 0 a meaning that holds for every command, and `help door plan` answers as `help door`',()=>{
+  assert.equal(EXIT_CODES[0],'ran; no finding (a `door` or `feedback` body says what its 0 covers)');
+  for(const args of [['help'],['help','invoke'],['help','door']])assert.equal(runCli(args).value.exit_codes[0],EXIT_CODES[0]);
+  const door=runCli(['help','door']);
+  for(const args of [['help','door','plan'],['help','door','check'],['help','door','rights']]){
+    const r=runCli(args);
+    assert.equal(r.status,0,args.join(' '));assert.deepEqual(r.value,door.value,args.join(' '));
+    assert.deepEqual(checkArgv(args),{ok:true});
+  }
+  assert.deepEqual(runCli(['help','feedback','check']).value,runCli(['help','feedback']).value);
+  // A first word that is no command is still refused, and nothing typed is repeated.
+  const unknown=runCli(['help','TYPEDWORD','plan']);
+  assert.equal(unknown.status,2);assert.equal(unknown.stdout.includes('TYPEDWORD'),false);
+  assert.equal(checkArgv(['help','nope','plan']).ok,false);
+  // A word every object answers to is not a command either.
+  for(const word of ['toString','constructor','__proto__']){
+    assert.equal(usageHelp(word),undefined,word);
+    for(const args of [['help',word],[word],[word,'--help']]){
+      const r=runCli(args);
+      if(args.includes('--help')){assert.equal(r.status,0);assert.ok(Array.isArray(r.value.commands),'the general help');}
+      else{assert.equal(r.status,2,args.join(' '));assert.equal(r.value.error.code,'UNKNOWN_COMMAND',args.join(' '));}
+      assert.equal(r.stdout.includes(`"${word}"`),false,`${word} is not repeated`);
+    }
+  }
 });
 
 test('no test in this file reached for the network outside loopback',()=>{

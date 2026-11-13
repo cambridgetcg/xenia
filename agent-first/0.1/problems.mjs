@@ -28,6 +28,9 @@ export const INPUT_REASONS=Object.freeze({
 export const ARGUMENT_REASONS=Object.freeze({
   as_of_not_rfc3339:'--as-of must be an RFC 3339 date-time with a real calendar date and Z or an offset, at most 40 characters, for example 2026-11-13T00:00:00Z.',
   origin_not_an_origin:'--origin must be a plain HTTP(S) origin: a scheme and a host, with no user name, password, path, query or fragment.',
+  max_requests_out_of_range:'--max-requests must be a whole number from 1 to 66, written in digits only, for example 1.',
+  total_timeout_ms_out_of_range:'--total-timeout-ms must be a whole number of milliseconds from 100 to 120000, written in digits only, for example 5000.',
+  required_flag_missing:'A flag this command requires was not given.',
 });
 
 // Why `feedback new --out` wrote nothing. The path given is never copied into the output.
@@ -41,8 +44,11 @@ export const OUTPUT_REASONS=Object.freeze({
   could_not_create:'The file at the --out path could not be created.',
 });
 
-// Which rule refused a `door` target. `reason` is always one of these keys; the
-// text given on the command line is never copied into the output.
+// Which rule refused a `door` target. `reason` is always one of these keys. A
+// user name, password, path, query or fragment given on the command line is
+// never copied into the output. When the default rule refused the target, its
+// origin (scheme, host and port, as the checker normalised them) appears in
+// the suggested `door plan` command, and nowhere else.
 export const TARGET_REASONS=Object.freeze({
   not_an_origin:'The target is not a plain HTTP(S) origin: give a scheme and a host, with no user name, password, path, query or fragment.',
   http_not_loopback:'Plain HTTP is accepted only for localhost, 127.x and [::1]; any other target must use HTTPS.',
@@ -92,7 +98,7 @@ export const FEEDBACK_FLAGS=Object.freeze({
 
 export const COMMANDS={
   arrive:{usage:'arrive',summary:'Read one bounded orientation document. Expects no reply; activates nothing.',probe:['arrive']},
-  help:{usage:'help [command]',summary:'Show this help, or the usage of one command.',probe:['help']},
+  help:{usage:'help [command]',summary:'Show this help, or the usage of one command. Words after the command name are not read: `help door plan` gives the usage of `door`, which covers each of its operations.',probe:['help']},
   motifs:{usage:'motifs [motif-id]',summary:'Read the motif map, or one motif card.',probe:['motifs']},
   catalog:{usage:'catalog',summary:'List the registered modules. Activates nothing.',probe:['catalog']},
   explain:{usage:'explain <module-id>',summary:'Describe one module and give an input example.',probe:['explain','xenia.surface']},
@@ -111,27 +117,31 @@ export const COMMANDS={
     rules:[NETWORK_NOTE,
       '`door plan` sends nothing: read it before `door check`. It gives the request, byte and time bounds, what is not guarded, and two `door check` commands to run.',
       '`door check` hands at most --max-requests GET requests (1 to 66) for the one origin to the runtime and starts none after --total-timeout-ms (100 to 120000). Both must be given; neither has a default. The plan names the one case in which the runtime sends a request twice.',
-      'The origin is a scheme and a host only. By default it must use HTTPS, a DNS name and port 443, and not a local or reserved name. --allow-local-target accepts whatever else the checker accepts, and the output records that it was used.',
+      'The origin is a scheme and a host only. By default it must use HTTPS, a DNS name and port 443, and not a local or reserved name. --allow-local-target accepts whatever else the checker accepts, and the output records that it was used, which default rule it set aside, and, for an IP address, whether the address is in a loopback, private, link-local or reserved range.',
+      'A refused target is sent nothing. A user name, password, path, query or fragment is never copied into the output; when the default rule refused the target, its origin (scheme, host and port) appears in the suggested `door plan` command.',
       '--full adds the checker\'s whole result. Without it the output gives only that result\'s size and sha256.',
       'Exit 0, 3 or 4 follows the checker\'s own word; the output says what each covers. A check reports what one User-Agent was served on these requests, and nothing wider.',
+      'A check whose request was not sent because the budget was used up is counted and not listed. When a valid manifest was read and the budget was smaller than a full check needs, `next` gives the `door check` command with that number.',
       '`door rights` reads one local file as a Covenant 0.1 adoption record and sends nothing. It reports which release the record pins, whether it raises issues under the rules installed in this checkout, and which of its evidence had expired at --as-of (an RFC 3339 time; without it, the clock). It verifies nothing the record says: a record that agrees with itself is not evidence of practice.',
       'The file for `door rights` must be a regular file, not a symbolic link, at most 2,000,000 bytes, valid UTF-8 with no byte-order mark, one JSON value with no repeated key, and an object whose schema_version begins with xenia.covenant.adoption/. Values from the record are shown only as a listed word, a timestamp or an origin.',
-      '`door rights` exits 0 when the record pins the installed bytes, raises no issue, and no row it gives as pass rests on evidence expired at --as-of; 3 when it pins the installed bytes and raises an issue, or such a row rests on expired evidence; 4 when it pins other bytes, or the JSON Schema check could not be run here. Each of the two checks keeps at most 256 issues, and --full lists them. --origin only compares the origin the record names with the one given.']},
+      '`door rights` exits 0 when the record pins the installed bytes, raises no issue, and no row it gives as pass rests on evidence expired at --as-of; 3 when it pins the installed bytes and raises an issue, or such a row rests on expired evidence; 4 when it pins other bytes, or the JSON Schema check was not run and the other check raised nothing. Each of the two checks keeps at most 256 issues, and --full lists them. --origin only compares the origin the record names with the one given.',
+      'The JSON Schema check is not run on a record that holds an array longer than the installed schema allows for any array, and it is stopped after 5 seconds; either is reported as not_run with a reason, and the other check still runs. `finding.also` and the exit reason carry what the exit does not: a status other than active, an --as-of earlier than the review, another origin, passes on expired evidence.',
+      'The file `invoke xenia.covenant draft` prints is a receipt, not a record: the record is its `result`, saved to a file of its own.']},
   feedback:{usage:'feedback new [--out <absolute-new-file>]',
     also:['feedback check --input <file>'],
     summary:'Write a report in the form AGENT-FEEDBACK.md describes, offline. `new` prints a blank entry, or writes it to one new file; `check` reads an entry from a local file and says which labelled parts it found. Neither sends or delivers anything.',probe:['help','feedback'],
     rules:['Both commands send nothing and deliver nothing, and read no clock. `feedback new` takes no input file; `feedback check` reads the one file named and, when it is there, AGENT-FEEDBACK.md in this checkout, to see whether the Entry ID is already in it.',
       '`feedback new` prints the blank entry inside its JSON document, as entry.text. With --out it writes the entry to that path instead. The path must be absolute, must not end with a path separator, and nothing may be there yet: the file is created only when nothing is at the path, and an existing file is never overwritten.',
-      '`feedback check` exits 0 when it finds a dated heading (`## YYYY-MM-DD: ...`), an Entry ID in the form xenia-feedback-YYYYMMDD-label-NNN, Observed at starting with a date, Speaker (any text; the notebook allows anonymous reports), Status, and at least one `###` section with text; 3 when one of these is not found; 4 when the file has more than one dated heading. A 0 says those parts are there, and nothing about what they say.',
+      '`feedback check` exits 0 when it finds a dated heading (`## YYYY-MM-DD: ...`), an Entry ID in the form xenia-feedback-YYYYMMDD-label-NNN, Observed at starting with a date, Speaker (any text; the notebook allows anonymous reports), Status, and at least one `###` section with text; 3 when one of these is not found; 4 when the file has more than one dated heading, or a dated heading beside a level-two heading that begins with a date that does not exist. A 0 says those parts are there, and nothing about what they say.',
       'The notebook does not require this form. The labels that answer its eight bullets are reported as found, empty or not_found_by_label, and never change the exit.',
       'The file for `feedback check` must be a regular file, not a symbolic link, at most 1 MiB, valid UTF-8 with no byte-order mark. It is read line by line, not parsed as Markdown. An HTML comment is not read as content. A `<!--` begins one when it closes on its own line; when it is at the start of a line and closes on a later one; or when it closes on a later line before any blank line, heading, list item or code fence. Any other `<!--` is read as text, and nothing in a fenced code block is a comment.',
-      'Warnings give a kind and a line number, never the text: a few fixed patterns that look like a credential or a local path, on the first 2,000 characters of each line, and four kinds about how the file was read. They do not change the exit, and finding none is not a finding that there are none.',
+      'Warnings give a kind and a line number, never the text: a few fixed patterns that look like a credential or a local path, on the first 2,000 characters of each line, and five kinds about how the file was read. They do not change the exit, and finding none is not a finding that there are none.',
       'Where a report can go is printed as `route` by both commands and as `report` by `arrive`: a pull request, an issue, handing the note over, or nowhere. There is no endpoint, and no reply is promised.']},
   'starter-smoke':{usage:'starter-smoke --package <reviewed-package-dir> --dir <new-notes-dir>',
     summary:'Run the pinned provider smoke check on a new notes root.',probe:['help','starter-smoke']},
 };
 export const COMMAND_NAMES=Object.keys(COMMANDS);
-export const EXIT_CODES={0:'ran; no finding; the body says what a 0 covers',1:'operation failure or refusal: see error and problem',2:'usage error: the command line was not understood',
+export const EXIT_CODES={0:'ran; no finding (a `door` or `feedback` body says what its 0 covers)',1:'operation failure or refusal: see error and problem',2:'usage error: the command line was not understood',
   3:'ran, reports a finding',4:'ran, could not determine'};
 export const USAGE_CODES=['UNKNOWN_COMMAND','INVALID_ARGUMENTS','MOTIF_INVALID_ARGUMENTS','STUDY_NOT_FOUND','MOTIF_NOT_FOUND','MODULE_NOT_FOUND','INVALID_TARGET'];
 
@@ -143,6 +153,13 @@ export function withExit(body,code){EXITS.set(body,code);return body;}
 export const exitOf=body=>body!==null&&typeof body==='object'?EXITS.get(body):undefined;
 export const exitFields=(code,reason)=>({exit_code:code,exit_reason:reason,exit_meaning:EXIT_CODES[code]});
 
+// Every flag a `door` or `feedback` operation requires. A missing one is named in the refusal.
+const REQUIRED_FLAGS=[...new Set([...Object.values(DOOR_FLAGS),...Object.values(FEEDBACK_FLAGS)].flatMap(spec=>spec.required??[]))];
+// The required flags of `spec` that `rest` does not hold at all, or undefined when none is missing.
+export function missingFlags(rest,spec){
+  const missing=(spec.required??[]).filter(flag=>!rest.includes(flag));
+  return missing.length?missing:undefined;
+}
 const STUDY_SUBS=['list','help','--help','-h','journey'];
 function flagsOk(rest,required){
   if(rest.length!==required.length*2)return false;
@@ -177,7 +194,8 @@ export function checkArgv(argv,needs=[]){
   const [command,...rest]=full;
   const bad=reason=>({ok:false,reason});
   if(!COMMAND_NAMES.includes(command))return bad('unknown command');
-  if(command==='help')return rest.length===0||(rest.length===1&&COMMAND_NAMES.includes(rest[0]))?{ok:true}:bad('help usage');
+  // Words after a command name are not read: `help door plan` is `help door`.
+  if(command==='help')return rest.length===0||COMMAND_NAMES.includes(rest[0])?{ok:true}:bad('help usage');
   if(command==='catalog'||command==='arrive')return rest.length?bad('takes no arguments'):{ok:true};
   if(command==='demo')return rest.length===0||(rest.length===1&&rest[0]==='--full')?{ok:true}:bad('demo usage');
   if(command==='explain')return rest.length===1?{ok:true}:bad('needs one module id');
@@ -289,8 +307,11 @@ const TABLE={
   },
   INVALID_ARGUMENTS:(e,c)=>{
     const known=COMMAND_NAMES.includes((c.argv??[])[0])?c.argv[0]:undefined;
+    // Only a flag one of these commands defines is named; anything else in `missing` is dropped, so nothing typed is repeated.
+    const missing=e.reason==='required_flag_missing'&&Array.isArray(e.missing)?e.missing.filter(flag=>REQUIRED_FLAGS.includes(flag)):[];
     const why=typeof e.reason==='string'&&Object.hasOwn(ARGUMENT_REASONS,e.reason)?`${ARGUMENT_REASONS[e.reason]} `:'';
-    return {detail:`${why}The command is known but its arguments do not match its usage. Nothing was run.`,
+    return {detail:`${why}${missing.length?`Missing: ${missing.join(', ')}. `:''}The command is known but its arguments do not match its usage. Nothing was run.`,
+      ...(missing.length?{missing}:{}),
       next:[known?{argv:['help',known],why:`Read the usage of ${known}.`}:{argv:['help'],why:'List the commands and their usage.'}]};
   },
   MOTIF_INVALID_ARGUMENTS:()=>({detail:'The motifs study arguments do not match its usage. Nothing was run.',
@@ -304,9 +325,9 @@ const TABLE={
   INVALID_TARGET:(e)=>{
     const why=typeof e.reason==='string'&&Object.hasOwn(TARGET_REASONS,e.reason)?TARGET_REASONS[e.reason]:TARGET_REASONS.refused_by_target_rule;
     const lift=e.liftable&&typeof e.target==='string';
-    return {detail:`${why} Nothing was sent.${lift?' --allow-local-target lifts the default rule and accepts whatever else the checker accepts; the output then records that it was used. Whether to lift it is not decided by this kit.':''}`,
-      next:[...(lift?[{argv:['door','plan','--origin',e.target,'--allow-local-target'],why:'Read the plan for this target with the default target rule lifted. A plan sends nothing.'}]:[]),
-        {argv:['door','plan'],needs:['--origin <origin>'],why:'Read the plan for another origin. A plan sends nothing.'}]};
+    return {detail:`${why} Nothing was sent.${lift?' --allow-local-target lifts the default rule and accepts whatever else the checker accepts; the output then records that it was used. Whether to lift it is not decided by this kit. The second next action repeats the target\'s origin (scheme, host and port); nothing else that was typed is copied here.':''}`,
+      next:[{argv:['door','plan'],needs:['--origin <origin>'],why:'Read the plan for another origin. A plan sends nothing.'},
+        ...(lift?[{argv:['door','plan','--origin',e.target,'--allow-local-target'],why:'Read the plan for this target with the default target rule lifted. A plan sends nothing; it says which rule was set aside and, for an IP address, what kind of address it is.'}]:[])]};
   },
   CHECKOUT_REQUIRED:(e)=>({detail:e.reason==='covenant_files'?
     'This command needs the covenant/0.1 directory of a full Xenia source checkout beside the kit (validate-adoption.mjs, rfc3339.mjs and the three JSON files they read), and at least one of those files is not present or could not be loaded. Nothing was read or checked.':
@@ -334,7 +355,8 @@ const TABLE={
     'The notes root is not a usable directory path (it must be an absolute path to a regular directory, or a new name in an existing parent). Nothing was read or written.',next:[helpContext]}),
   INVALID_INPUT:(e,c)=>{
     const why=INPUT_REASONS[e.reason];
-    if((c.argv??[])[0]==='door')return {detail:`${why??'The input file is not usable.'} Nothing was checked. The input rules are in help door.`,
+    if((c.argv??[])[0]==='door')return {detail:`${why??'The input file is not usable.'}${e.reason==='not_an_adoption_record'&&e.holds==='record_in_receipt_result'?
+      ' This file is a receipt printed by `invoke`, and its `result` says it is an adoption record: save that `result` to a file of its own and give that file.':''} Nothing was checked. The input rules are in help door.`,
       next:[{argv:['help','door'],why:'Read the usage of the door command and its input rules.'}]};
     if((c.argv??[])[0]==='feedback')return {detail:`${why??'The input file is not usable.'} Nothing was checked. The input rules are in help feedback.`,next:[helpFeedback]};
     return (c.argv??[])[0]==='invoke'?
@@ -386,11 +408,12 @@ export function buildProblem(error,ctx={}){
   const problem={code:code??'CLI_FAILED',detail:made.detail,terminal:next.length===0,next_actions:next,
     retryable:Boolean(made.retryable||error?.retryable)};
   if(made.valid)problem.valid=[...made.valid];
+  if(made.missing)problem.missing=[...made.missing];
   return problem;
 }
 
 export function usageHelp(command){
-  const entry=COMMANDS[command];
+  const entry=typeof command==='string'&&Object.hasOwn(COMMANDS,command)?COMMANDS[command]:undefined;
   if(!entry)return undefined;
   return {command,usage:entry.usage,...(entry.also?{also:[...entry.also]}:{}),summary:entry.summary,...(entry.rules?{rules:[...entry.rules]}:{}),exit_codes:EXIT_CODES,
     not_established:['that the command will succeed','that other commands are described here']};

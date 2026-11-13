@@ -168,14 +168,19 @@ test('feedback new prints a blank entry: every field and section, no date, no cl
   // No clock was read, so no date is filled in.
   assert.doesNotMatch(text,/\b\d{4}-\d{2}-\d{2}\b/);assert.doesNotMatch(text,/\b20\d{6}\b/);
   assert.equal(runCli(['feedback','new']).stdout,r.stdout,'two runs print the same bytes');
-  // Every part is listed with what it asks for, and which notebook bullet it answers.
-  assert.deepEqual(body.parts,PARTS.map(part=>({...part})));
+  // Every part is listed with the notebook bullet it answers. What it asks for is said once, in the entry's own comments.
+  assert.deepEqual(body.parts,PARTS.map(({asks,...part})=>part));
+  for(const part of body.parts)assert.deepEqual(Object.keys(part),['kind','label','bullet','needed_for_exit_0']);
+  assert.ok(Buffer.byteLength(r.stdout)<7600,`size ${Buffer.byteLength(r.stdout)}`);
   assert.deepEqual(body.parts.filter(part=>part.kind==='field').map(part=>part.label),FIELDS);
   assert.deepEqual(body.parts.filter(part=>part.kind==='section').map(part=>part.label),SECTIONS);
   assert.deepEqual(body.parts.filter(part=>part.needed_for_exit_0).map(part=>part.label).slice(1),['Entry ID','Observed at','Speaker','Status']);
   assert.equal(body.parts[0].kind,'heading');assert.equal(body.parts[0].needed_for_exit_0,true);
-  for(const part of body.parts)assert.ok(text.includes(part.asks)||part.label==='Status',`${part.label}: its hint is in the entry`);
-  assert.match(body.parts_note,/one section/);
+  for(const part of PARTS)assert.ok(text.includes(part.asks)||part.label==='Status',`${part.label}: its hint is in the entry`);
+  // Each hint is printed once for each part that carries it (two pairs of sections share a bullet's words), not a second time in `parts`.
+  for(const part of PARTS)if(part.label!=='Status')
+    assert.equal(r.stdout.split(JSON.stringify(part.asks).slice(1,-1)).length-1,PARTS.filter(other=>other.asks===part.asks).length,`${part.label}: how often its hint is printed`);
+  assert.match(body.parts_note,/one section/);assert.match(body.parts_note,/comment/);
   assert.deepEqual(body.next.map(item=>[item.argv,item.needs]),[[['feedback','check'],['--input <file>']]]);
   for(const item of body.next)assert.deepEqual(checkArgv(item.argv,item.needs),{ok:true});
   assert.deepEqual(body.route,JSON.parse(JSON.stringify(REPORT_ROUTE)));
@@ -476,13 +481,16 @@ test('warnings give a kind and a line, never the text, and never change the exit
     prefixed_api_key:'s'+'k-'+'abcdefghij0123456789ABCD',
     json_web_token:'ey'+'J'+'hbGciOiJIUzI1NiJ9'+'.'+'eyJzdWIiOiIxMjM0NTY3ODkwIn0'+'.'+'c2lnbmF0dXJlLWJ5dGVz',
     assigned_secret:'pass'+'word = '+'hunter2hunter2',
+    url_credentials:['postgres:','//admin',':correcthorsebattery','@db.example.org:5432/app'].join(''),
+    basic_value:'Authorization: Ba'+'sic '+'dXNlcm5hbWU6cGFzc3dvcmQxMjM0NQ==',
     unix_home_or_temp:'see /'+'Users/someone/project/file.txt',
     tilde_home:'at ~'+'/notes/x.md',
     windows_drive:'C:'+'\\Users\\x\\y',
+    windows_share:'\\\\'+'fileserver\\share\\x',
     file_url:'file:'+'///srv/data/x',
   };
-  assert.deepEqual(Object.keys(samples),WARNING_KINDS.slice(0,11),'one sample for each pattern, in the order they are listed');
-  assert.deepEqual(WARNING_KINDS.slice(11),['line_not_fully_scanned','unclosed_comment','comment_over_several_lines','repeated_label']);
+  assert.deepEqual(Object.keys(samples),WARNING_KINDS.slice(0,14),'one sample for each pattern, in the order they are listed');
+  assert.deepEqual(WARNING_KINDS.slice(14),['line_not_fully_scanned','unclosed_comment','comment_over_several_lines','repeated_label','heading_date_does_not_exist']);
   const base=fill().split('\n');
   const at=base.length;
   const text=[...base,...Object.values(samples)].join('\n');
@@ -490,13 +498,17 @@ test('warnings give a kind and a line, never the text, and never change the exit
   assert.equal(r.status,0,'warnings do not change the exit');
   const w=r.value.warnings;
   assert.deepEqual(w.rows,Object.keys(samples).map((kind,i)=>({kind,line:at+1+i})));
-  assert.equal(w.count,11);assert.equal(w.more,0);assert.deepEqual(w.by_kind,Object.fromEntries(Object.keys(samples).map(kind=>[kind,1])));
+  assert.equal(w.count,14);assert.equal(w.more,0);assert.deepEqual(w.by_kind,Object.fromEntries(Object.keys(samples).map(kind=>[kind,1])));
   for(const sample of Object.values(samples))assert.equal(r.stdout.includes(sample),false,'a warned line is not echoed');
-  for(const piece of ['hunter2','someone','OPENSSH','a1B2a1B2','abcDEF1234567890'])assert.equal(r.stdout.includes(piece),false,piece);
+  for(const piece of ['hunter2','someone','OPENSSH','a1B2a1B2','abcDEF1234567890','correcthorse','dXNlcm5hbWU','fileserver'])assert.equal(r.stdout.includes(piece),false,piece);
+  assert.match(w.note,/Fourteen kinds are fixed patterns/);assert.match(w.note,/Five are about how the file was read/);
   // Ordinary lines stay quiet.
   const quiet=['sha256 5144237d22adad3ffa97c68c50093d06e9d5ed1ff3410cd22ea037b2227ef110','GET /.well-known/agent.json and /tmp is a word',
     'The token was server-stored; a bearer claim token.','https://example.org/home/page and https://example.org/tmp/x','password: none was used',
-    'Authorization: none; no credentials were sent','risk-assessment and task-skipping-is-fine are not keys','commit ff4c981 and tag surface-v0.1.0-rc.1'];
+    'Authorization: none; no credentials were sent','risk-assessment and task-skipping-is-fine are not keys','commit ff4c981 and tag surface-v0.1.0-rc.1',
+    'the token: value was not shown','secret: none was used in this run at all','Password: (not applicable, unauthenticated)','api key: I did not have one for this',
+    'tokens are counted: 12 of them','see https://example.com:443/path@v2','Basic authentication was all it asked for','a | table | of | things, and **bold** text',
+    'x < y > z, and 1,/tmp is a word','<https://example.org/home/page> and mailto:someone@example.org','\\\\ two backslashes and a C: with nothing after it'];
   assert.equal(read(put('quiet.md',[...base,...quiet].join('\n'))).value.warnings.count,0);
   // More than the row limit: the first rows, and the rest counted.
   const many=read(put('many.md',[...base,...Array.from({length:ROW_LIMIT+5},()=>samples.tilde_home)].join('\n'))).value.warnings;
@@ -610,8 +622,13 @@ test('large and hostile input costs little: each 1 MiB file below is read in a f
     many_sections:'### a\n'.repeat(Math.floor(INPUT_LIMIT_BYTES/6)),
     many_fences:'```\n'.repeat(Math.floor(INPUT_LIMIT_BYTES/4)),
     keyword_and_spaces:('token'+' '.repeat(1990)+'\n').repeat(Math.floor(INPUT_LIMIT_BYTES/1996)),
-    full_lines_of_starts:['eyJ','sk-','ghp_','Bearer ','secret=','-----BEGIN ','file://','C:\\','~/','/Users/','AKIA','xoxb-','github_pat_']
-      .map(piece=>(piece.repeat(Math.floor(1999/piece.length))+'\n').repeat(40)).join(''),
+    full_lines_of_starts:['eyJ','sk-','ghp_','Bearer ','secret=','-----BEGIN ','file://','C:\\','~/','/Users/','AKIA','xoxb-','github_pat_',
+      // for the patterns added after the review: a name that goes on, a quoted key, a URL with a colon, Basic, two more prefixes, a share, marked paths
+      'token_','tokentoken','secret"','api_key-','a://b:','ab://c:ddd','x://:','Basic a','sk_live_','npm_','\\\\a\\','*~/','|/Users/',',/tmp/']
+      .map(piece=>(piece.repeat(Math.floor(1999/piece.length))+'\n').repeat(18)).join(''),
+    keyword_then_a_long_name:('token'+'a'.repeat(1990)+'\n').repeat(Math.floor(INPUT_LIMIT_BYTES/1996)),
+    scheme_then_colons:('ab://'+'c:'.repeat(990)+'\n').repeat(Math.floor(INPUT_LIMIT_BYTES/1986)),
+    scheme_and_a_long_password:('ab://c:'+'d'.repeat(1985)+'\n').repeat(Math.floor(INPUT_LIMIT_BYTES/1993)),
     many_repeated_labels:'- **Speaker:** x\n'.repeat(Math.floor(INPUT_LIMIT_BYTES/17)),
     one_long_wrapped_value:`- **Speaker:** x\n${' y\n'.repeat(Math.floor(INPUT_LIMIT_BYTES/3)-10)}`,
     backticks_in_the_id:`- **Entry ID:** ${'`'.repeat(INPUT_LIMIT_BYTES-100)}x\n`,
@@ -739,6 +756,13 @@ test('wrong arguments are usage errors; nothing is read or written',()=>{
     assert.ok(r.value.problem.next_actions.some(action=>JSON.stringify(action.argv)==='["help","feedback"]'),args.join(' '));
   }
   assert.deepEqual(fs.readdirSync(work).sort(),before);
+  // `feedback check` without --input says which flag is missing, and repeats nothing that was typed.
+  for(const args of [['check'],['check',path.join(work,'TYPEDNAME.md')]]){
+    const r=runCli(['feedback',...args]);
+    assert.equal(r.value.error.reason,'required_flag_missing');assert.deepEqual(r.value.problem.missing,['--input']);
+    assert.match(r.value.problem.detail,/Missing: --input\./);assert.equal(r.stdout.includes('TYPEDNAME'),false);
+  }
+  assert.equal(runCli(['feedback','new','--out']).value.error.reason,undefined,'a flag with no value is not a missing flag');
   for(const args of [['new'],['new','--out','/somewhere/new.md'],['check','--input','f']])assert.deepEqual(checkArgv(['feedback',...args]),{ok:true});
   assert.deepEqual(checkArgv(['feedback','check'],['--input <file>']),{ok:true});
   assert.equal(runCli(['feedbak']).value.problem.next_actions.some(action=>JSON.stringify(action.argv)==='["help","feedback"]'),true,'a near miss points at feedback');
@@ -871,6 +895,94 @@ test('feedback loads its own file, the bounded reader and the problem table: no 
     }
     for(const wanted of ['feedback.mjs','problems.mjs','input-file.mjs','runtime.mjs'])assert.ok(loaded.has(wanted),wanted);
   }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
+
+// ---- from the review of this step ----
+test('the credential patterns catch a secret written as an environment name, a JSON key, a URL with a password, and four more shapes',()=>{
+  // Built at run time, so that no line of this file has the shape of a credential.
+  const j=(...pieces)=>pieces.join('');
+  const planted={
+    assigned_secret:[
+      j('AWS_SECRET_ACCESS_','KEY=planted/value/planted/value/planted/valu'),
+      j('aws_secret_access_','key = planted/value/planted/value/planted/valu'),
+      j('GITHUB_TO','KEN=plantedabcdefghijklmnopqrstuvwxyz0123'),
+      j('OPENAI_API_','KEY=plantedabcdefghijklmnopqrstuvwxyz0123'),
+      j('DB_PASS','WORD=plantedhorsebatterystaple'),
+      j('{"access_to','ken":"plantedabcdefghijklmnopqrstuvwxyz0123"}'),
+      j('"to','ken": "plantedabcdefghijklmnopqrstuvwxyz0123"'),
+      j('client_sec','ret: plantedabcdefghijklmnopqrstuvwxyz0123'),
+      j("'api-","key' = 'plantedabcdefghijklmnop'"),
+      j('pass','word: plantedhorsebatterystaple'),
+    ],
+    url_credentials:[j('postgres:','//admin',':plantedhorsebattery','@db.example.org:5432/app'),j('https:','//someone',':plantedhorsebattery','@example.org/x'),j('redis:','//',':plantedhorsebattery','@cache.example.org')],
+    basic_value:[j('Authorization: Ba','sic cGxhbnRlZDpwYXNzd29yZDEyMzQ1Ng==')],
+    prefixed_api_key:[j('sk_li','ve_','planted51H8abcdefghijklmnop'),j('rk_te','st_','planted51H8abcdefghijklmnop'),j('whs','ec_','plantedabcdefghijklmnopqrstuv'),
+      j('np','m_','plantedabcdefghijklmnopqrstuvwxyz012'),j('AI','za','SyPlanted890abcdefghijklmnopqrstuvw')],
+    private_key_block:[j('-----BEGIN PGP PRIV','ATE KEY BLOCK-----'),j('-----BEGIN RSA PRIV','ATE KEY-----')],
+  };
+  const base=fill().split('\n'),at=base.length;
+  for(const [kind,lines] of Object.entries(planted))for(const line of lines){
+    const r=read(put('planted-secret.md',[...base,line].join('\n')));
+    assert.equal(r.status,0,'a warning does not change the exit');
+    assert.ok(r.value.warnings.rows.some(row=>row.kind===kind&&row.line===at+1),`${kind} was not warned about: a line of ${line.length} characters beginning ${JSON.stringify(line.slice(0,6))}`);
+    assert.ok(r.value.warnings.rows.every(row=>row.line===at+1));
+    assert.equal(/planted/i.test(r.stdout),false,'the line is not echoed');
+  }
+  // The same lines inside a comment and inside a code fence are warned about too.
+  const inside=read(put('planted-inside.md',[...base,`<!-- ${planted.assigned_secret[2]} -->`,'```',planted.url_credentials[0],'```'].join('\n')));
+  assert.deepEqual(inside.value.warnings.rows,[{kind:'assigned_secret',line:at+1},{kind:'url_credentials',line:at+3}]);
+});
+
+test('a local path is warned about after the marks an entry puts around it: bold, a table cell, angle brackets, a comma',()=>{
+  const base=fill().split('\n'),at=base.length;
+  const lines=[['**/'+'Users/someone/Projects/xenia**','unix_home_or_temp'],['|/'+'Users/someone/x|','unix_home_or_temp'],['</'+'Users/someone/x>','unix_home_or_temp'],
+    ['a,/'+'home/someone/x','unix_home_or_temp'],['*~'+'/notes/x.md*','tilde_home'],['|~'+'/notes/x.md|','tilde_home'],['\\\\'+'fileserver\\share\\someone','windows_share']];
+  const r=read(put('marked-paths.md',[...base,...lines.map(([line])=>line)].join('\n')));
+  assert.deepEqual(r.value.warnings.rows,lines.map(([,kind],i)=>({kind,line:at+1+i})));
+  assert.equal(/someone|fileserver/.test(r.stdout),false);
+  // Two lines that hold nothing are still flagged. A row is a line to look at, and missing a real one costs more than these do.
+  const harmless=read(put('harmless.md',[...base,'Bea'+'rer authentication-was-not-required-here','about ~'+'/5 of them'].join('\n')));
+  assert.deepEqual(harmless.value.warnings.rows,[{kind:'bearer_value',line:at+1},{kind:'tilde_home',line:at+2}]);
+});
+
+test('a level-two heading whose date does not exist is said, with its line; beside a dated heading the file is not read as one entry',()=>{
+  // The first heading carries 31 November; the fields are under it; a second heading, lower down, carries a real date.
+  const mixed=['## 2026-11-31: PLANT-writer','',`- **Entry ID:** \`${ID}\``,'- **Observed at:** 2026-11-13','- **Speaker:** PLANT-speaker','- **Status:** open','',
+    '### Observed','','PLANT-text.','','## 2026-11-13: PLANT-second',''].join('\n');
+  const r=check(put('two-kinds-of-heading.md',mixed));
+  assert.equal(r.status,4,r.stdout);
+  const body=r.value;
+  assert.deepEqual({word:body.finding.word,reason:body.finding.reason,missing:body.finding.missing},{word:'undetermined',reason:'dated_heading_beside_one_with_no_such_date',missing:[]});
+  for(const key of NEEDED)assert.deepEqual(body.parts[key],{state:'not_read'},key);
+  assert.deepEqual(body.entry,{lines:12,dated_headings:1,first_line:null,last_line:null,comments_ignored:0});
+  assert.deepEqual(body.warnings.rows,[{kind:'heading_date_does_not_exist',line:1}]);
+  assert.match(body.exit_reason,/one dated heading and 1 level-two heading that begins with a date that does not exist/);assert.match(body.exit_reason,/no part was read/);
+  assert.deepEqual({state:body.entry_id_in_notebook.state,reason:body.entry_id_in_notebook.reason},{state:'not_checked',reason:'entry_not_read'});
+  assert.equal(r.stdout.includes('PLANT'),false);
+  // The order does not matter, and two such headings are counted.
+  const after=read(put('heading-after.md',`${fill()}\n## 2026-02-30: PLANT-later\n\n## 2025-02-29: PLANT-last\n`));
+  assert.equal(after.status,4);assert.equal(after.value.warnings.by_kind.heading_date_does_not_exist,2);
+  assert.match(after.value.exit_reason,/2 level-two headings that begin with a date that does not exist/);
+  // By itself such a heading is still exit 3, as before, and now its line is given.
+  const alone=read(put('heading-alone.md',fill({heading:'## 2026-02-30: PLANT-writer'})));
+  assert.equal(alone.status,3);assert.equal(alone.value.parts.dated_heading.state,'not_well_formed');
+  assert.deepEqual(alone.value.warnings.rows,[{kind:'heading_date_does_not_exist',line:3}]);
+  // A level-three heading, a heading in a code fence and a heading inside a comment are not level-two headings.
+  const quiet=read(put('heading-quiet.md',`${fill()}\n### 2026-02-30: a section\n\n\`\`\`\n## 2026-02-30: in a fence\n\`\`\`\n\n<!--\n## 2026-02-30: in a comment\n-->\n`));
+  assert.equal(quiet.status,0);assert.equal(quiet.value.warnings.by_kind.heading_date_does_not_exist,undefined);
+  const rules=runCli(['help','feedback']).value.rules.join(' ');
+  assert.match(rules,/a date that does not exist/);
+});
+
+test('the source and the README say which fields the existing entry has: six of the eight',()=>{
+  const fields=existingEntry().split('\n').filter(line=>line.startsWith('- **')).map(line=>/^- \*\*(.+?):\*\*/.exec(line)[1]);
+  assert.equal(fields.length,6);
+  assert.deepEqual(FIELDS.filter(label=>!fields.includes(label)),['Network vantage','Reply path']);
+  assert.deepEqual(PARTS.filter(part=>['Network vantage','Reply path'].includes(part.label)).map(part=>part.bullet),[3,7]);
+  const source=fs.readFileSync(new URL('feedback.mjs',kit),'utf8'),readme=fs.readFileSync(new URL('README.md',kit),'utf8');
+  assert.doesNotMatch(source,/The fields and their layout are those of the entry already in the notebook/);
+  for(const text of [source,readme])assert.match(text.replace(/\s*\n\/\/ /g,' '),/six of the eight fields/);
+  assert.match(readme,/Network vantage and Reply path are not in that entry/);
 });
 
 test('no test in this file reached for the network',()=>{

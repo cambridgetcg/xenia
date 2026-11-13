@@ -5,7 +5,7 @@
   "base_revision": "35c2d77b509c619e56645c20bedae00c638bdb00",
   "merge_base_with_origin_main": "415980f48aa52b329dd4d0fee9b6031f0907d61e",
   "merge_base_note": "As this checkout knew origin/main when the record was written; nothing was fetched for it.",
-  "head_before_record": "ee71d82682e4510cd33c75cd13f1b12814f573db",
+  "head_before_record": "d79bc939af65c8c640c48e4636788b66882f3b47",
   "commits": [
     {
       "task": "door plan and door check",
@@ -21,6 +21,10 @@
     },
     {
       "task": "own door",
+      "commit": "d79bc939af65c8c640c48e4636788b66882f3b47"
+    },
+    {
+      "task": "review fixes",
       "commit": "the commit that carries this file"
     }
   ],
@@ -31,8 +35,8 @@
       "note": "npm test runs three test groups; totals per group in order",
       "groups": [
         {
-          "tests": 322,
-          "pass": 315,
+          "tests": 336,
+          "pass": 329,
           "fail": 0,
           "skipped": 7,
           "cancelled": 0
@@ -59,8 +63,8 @@
       "exit_code": 0,
       "groups": [
         {
-          "tests": 322,
-          "pass": 321,
+          "tests": 336,
+          "pass": 335,
           "fail": 0,
           "skipped": 1,
           "cancelled": 0
@@ -86,28 +90,28 @@
       "node tools/render-covenant.mjs --check": 0,
       "node tools/render-adoption-schema.mjs --check": 0
     },
-    "runs": "Both runs and both render checks were made on the tree of the commit that carries this file, with this file in place. The first group has 11 more tests than the 311 in the previous task's gate log; all 11 are in tests/own-door.test.mjs."
+    "runs": "Both runs and both render checks were made on the tree of the commit that carries this file, with this file in place. The first group had 322 tests before the review fixes; the 14 added are 6 in tests/agent-first-door.test.mjs, 4 in tests/agent-first-door-rights.test.mjs and 4 in tests/agent-first-feedback.test.mjs. The second and third groups (surface/0.1 and observe/0.1) were not changed."
   },
   "sha256": {
     "AGENT-FEEDBACK.md": "947e0c459821ebad9d4c8b3cf6cdd91965988f58daf359c7c8409f9c3385f952",
     "AGENTS.md": "d1f81236423f7c6745c326c9e264f0ef518a4803afeaa1a86925fd964c62fb6d",
     "CLAUDE.md": "3d100f06500e5d0e87b375ef73eb331b20afd241f9374493d99011269801bafa",
     "CONTRIBUTING.md": "00863ec8610aa5c9a2a6090fe88bfac6e2fca6f8deb124130fadfed5cf40873b",
-    "agent-first/0.1/README.md": "95672ea3b6f6581030512add1656853ad785fb9cdeba3e811612d9c6cc47c8b6",
+    "agent-first/0.1/README.md": "12081561270103a6b0d4cbd184ad9dba350d620c464b477eaeaf29e14e24b2c6",
     "agent-first/0.1/arrive.mjs": "11284cc26a8311e26aedfe874b6a998b06f6e6028a19615fbfcdb9bb33cc74dd",
-    "agent-first/0.1/cli.mjs": "2320e8eefbb76b1d8d112db18443024348db7a61aa78b746c3a884d676edea63",
-    "agent-first/0.1/door-rights.mjs": "75eef0a27495fb75d7a53fda11f58d15c02b6138e09c8fb148692a7c67ff4217",
-    "agent-first/0.1/door.mjs": "cc2ced913173437249002ea11c8c461b4c9b375d86964286f2e7704bae5c765f",
-    "agent-first/0.1/feedback.mjs": "21764d28442f0dd0f458b9b9ceeaf53fab87bff72c39784f2bf5b95e8022de0a",
+    "agent-first/0.1/cli.mjs": "d3d6bfee64bfa71e844239c3c37dd06ec3fc9bddd25896fd632d5a2bf2dbd99b",
+    "agent-first/0.1/door-rights.mjs": "04f32b054c173090420a2b32a3088e807339efac4e5829546d02fecfbd48dae4",
+    "agent-first/0.1/door.mjs": "7de435ca7de78a474feb2f8d6582156aeb4905818da127d4e376cb2d09d9e54d",
+    "agent-first/0.1/feedback.mjs": "e74efc213b2e921f8068434f6f772b97392ce6421471006b1cb2a1e38da81366",
     "agent-first/0.1/motifs.json": "10e5a25ab1c28d31bc35db654bfc450d384dfa2b4056d453c86534f2257f71bc",
-    "agent-first/0.1/problems.mjs": "7b9270f1f2b6138e1c73063156f02f2187d50ccde999fdb2033e17237702e532",
-    "tests/agent-first-door-rights.test.mjs": "13de8b06d9c29e21086fc2729ed5ebff0ef5f86ffcc0d193de86e85f55c70676",
-    "tests/agent-first-door.test.mjs": "1a50a2bc18576a78750d1ce3dbf25d05111bae8f7114ed85f0ddfe5d5765bb7d",
-    "tests/agent-first-feedback.test.mjs": "a8996d461b73c402d634715a37e9979a5f6c86bd120ca6d86998cacc91693195",
+    "agent-first/0.1/problems.mjs": "1c2ddfd3f1b89b0bfb06d620de3b617bbb36a96b5563405397d15173571e86b9",
+    "tests/agent-first-door-rights.test.mjs": "dfc1a9b00fe7cb57e97e4c52aa6d1640c7373997a9cffd3fa830d1c6bfd0b158",
+    "tests/agent-first-door.test.mjs": "4c2bb130dd87623c872cff7f8bd00c4cb5ffe95062dda5d876fed7e1e221a24a",
+    "tests/agent-first-feedback.test.mjs": "a7bd4fa8485b3ab4f138f2c40fd3a33553d07145c195e3b1aff6c5e6ba08a810",
     "tests/agent-first-floor.test.mjs": "3902a3076d06d57b07101d14a8377bda56aaaef17c091a3ca41fb472abd2ca06",
     "tests/agent-first-problems.test.mjs": "ac61b876a99a8dfe387c89014d23be1cf33192effdb481bb6821173a6cb0b76e",
     "tests/agent-first-review-fixes.test.mjs": "8cc1c46effb74b66042cfe285421fe2d6b00271d85c9070fdd5b32e525b26480",
-    "tests/own-door.test.mjs": "fcb151d0077123e97695ca5203b610d49e608922ad1f08719e24e30ede6703ba"
+    "tests/own-door.test.mjs": "7f0d33b4ea150c1310798dc703d71285b5f79eeeb37a98237ea82a1db650d668"
   },
   "sha256_note": "Every file changed since base_revision, as it stands in the tree of the commit that carries this file. This file is not in its own map.",
   "own_door": {
@@ -208,21 +212,68 @@
   },
   "not_established": [
     "that an agent other than the author of this record can follow the door without guessing; no outside agent has used it",
-    "that door check works against any host outside this machine: none was contacted, by a test or by hand",
-    "what any tool loads or runs when a session opens in this repository: no session was opened to observe it, and only .claude/ was looked at for tracked files",
+    "that door check works against any host outside this machine: no test contacts one, and the author of this record and of the review fixes contacted none. The review of this step reports runs against live origins; they are not part of this record",
+    "what any tool loads or runs when a session opens in this repository: no session was opened to observe it, and only .claude/ and a root .mcp.json were looked at for tracked files",
     "that npm runs the prepare script on install as the card says: read from package.json and npm's documented behaviour, not run here; scripts of dependencies were not looked at",
     "that the card's wording presses no one: the test finds listed words and does not read meaning",
     "that the command on the card changes nothing by any route: the guarded run stops the fetch, socket, name-lookup, child-process and file-writing calls the test names, and no others",
-    "that the README has no other statement that is false: it was read against the code and its commands were run, and three things were changed; a full proof was not attempted",
+    "that the README has no other statement that is false: it was read against the code and its commands were run; three things were changed then, and the review found a fourth (what a refused target repeats), corrected with the review fixes; a full proof was not attempted",
     "that this repository conforms to its own standard, or that any host does",
     "anything a record or an entry says, and anything about a host's practice: door rights and feedback check read form and consistency only",
     "that the earlier-snapshot digests in door rights match the tag on any remote: no tag was fetched",
     "Windows or non-macOS behaviour; observations are from one macOS machine on Node 24",
-    "that the order of work in the first three tasks of this step was test-first: this record's author saw only their commits"
+    "that the order of work in the first three tasks of this step was test-first: this record's author saw only their commits",
+    "that the warning patterns in feedback check find every credential or path: they are fourteen fixed shapes, and a secret with no name beside it and no known prefix is not seen",
+    "that 5 seconds is the most door rights spends in the JSON Schema check on every platform: the limit is the timeout of node:vm, exercised here on one macOS machine on Node 24; the other check has no limit and took at most 0.12 s on the shapes tried"
   ],
   "process_notes": [
     "Own door: tests/own-door.test.mjs was written first and run before AGENTS.md and CLAUDE.md were changed: 9 of 11 failed. The two that passed check things that already held (links resolve; the excluded register is absent).",
     "The guarded run of arrive was moved ahead of the plain run after a mutation showed the plain run would otherwise carry out a write before the guard reported it.",
-    "No entry was added to or changed in AGENT-FEEDBACK.md. STATE.md, package.json and everything under src/, surface/, work/, covenant/ and observe/ were not touched by this step."
-  ]
+    "No entry was added to or changed in AGENT-FEEDBACK.md. STATE.md, package.json and everything under src/, surface/, work/, covenant/ and observe/ were not touched by this step.",
+    "Review fixes: each finding was reproduced first with a scratch script. The tests were then written or changed before the code, and the four test files were run: 34 of 98 failed. Two small additions were not test-first: naming a missing --input for feedback check, and refusing a word such as toString as a command, were written together with their tests; a mutation run afterwards showed each test fails without its code.",
+    "Review fixes: STATE.md, package.json, AGENT-FEEDBACK.md, AGENTS.md, CLAUDE.md, CONTRIBUTING.md and everything under src/, surface/, work/, covenant/ and observe/ were not touched. Nothing was pushed, deployed or sent."
+  ],
+  "review_fixes": {
+    "note": "Independent reviewers examined the four commits above and returned 27 findings. Each was reproduced on head_before_record before anything was changed. One line for each finding id follows; the tests named are in the three kit test files and tests/own-door.test.mjs.",
+    "findings": {
+      "C1": "fixed. door rights no longer hands the JSON Schema check a record with an array longer than the installed schema allows for any array (1024), and stops the check after 5 seconds. Before, on this machine: 0.3 s at 8,000 rows and 1.2 s at 16,000; the review measured 78 s at 64,000. After: a 1.8 MB file with one array of 600,000 rows read in 0.3 s, and two nested shapes inside the first bound stopped at 5 s.",
+      "C2": "fixed. assigned_secret reads an environment name, an ini, YAML or JSON key; url_credentials and basic_value are new kinds; four key prefixes and the PGP header were added. 21 planted lines are warned about and none is echoed.",
+      "C3": "fixed in part. A path is found after * | < > and a comma, and a share path has its own kind. The two harmless lines the review named are still flagged, knowingly: a row is a line to look at.",
+      "C4": "fixed. The plan for another origin is the first next action. A lifted plan, and a check, say which default rule was set aside and whether an IP literal is in a range the vendored list holds as not globally reachable. The default rule still reads text only, as the plan says under does_not_guard.",
+      "C5": "fixed. The note speaks for its own section and says a row can still carry host text. Control, format and line-separator characters in host text are printed as \\u{HEX} in the short form; --full is untouched.",
+      "C6": "fixed without changing an exit. finding.also and the exit reason carry a status other than active and an as_of earlier than the review; reviewed_at has a relation word.",
+      "refusal-echoes-target": "fixed in words and in order. The README, help and the code comment say what holds: userinfo, path, query and fragment are never copied; the origin of a target the flag could admit appears in the suggested plan.",
+      "door-check-args-unnamed": "fixed. A missing required flag is named (problem.missing), and each of the two numbers has its own reason. An unknown or repeated flag is still not named.",
+      "draft-receipt-gap": "fixed. A receipt whose result says it is an adoption record is refused with that one step; help and the README say it too.",
+      "first-look-rows-and-next": "fixed. Checks not sent for want of budget are counted under not_passed.left_out and not listed; next gives the full-check command when a valid manifest was read and the budget was the limit.",
+      "rights-origin-mismatch-exit-0": "fixed without changing the exit. The exit reason says which way the comparison went, and finding.also carries record_names_another_origin.",
+      "rights-finding-word-on-exit-3": "fixed. finding.also carries pass_rows_on_expired_evidence; reviewed_at.relation says after_as_of.",
+      "help-two-words": "fixed. Words after a command name are not read: help door plan answers as help door. A word every object answers to (toString) is no longer taken for a command.",
+      "bidi-chars-raw": "fixed with C5.",
+      "feedback-two-headings": "fixed. A level-two heading with a date that does not exist is given as a warning with its line; beside a dated heading the file is exit 4 and no part is read.",
+      "lift-offered-first": "fixed with C4.",
+      "exit-0-wording-in-help": "fixed. The wording the design had set for exit 0 was changed, because it was true of door and feedback bodies only.",
+      "feedback-new-says-hints-twice": "fixed. parts no longer repeats what the entry's own comments say: 8,774 bytes before, 7,498 after. route is still printed in full by three commands, as designed.",
+      "H1": "fixed. One test holds exit 0, 3 and 4 bodies and a plan to a list of words that would bless a service, and looks for each not_established line, the scope and covers.not_more by content. The rights line about safety is pinned.",
+      "H2": "fixed with refusal-echoes-target.",
+      "H3": "fixed with exit-0-wording-in-help.",
+      "H4": "fixed by addition. The four state words are unchanged; manifest.means is one fixed sentence for each, and not_found says only that the status was not 200.",
+      "H5": "left open. Nothing in this checkout or its history shows the order of work in tasks 1 to 3, and the author of these fixes did not build them. The not_established line stays.",
+      "H6": "fixed. The test asks git about .mcp.json at the root as well as .claude/.",
+      "H7": "fixed. The comment and the README say six of the eight fields are the existing entry's, and that Network vantage and Reply path answer bullets 3 and 7."
+    },
+    "changes_to_agreed_shapes": [
+      "door check gained two top-level keys, target_rule (after allow_local_target) and next (after not_established), and manifest gained means; not_passed gained left_out.",
+      "door plan target_rule gained refused_by_default_as and literal_address.",
+      "door rights finding gained also; record_says.reviewed_at gained relation; json_schema not_run has two more reasons.",
+      "feedback check has three more warning kinds for patterns and one for reading; feedback new parts lost asks.",
+      "A failure problem can carry missing. EXIT_CODES[0] was reworded."
+    ],
+    "mutations": "72 single text changes were made one at a time to a scratch copy and the test file for the changed source was run: 72 made it fail in the end. One of them, the own-name guard in usageHelp, passed at first, and a test line was added for it. One further change written for the run altered nothing and is not counted. They include the changes the review used to show the gap in H1 (a scope and an exit reason that say the service conforms, each of four not_established lines deleted, covers.not_more emptied). For H6, a scratch git repository was made from a copy of the tree: the own-door test passed, and failed once a .mcp.json was added to its index.",
+    "earlier_statements_now_out_of_date": [
+      "cli_walk.still_had_to_guess, second item, describes the tree before these fixes: a missing required flag and an out-of-range number are now named.",
+      "readme_commands.ran lists what was run for the fourth commit. For this one, the commands the fixes touch were run again by hand through npm run --silent xenia with files in a scratch folder: arrive, help, help door, help door plan, help feedback check, door plan (accepted, refused, lifted), door check with a missing and an out-of-range number, invoke xenia.covenant draft, door rights on the receipt, on its result, and with --as-of, --origin and --full, feedback new, feedback new --out twice, feedback check with and without --input. stderr was empty for each. No door check was sent."
+    ]
+  },
+  "record_note": "This record was first committed with the fourth task. The review-fix commit that carries this version changed it: the gate totals, the sha256 map and arrive_bytes are of that final tree, review_fixes was added, and head_before_record is the commit before it."
 }

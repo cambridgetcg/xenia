@@ -24,7 +24,7 @@ import addFormats from 'ajv-formats';
 const kit=new URL('../agent-first/0.1/',import.meta.url);
 const kitDir=fileURLToPath(kit),repo=fileURLToPath(new URL('../',import.meta.url));
 const cli=path.join(kitDir,'cli.mjs');
-const {doorRights,EARLIER_SNAPSHOTS,INPUT_LIMIT_BYTES,ISSUE_LIMIT,RECORD_WORDS,schemaNames,shownPath}=await import(new URL('door-rights.mjs',kit).href);
+const {doorRights,EARLIER_SNAPSHOTS,INPUT_LIMIT_BYTES,ISSUE_LIMIT,RECORD_WORDS,CHECK_TIME_LIMIT_MS,ALSO_WORDS,longestArrayAllowed,schemaNames,shownPath}=await import(new URL('door-rights.mjs',kit).href);
 const {EXIT_CODES,checkArgv,exitOf}=await import(new URL('problems.mjs',kit).href);
 
 let realFetchCalls=0;
@@ -141,7 +141,7 @@ test('the all-unknown draft raises nothing under the installed rules: exit 0, an
   assert.equal(body.expiry.earliest_expires_at,null);assert.equal(body.expiry.latest_expires_at,null);
   const says=body.record_says;
   assert.equal(says.host_origin,ORIGIN);assert.equal(says.declaration_status,'draft');assert.equal(says.speaker_authority_state,'unverified');
-  assert.deepEqual(says.reviewed_at,{value:REVIEWED,whole_days_before_as_of:43});
+  assert.deepEqual(says.reviewed_at,{value:REVIEWED,whole_days_before_as_of:43,relation:'before_as_of'});
   assert.equal(says.duty_rows,43);
   assert.deepEqual(says.outcomes,{pass:0,fail:0,partial:0,unknown:43,other:0});
   assert.deepEqual(says.evidence_states,{none:43,asserted:0,tested:0,attested:0,other:0});
@@ -195,6 +195,8 @@ test('a fabricated record in which every duty passes exits 0, and nothing in the
     assert.deepEqual([body.expiry.earliest_expires_at,body.expiry.latest_expires_at],[EXPIRES,EXPIRES]);
     assert.match(body.not_established[0],/not evidence of practice/);
     assert.ok(body.not_established.some(line=>/authority/.test(line)));assert.ok(body.not_established.some(line=>/release tag/.test(line)));
+    assert.equal(body.not_established.filter(line=>/that the host conforms to anything/.test(line)&&/or that anything is safe/.test(line)).length,1);
+    assert.equal(body.not_established.length,7);
     // Text the record carries is not copied out.
     assert.equal(r.stdout.includes('RECORDMARK'),false,'record text in the output');assert.equal(r.stdout.includes('Fixture host'),false);
   }
@@ -372,7 +374,7 @@ test('values from the record come out only as a listed word, a timestamp or an o
     assert.equal(r.status,3,r.stdout);
     const says=r.value.record_says;
     assert.equal(says.host_origin,null);assert.equal(says.declaration_status,'other');assert.equal(says.speaker_authority_state,'other');
-    assert.deepEqual(says.reviewed_at,{value:null,whole_days_before_as_of:null});
+    assert.deepEqual(says.reviewed_at,{value:null,whole_days_before_as_of:null,relation:null});
     assert.equal(says.outcomes.other,1);assert.equal(says.evidence_states.other,1);assert.equal(says.right_states.other,1);
     assert.equal(r.value.expiry.pass_rows_with_no_readable_expiry,1);
     // There are issue rows to look in, and with --full they are in the output.
@@ -391,9 +393,9 @@ test('values from the record come out only as a listed word, a timestamp or an o
   }
   // A timestamp is copied only when it is one, and short.
   const long=draft();long.declaration.reviewed_at=`2026-10-01T00:00:00.${'0'.repeat(60)}Z`;
-  assert.deepEqual((await inProcess(put('long-time.json',long))).record_says.reviewed_at,{value:null,whole_days_before_as_of:43});
+  assert.deepEqual((await inProcess(put('long-time.json',long))).record_says.reviewed_at,{value:null,whole_days_before_as_of:43,relation:'before_as_of'});
   // A review later than as_of gives a negative number of days.
-  assert.deepEqual((await inProcess(put('plain-draft.json',draft()),{asOf:'2026-09-01T00:00:00Z'})).record_says.reviewed_at,{value:REVIEWED,whole_days_before_as_of:-30});
+  assert.deepEqual((await inProcess(put('plain-draft.json',draft()),{asOf:'2026-09-01T00:00:00Z'})).record_says.reviewed_at,{value:REVIEWED,whole_days_before_as_of:-30,relation:'after_as_of'});
 });
 
 test('the word lists used for record_says are the installed schema’s own',()=>{
@@ -485,8 +487,13 @@ test('wrong arguments are usage errors that name the argument, and nothing is re
     const r=usage(['--input',absent,'--origin',origin],'origin_not_an_origin');
     assert.match(r.value.problem.detail,/origin/);assert.equal(r.stdout.includes('hunter2'),false,'a password is not echoed');
   }
-  for(const args of [[],['--input'],['--as-of',AS_OF],['--input',file,'--nope'],['--input',file,'--input',file],['--input',file,'--full','--full'],
-    ['--input',file,'--max-requests','3'],['--input',file,'--allow-local-target'],[file]])usage(args,undefined);
+  for(const args of [['--input'],['--input',file,'--nope'],['--input',file,'--input',file],['--input',file,'--full','--full'],
+    ['--input',file,'--max-requests','3'],['--input',file,'--allow-local-target']])usage(args,undefined);
+  // With no --input at all, the flag is named.
+  for(const args of [[],['--as-of',AS_OF],[file]]){
+    const r=usage(args,'required_flag_missing');
+    assert.deepEqual(r.value.problem.missing,['--input']);assert.match(r.value.problem.detail,/--input/);
+  }
   assert.equal(runCli(['door','right','--input',file]).status,2);
   for(const args of [['--input','f'],['--input','f','--as-of',AS_OF],['--full','--input','f','--origin',ORIGIN,'--as-of',AS_OF]])assert.deepEqual(checkArgv(['door','rights',...args]),{ok:true});
   assert.equal(checkArgv(['door','rights']).ok,false);assert.deepEqual(checkArgv(['door','rights'],['--input <file>']),{ok:true});
@@ -586,6 +593,151 @@ test('door rights loads the covenant checks and Observe, and with Observe the Su
     assert.equal(urls.includes('/adapters/'),false,'no adapter and no target rule');
     assert.equal(urls.includes('create-adoption.mjs'),false,'the draft generator is not loaded to read a record');
   }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
+
+// ---- from the review of this step ----
+test('a record with an array longer than the installed schema allows is not handed to the JSON Schema check: read in moments, not hours',()=>{
+  // The largest maxItems in the installed schema, read from it here; every array it defines outside a conditional part has one.
+  const sizes=[],unbounded=[];
+  const walk=(node,at)=>{
+    if(Array.isArray(node)){node.forEach((item,i)=>walk(item,[...at,String(i)]));return;}
+    if(node===null||typeof node!=='object')return;
+    if(Number.isInteger(node.maxItems))sizes.push(node.maxItems);
+    if(node.type==='array'&&node.maxItems===undefined&&!at.some(step=>['allOf','anyOf','oneOf','not','if','then','else'].includes(step)))unbounded.push(at.join('/'));
+    for(const [key,item] of Object.entries(node))walk(item,[...at,key]);
+  };
+  walk(canonicalAdoptionSchema,[]);
+  assert.deepEqual(unbounded,[],'an array the installed schema leaves without a maxItems');
+  assert.equal(longestArrayAllowed(canonicalAdoptionSchema),Math.max(...sizes));
+  assert.equal(longestArrayAllowed(canonicalAdoptionSchema),1024);
+
+  // A file well inside the byte limit that the JSON Schema check would take hours on: one array of 600,000 empty objects.
+  const hostile=draft();hostile.rights[0].requirement_results=Array(600_000).fill({});
+  const file=put('long-array.json',JSON.stringify(hostile));
+  assert.ok(fs.statSync(file).size<INPUT_LIMIT_BYTES);
+  const started=process.hrtime.bigint();
+  const r=rights(file);   // the child is stopped after 30 s, and that fails this test
+  const seconds=Number(process.hrtime.bigint()-started)/1e9;
+  assert.ok(seconds<20,`took ${seconds.toFixed(1)} s`);
+  assert.equal(r.status,3,r.stdout.slice(0,400));
+  const rules=r.value.under_installed_rules;
+  assert.deepEqual(Object.keys(rules.json_schema),['state','reason','how']);
+  assert.deepEqual({state:rules.json_schema.state,reason:rules.json_schema.reason},{state:'not_run',reason:'array_longer_than_schema_allows'});
+  assert.match(rules.json_schema.how,/1024/);assert.match(rules.json_schema.how,/was not run/);
+  // The other check ran by itself, and what it raised is the finding.
+  assert.equal(rules.cross_document.state,'run');assert.ok(rules.cross_document.issues>0);
+  assert.deepEqual({word:r.value.finding.word,reason:r.value.finding.reason},{word:'inconsistent',reason:'issues_under_installed_rules'});
+  assert.equal(r.value.record_says.duty_rows,600_000+draft().rights.slice(1).reduce((n,right)=>n+right.requirement_results.length,0)+5);
+
+  // Exactly at the bound the check runs; one more and it does not. Here the long array is where the schema allows 1024.
+  const at=size=>{const a=draft();a.protective_limit_results[0].restriction_events=Array(size).fill({});return rights(put(`events-${size}.json`,JSON.stringify(a))).value.under_installed_rules.json_schema;};
+  const [within,over]=[at(1024),at(1025)];
+  assert.equal(within.state,'run');assert.ok(within.issues>0);
+  assert.deepEqual({state:over.state,reason:over.reason},{state:'not_run',reason:'array_longer_than_schema_allows'});
+
+  // A long array under a key neither check knows. The check that ran raises nothing, so the finding is that it could not be
+  // determined: exit 4. No finding is made from the length itself.
+  const aside=draft();aside.something_else=Array(2000).fill(1);
+  const quiet=rights(put('long-array-aside.json',JSON.stringify(aside)));
+  assert.equal(quiet.status,4,quiet.stdout.slice(0,400));
+  assert.equal(quiet.value.under_installed_rules.json_schema.reason,'array_longer_than_schema_allows');
+  assert.deepEqual(quiet.value.under_installed_rules.cross_document,{state:'run',issues:0,limit:ISSUE_LIMIT,by_code:{}});
+  assert.deepEqual({word:quiet.value.finding.word,reason:quiet.value.finding.reason},{word:'undetermined',reason:'json_schema_not_run'});
+  assert.match(quiet.value.exit_reason,/was not run/);assert.match(quiet.value.exit_reason,/under_installed_rules\.json_schema/);
+});
+
+test('the JSON Schema check is stopped at a stated time limit, and the other check still runs',async()=>{
+  assert.equal(CHECK_TIME_LIMIT_MS,5000);
+  // Every array here is within the schema's largest bound, so the first screen lets it through; the check takes seconds on it.
+  const slow=draft();slow.rights[0].requirement_results=Array.from({length:800},()=>({evidence:{artifacts:Array(790).fill({})}}));
+  const file=put('slow-nested.json',JSON.stringify(slow));
+  assert.ok(fs.statSync(file).size<INPUT_LIMIT_BYTES);
+  const before=process.cpuUsage(),started=process.hrtime.bigint();
+  const body=await inProcess(file,{},{checkTimeLimitMs:60});
+  const used=process.cpuUsage(before),seconds=Number(process.hrtime.bigint()-started)/1e9;
+  assert.ok(seconds<5&&(used.user+used.system)/1e6<5,`took ${seconds.toFixed(2)} s`);
+  const rules=body.under_installed_rules;
+  assert.deepEqual({state:rules.json_schema.state,reason:rules.json_schema.reason},{state:'not_run',reason:'time_limit_reached'});
+  assert.match(rules.json_schema.how,/60 ms/);
+  assert.equal(rules.cross_document.state,'run');assert.ok(rules.cross_document.issues>0);
+  assert.equal(exitOf(body),3);assert.equal(body.finding.word,'inconsistent');
+  // The same validator answers afterwards: a record read after a stop is read whole.
+  const after=await inProcess(put('after-stop.json',draft()));
+  assert.equal(exitOf(after),0);assert.deepEqual(after.under_installed_rules.json_schema,{state:'run',issues:0,limit:ISSUE_LIMIT,by_code:{}});
+  // The limit the CLI uses is the stated one, and help says both bounds.
+  const rulesText=runCli(['help','door']).value.rules.join(' ');
+  assert.match(rulesText,/stopped after 5 seconds/);assert.match(rulesText,/array longer than/);
+  const readme=fs.readFileSync(new URL('README.md',kit),'utf8');
+  assert.doesNotMatch(readme,/There is no time limit on the two checks/);
+  assert.match(readme,/stopped after 5 seconds/);assert.match(readme,/array_longer_than_schema_allows/);assert.match(readme,/time_limit_reached/);
+});
+
+test('what an exit of 0 or 3 leaves unsaid is in `finding.also` and in the exit reason: status, the clock, the origin, expired evidence',async()=>{
+  assert.deepEqual([...ALSO_WORDS],['pass_rows_on_expired_evidence','as_of_before_reviewed_at','declaration_status_not_active','record_names_another_origin','record_names_no_usable_origin']);
+  const read=async(record,options={})=>{const body=await inProcess(put('also.json',record),options);return {exit:exitOf(body),also:body.finding.also,reason:body.exit_reason,body};};
+  // An active record, read after its review, with nothing expired: nothing to add.
+  const plain=await read(fabricated());
+  assert.deepEqual({exit:plain.exit,also:plain.also},{exit:0,also:[]});
+  assert.deepEqual(Object.keys(plain.body.finding),['word','reason','also','covers']);
+  // The status the record gives for itself. The exit stays where the agreed rule puts it; the fact is beside it.
+  for(const status of ['withdrawn','superseded']){
+    const record=fabricated();record.declaration.status=status;
+    const r=await read(record);
+    assert.deepEqual({exit:r.exit,word:r.body.finding.word,also:r.also},{exit:0,word:'no_inconsistency_found',also:['declaration_status_not_active']},status);
+    assert.match(r.reason,new RegExp(`declaration status as \`${status}\`, not \`active\``),status);
+    assert.equal(r.body.record_says.declaration_status,status);
+  }
+  const drafted=await read(draft());
+  assert.deepEqual({exit:drafted.exit,also:drafted.also},{exit:0,also:['declaration_status_not_active']});
+  // A status outside the installed list is not repeated.
+  const odd=fabricated();odd.declaration.status='APPROVED-BY-XENIA';
+  const other=await read(odd);
+  assert.ok(other.also.includes('declaration_status_not_active'));assert.equal(JSON.stringify(other.body).includes('APPROVED'),false);
+  // A clock earlier than the record's own review.
+  const early=await read(fabricated(),{asOf:'0001-01-01T00:00:00Z'});
+  assert.deepEqual({exit:early.exit,also:early.also},{exit:0,also:['as_of_before_reviewed_at']});
+  assert.match(early.reason,/as_of is earlier than the record's reviewed_at/);
+  assert.equal(early.body.record_says.reviewed_at.relation,'after_as_of');
+  assert.equal((await read(fabricated(),{asOf:REVIEWED})).body.record_says.reviewed_at.relation,'at_as_of');
+  // Passes that rest on expired evidence: exit 3, and the finding says so beside its word.
+  const expired=await read(fabricated({expires:'2026-11-01T00:00:00Z'}));
+  assert.deepEqual({exit:expired.exit,word:expired.body.finding.word,also:expired.also},{exit:3,word:'no_inconsistency_found',also:['pass_rows_on_expired_evidence']});
+  // --origin: the exit does not change, and the reason says which way the comparison went.
+  const elsewhere=await read(fabricated(),{origin:'https://elsewhere.example.org'});
+  assert.deepEqual({exit:elsewhere.exit,also:elsewhere.also},{exit:0,also:['record_names_another_origin']});
+  assert.match(elsewhere.reason,/names an origin other than the one given with --origin/);
+  const same=await read(fabricated(),{origin:ORIGIN});
+  assert.deepEqual(same.also,[]);assert.match(same.reason,/names the origin given with --origin/);assert.match(same.reason,/compares two pieces of text/);
+  const nameless=fabricated();nameless.host.canonical_url='mailto:someone@rights.example.org';
+  const unknown=await read(nameless,{origin:ORIGIN});
+  assert.ok(unknown.also.includes('record_names_no_usable_origin'));
+  assert.doesNotMatch((await read(fabricated())).reason,/--origin/,'with no --origin the reason does not speak of one');
+  // Every word in `also` is one of the fixed ones, in every case above, and through the CLI too.
+  const cli=rights(put('also-cli.json',fabricated({expires:'2026-11-01T00:00:00Z'})),'--origin','https://elsewhere.example.org');
+  assert.equal(cli.status,3);assert.deepEqual(cli.value.finding.also,['pass_rows_on_expired_evidence','record_names_another_origin']);
+  // A record pinned to other bytes keeps its exit of 4, and carries the same words.
+  const old=earlier();old.declaration.status='withdrawn';
+  const pinned=await read(old,{asOf:'2026-09-01T00:00:00Z'});
+  assert.equal(pinned.exit,4);assert.deepEqual(pinned.also,['as_of_before_reviewed_at','declaration_status_not_active']);
+});
+
+test('a receipt from `invoke` is refused with the one step that is missing: the record is its `result`',()=>{
+  const receipt=runCli(['invoke','xenia.covenant','draft','--input',put('receipt-input.json',runCli(['explain','xenia.covenant']).value.example)]).value;
+  assert.equal(receipt.kind,'one-shot-invocation-receipt');
+  const refused=rights(put('a-receipt.json',receipt));
+  assert.equal(refused.status,1);assert.equal(refused.value.error.code,'INVALID_INPUT');assert.equal(refused.value.error.reason,'not_an_adoption_record');
+  assert.match(refused.value.problem.detail,/receipt printed by `invoke`/);assert.match(refused.value.problem.detail,/its `result`/);assert.match(refused.value.problem.detail,/a file of its own/);
+  assert.match(refused.value.problem.detail,/Nothing was checked/);
+  // Followed, that step works.
+  assert.equal(rights(put('a-receipt-result.json',receipt.result)).status,0);
+  // A receipt whose result is something else, and a file that only looks like a receipt, are not told the same thing.
+  const manifest=runCli(['invoke','xenia.surface','manifest','--input',put('manifest-input.json',runCli(['explain','xenia.surface']).value.example)]).value;
+  for(const [name,value] of [['surface-receipt.json',manifest],['kind-only.json',{kind:'one-shot-invocation-receipt'}],['result-text.json',{kind:'one-shot-invocation-receipt',result:'xenia.covenant.adoption/0.1'}]]){
+    const r=rights(put(name,value));
+    assert.equal(r.value.error.reason,'not_an_adoption_record',name);assert.doesNotMatch(r.value.problem.detail,/receipt/,name);
+  }
+  const readme=fs.readFileSync(new URL('README.md',kit),'utf8');
+  assert.match(readme,/receipt/);assert.match(readme,/save its `result` to a file of its own/);
 });
 
 test('no test in this file reached for the network',()=>{
