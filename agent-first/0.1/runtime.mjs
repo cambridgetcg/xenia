@@ -132,7 +132,11 @@ function freezeData(value){
   }
   return value;
 }
-function snapshotInput(value){
+// A copy of `value` when it is bounded JSON data (plain objects, arrays, strings, finite numbers, booleans and
+// null, within MODULE_INPUT_LIMITS); INVALID_INPUT when it is not. invoke holds every input to this. It is
+// exported so that the session door can hold what a handler returned, or what a binding shows, to the same rule
+// before writing it on a line; the runtime itself still returns a handler's value as it is.
+export function snapshotInput(value){
   let nodes=0,bytes=0;
   const ancestors=new Set();
   const add=count=>{bytes+=count;if(bytes>MODULE_INPUT_LIMITS.maxBytes)throw new ModuleError('INVALID_INPUT');};

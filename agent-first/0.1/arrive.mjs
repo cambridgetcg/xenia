@@ -10,6 +10,7 @@ export const READ_ONLY=[
   {argv:['catalog'],what:'List the core modules and the adapters, with their declared effects.'},
   {argv:['explain','xenia.surface'],what:'Describe one module: each operation\'s card (what to send, an example, what comes back, who checks the input) and its refusals.'},
   {argv:['invoke','xenia.surface','manifest'],needs:['--input <file>'],what:'Run one effect-free core operation once on a JSON file you supply; prints a receipt. The `explain` output shows an input example.'},
+  {argv:['session'],what:'Answer requests sent as JSON lines on standard input; the first line printed says what is accepted. Activates nothing by itself; as listed, no operation that declares effects runs. Ends when its input ends.'},
   {argv:['demo'],what:'Run the local reference tools and a synthetic lifecycle. Needs the Xenia build; contacts nothing.'},
   {argv:['door','plan'],needs:['--origin <origin>'],what:'Read what a check of one HTTP(S) origin would send, to whom and how much, and what it does not guard. Sends nothing.'},
   {argv:['door','rights'],needs:['--input <file>'],what:'Read one local file as a Covenant adoption record: which release it pins, whether it raises issues under the installed rules, and which evidence has expired. Sends nothing, and verifies nothing the record says.'},

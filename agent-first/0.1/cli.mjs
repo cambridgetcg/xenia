@@ -9,7 +9,7 @@ import {commandFailure,errorProjection,failureNotEstablished,finishProvider} fro
 import {adapterRows,describeAdapter,ADAPTER_IDS} from './adapter-catalog.mjs';
 import {buildArrival} from './arrive.mjs';
 import {runInvoke} from './invoke.mjs';
-import {CARD_NOTE,COMMANDS,EXIT_CODES,NETWORK_NOTE,REPORT_ROUTE,USAGE_CODES,buildProblem,exitOf,usageHelp} from './problems.mjs';
+import {CARD_NOTE,COMMANDS,EXIT_CODES,NETWORK_NOTE,REPORT_ROUTE,USAGE_CODES,buildProblem,exitOf,usageHelp,wasWritten} from './problems.mjs';
 
 const makeRuntime=()=>{const runtime=createModuleRuntime();for(const module of createXeniaModules())runtime.register(module);return runtime;};
 const exampleOf=(runtime,id)=>runtime.describe(id).operations[0].input.example;
@@ -108,7 +108,7 @@ async function starterSmoke(args){
 }
 
 const isHelp=arg=>arg==='-h'||arg==='--help';
-const GENERAL_HELP=['arrive','help [command]','motifs [motif-id]','motifs study [list|show <study-id|motif-id>|run <study-id>|journey]','catalog','explain <module-id>','invoke <module-id> <operation-id> --input <file>','demo [--full]',
+const GENERAL_HELP=['arrive','help [command]','motifs [motif-id]','motifs study [list|show <study-id|motif-id>|run <study-id>|journey]','catalog','explain <module-id>','invoke <module-id> <operation-id> --input <file>','session [--allow <module:operation,...>]','demo [--full]',
   'door plan --origin <origin> [--allow-local-target]',
   'door check --origin <origin> --max-requests <1..66> --total-timeout-ms <100..120000> [--allow-local-target] [--full]',
   'door rights --input <file> [--as-of <rfc3339>] [--origin <origin>] [--full]',
@@ -147,7 +147,7 @@ export async function main(args){
     return envelope({title:'Xenia agent-first module kit',status:'repository-only development',commands:GENERAL_HELP,
       start_here:'Run: arrive. It is one read-only orientation document and expects no reply.',
       principle:'Inspect → activate deliberately → invoke through the host gate → pause, upgrade or retire.',
-      exit_codes:EXIT_CODES,output:'stdout is one JSON document; stderr is silent. A failure has error (what happened) and problem (what you may do next). A `door` or `feedback` document states its own exit as exit_code, exit_reason and exit_meaning.',
+      exit_codes:EXIT_CODES,output:'stdout is one JSON document; stderr is silent. A failure has error (what happened) and problem (what you may do next). A `door` or `feedback` document states its own exit as exit_code, exit_reason and exit_meaning. `session` is the one exception: its stdout is JSON Lines, one JSON object per line, and its exit is 0 only when its end was complete; see `help session`.',
       network:NETWORK_NOTE,cards:CARD_NOTE,limits:MODULE_INPUT_LIMITS,notes:['No automatic installs, services, host hooks, accounts, publication or model calls.','Runtime state is in-process; the caller owns persistence.','Trusted module code is not an OS sandbox.'],
       not_established:['that any listed command will succeed here','that this list is every capability of the host']});
   }
@@ -176,6 +176,12 @@ export async function main(args){
   if(command==='context'){
     const {runContextCommand}=await import('./context.mjs');
     return envelope(await runContextCommand(rest));
+  }
+  if(command==='session'){
+    // Loaded only for this command. It reads standard input and writes its own lines, one compact JSON object each, as it goes;
+    // it does not throw, and what it returns is marked as already written.
+    const {runSessionCommand}=await import('./session.mjs');
+    return runSessionCommand(rest);
   }
   const runtime=makeRuntime();
   if(command==='arrive'&&!rest.length){
@@ -226,6 +232,8 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1]
   const argv=process.argv.slice(2);
   try{
     const body=await main(argv);
+    // `session` wrote its own lines. The process is ended here, so that a handler still running past its deadline cannot keep it open.
+    if(wasWritten(body))process.exit(exitOf(body)??0);
     console.log(JSON.stringify(body,null,2));
     // Only a body that set its own exit (door, feedback) changes it; every other success stays 0.
     const exit=exitOf(body);

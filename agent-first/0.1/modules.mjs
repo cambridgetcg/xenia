@@ -11,7 +11,7 @@ import {Decline,DETAIL_LIMIT} from './runtime.mjs';
 // validator beside createUnknownCovenantAdoption.
 const invalidInput=[{code:'invalid_input',effect:'not_applied',
   meaning:'The existing Xenia function rejected this input. Nothing was produced or changed.',
-  next:'Fix the input using the detail, or see the example from explain <module-id>.'}];
+  next:'Fix the input using the detail, or read the example on the operation\'s card: explain <module-id> at the command line, inspect in a session.'}];
 const native=(fn,input)=>{
   try{return fn(input);}
   catch(error){
