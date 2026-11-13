@@ -9,6 +9,8 @@
 // An action with `needs` is a command prefix: the caller adds the named flags.
 
 // Which rule an unusable input file broke; input-file.mjs sets the `reason` key.
+// The last one is about the value and not the file: the runtime sets it when
+// an input does not match the schema on an operation's card.
 export const INPUT_REASONS=Object.freeze({
   missing:'The input file is missing (no file at that path).',
   not_regular_file:'The input path is not a regular file (a directory or special file).',
@@ -21,6 +23,13 @@ export const INPUT_REASONS=Object.freeze({
   duplicate_key:'An object in the input file repeats a key.',
   beyond_limits:'The input is nested or large beyond the input limits (32 levels deep, 65536 values, 1 MiB).',
   not_an_adoption_record:'The input file is JSON, but it does not say it is a Covenant adoption record: it is not an object whose schema_version begins with xenia.covenant.adoption/.',
+  does_not_match_card:'The input is JSON data, but it does not match the schema on the operation\'s card.',
+});
+
+// Why a module definition was refused for its card; the runtime sets the `reason` key.
+export const MODULE_REASONS=Object.freeze({
+  input_schema_not_usable:'An operation\'s input schema is not usable: it is not bounded JSON data, or it holds something this kit\'s checker does not read. When the checker refused it, error.schema_refusal says why and where in the schema.',
+  input_example_does_not_match_schema:'An operation\'s input example does not match its own input schema; error.pointer, error.keyword and error.expected say where.',
 });
 
 // Which argument of a known command could not be read. What was typed is never
@@ -65,6 +74,10 @@ export const TARGET_REASONS=Object.freeze({
 // One sentence, used word for word in arrive, help, catalog, the README and motifs.json.
 export const NETWORK_NOTE='`door check` is the only command in which this kit\'s own code sends requests; provider code run by `context` and `starter-smoke` is not observed by this kit.';
 
+// What an operation's card is and who checks an input. Used word for word in
+// catalog, explain, help and the README.
+export const CARD_NOTE='An operation\'s card is its `input` (a summary; an example or the path of one; and a schema, when the module declares one), its `returns` (a summary) and its `refusals`. `input_checked_by` says who checks the input: `runtime` means the runtime holds the input to `input.schema` before the host gate is asked and before the handler runs; `handler` means the runtime checks only that the input is bounded JSON data, and the handler checks the rest. Nothing checks a returned value against `returns`.';
+
 // Where a report can go. One constant: `arrive` and both `feedback` commands
 // print it as it is. It names routes; it promises none of them.
 export const REPOSITORY='https://github.com/cambridgetcg/xenia';
@@ -100,12 +113,13 @@ export const COMMANDS={
   arrive:{usage:'arrive',summary:'Read one bounded orientation document. Expects no reply; activates nothing.',probe:['arrive']},
   help:{usage:'help [command]',summary:'Show this help, or the usage of one command. Words after the command name are not read: `help door plan` gives the usage of `door`, which covers each of its operations.',probe:['help']},
   motifs:{usage:'motifs [motif-id]',summary:'Read the motif map, or one motif card.',probe:['motifs']},
-  catalog:{usage:'catalog',summary:'List the registered modules. Activates nothing.',probe:['catalog']},
-  explain:{usage:'explain <module-id>',summary:'Describe one module and give an input example.',probe:['explain','xenia.surface']},
+  catalog:{usage:'catalog',summary:'List the registered modules, each operation with its card (what to send, what comes back, who checks the input), and the adapters. Activates nothing.',probe:['catalog']},
+  explain:{usage:'explain <module-id>',summary:'Describe one module: each operation\'s card (what to send, an example, what comes back, who checks the input) and the refusals it declares.',probe:['explain','xenia.surface']},
   demo:{usage:'demo [--full]',summary:'Run the local reference tools; a step list by default, complete bodies with --full. Needs the Xenia build.',probe:['demo']},
   invoke:{usage:'invoke <module-id> <operation-id> --input <file>',
     summary:'Register, activate, invoke once and retire a core module in this process, with your JSON file as input; prints a receipt. Only operations that declare no effects run here.',probe:['help','invoke'],
-    rules:['The input file must be a regular file, not a symbolic link, at most 1 MiB.','It must be valid UTF-8 with no byte-order mark, exactly one JSON value, with no repeated object key.','Nesting is limited to 32 levels and 65536 values.','`explain <module-id>` shows an input example for each module; a path in example_ref is relative to the repository root.']},
+    rules:['The input file must be a regular file, not a symbolic link, at most 1 MiB.','It must be valid UTF-8 with no byte-order mark, exactly one JSON value, with no repeated object key.','Nesting is limited to 32 levels and 65536 values.','`explain <module-id>` shows an input example for each module; a path in example_ref is relative to the repository root.',
+      'When an operation\'s card carries a schema, the runtime holds the input to it before anything runs. A miss is INVALID_INPUT with reason does_not_match_card, a JSON pointer to the place in the input, the schema keyword that missed and what the card expected; nothing from the input is repeated. The three core operations carry no schema: their native functions check the input. The Surface and Covenant functions answer an input they do not accept with DECLINED invalid_input, and the Work checker returns a report with valid false.']},
   context:{usage:'context <init|status|render> --package <reviewed-package-dir> --dir <notes-dir>',
     also:['context handoff --package <reviewed-package-dir> --dir <notes-dir> --input <chosen-file> --expect <current-sha256>'],
     summary:'Run one explicit command on chosen local notes.',probe:['help','context'],
@@ -267,6 +281,9 @@ const printBlank={argv:['feedback','new'],why:'Print the blank entry instead; th
 const moduleAction=(error,ctx)=>ctx.moduleIds?.includes(error.module)?
   {argv:['explain',error.module],why:'Read what this module declares it does and refuses.'}:
   {argv:['catalog'],why:'List the registered modules and their states.'};
+const cardAction=(error,ctx)=>ctx.moduleIds?.includes(error.module)?
+  {argv:['explain',error.module],why:'Read the operation\'s card: what to send, an example, and the schema the input is held to.'}:
+  {argv:['catalog'],why:'List the registered modules, each operation with its card.'};
 
 const REFUSALS={
   write_conflict:{text:'The handoff file changed since the hash you gave, so it was not replaced. Read the current hash, then repeat with it as --expect.',
@@ -354,6 +371,13 @@ const TABLE={
     'The notes root (--dir) must be an absolute path; a relative path would put the notes in whatever directory the command runs from. Nothing was read or written.':
     'The notes root is not a usable directory path (it must be an absolute path to a regular directory, or a new name in an existing parent). Nothing was read or written.',next:[helpContext]}),
   INVALID_INPUT:(e,c)=>{
+    if(e.reason==='does_not_match_card'){
+      // The pointer holds only names the card declares, and the keyword is the card's; neither is the caller's text.
+      const at=typeof e.pointer!=='string'?'a place that was not recorded':e.pointer===''?'the top of the input':e.pointer.slice(0,200);
+      const keyword=typeof e.keyword==='string'?`, keyword ${e.keyword.slice(0,40)}`:'';
+      return {detail:`${INPUT_REASONS.does_not_match_card} The first miss is at ${at}${keyword}; error.expected is the card's own word for it. Nothing was run, and the host gate was not asked.`,
+        next:[cardAction(e,c)]};
+    }
     const why=INPUT_REASONS[e.reason];
     if((c.argv??[])[0]==='door')return {detail:`${why??'The input file is not usable.'}${e.reason==='not_an_adoption_record'&&e.holds==='record_in_receipt_result'?
       ' This file is a receipt printed by `invoke`, and its `result` says it is an adoption record: save that `result` to a file of its own and give that file.':''} Nothing was checked. The input rules are in help door.`,
@@ -377,7 +401,7 @@ const TABLE={
   },
   MODULE_NOT_BOUND:(e,c)=>({detail:'This module is described by the catalog but is not bound by this command line: it needs a provider that a programmatic host supplies. Nothing was run.',next:[moduleAction(e,c)]}),
   MODULE_EXISTS:retiredOrBusy('A module with that id is already registered. Nothing was changed.'),
-  INVALID_MODULE:()=>({detail:'The module definition is not valid. Nothing was registered.',next:[catalogAction]}),
+  INVALID_MODULE:(e)=>({detail:`${typeof e.reason==='string'&&Object.hasOwn(MODULE_REASONS,e.reason)?MODULE_REASONS[e.reason]:'The module definition is not valid.'} Nothing was registered.`,next:[catalogAction]}),
   MODULE_INACTIVE:retiredOrBusy('The module is registered but not active, so the call was not admitted. Nothing ran.'),
   OPERATION_NOT_FOUND:(e,c)=>({valid:e.valid,detail:`The module has no such operation.${e.valid?` Valid operations: ${e.valid.join(', ')}.`:''} Nothing ran.`,next:[moduleAction(e,c)]}),
   POLICY_BLOCKED:retiredOrBusy('The host gate did not allow this operation. This is an admission result, not a person’s refusal. Nothing ran.'),
@@ -385,7 +409,7 @@ const TABLE={
   MODULE_BUSY:retiredOrBusy('The module has calls in flight, so replacement was refused. Nothing changed. Retry after they drain.',true),
   STALE_REVISION:retiredOrBusy('The revision you named is not the current one. Nothing changed. Read the current revision and repeat.',true),
   ADMISSION_CHANGED:retiredOrBusy('The module changed state while the call was waiting for admission. Nothing ran. Read its state and repeat.',true),
-  CONTRACT_MISMATCH:retiredOrBusy('The replacement does not match the declared contract or its operations, effects and refusals. Nothing changed.'),
+  CONTRACT_MISMATCH:retiredOrBusy('The replacement does not match the declared contract or its operations, effects, refusals and cards (input summary, input schema, what each returns). Nothing changed.'),
   DECLINED:(e,c)=>{
     const r=e.refusal??{},known=REFUSALS[r.code];
     const prior=e.effect_outcome==='unknown';

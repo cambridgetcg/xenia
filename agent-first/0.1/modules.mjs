@@ -3,6 +3,12 @@ import {Decline,DETAIL_LIMIT} from './runtime.mjs';
 // These small adapters reuse the existing profiles; they do not redefine them.
 // The native validators say what is wrong with an input by throwing. These
 // operations declare effects: [], so nothing can have been applied.
+// Each operation's card has an input summary, an example (or the path of one)
+// and what it returns. None carries an input schema: the native function stays
+// the only validator of its input, so describe reports input_checked_by:
+// handler. Surface and Work inputs hold lists, which the kit's schema checker
+// does not read, and a schema for the Covenant draft would be a second
+// validator beside createUnknownCovenantAdoption.
 const invalidInput=[{code:'invalid_input',effect:'not_applied',
   meaning:'The existing Xenia function rejected this input. Nothing was produced or changed.',
   next:'Fix the input using the detail, or see the example from explain <module-id>.'}];
@@ -23,6 +29,7 @@ export function createXeniaModules() {
       operations:{manifest:{description:'Create a manifest from an explicit definition; no network or publication.',effects:[],refusals:invalidInput,
         input:{summary:'One JSON object: service {name, canonicalUrl, description} and resources [{id, href}].',
           example:{service:{name:'Local example',canonicalUrl:'https://example.com/',description:'An unserved reference example.'},resources:[{id:'about',href:'https://example.com/about'}]}},
+        returns:{summary:'One JSON object: a Surface 0.1 manifest (schema_version xenia.surface.manifest/0.1) built from the definition, with the builder\'s defaults filled in. It is built here; nothing is served, published or observed.'},
         async run(input){const {defineSurfaceManifest}=await import('../../dist/surface-0.1.js');return native(defineSurfaceManifest,input);}}},
     },
     {
@@ -33,6 +40,7 @@ export function createXeniaModules() {
       operations:{draft:{description:'Generate an explicitly unverified draft; no adoption, signature or activation.',effects:[],refusals:invalidInput,
         input:{summary:'One JSON object: hostName, canonicalUrl, speakerId and reviewedAt (an RFC 3339 time).',
           example:{hostName:'Local example',canonicalUrl:'https://example.com/',speakerId:'https://example.com/#operator',reviewedAt:'2026-10-09T00:00:00Z'}},
+        returns:{summary:'One JSON object: a Covenant 0.1 adoption record (schema_version xenia.covenant.adoption/0.1) with declaration.status draft, every duty outcome unknown and release verification unverified. It is a draft to review, not an adoption.'},
         async run(input){const {createUnknownCovenantAdoption}=await import('../../covenant/0.1/create-adoption.mjs');return native(createUnknownCovenantAdoption,input);}}},
     },
     {
@@ -42,6 +50,7 @@ export function createXeniaModules() {
       source:'Xenia work/0.1/check.mjs / validateWorkRun',
       operations:{check:{description:'Check schema and cross-record consistency; no provider action or evidence retrieval.',effects:[],refusals:invalidInput,
         input:{summary:'One complete parsed Work 0.1 record (a JSON object). Too large to show here; see example_ref.',example_ref:'work/0.1/examples/declined.json'},
+        returns:{summary:'One JSON object: valid and schema_valid (each true or false), issues [{code, path, message}] and checks [{id, outcome, expected, observed}]. A record the checker faults comes back as this report with valid false; that is a result, not a refusal.'},
         async run(input){const {validateWorkRun}=await import('../../work/0.1/check.mjs');return native(validateWorkRun,input);}}},
     },
   ];

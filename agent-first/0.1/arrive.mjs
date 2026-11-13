@@ -8,7 +8,7 @@ export const READ_ONLY=[
   {argv:['motifs'],what:'Read the motif map: six questions the pieces keep answerable.'},
   {argv:['motifs','study','list'],what:'List the small studies that examine a motif.'},
   {argv:['catalog'],what:'List the core modules and the adapters, with their declared effects.'},
-  {argv:['explain','xenia.surface'],what:'Describe one module, its operations and an input example.'},
+  {argv:['explain','xenia.surface'],what:'Describe one module: each operation\'s card (what to send, an example, what comes back, who checks the input) and its refusals.'},
   {argv:['invoke','xenia.surface','manifest'],needs:['--input <file>'],what:'Run one effect-free core operation once on a JSON file you supply; prints a receipt. The `explain` output shows an input example.'},
   {argv:['demo'],what:'Run the local reference tools and a synthetic lifecycle. Needs the Xenia build; contacts nothing.'},
   {argv:['door','plan'],needs:['--origin <origin>'],what:'Read what a check of one HTTP(S) origin would send, to whom and how much, and what it does not guard. Sends nothing.'},

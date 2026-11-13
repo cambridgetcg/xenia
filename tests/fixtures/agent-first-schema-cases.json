@@ -1,0 +1,255 @@
+{
+  "note": "Cases for agent-first/0.1/schema.mjs, read by tests/agent-first-schema.test.mjs. Each `schemas` row holds values that match and values that do not, with the first miss the checker must report; the test holds the same rows to strict Ajv. A row with `strict_ajv_keyword` is one where Ajv names another keyword for the same miss at the same place. Each `refused` row is a schema the checker must refuse to compile, with what strict Ajv does with it. Five shapes follow the input schemas of modules/0.1/adapters/agenttool-collab/module.json on the branch hermes/agent-first-modules; the hash pattern there has no maxLength, which this checker refuses, so it has one here.",
+  "schemas": [
+    {
+      "name": "an object with no properties",
+      "schema": {"type": "object", "additionalProperties": false},
+      "valid": [{}],
+      "invalid": [
+        {"value": {"undeclared_name_from_the_caller": 1}, "pointer": "", "keyword": "additionalProperties", "expected": []},
+        {"value": null, "pointer": "", "keyword": "type", "expected": "object"},
+        {"value": [], "pointer": "", "keyword": "type", "expected": "object"},
+        {"value": "text", "pointer": "", "keyword": "type", "expected": "object"},
+        {"value": 0, "pointer": "", "keyword": "type", "expected": "object"},
+        {"value": true, "pointer": "", "keyword": "type", "expected": "object"}
+      ]
+    },
+    {
+      "name": "the same, written with empty properties and an empty required list",
+      "schema": {"type": "object", "additionalProperties": false, "properties": {}, "required": []},
+      "valid": [{}],
+      "invalid": [
+        {"value": {"undeclared_name_from_the_caller": "x"}, "pointer": "", "keyword": "additionalProperties", "expected": []}
+      ]
+    },
+    {
+      "name": "one optional bounded integer",
+      "schema": {
+        "type": "object", "additionalProperties": false,
+        "properties": {"event_limit": {"type": "integer", "minimum": 1, "maximum": 50}},
+        "required": []
+      },
+      "valid": [{}, {"event_limit": 1}, {"event_limit": 50}, {"event_limit": 25}],
+      "invalid": [
+        {"value": {"event_limit": 0}, "pointer": "/event_limit", "keyword": "minimum", "expected": 1},
+        {"value": {"event_limit": 51}, "pointer": "/event_limit", "keyword": "maximum", "expected": 50},
+        {"value": {"event_limit": 1.5}, "pointer": "/event_limit", "keyword": "type", "expected": "integer"},
+        {"value": {"event_limit": "5"}, "pointer": "/event_limit", "keyword": "type", "expected": "integer"},
+        {"value": {"event_limit": null}, "pointer": "/event_limit", "keyword": "type", "expected": "integer"},
+        {"value": {"event_limit": true}, "pointer": "/event_limit", "keyword": "type", "expected": "integer"},
+        {"value": {"event_limit": 5, "undeclared_name_from_the_caller": 5}, "pointer": "", "keyword": "additionalProperties", "expected": ["event_limit"]}
+      ]
+    },
+    {
+      "name": "a nested object with a pattern",
+      "schema": {
+        "type": "object", "additionalProperties": false,
+        "properties": {
+          "anchor": {
+            "type": "object", "additionalProperties": false,
+            "properties": {
+              "epoch_id": {"type": "string", "minLength": 1, "maxLength": 200},
+              "sequence": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+              "hash": {"type": "string", "pattern": "^[a-f0-9]{64}$", "maxLength": 64}
+            },
+            "required": ["epoch_id", "sequence", "hash"]
+          },
+          "expected_cursor_version": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+        },
+        "required": ["anchor", "expected_cursor_version"]
+      },
+      "valid": [
+        {"anchor": {"epoch_id": "e1", "sequence": 0, "hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}, "expected_cursor_version": 0},
+        {"expected_cursor_version": 9007199254740991, "anchor": {"hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "sequence": 7, "epoch_id": "e"}}
+      ],
+      "invalid": [
+        {"value": {}, "pointer": "", "keyword": "required", "expected": "anchor"},
+        {"value": {"anchor": {"epoch_id": "e1", "sequence": 0, "hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}}, "pointer": "", "keyword": "required", "expected": "expected_cursor_version"},
+        {"value": {"anchor": {"epoch_id": "e1", "sequence": 0}, "expected_cursor_version": 0}, "pointer": "/anchor", "keyword": "required", "expected": "hash"},
+        {"value": {"anchor": [], "expected_cursor_version": 0}, "pointer": "/anchor", "keyword": "type", "expected": "object"},
+        {"value": {"anchor": {"epoch_id": "e1", "sequence": 0, "hash": "0123456789ABCDEF0123456789abcdef0123456789abcdef0123456789abcdef"}, "expected_cursor_version": 0}, "pointer": "/anchor/hash", "keyword": "pattern", "expected": "^[a-f0-9]{64}$"},
+        {"value": {"anchor": {"epoch_id": "e1", "sequence": 0, "hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0"}, "expected_cursor_version": 0}, "pointer": "/anchor/hash", "keyword": "maxLength", "expected": 64},
+        {"value": {"anchor": {"epoch_id": "", "sequence": 0, "hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}, "expected_cursor_version": 0}, "pointer": "/anchor/epoch_id", "keyword": "minLength", "expected": 1},
+        {"value": {"anchor": {"epoch_id": "e1", "sequence": -1, "hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}, "expected_cursor_version": 0}, "pointer": "/anchor/sequence", "keyword": "minimum", "expected": 0},
+        {"value": {"anchor": {"epoch_id": "e1", "sequence": 0, "hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", "undeclared_name_from_the_caller": 1}, "expected_cursor_version": 0}, "pointer": "/anchor", "keyword": "additionalProperties", "expected": ["epoch_id", "sequence", "hash"]},
+        {"value": {"anchor": {"epoch_id": 5, "sequence": "0", "hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}, "expected_cursor_version": 0}, "pointer": "/anchor/epoch_id", "keyword": "type", "expected": "string"},
+        {"value": {"anchor": {"epoch_id": "e1", "sequence": 0, "hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}, "expected_cursor_version": 9007199254740992}, "pointer": "/expected_cursor_version", "keyword": "maximum", "expected": 9007199254740991}
+      ]
+    },
+    {
+      "name": "strings with an enum and length bounds",
+      "schema": {
+        "type": "object", "additionalProperties": false,
+        "properties": {
+          "idempotency_key": {"type": "string", "minLength": 1, "maxLength": 200},
+          "kind": {"type": "string", "enum": ["observation", "inference", "proposal"]},
+          "body": {"type": "string", "minLength": 1, "maxLength": 12},
+          "limits": {"type": "string", "minLength": 1, "maxLength": 2000},
+          "task_id": {"type": "string", "minLength": 1, "maxLength": 200}
+        },
+        "required": ["idempotency_key", "kind", "body"]
+      },
+      "valid": [
+        {"idempotency_key": "k", "kind": "observation", "body": "seen"},
+        {"idempotency_key": "k", "kind": "proposal", "body": "twelve chars", "limits": "none stated", "task_id": "t1"}
+      ],
+      "invalid": [
+        {"value": {"idempotency_key": "k", "kind": "decision", "body": "seen"}, "pointer": "/kind", "keyword": "enum", "expected": ["observation", "inference", "proposal"]},
+        {"value": {"idempotency_key": "k", "kind": "Observation", "body": "seen"}, "pointer": "/kind", "keyword": "enum", "expected": ["observation", "inference", "proposal"]},
+        {"value": {"idempotency_key": "k", "kind": "observation", "body": ""}, "pointer": "/body", "keyword": "minLength", "expected": 1},
+        {"value": {"idempotency_key": "k", "kind": "observation", "body": "thirteen char"}, "pointer": "/body", "keyword": "maxLength", "expected": 12},
+        {"value": {"idempotency_key": "k", "kind": "observation"}, "pointer": "", "keyword": "required", "expected": "body"},
+        {"value": {"kind": "decision", "undeclared_name_from_the_caller": 1}, "pointer": "", "keyword": "required", "expected": "idempotency_key"},
+        {"value": {"idempotency_key": "k", "kind": 1, "body": "seen", "undeclared_name_from_the_caller": 1}, "pointer": "", "keyword": "additionalProperties", "expected": ["idempotency_key", "kind", "body", "limits", "task_id"]},
+        {"value": {"idempotency_key": "k", "kind": "observation", "body": "seen", "task_id": null}, "pointer": "/task_id", "keyword": "type", "expected": "string"}
+      ]
+    },
+    {
+      "name": "names that need escaping in a pointer, and names every object answers to",
+      "schema": {
+        "type": "object", "additionalProperties": false,
+        "properties": {
+          "a/b": {"type": "string", "maxLength": 3},
+          "c~d": {"type": "integer"},
+          "": {"type": "string", "maxLength": 3},
+          "toString": {"type": "string", "maxLength": 3},
+          "constructor": {"type": "integer"},
+          "hasOwnProperty": {"type": "object", "additionalProperties": false, "properties": {"x~/y": {"type": "integer", "maximum": 1}}}
+        },
+        "required": ["toString", "a/b"]
+      },
+      "valid": [
+        {"toString": "t", "a/b": "ab"},
+        {"toString": "t", "a/b": "ab", "c~d": 1, "": "e", "constructor": 2, "hasOwnProperty": {"x~/y": 1}}
+      ],
+      "invalid": [
+        {"value": {}, "pointer": "", "keyword": "required", "expected": "toString"},
+        {"value": {"a/b": "ab"}, "pointer": "", "keyword": "required", "expected": "toString"},
+        {"value": {"toString": "t"}, "pointer": "", "keyword": "required", "expected": "a/b"},
+        {"value": {"toString": "t", "a/b": "long"}, "pointer": "/a~1b", "keyword": "maxLength", "expected": 3},
+        {"value": {"toString": "t", "a/b": "ab", "c~d": "1"}, "pointer": "/c~0d", "keyword": "type", "expected": "integer"},
+        {"value": {"toString": "t", "a/b": "ab", "": "long"}, "pointer": "/", "keyword": "maxLength", "expected": 3},
+        {"value": {"toString": 1, "a/b": "ab"}, "pointer": "/toString", "keyword": "type", "expected": "string"},
+        {"value": {"toString": "t", "a/b": "ab", "constructor": "c"}, "pointer": "/constructor", "keyword": "type", "expected": "integer"},
+        {"value": {"toString": "t", "a/b": "ab", "hasOwnProperty": {"x~/y": 2}}, "pointer": "/hasOwnProperty/x~0~1y", "keyword": "maximum", "expected": 1},
+        {"value": {"toString": "t", "a/b": "ab", "valueOf": 1}, "pointer": "", "keyword": "additionalProperties", "expected": ["a/b", "c~d", "", "toString", "constructor", "hasOwnProperty"]}
+      ]
+    },
+    {
+      "name": "a string at the top, with lengths counted in code points",
+      "schema": {"type": "string", "minLength": 2, "maxLength": 3},
+      "valid": ["ab", "abc", "😀😀", "😀😀😀", "a\ud83d", "\ude00\ud83d"],
+      "invalid": [
+        {"value": "a", "pointer": "", "keyword": "minLength", "expected": 2},
+        {"value": "😀", "pointer": "", "keyword": "minLength", "expected": 2},
+        {"value": "abcd", "pointer": "", "keyword": "maxLength", "expected": 3},
+        {"value": "😀😀😀😀", "pointer": "", "keyword": "maxLength", "expected": 3},
+        {"value": "", "pointer": "", "keyword": "minLength", "expected": 2},
+        {"value": 12, "pointer": "", "keyword": "type", "expected": "string"},
+        {"value": {}, "pointer": "", "keyword": "type", "expected": "string"},
+        {"value": ["ab"], "pointer": "", "keyword": "type", "expected": "string"}
+      ]
+    },
+    {
+      "name": "a string with an enum and a length bound, where Ajv tries the enum before the type",
+      "schema": {"type": "string", "enum": ["top", "low"], "maxLength": 3},
+      "valid": ["top", "low"],
+      "invalid": [
+        {"value": "mid", "pointer": "", "keyword": "enum", "expected": ["top", "low"]},
+        {"value": "middle", "pointer": "", "keyword": "enum", "expected": ["top", "low"]},
+        {"value": 5, "pointer": "", "keyword": "type", "expected": "string", "strict_ajv_keyword": "enum"},
+        {"value": null, "pointer": "", "keyword": "type", "expected": "string", "strict_ajv_keyword": "enum"},
+        {"value": ["top"], "pointer": "", "keyword": "type", "expected": "string", "strict_ajv_keyword": "enum"},
+        {"value": {"top": 1}, "pointer": "", "keyword": "type", "expected": "string", "strict_ajv_keyword": "enum"}
+      ]
+    },
+    {
+      "name": "an integer at the top with an enum and bounds",
+      "schema": {"type": "integer", "enum": [1, 2, 3, 9], "minimum": 1, "maximum": 5},
+      "valid": [1, 2, 3],
+      "invalid": [
+        {"value": 9, "pointer": "", "keyword": "maximum", "expected": 5},
+        {"value": 4, "pointer": "", "keyword": "enum", "expected": [1, 2, 3, 9]},
+        {"value": 0, "pointer": "", "keyword": "enum", "expected": [1, 2, 3, 9]},
+        {"value": 1.5, "pointer": "", "keyword": "type", "expected": "integer"},
+        {"value": "1", "pointer": "", "keyword": "type", "expected": "integer"}
+      ]
+    },
+    {
+      "name": "an integer with no bounds",
+      "schema": {"type": "integer"},
+      "valid": [0, 1, -5, 1000, 9007199254740991, 9007199254740992, 1e300],
+      "invalid": [
+        {"value": 0.5, "pointer": "", "keyword": "type", "expected": "integer"},
+        {"value": "0", "pointer": "", "keyword": "type", "expected": "integer"},
+        {"value": null, "pointer": "", "keyword": "type", "expected": "integer"},
+        {"value": false, "pointer": "", "keyword": "type", "expected": "integer"},
+        {"value": [], "pointer": "", "keyword": "type", "expected": "integer"},
+        {"value": {}, "pointer": "", "keyword": "type", "expected": "integer"}
+      ]
+    },
+    {
+      "name": "a pattern, read as a Unicode regular expression",
+      "schema": {"type": "string", "pattern": "^[a-z]+(?:-[a-z]+)*$", "maxLength": 16},
+      "valid": ["a", "task-claim", "abcdefgh-abcdefg"],
+      "invalid": [
+        {"value": "", "pointer": "", "keyword": "pattern", "expected": "^[a-z]+(?:-[a-z]+)*$"},
+        {"value": "Task", "pointer": "", "keyword": "pattern", "expected": "^[a-z]+(?:-[a-z]+)*$"},
+        {"value": "task--claim", "pointer": "", "keyword": "pattern", "expected": "^[a-z]+(?:-[a-z]+)*$"},
+        {"value": "abcdefgh-abcdefgh", "pointer": "", "keyword": "maxLength", "expected": 16}
+      ]
+    }
+  ],
+  "refused": [
+    {"name": "an unknown keyword", "schema": {"type": "string", "frob": 1}, "reason": "unknown_keyword", "pointer": "/frob", "strict_ajv": "refuses"},
+    {"name": "format, which this checker does not read", "schema": {"type": "string", "format": "uri", "maxLength": 100}, "reason": "unknown_keyword", "pointer": "/format", "strict_ajv": "refuses"},
+    {"name": "title, which JSON Schema knows and this checker does not", "schema": {"type": "string", "title": "A name"}, "reason": "unknown_keyword", "pointer": "/title", "strict_ajv": "accepts"},
+    {"name": "an unknown keyword in a nested property", "schema": {"type": "object", "additionalProperties": false, "properties": {"a": {"type": "string", "default": "x"}}}, "reason": "unknown_keyword", "pointer": "/properties/a/default", "strict_ajv": "accepts"},
+    {"name": "anyOf", "schema": {"type": "object", "additionalProperties": false, "properties": {"a": {"anyOf": [{"type": "string"}, {"type": "integer"}]}}}, "reason": "unknown_keyword", "pointer": "/properties/a/anyOf", "strict_ajv": "accepts"},
+    {"name": "a reference", "schema": {"$ref": "#/$defs/a", "$defs": {"a": {"type": "string"}}}, "reason": "unknown_keyword", "pointer": "/$ref", "strict_ajv": "accepts"},
+    {"name": "a node without type", "schema": {}, "reason": "type_missing", "pointer": "", "strict_ajv": "accepts"},
+    {"name": "a nested node without type", "schema": {"type": "object", "additionalProperties": false, "properties": {"a": {}}}, "reason": "type_missing", "pointer": "/properties/a", "strict_ajv": "accepts"},
+    {"name": "a node with only a string keyword and no type", "schema": {"maxLength": 3}, "reason": "type_missing", "pointer": "", "strict_ajv": "refuses"},
+    {"name": "the array type", "schema": {"type": "array"}, "reason": "type_not_supported", "pointer": "/type", "strict_ajv": "accepts"},
+    {"name": "the number type", "schema": {"type": "number"}, "reason": "type_not_supported", "pointer": "/type", "strict_ajv": "accepts"},
+    {"name": "the boolean type", "schema": {"type": "boolean"}, "reason": "type_not_supported", "pointer": "/type", "strict_ajv": "accepts"},
+    {"name": "the null type", "schema": {"type": "null"}, "reason": "type_not_supported", "pointer": "/type", "strict_ajv": "accepts"},
+    {"name": "a list of types", "schema": {"type": ["string", "integer"]}, "reason": "type_not_supported", "pointer": "/type", "strict_ajv": "refuses"},
+    {"name": "an object that is not closed", "schema": {"type": "object", "properties": {}}, "reason": "object_not_closed", "pointer": "", "strict_ajv": "accepts"},
+    {"name": "an object that says additional properties are welcome", "schema": {"type": "object", "additionalProperties": true}, "reason": "object_not_closed", "pointer": "/additionalProperties", "strict_ajv": "accepts"},
+    {"name": "an object with a schema for additional properties", "schema": {"type": "object", "additionalProperties": {"type": "string"}}, "reason": "object_not_closed", "pointer": "/additionalProperties", "strict_ajv": "accepts"},
+    {"name": "a nested object that is not closed", "schema": {"type": "object", "additionalProperties": false, "properties": {"a": {"type": "object", "properties": {"b": {"type": "string"}}}}}, "reason": "object_not_closed", "pointer": "/properties/a", "strict_ajv": "accepts"},
+    {"name": "a required name not in properties", "schema": {"type": "object", "additionalProperties": false, "properties": {"a": {"type": "string"}}, "required": ["a", "b"]}, "reason": "required_not_in_properties", "pointer": "/required", "strict_ajv": "refuses"},
+    {"name": "a required name with no properties at all", "schema": {"type": "object", "additionalProperties": false, "required": ["a"]}, "reason": "required_not_in_properties", "pointer": "/required", "strict_ajv": "refuses"},
+    {"name": "minLength on an integer", "schema": {"type": "integer", "minLength": 1}, "reason": "keyword_outside_its_type", "pointer": "/minLength", "strict_ajv": "refuses"},
+    {"name": "pattern on an integer", "schema": {"type": "integer", "pattern": "^1$"}, "reason": "keyword_outside_its_type", "pointer": "/pattern", "strict_ajv": "refuses"},
+    {"name": "minimum on a string", "schema": {"type": "string", "minimum": 1}, "reason": "keyword_outside_its_type", "pointer": "/minimum", "strict_ajv": "refuses"},
+    {"name": "properties on a string", "schema": {"type": "string", "properties": {}}, "reason": "keyword_outside_its_type", "pointer": "/properties", "strict_ajv": "refuses"},
+    {"name": "required on an integer", "schema": {"type": "integer", "required": []}, "reason": "keyword_outside_its_type", "pointer": "/required", "strict_ajv": "refuses"},
+    {"name": "enum on an object", "schema": {"type": "object", "additionalProperties": false, "enum": [{}]}, "reason": "keyword_outside_its_type", "pointer": "/enum", "strict_ajv": "accepts"},
+    {"name": "a pattern without maxLength", "schema": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "reason": "pattern_without_max_length", "pointer": "/pattern", "strict_ajv": "accepts"},
+    {"name": "a nested pattern without maxLength", "schema": {"type": "object", "additionalProperties": false, "properties": {"hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}}, "reason": "pattern_without_max_length", "pointer": "/properties/hash/pattern", "strict_ajv": "accepts"},
+    {"name": "a pattern that is not a regular expression", "schema": {"type": "string", "pattern": "(", "maxLength": 3}, "reason": "keyword_value_not_usable", "pointer": "/pattern", "strict_ajv": "refuses"},
+    {"name": "a pattern that is not text", "schema": {"type": "string", "pattern": 5, "maxLength": 3}, "reason": "keyword_value_not_usable", "pointer": "/pattern", "strict_ajv": "refuses"},
+    {"name": "a negative minLength", "schema": {"type": "string", "minLength": -1}, "reason": "keyword_value_not_usable", "pointer": "/minLength", "strict_ajv": "refuses"},
+    {"name": "a fractional maxLength", "schema": {"type": "string", "maxLength": 1.5}, "reason": "keyword_value_not_usable", "pointer": "/maxLength", "strict_ajv": "refuses"},
+    {"name": "minLength above maxLength", "schema": {"type": "string", "minLength": 5, "maxLength": 1}, "reason": "keyword_value_not_usable", "pointer": "/minLength", "strict_ajv": "accepts"},
+    {"name": "minimum above maximum", "schema": {"type": "integer", "minimum": 5, "maximum": 1}, "reason": "keyword_value_not_usable", "pointer": "/minimum", "strict_ajv": "accepts"},
+    {"name": "a fractional minimum", "schema": {"type": "integer", "minimum": 1.5}, "reason": "keyword_value_not_usable", "pointer": "/minimum", "strict_ajv": "accepts"},
+    {"name": "a maximum that is text", "schema": {"type": "integer", "maximum": "5"}, "reason": "keyword_value_not_usable", "pointer": "/maximum", "strict_ajv": "refuses"},
+    {"name": "an empty enum", "schema": {"type": "string", "enum": []}, "reason": "keyword_value_not_usable", "pointer": "/enum", "strict_ajv": "refuses"},
+    {"name": "an enum that repeats a value", "schema": {"type": "string", "enum": ["a", "a"]}, "reason": "keyword_value_not_usable", "pointer": "/enum", "strict_ajv": "accepts"},
+    {"name": "an enum value of another type", "schema": {"type": "string", "enum": ["a", 1]}, "reason": "keyword_value_not_usable", "pointer": "/enum", "strict_ajv": "accepts"},
+    {"name": "an integer enum holding a fraction", "schema": {"type": "integer", "enum": [1, 1.5]}, "reason": "keyword_value_not_usable", "pointer": "/enum", "strict_ajv": "accepts"},
+    {"name": "an enum that is not a list", "schema": {"type": "string", "enum": "a"}, "reason": "keyword_value_not_usable", "pointer": "/enum", "strict_ajv": "refuses"},
+    {"name": "required that repeats a name", "schema": {"type": "object", "additionalProperties": false, "properties": {"a": {"type": "string"}}, "required": ["a", "a"]}, "reason": "keyword_value_not_usable", "pointer": "/required", "strict_ajv": "refuses"},
+    {"name": "required that is not a list", "schema": {"type": "object", "additionalProperties": false, "properties": {"a": {"type": "string"}}, "required": "a"}, "reason": "keyword_value_not_usable", "pointer": "/required", "strict_ajv": "refuses"},
+    {"name": "required holding something that is not a name", "schema": {"type": "object", "additionalProperties": false, "properties": {"1": {"type": "string"}}, "required": [1]}, "reason": "keyword_value_not_usable", "pointer": "/required", "strict_ajv": "refuses"},
+    {"name": "properties that is a list", "schema": {"type": "object", "additionalProperties": false, "properties": []}, "reason": "keyword_value_not_usable", "pointer": "/properties", "strict_ajv": "refuses"},
+    {"name": "a property whose schema is text", "schema": {"type": "object", "additionalProperties": false, "properties": {"a": "string"}}, "reason": "not_a_schema_object", "pointer": "/properties/a", "strict_ajv": "refuses"},
+    {"name": "a schema that is text", "schema": "string", "reason": "not_a_schema_object", "pointer": "", "strict_ajv": "refuses"},
+    {"name": "a schema that is a list", "schema": [], "reason": "not_a_schema_object", "pointer": "", "strict_ajv": "refuses"},
+    {"name": "a schema that is null", "schema": null, "reason": "not_a_schema_object", "pointer": "", "strict_ajv": "refuses"},
+    {"name": "the schema `true`, which JSON Schema reads as anything goes", "schema": true, "reason": "not_a_schema_object", "pointer": "", "strict_ajv": "accepts"}
+  ]
+}
