@@ -1,0 +1,228 @@
+{
+  "scope": "Guest-side step 2 (hands for the arriving side): door plan and door check, door rights, feedback new and feedback check, and the arrival card at the top of AGENTS.md. Local execution only: doors held in memory, loopback servers, and records and entries made at run time. Not hosted conformance.",
+  "observed_at": "2026-11-13",
+  "date_note": "The step was planned under the date 2026-11-12. The gate runs, the commands run by hand and the walk recorded here were made on 2026-11-13 by the clock of the machine that ran them, so that is the date given.",
+  "base_revision": "35c2d77b509c619e56645c20bedae00c638bdb00",
+  "merge_base_with_origin_main": "415980f48aa52b329dd4d0fee9b6031f0907d61e",
+  "merge_base_note": "As this checkout knew origin/main when the record was written; nothing was fetched for it.",
+  "head_before_record": "ee71d82682e4510cd33c75cd13f1b12814f573db",
+  "commits": [
+    {
+      "task": "door plan and door check",
+      "commit": "37923a6efa109593202a929b06e48037b4509674"
+    },
+    {
+      "task": "door rights",
+      "commit": "ffd25175c996f9901a50a7f929e367283bc95d92"
+    },
+    {
+      "task": "feedback new and feedback check",
+      "commit": "ee71d82682e4510cd33c75cd13f1b12814f573db"
+    },
+    {
+      "task": "own door",
+      "commit": "the commit that carries this file"
+    }
+  ],
+  "gate": {
+    "default_run": {
+      "command": "npm test",
+      "exit_code": 0,
+      "note": "npm test runs three test groups; totals per group in order",
+      "groups": [
+        {
+          "tests": 322,
+          "pass": 315,
+          "fail": 0,
+          "skipped": 7,
+          "cancelled": 0
+        },
+        {
+          "tests": 47,
+          "pass": 47,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        },
+        {
+          "tests": 10,
+          "pass": 10,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        }
+      ]
+    },
+    "with_real_starter": {
+      "command": "XENIA_STARTER_TEST_PACKAGE=<reviewed-local-package> npm test",
+      "env_var": "XENIA_STARTER_TEST_PACKAGE",
+      "exit_code": 0,
+      "groups": [
+        {
+          "tests": 322,
+          "pass": 321,
+          "fail": 0,
+          "skipped": 1,
+          "cancelled": 0
+        },
+        {
+          "tests": 47,
+          "pass": 47,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        },
+        {
+          "tests": 10,
+          "pass": 10,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        }
+      ]
+    },
+    "skip_explained": "The default run skips the six opt-in real Local Starter tests and the optional Skills provider test; with the package supplied only the Skills provider test (no XENIA_AGENTTOOL_SKILLS_MODULE) is skipped. No test in tests/own-door.test.mjs was skipped in these runs; its git question is skipped where git cannot answer.",
+    "render_checks": {
+      "node tools/render-covenant.mjs --check": 0,
+      "node tools/render-adoption-schema.mjs --check": 0
+    },
+    "runs": "Both runs and both render checks were made on the tree of the commit that carries this file, with this file in place. The first group has 11 more tests than the 311 in the previous task's gate log; all 11 are in tests/own-door.test.mjs."
+  },
+  "sha256": {
+    "AGENT-FEEDBACK.md": "947e0c459821ebad9d4c8b3cf6cdd91965988f58daf359c7c8409f9c3385f952",
+    "AGENTS.md": "d1f81236423f7c6745c326c9e264f0ef518a4803afeaa1a86925fd964c62fb6d",
+    "CLAUDE.md": "3d100f06500e5d0e87b375ef73eb331b20afd241f9374493d99011269801bafa",
+    "CONTRIBUTING.md": "00863ec8610aa5c9a2a6090fe88bfac6e2fca6f8deb124130fadfed5cf40873b",
+    "agent-first/0.1/README.md": "95672ea3b6f6581030512add1656853ad785fb9cdeba3e811612d9c6cc47c8b6",
+    "agent-first/0.1/arrive.mjs": "11284cc26a8311e26aedfe874b6a998b06f6e6028a19615fbfcdb9bb33cc74dd",
+    "agent-first/0.1/cli.mjs": "2320e8eefbb76b1d8d112db18443024348db7a61aa78b746c3a884d676edea63",
+    "agent-first/0.1/door-rights.mjs": "75eef0a27495fb75d7a53fda11f58d15c02b6138e09c8fb148692a7c67ff4217",
+    "agent-first/0.1/door.mjs": "cc2ced913173437249002ea11c8c461b4c9b375d86964286f2e7704bae5c765f",
+    "agent-first/0.1/feedback.mjs": "21764d28442f0dd0f458b9b9ceeaf53fab87bff72c39784f2bf5b95e8022de0a",
+    "agent-first/0.1/motifs.json": "10e5a25ab1c28d31bc35db654bfc450d384dfa2b4056d453c86534f2257f71bc",
+    "agent-first/0.1/problems.mjs": "7b9270f1f2b6138e1c73063156f02f2187d50ccde999fdb2033e17237702e532",
+    "tests/agent-first-door-rights.test.mjs": "13de8b06d9c29e21086fc2729ed5ebff0ef5f86ffcc0d193de86e85f55c70676",
+    "tests/agent-first-door.test.mjs": "1a50a2bc18576a78750d1ce3dbf25d05111bae8f7114ed85f0ddfe5d5765bb7d",
+    "tests/agent-first-feedback.test.mjs": "a8996d461b73c402d634715a37e9979a5f6c86bd120ca6d86998cacc91693195",
+    "tests/agent-first-floor.test.mjs": "3902a3076d06d57b07101d14a8377bda56aaaef17c091a3ca41fb472abd2ca06",
+    "tests/agent-first-problems.test.mjs": "ac61b876a99a8dfe387c89014d23be1cf33192effdb481bb6821173a6cb0b76e",
+    "tests/agent-first-review-fixes.test.mjs": "8cc1c46effb74b66042cfe285421fe2d6b00271d85c9070fdd5b32e525b26480",
+    "tests/own-door.test.mjs": "fcb151d0077123e97695ca5203b610d49e608922ad1f08719e24e30ede6703ba"
+  },
+  "sha256_note": "Every file changed since base_revision, as it stands in the tree of the commit that carries this file. This file is not in its own map.",
+  "own_door": {
+    "agents_md": {
+      "bytes": 2626,
+      "card": "## On arrival, the first section, six list items",
+      "work_section": "The 26 lines under '## For work in this repository' are byte-identical to lines 3 to 28 of AGENTS.md at base_revision. Compared with diff when this record was written; the test checks only that the section opens as before and still names the gate."
+    },
+    "claude_md": {
+      "bytes": 396,
+      "lines_1_to_4": "identical to base_revision",
+      "import": "none"
+    },
+    "tracked_under_dot_claude": 0,
+    "tracked_dot_paths": [
+      ".github",
+      ".gitignore",
+      ".hermes"
+    ],
+    "arrive_bytes": 7457,
+    "mutations": "Nine temporary breakages were made by hand and restored, and the test failed for each: a tracked file under .claude/, arrive writing a file, arrive starting a child process, a demand on the card, a seventh line with a greeting, an import in CLAUDE.md, a link to a heading that is not there, the card moved below the work section, a local path in this record."
+  },
+  "readme_commands": {
+    "note": "Every command agent-first/0.1/README.md shows was run by hand through `npm run --silent xenia --` from the repository root, with the exceptions listed. stderr was empty for each.",
+    "ran": [
+      "arrive",
+      "motifs",
+      "motifs study list",
+      "motifs study",
+      "motifs standing",
+      "motifs study journey",
+      "motifs study show arrival",
+      "motifs study show standing",
+      "motifs study run arrival",
+      "help",
+      "help <each of the 11 commands>",
+      "catalog",
+      "explain (three core modules and agenttool.local-context)",
+      "invoke xenia.covenant draft --input <file>",
+      "invoke xenia.surface manifest with an input of the wrong shape (DECLINED invalid_input, with the receipt)",
+      "invoke agenttool.local-context status (HOST_GATE_REQUIRED)",
+      "demo",
+      "demo --full",
+      "door plan --origin https://example.org",
+      "door rights --input ./adoption.json (a draft made with invoke; exit 0)",
+      "door rights with --as-of, --origin and --full (exit 0; different_origin)",
+      "feedback new",
+      "feedback new --out \"$PWD/my-entry.md\"",
+      "feedback check --input ./my-entry.md (the blank entry; exit 3)",
+      "feedback new --out to the same path again (INVALID_OUTPUT already_exists, exit 1)",
+      "context init, status, render and handoff, a stale handoff and a second init (both DECLINED, not_applied), a relative --dir (INVALID_CONTEXT_ROOT)",
+      "starter-smoke",
+      "XENIA_STARTER_TEST_PACKAGE=<reviewed-local-package> npm test",
+      "node tools/render-covenant.mjs --check",
+      "node tools/render-adoption-schema.mjs --check"
+    ],
+    "not_run_as_shown": [
+      {
+        "command": "door check --origin https://example.org --max-requests 1 --total-timeout-ms 5000",
+        "why": "It sends a request to a host outside the machine. Nobody this step answers to asked for that, and the plan for it says that whether to send is decided outside the kit.",
+        "instead": "The same flags with --allow-local-target against a door on 127.0.0.1 made for the purpose: one request received, exit 4, 9 stopped by the budget. With --max-requests 66: 10 received, exit 0, and again with --full. Without --allow-local-target: INVALID_TARGET, exit 2, nothing received."
+      },
+      {
+        "command": "npm ci --ignore-scripts, then npm run build",
+        "why": "Installing was outside this step. The build ran as the first part of npm test."
+      }
+    ],
+    "temporary_files": "adoption.json and my-entry.md were made in the repository root for the commands that name them and removed afterwards; notes roots were outside the repository.",
+    "fixed": [
+      "'door plan and door check need the same' had come to follow the sentence about feedback and so read as 'only the kit's own files'; the sentences are in order again and say what the two commands need.",
+      "'Exit 0 ... (the body says what that covers)' is true of door and feedback bodies only; the sentence now says so.",
+      "Added: the card and its command form under One door; the own-door test and this record under Verification."
+    ]
+  },
+  "cli_walk": {
+    "path": "The card in AGENTS.md, then with `node agent-first/0.1/cli.mjs`: arrive, door plan --origin https://example.org, feedback new, feedback new --out <absolute file>, a filled scratch entry through feedback check (exit 0), then mistakes. No door check was sent.",
+    "mistakes": [
+      "door plan example.org -> INVALID_ARGUMENTS, exit 2, next: help door",
+      "door plan --origin example.org -> INVALID_TARGET not_an_origin, exit 2, next: door plan",
+      "door check --origin https://example.org with no budget -> INVALID_ARGUMENTS, exit 2, next: help door",
+      "feedback check <file> with no --input -> INVALID_ARGUMENTS, exit 2, next: help feedback",
+      "feedback new --out entry.md -> INVALID_OUTPUT relative_path, exit 1, nothing written",
+      "feedback check --input <no such file> -> INVALID_INPUT missing, exit 1",
+      "door rights --input <a Markdown file> -> INVALID_INPUT not_json, exit 1",
+      "door plan --origin with a user name and password -> INVALID_TARGET not_an_origin, exit 2, neither echoed",
+      "door plan --origin http://192.168.1.10 -> INVALID_TARGET http_not_loopback, exit 2",
+      "arive -> UNKNOWN_COMMAND, exit 2, nearest: arrive"
+    ],
+    "mistakes_note": "All ten ran with fetch, sockets and name lookups made to fail; none was attempted. stderr was empty. Every next action shown was a command that exists.",
+    "still_had_to_guess": [
+      "What <origin> means: arrive gives the flag as --origin <origin> and no example. help door and the refusal say a scheme and a host.",
+      "Which flag was wrong: INVALID_ARGUMENTS says the arguments do not match the usage and points to help. It does not name the missing or extra flag, so door check without its two required numbers costs a second read.",
+      "The Entry ID: the blank entry gives the form (date, short lowercase label, three-digit number) and does not say what the number counts or who picks the label. feedback check says only whether the ID is already in this checkout's notebook.",
+      "Where an adoption record is found: door rights reads a local file, and nothing at the door says where a host keeps one. Finding or fetching a record was not built.",
+      "That --out wants an absolute path: arrive does not say; help feedback and the refusal do.",
+      "Whether to send: door plan says the decision is made outside the kit. That is a choice left to the caller, not a gap in the text; the walk did not send."
+    ]
+  },
+  "not_established": [
+    "that an agent other than the author of this record can follow the door without guessing; no outside agent has used it",
+    "that door check works against any host outside this machine: none was contacted, by a test or by hand",
+    "what any tool loads or runs when a session opens in this repository: no session was opened to observe it, and only .claude/ was looked at for tracked files",
+    "that npm runs the prepare script on install as the card says: read from package.json and npm's documented behaviour, not run here; scripts of dependencies were not looked at",
+    "that the card's wording presses no one: the test finds listed words and does not read meaning",
+    "that the command on the card changes nothing by any route: the guarded run stops the fetch, socket, name-lookup, child-process and file-writing calls the test names, and no others",
+    "that the README has no other statement that is false: it was read against the code and its commands were run, and three things were changed; a full proof was not attempted",
+    "that this repository conforms to its own standard, or that any host does",
+    "anything a record or an entry says, and anything about a host's practice: door rights and feedback check read form and consistency only",
+    "that the earlier-snapshot digests in door rights match the tag on any remote: no tag was fetched",
+    "Windows or non-macOS behaviour; observations are from one macOS machine on Node 24",
+    "that the order of work in the first three tasks of this step was test-first: this record's author saw only their commits"
+  ],
+  "process_notes": [
+    "Own door: tests/own-door.test.mjs was written first and run before AGENTS.md and CLAUDE.md were changed: 9 of 11 failed. The two that passed check things that already held (links resolve; the excluded register is absent).",
+    "The guarded run of arrive was moved ahead of the plain run after a mutation showed the plain run would otherwise carry out a write before the guard reported it.",
+    "No entry was added to or changed in AGENT-FEEDBACK.md. STATE.md, package.json and everything under src/, surface/, work/, covenant/ and observe/ were not touched by this step."
+  ]
+}
