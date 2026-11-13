@@ -9,7 +9,7 @@ import {commandFailure,finishProvider} from './command-state.mjs';
 import {adapterRows,describeAdapter,ADAPTER_IDS} from './adapter-catalog.mjs';
 import {buildArrival} from './arrive.mjs';
 import {runInvoke} from './invoke.mjs';
-import {COMMANDS,EXIT_CODES,NETWORK_NOTE,USAGE_CODES,buildProblem,exitOf,usageHelp} from './problems.mjs';
+import {COMMANDS,EXIT_CODES,NETWORK_NOTE,REPORT_ROUTE,USAGE_CODES,buildProblem,exitOf,usageHelp} from './problems.mjs';
 
 const makeRuntime=()=>{const runtime=createModuleRuntime();for(const module of createXeniaModules())runtime.register(module);return runtime;};
 const exampleOf=(runtime,id)=>runtime.describe(id).operations[0].input.example;
@@ -112,6 +112,8 @@ const GENERAL_HELP=['arrive','help [command]','motifs [motif-id]','motifs study 
   'door plan --origin <origin> [--allow-local-target]',
   'door check --origin <origin> --max-requests <1..66> --total-timeout-ms <100..120000> [--allow-local-target] [--full]',
   'door rights --input <file> [--as-of <rfc3339>] [--origin <origin>] [--full]',
+  'feedback new [--out <absolute-new-file>]',
+  'feedback check --input <file>',
   'context <init|status|render> --package <reviewed-package-dir> --dir <notes-dir>',
   'context handoff --package <reviewed-package-dir> --dir <notes-dir> --input <chosen-file> --expect <current-sha256>',
   'starter-smoke --package <reviewed-package-dir> --dir <new-notes-dir>'];
@@ -143,7 +145,7 @@ export async function main(args){
     return envelope({title:'Xenia agent-first module kit',status:'repository-only development',commands:GENERAL_HELP,
       start_here:'Run: arrive. It is one read-only orientation document and expects no reply.',
       principle:'Inspect → activate deliberately → invoke through the host gate → pause, upgrade or retire.',
-      exit_codes:EXIT_CODES,output:'stdout is one JSON document; stderr is silent. A failure has error (what happened) and problem (what you may do next). A `door` document states its own exit as exit_code, exit_reason and exit_meaning.',
+      exit_codes:EXIT_CODES,output:'stdout is one JSON document; stderr is silent. A failure has error (what happened) and problem (what you may do next). A `door` or `feedback` document states its own exit as exit_code, exit_reason and exit_meaning.',
       network:NETWORK_NOTE,limits:MODULE_INPUT_LIMITS,notes:['No automatic installs, services, host hooks, accounts, publication or model calls.','Runtime state is in-process; the caller owns persistence.','Trusted module code is not an OS sandbox.'],
       not_established:['that any listed command will succeed here','that this list is every capability of the host']});
   }
@@ -164,6 +166,11 @@ export async function main(args){
     const {runDoorCommand}=await import('./door.mjs');
     return runDoorCommand(rest);
   }
+  if(command==='feedback'){
+    // Loaded only for this command. It imports the bounded reader and the problem table, and nothing that sends.
+    const {runFeedbackCommand}=await import('./feedback.mjs');
+    return runFeedbackCommand(rest);
+  }
   if(command==='context'){
     const {runContextCommand}=await import('./context.mjs');
     return envelope(await runContextCommand(rest));
@@ -172,7 +179,7 @@ export async function main(args){
   if(command==='arrive'&&!rest.length){
     const lock=JSON.parse(fs.readFileSync(new URL('./agenttool.lock.json',import.meta.url),'utf8')).local_starter;
     const core=runtime.catalog().map(({id,title,operations})=>({id,title,effects:[...new Set(operations.flatMap(op=>op.effects))]}));
-    return buildArrival({lock,core,adapters:adapterRows(),networkNote:NETWORK_NOTE});
+    return buildArrival({lock,core,adapters:adapterRows(),networkNote:NETWORK_NOTE,report:REPORT_ROUTE});
   }
   if(command==='catalog'&&!rest.length)return envelope({modules:runtime.catalog(),adapters:adapterRows(),
     runtime:{scope:'this process only',note:'state, revision and in_flight describe a runtime this command just created; they are not live shared state. Every module here starts as registered, revision 1, nothing in flight.',
@@ -223,7 +230,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1]
   try{
     const body=await main(argv);
     console.log(JSON.stringify(body,null,2));
-    // Only a body that set its own exit (door) changes it; every other success stays 0.
+    // Only a body that set its own exit (door, feedback) changes it; every other success stays 0.
     const exit=exitOf(body);
     if(exit!==undefined)process.exitCode=exit;
   }

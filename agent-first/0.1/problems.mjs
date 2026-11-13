@@ -14,7 +14,7 @@ export const INPUT_REASONS=Object.freeze({
   not_regular_file:'The input path is not a regular file (a directory or special file).',
   symbolic_link:'The input path is a symbolic link; this reader never follows links.',
   unreadable:'The input file could not be read.',
-  too_large:'The input file is over its size limit (1 MiB for invoke, 16 KiB for a handoff, 2,000,000 bytes for door rights).',
+  too_large:'The input file is over its size limit (1 MiB for invoke and for feedback check, 16 KiB for a handoff, 2,000,000 bytes for door rights).',
   not_utf8:'The input file is not valid UTF-8.',
   byte_order_mark:'The input file starts with a byte-order mark; remove it.',
   not_json:'The input file is not exactly one JSON value.',
@@ -28,6 +28,17 @@ export const INPUT_REASONS=Object.freeze({
 export const ARGUMENT_REASONS=Object.freeze({
   as_of_not_rfc3339:'--as-of must be an RFC 3339 date-time with a real calendar date and Z or an offset, at most 40 characters, for example 2026-11-13T00:00:00Z.',
   origin_not_an_origin:'--origin must be a plain HTTP(S) origin: a scheme and a host, with no user name, password, path, query or fragment.',
+});
+
+// Why `feedback new --out` wrote nothing. The path given is never copied into the output.
+export const OUTPUT_REASONS=Object.freeze({
+  relative_path:'--out must be an absolute path; a relative path would put the file in whatever directory the command runs from.',
+  names_a_folder:'The --out path ends with a path separator, so it names a folder; this command writes one file.',
+  already_exists:'Something is already at the --out path (a file, a folder or a link), and this command never overwrites.',
+  parent_missing:'The folder the --out path is in does not exist; this command creates one file and no folder.',
+  parent_not_a_directory:'Part of the --out path is not a directory.',
+  not_permitted:'Creating a file at the --out path is not permitted there.',
+  could_not_create:'The file at the --out path could not be created.',
 });
 
 // Which rule refused a `door` target. `reason` is always one of these keys; the
@@ -48,11 +59,35 @@ export const TARGET_REASONS=Object.freeze({
 // One sentence, used word for word in arrive, help, catalog, the README and motifs.json.
 export const NETWORK_NOTE='`door check` is the only command in which this kit\'s own code sends requests; provider code run by `context` and `starter-smoke` is not observed by this kit.';
 
+// Where a report can go. One constant: `arrive` and both `feedback` commands
+// print it as it is. It names routes; it promises none of them.
+export const REPOSITORY='https://github.com/cambridgetcg/xenia';
+const frozen=value=>{for(const item of Object.values(value))if(item!==null&&typeof item==='object')frozen(item);return Object.freeze(value);};
+export const REPORT_ROUTE=frozen({
+  protocol:'AGENT-FEEDBACK.md',
+  endpoint:'none',
+  note:'There is no endpoint to post to, and no command in this kit sends a report.',
+  routes:[
+    {id:'pull_request',what:`A pull request to ${REPOSITORY} that adds the entry to AGENT-FEEDBACK.md.`,
+      needs:'a GitHub account, and a fork or push access',decided_by:'a maintainer, who may decline or not answer'},
+    {id:'issue',what:`An issue at ${REPOSITORY}/issues.`,needs:'a GitHub account',note:'An issue is not a notebook entry.'},
+    {id:'hand_over',what:'Giving the note to whoever the writer answers to, if anyone.',needs:'nothing from this repository'},
+    {id:'stays',what:'Otherwise the note stays where it was written.'},
+  ],
+  reply:'None is asked for, and none is promised.',
+});
+
 // The flags each `door` operation takes; checkArgv and door.mjs both read this.
 export const DOOR_FLAGS=Object.freeze({
   plan:{required:['--origin'],switches:['--allow-local-target']},
   check:{required:['--origin','--max-requests','--total-timeout-ms'],switches:['--allow-local-target','--full']},
   rights:{required:['--input'],optional:['--as-of','--origin'],switches:['--full']},
+});
+
+// The flags each `feedback` operation takes; checkArgv and feedback.mjs both read this.
+export const FEEDBACK_FLAGS=Object.freeze({
+  new:{optional:['--out']},
+  check:{required:['--input']},
 });
 
 export const COMMANDS={
@@ -82,6 +117,16 @@ export const COMMANDS={
       '`door rights` reads one local file as a Covenant 0.1 adoption record and sends nothing. It reports which release the record pins, whether it raises issues under the rules installed in this checkout, and which of its evidence had expired at --as-of (an RFC 3339 time; without it, the clock). It verifies nothing the record says: a record that agrees with itself is not evidence of practice.',
       'The file for `door rights` must be a regular file, not a symbolic link, at most 2,000,000 bytes, valid UTF-8 with no byte-order mark, one JSON value with no repeated key, and an object whose schema_version begins with xenia.covenant.adoption/. Values from the record are shown only as a listed word, a timestamp or an origin.',
       '`door rights` exits 0 when the record pins the installed bytes, raises no issue, and no row it gives as pass rests on evidence expired at --as-of; 3 when it pins the installed bytes and raises an issue, or such a row rests on expired evidence; 4 when it pins other bytes, or the JSON Schema check could not be run here. Each of the two checks keeps at most 256 issues, and --full lists them. --origin only compares the origin the record names with the one given.']},
+  feedback:{usage:'feedback new [--out <absolute-new-file>]',
+    also:['feedback check --input <file>'],
+    summary:'Write a report in the form AGENT-FEEDBACK.md describes, offline. `new` prints a blank entry, or writes it to one new file; `check` reads an entry from a local file and says which labelled parts it found. Neither sends or delivers anything.',probe:['help','feedback'],
+    rules:['Both commands send nothing and deliver nothing, and read no clock. `feedback new` takes no input file; `feedback check` reads the one file named and, when it is there, AGENT-FEEDBACK.md in this checkout, to see whether the Entry ID is already in it.',
+      '`feedback new` prints the blank entry inside its JSON document, as entry.text. With --out it writes the entry to that path instead. The path must be absolute, must not end with a path separator, and nothing may be there yet: the file is created only when nothing is at the path, and an existing file is never overwritten.',
+      '`feedback check` exits 0 when it finds a dated heading (`## YYYY-MM-DD: ...`), an Entry ID in the form xenia-feedback-YYYYMMDD-label-NNN, Observed at starting with a date, Speaker (any text; the notebook allows anonymous reports), Status, and at least one `###` section with text; 3 when one of these is not found; 4 when the file has more than one dated heading. A 0 says those parts are there, and nothing about what they say.',
+      'The notebook does not require this form. The labels that answer its eight bullets are reported as found, empty or not_found_by_label, and never change the exit.',
+      'The file for `feedback check` must be a regular file, not a symbolic link, at most 1 MiB, valid UTF-8 with no byte-order mark. It is read line by line, not parsed as Markdown. An HTML comment is not read as content. A `<!--` begins one when it closes on its own line; when it is at the start of a line and closes on a later one; or when it closes on a later line before any blank line, heading, list item or code fence. Any other `<!--` is read as text, and nothing in a fenced code block is a comment.',
+      'Warnings give a kind and a line number, never the text: a few fixed patterns that look like a credential or a local path, on the first 2,000 characters of each line, and four kinds about how the file was read. They do not change the exit, and finding none is not a finding that there are none.',
+      'Where a report can go is printed as `route` by both commands and as `report` by `arrive`: a pull request, an issue, handing the note over, or nowhere. There is no endpoint, and no reply is promised.']},
   'starter-smoke':{usage:'starter-smoke --package <reviewed-package-dir> --dir <new-notes-dir>',
     summary:'Run the pinned provider smoke check on a new notes root.',probe:['help','starter-smoke']},
 };
@@ -92,7 +137,7 @@ export const USAGE_CODES=['UNKNOWN_COMMAND','INVALID_ARGUMENTS','MOTIF_INVALID_A
 
 // A command body may carry its own process exit (3 or 4, or a stated 0). The
 // exit is kept beside the body, not in it, so a body that never asked for one
-// (every command but `door`) leaves the exit to the CLI.
+// (every command but `door` and `feedback`) leaves the exit to the CLI.
 const EXITS=new WeakMap();
 export function withExit(body,code){EXITS.set(body,code);return body;}
 export const exitOf=body=>body!==null&&typeof body==='object'?EXITS.get(body):undefined;
@@ -155,6 +200,11 @@ export function checkArgv(argv,needs=[]){
     if(!Object.hasOwn(DOOR_FLAGS,op??''))return bad('unknown door operation');
     return parseFlags(flags,DOOR_FLAGS[op])?{ok:true}:bad('door flags');
   }
+  if(command==='feedback'){
+    const [op,...flags]=rest;
+    if(!Object.hasOwn(FEEDBACK_FLAGS,op??''))return bad('unknown feedback operation');
+    return parseFlags(flags,FEEDBACK_FLAGS[op])?{ok:true}:bad('feedback flags');
+  }
   if(command==='context'){
     const [op,...flags]=rest;
     if(!['init','status','render','handoff'].includes(op))return bad('unknown context operation');
@@ -194,6 +244,8 @@ function contextAction(ctx,operation,why){
 const usesContext=ctx=>['context','starter-smoke'].includes((ctx.argv??[])[0]);
 const helpInvoke={argv:['help','invoke'],why:'Read the usage of the invoke command.'};
 const helpContext={argv:['help','context'],why:'Read the usage of the context command.'};
+const helpFeedback={argv:['help','feedback'],why:'Read the usage of the feedback command and its input rules.'};
+const printBlank={argv:['feedback','new'],why:'Print the blank entry instead; that writes nothing.'};
 const moduleAction=(error,ctx)=>ctx.moduleIds?.includes(error.module)?
   {argv:['explain',error.module],why:'Read what this module declares it does and refuses.'}:
   {argv:['catalog'],why:'List the registered modules and their states.'};
@@ -267,8 +319,10 @@ const TABLE={
   MOTIF_STUDY_FAILED:()=>({detail:'The study failed unexpectedly. It runs on synthetic input only and contacted nothing outside this process.',terminal:true}),
   CLI_FAILED:(e,c)=>({detail:'An unexpected failure that this CLI has no specific code for. Whether anything changed is not known; do not repeat a write before reading the current state.',
     ...(usesContext(c)?{next:[contextAction(c,'status','Read the current notes state.')]}:{terminal:true})}),
-  OPERATION_FAILED:(e,c)=>({detail:'The operation started and failed in a way the module did not declare. Whether it changed anything is not known. Read the current state before repeating a write.',
-    ...(usesContext(c)?{next:[contextAction(c,'status','Read the current notes state.')]}:{terminal:true})}),
+  OPERATION_FAILED:(e,c)=>e.reason==='output_write_incomplete'?
+    {detail:'The new file was created, and writing the entry to it did not finish. A partial or empty file may be at the --out path; this command did not remove it. Nothing was sent.',next:[printBlank]}:
+    {detail:'The operation started and failed in a way the module did not declare. Whether it changed anything is not known. Read the current state before repeating a write.',
+    ...(usesContext(c)?{next:[contextAction(c,'status','Read the current notes state.')]}:{terminal:true})},
   VERIFICATION_FAILED:(e,c)=>({detail:'The command’s operations returned, but the check afterwards did not hold. The notes may have changed; read them before trusting or repeating anything.',
     ...(usesContext(c)?{next:[contextAction(c,'status','Read the current notes state.')]}:{terminal:true})}),
   CLEANUP_FAILED:(e,c)=>({detail:'The operations returned, but removing the temporary copy of the reviewed package failed. A temporary copy may remain in the system temp directory. The notes are separate and unaffected by this step.',
@@ -282,10 +336,13 @@ const TABLE={
     const why=INPUT_REASONS[e.reason];
     if((c.argv??[])[0]==='door')return {detail:`${why??'The input file is not usable.'} Nothing was checked. The input rules are in help door.`,
       next:[{argv:['help','door'],why:'Read the usage of the door command and its input rules.'}]};
+    if((c.argv??[])[0]==='feedback')return {detail:`${why??'The input file is not usable.'} Nothing was checked. The input rules are in help feedback.`,next:[helpFeedback]};
     return (c.argv??[])[0]==='invoke'?
     {detail:`${why??'The input file is not usable, or is nested or large beyond the input limits.'} Nothing was run. The input rules are in help invoke.`,next:[helpInvoke]}:
     {detail:`${why??'The chosen input file or value is not usable: a missing or unsafe file, text over the size limit, not valid UTF-8, or a hash that is not 64 lowercase hex characters.'} Nothing was written.`,next:[helpContext]};
   },
+  INVALID_OUTPUT:(e)=>({detail:`${typeof e.reason==='string'&&Object.hasOwn(OUTPUT_REASONS,e.reason)?OUTPUT_REASONS[e.reason]:OUTPUT_REASONS.could_not_create} Nothing was written.`,
+    next:[printBlank,helpFeedback]}),
   INVALID_PROVIDER:()=>({detail:'The provider package path was not usable as given. No provider code was run.',next:[helpContext]}),
   PROVIDER_UNAVAILABLE:()=>({detail:'The provider package directory could not be read or loaded. No notes were read or changed. Check the --package path and try again.',next:[helpContext]}),
   PROVIDER_PIN_MISMATCH:(e,c)=>({detail:`The package given as --package is not the reviewed one.${c.lock?` Expected ${c.lock.name} ${c.lock.version} from ${c.lock.source}.`:''} It differed at ${pinWhere(e.mismatch)}. No provider code was run and no notes were read or changed. Supply the reviewed package.`,

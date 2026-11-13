@@ -583,7 +583,9 @@ test('with fetch, sockets and name lookups made to fail, every other command sti
     const others=[['arrive'],['help'],['help','door'],['motifs'],['motifs','standing'],['motifs','study','list'],['motifs','study','journey'],['catalog'],
       ['explain','xenia.surface'],['explain','agenttool.telescope-surface'],['demo'],['invoke','xenia.surface','manifest','--input',example],
       ['door','plan','--origin',ORIGIN],['door','plan','--origin','https://10.0.0.5','--allow-local-target'],['door','plan','--origin','https://user:pw@door.example.org'],
-      ['door','rights','--input',record,'--as-of','2026-11-13T00:00:00Z'],['door','rights','--input',record,'--origin',ORIGIN,'--full']];
+      ['door','rights','--input',record,'--as-of','2026-11-13T00:00:00Z'],['door','rights','--input',record,'--origin',ORIGIN,'--full'],
+      // `feedback check` and `feedback new --out` run with the same switch-off in tests/agent-first-feedback.test.mjs.
+      ['feedback','new'],['help','feedback']];
     for(const args of others){
       const r=run(args);
       assert.equal(r.stderr,'',args.join(' '));
@@ -620,7 +622,7 @@ test('arrive lists door plan among the commands that contact nothing, and door c
   const plan=a.read_only_commands.find(item=>item.argv[0]==='door');
   assert.deepEqual(plan.argv,['door','plan']);assert.deepEqual(checkArgv(plan.argv,plan.needs),{ok:true});
   assert.match(plan.what,/[Ss]ends nothing/);
-  assert.equal(a.read_only_commands.some(item=>item.argv[1]==='check'),false,'door check is not listed as contacting nothing');
+  assert.equal(a.read_only_commands.some(item=>item.argv[0]==='door'&&item.argv[1]==='check'),false,'door check is not listed as contacting nothing');
   assert.equal(a.network.sends.length,1);
   const sends=a.network.sends[0];
   assert.deepEqual(sends.argv,['door','check']);assert.deepEqual(checkArgv(sends.argv,sends.needs),{ok:true});

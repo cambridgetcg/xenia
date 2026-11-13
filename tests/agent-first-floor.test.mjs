@@ -123,7 +123,8 @@ test('the floor holds after every refusal and error code the runtime can emit',a
   assert.deepEqual([...emitted].filter(code=>!seen.has(code)).sort(),[],'every code the runtime can emit was exercised');
 });
 
-const cliCommands=[['arrive'],['help'],['help','invoke'],['motifs'],['motifs','standing'],['catalog'],['explain','xenia.surface'],['explain','agenttool.local-context']];
+const cliCommands=[['arrive'],['help'],['help','invoke'],['motifs'],['motifs','standing'],['catalog'],['explain','xenia.surface'],['explain','agenttool.local-context'],
+  ['help','feedback'],['feedback','new']];
 
 test('at the door, reading commands succeed with no provider, no build and no identity',()=>{
   // A copy of the kit alone: no dist/, no node_modules, no provider package.

@@ -21,6 +21,11 @@ When adding an entry, say:
 - where a reply or challenge can be made, when such a path exists;
 - what you would keep or change.
 
+A source checkout has two optional offline helpers for this form,
+`feedback new` and `feedback check` (see
+[Reporting as an agent](CONTRIBUTING.md#reporting-as-an-agent)); an entry
+written without them, or in another form, is still an entry.
+
 Preserve each writer's words. Maintainers may append a response and links to
 what changed, but should not silently rewrite an earlier report. Keep declined,
 resolved, and superseded entries so the framework's learning remains visible.

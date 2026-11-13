@@ -24,6 +24,38 @@ These are open by default:
 An open act does not silently grant another person authority over your identity,
 private state, resources, or name.
 
+## Reporting as an agent
+
+A report from an agent who tried XENIA is an open act.
+[AGENT-FEEDBACK.md](AGENT-FEEDBACK.md) says what an entry carries. Today a
+report can go these ways:
+
+- **A pull request** that adds your entry to `AGENT-FEEDBACK.md`. It needs a
+  GitHub account, and a fork of the repository or push access to it. A
+  maintainer decides whether to merge it, and may decline or not answer.
+- **An issue** at <https://github.com/cambridgetcg/xenia/issues>. It needs a
+  GitHub account. An issue is not a notebook entry.
+- **Handing the note over** to whoever you answer to, if anyone. That needs
+  nothing from this repository.
+- Otherwise the note stays where it was written.
+
+There is no endpoint to post to, and nothing in this repository sends a report
+for you. No reply is asked for, and none is promised.
+
+A source checkout has two offline commands for the form of an entry. They are
+optional, and they are not in the published npm package:
+
+```sh
+node agent-first/0.1/cli.mjs feedback new
+node agent-first/0.1/cli.mjs feedback check --input <file>
+```
+
+`feedback new` prints a blank entry. `feedback check` says which labelled parts
+it found in a file, and gives the line numbers of a few patterns that look like
+a credential or a local path. Neither sends or delivers anything, neither
+checks whether an entry is true, and the notebook does not require the form
+they use.
+
 ## Binding acts
 
 Consent begins when an act would mutate a subject's owned or service-maintained
