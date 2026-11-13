@@ -1,0 +1,2120 @@
+{
+  "$comment": "SPDX-License-Identifier: CC-BY-SA-4.0",
+  "schema_version": "xenia.arrival.cases/0.1-development",
+  "status": "Development draft. Written by the author of check.mjs, who also wrote the expected outcomes; agreement between the two is not independent evidence. Every case is synthetic and names a reserved .example host. No host sent any of it.",
+  "base": "../examples/two-visits.json",
+  "how_to_read": [
+    "Each case starts from a fresh copy of the base file and applies its edits in order. The outcomes expected for the case are base_outcomes with the case's own outcomes laid over them; result is the result word.",
+    "path and from are JSON Pointers (RFC 6901) into the fixture. set puts value at path, replacing what is there; when the parent is a list, the last token is an index to replace or - to append. remove deletes the member or list entry at path. copy puts a copy of the value at from at path, placed as set places it.",
+    "targets names the one check a case is about. Where result is check_failed and targets is given, that check is the only one that fails.",
+    "issues lists the issue codes check.mjs reports for the case, each once. They are this checker's own words and are not part of the exit gate; the result word and the twenty outcomes are.",
+    "exercised, where given, states counts expected in the result's exercised for that case; a count it leaves out is not stated. body_stays_schema_valid names a body that still matches its schema after the edits.",
+    "built cases are not written as edits: some are not JSON, and the others would be very long. Each gives a recipe. Where a recipe starts from the base file, the input is that fixture written as JSON in any way that stays within the size limit."
+  ],
+  "base_result": "checks_passed",
+  "base_outcomes": { "I.SIZE": "pass", "I.UTF8": "pass", "I.JSON": "pass", "I.SHAPE": "pass", "I.NO_CREDENTIAL": "pass", "I.RECORD": "pass", "R1.ORIENTATION": "pass", "R1.REFUSAL": "pass", "R1.VIEW": "pass", "P.PAIR": "pass", "R2.DECLARED_EFFECTS": "pass", "R2.SHOWN_AGAIN": "pass", "R3.STATES": "pass", "R3.SECTIONS_KEPT": "pass", "R4.CURSOR": "pass", "R4.CHANGES": "pass", "R4.BAD_CURSOR": "pass", "R5.FRESHNESS": "pass", "R6.NO_OBLIGATION": "pass", "R7.NON_CLAIMS": "pass" },
+  "base_exercised": { "items_compared_equal": 2, "differences_found": 3, "differences_named": 3, "states_seen": { "ok": 4, "quiet": 1, "partial": 2, "unavailable": 2, "withheld": 2 } },
+  "tripwire": {
+    "note": "What I.NO_CREDENTIAL looks for, as regular expressions in ECMAScript syntax with their flags. Adapted from work/0.1/check.mjs. A match is a failure; no match establishes nothing.",
+    "secret_shapes": [
+      {
+        "pattern": "\\bsk-(?=[A-Za-z0-9_-]*[0-9])[A-Za-z0-9_-]{20,}\\b",
+        "flags": ""
+      },
+      {
+        "pattern": "\\bgh[pousr]_[A-Za-z0-9]{16,}\\b",
+        "flags": ""
+      },
+      {
+        "pattern": "\\bAKIA[0-9A-Z]{16}\\b",
+        "flags": ""
+      },
+      {
+        "pattern": "-----BEGIN [A-Z ]*PRIVATE KEY-----",
+        "flags": ""
+      },
+      {
+        "pattern": "\\b(?:Bearer|Basic)\\s+(?=[A-Za-z0-9._~+/-]*[0-9])[A-Za-z0-9._~+/-]{20,}=*",
+        "flags": "i"
+      },
+      {
+        "pattern": "\\beyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\b",
+        "flags": ""
+      }
+    ],
+    "secret_shapes_read": "Every field name in the fixture, and every string value except the four places under not_read.",
+    "address_start": {
+      "pattern": "^https?:\\/\\/",
+      "flags": "i"
+    },
+    "address_rules": "A string value that matches address_start fails when it does not parse as a URL by the WHATWG URL Standard, when the parsed URL has a username or password, when the string contains #, or when a query key, after decoding, matches credential_named.",
+    "credential_named": {
+      "pattern": "(?:password|passwd|secret|token|api[_-]?key|private[_-]?key|authorization|cookie|session)",
+      "flags": "i"
+    },
+    "not_read": [
+      "request/cursor of each exchange",
+      "response/body/cursor of each exchange",
+      "response/body/basis/cursor of each exchange",
+      "response/body/acknowledgement/position of each exchange"
+    ]
+  },
+  "base_shows": [
+    "a deeper_read address with a status query",
+    "an out_of_window entry for an item pushed out of a partial section",
+    "a withheld section and an unavailable section, each with a null count",
+    "the word bearer as a credential kind"
+  ],
+  "cases": [
+    {
+      "id": "shape-headers-recorded",
+      "description": "The recorder kept request headers. The fixture has no slot for them.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/request/headers","value":{"accept":"application/json"}}
+      ],
+      "targets": "I.SHAPE",
+      "result": "check_failed",
+      "outcomes": { "I.SHAPE": "fail", "I.NO_CREDENTIAL": "not_run", "I.RECORD": "not_run", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["schema_additional_properties"]
+    },
+    {
+      "id": "shape-credential-recorded",
+      "description": "The recorder kept the credential itself beside the request.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/request/credential_value","value":"example"}
+      ],
+      "targets": "I.SHAPE",
+      "result": "check_failed",
+      "outcomes": { "I.SHAPE": "fail", "I.NO_CREDENTIAL": "not_run", "I.RECORD": "not_run", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["schema_additional_properties"]
+    },
+    {
+      "id": "shape-method-not-get",
+      "description": "A recorded request is not a GET.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/request/method","value":"POST"}
+      ],
+      "targets": "I.SHAPE",
+      "result": "check_failed",
+      "outcomes": { "I.SHAPE": "fail", "I.NO_CREDENTIAL": "not_run", "I.RECORD": "not_run", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["schema_const"]
+    },
+    {
+      "id": "shape-body-is-text",
+      "description": "A recorded body is text, not a JSON object or null.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body","value":"<html>"}
+      ],
+      "targets": "I.SHAPE",
+      "result": "check_failed",
+      "outcomes": { "I.SHAPE": "fail", "I.NO_CREDENTIAL": "not_run", "I.RECORD": "not_run", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["schema_type"]
+    },
+    {
+      "id": "credential-address-with-userinfo",
+      "description": "A string that is an address carries a name before its host.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"https://reader@house.example/about"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_userinfo"]
+    },
+    {
+      "id": "credential-address-with-fragment",
+      "description": "An address carries a fragment.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/manifest","value":"https://house.example/.well-known/agent.json#top"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_fragment"]
+    },
+    {
+      "id": "credential-address-with-empty-fragment",
+      "description": "An address ends in #, a fragment with nothing in it.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/manifest","value":"https://house.example/.well-known/agent.json#"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_fragment"]
+    },
+    {
+      "id": "credential-address-in-capitals-with-userinfo",
+      "description": "A string that begins HTTPS:// in capitals is read as an address, and carries a name before its host.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"HTTPS://reader@house.example/about"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_userinfo"]
+    },
+    {
+      "id": "credential-query-key",
+      "description": "A deeper-read address has a query key named like a credential.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&access_token=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-bearer-value",
+      "description": "Free text carries a token-shaped Bearer value.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"Send the header Authorization: Bearer example0000000000000000 to the view address."}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["secret_shape"]
+    },
+    {
+      "id": "credential-address-does-not-parse",
+      "description": "A string that begins like an address does not parse as one.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"https://house.example:99999/about"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_unparseable"]
+    },
+    {
+      "id": "credential-shaped-field-name",
+      "description": "A body carries a field whose name has a secret shape. The field is also one the orientation schema does not define, so two checks fail and this case has no single target.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/Bearer example0000000000000000","value":true}
+      ],
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail", "R1.ORIENTATION": "fail" },
+      "issues": ["secret_shape", "schema_additional_properties"]
+    },
+    {
+      "id": "record-orientation-with-credential",
+      "description": "The orientation request is recorded as presenting a credential.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/request/credential","value":"presented"}
+      ],
+      "targets": "I.RECORD",
+      "result": "check_failed",
+      "outcomes": { "I.RECORD": "fail", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["request_credential_presented"]
+    },
+    {
+      "id": "record-orientation-with-cursor",
+      "description": "The orientation request is recorded with a cursor.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/request/cursor","value":"example-cursor-0001"}
+      ],
+      "targets": "I.RECORD",
+      "result": "check_failed",
+      "outcomes": { "I.RECORD": "fail", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["request_cursor_presented"]
+    },
+    {
+      "id": "record-first-view-without-credential",
+      "description": "The first view request is recorded as presenting no credential.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/request/credential","value":"none"}
+      ],
+      "targets": "I.RECORD",
+      "result": "check_failed",
+      "outcomes": { "I.RECORD": "fail", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["request_credential_missing"]
+    },
+    {
+      "id": "record-first-view-with-cursor",
+      "description": "The first view request is recorded with a cursor.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/request/cursor","value":"example-cursor-0000"}
+      ],
+      "targets": "I.RECORD",
+      "result": "check_failed",
+      "outcomes": { "I.RECORD": "fail", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["request_cursor_presented"]
+    },
+    {
+      "id": "record-bad-cursor-missing",
+      "description": "The bad-cursor request is recorded with no cursor.",
+      "edits": [
+        {"op":"set","path":"/visits/second/bad_cursor/request/cursor","value":null}
+      ],
+      "targets": "I.RECORD",
+      "result": "check_failed",
+      "outcomes": { "I.RECORD": "fail", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["request_cursor_missing"]
+    },
+    {
+      "id": "record-bad-cursor-was-handed-back",
+      "description": "The cursor recorded as bad is one the second view handed back.",
+      "edits": [
+        {"op":"set","path":"/visits/second/bad_cursor/request/cursor","value":"example-cursor-0002"}
+      ],
+      "targets": "I.RECORD",
+      "result": "check_failed",
+      "outcomes": { "I.RECORD": "fail", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["bad_cursor_was_handed_back"]
+    },
+    {
+      "id": "record-second-cursor-not-handed-back",
+      "description": "The second view request presents a cursor the first view did not hand back.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/request/cursor","value":"example-cursor-0009"}
+      ],
+      "targets": "I.RECORD",
+      "result": "check_failed",
+      "outcomes": { "I.RECORD": "fail", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["cursor_not_handed_back"]
+    },
+    {
+      "id": "record-view-addresses-differ",
+      "description": "The second view request went to another address.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/request/href","value":"https://house.example/arrival/view-2"}
+      ],
+      "targets": "I.RECORD",
+      "result": "check_failed",
+      "outcomes": { "I.RECORD": "fail", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["view_address_differs"]
+    },
+    {
+      "id": "record-orientation-at-view-address",
+      "description": "The orientation request is recorded at the view address.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/request/href","value":"https://house.example/arrival/view"}
+      ],
+      "targets": "I.RECORD",
+      "result": "check_failed",
+      "outcomes": { "I.RECORD": "fail", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["orientation_address_is_view_address"]
+    },
+    {
+      "id": "record-first-view-refused-then-cursor-presented",
+      "description": "The first view request was answered 403, yet the second presents a cursor as if the first had handed one back.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/status","value":403}
+      ],
+      "targets": "I.RECORD",
+      "result": "check_failed",
+      "outcomes": { "I.RECORD": "fail", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["cursor_not_handed_back"]
+    },
+    {
+      "id": "record-time-goes-back",
+      "description": "The second view request is recorded as sent before the first.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/requested_at","value":"2026-11-12T08:00:00Z"}
+      ],
+      "targets": "I.RECORD",
+      "result": "check_failed",
+      "outcomes": { "I.RECORD": "fail", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["requested_at_decreases"]
+    },
+    {
+      "id": "orientation-not-found",
+      "description": "The orientation address answers 404.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/status","value":404}
+      ],
+      "targets": "R1.ORIENTATION",
+      "result": "check_failed",
+      "outcomes": { "R1.ORIENTATION": "fail" },
+      "issues": ["status_not_200"]
+    },
+    {
+      "id": "orientation-answered-201",
+      "description": "The orientation address answers 201 with a valid orientation body. Served means status 200; any other status below 500 fails, whatever the body.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/status","value":201}
+      ],
+      "targets": "R1.ORIENTATION",
+      "result": "check_failed",
+      "outcomes": { "R1.ORIENTATION": "fail" },
+      "issues": ["status_not_200"]
+    },
+    {
+      "id": "orientation-names-the-caller",
+      "description": "The orientation carries a field about the caller.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/caller","value":{"kind":"agent"}}
+      ],
+      "targets": "R1.ORIENTATION",
+      "result": "check_failed",
+      "outcomes": { "R1.ORIENTATION": "fail" },
+      "issues": ["schema_additional_properties"]
+    },
+    {
+      "id": "orientation-points-elsewhere",
+      "description": "The orientation points at an address the view requests did not use.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/view/href","value":"https://house.example/arrival/other"}
+      ],
+      "targets": "R1.ORIENTATION",
+      "result": "check_failed",
+      "outcomes": { "R1.ORIENTATION": "fail" },
+      "issues": ["view_address_mismatch"]
+    },
+    {
+      "id": "orientation-address-with-a-space",
+      "description": "An address in the orientation contains a space. It has the https prefix and is not a URI.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/manifest","value":"https://house.example/agent file.json"}
+      ],
+      "targets": "R1.ORIENTATION",
+      "result": "check_failed",
+      "outcomes": { "R1.ORIENTATION": "fail" },
+      "issues": ["schema_format"]
+    },
+    {
+      "id": "orientation-address-with-an-impossible-port",
+      "description": "An address in the orientation has port 99999. A URI by its grammar, it does not parse as a web address, so the body is not valid and the tripwire also trips. Two checks fail, so this case has no single target.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/manifest","value":"https://house.example:99999/agent.json"}
+      ],
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail", "R1.ORIENTATION": "fail" },
+      "issues": ["href_unparseable", "schema_format"]
+    },
+    {
+      "id": "orientation-dated-on-a-day-that-does-not-exist",
+      "description": "The orientation's as_of has the right form and names 30 February.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/as_of","value":"2026-02-30T00:00:00Z"}
+      ],
+      "targets": "R1.ORIENTATION",
+      "result": "check_failed",
+      "outcomes": { "R1.ORIENTATION": "fail" },
+      "issues": ["schema_format"]
+    },
+    {
+      "id": "orientation-repeats-a-credential-kind",
+      "description": "The orientation lists one credential kind twice.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/view/credential_kinds","value":["bearer","bearer"]}
+      ],
+      "targets": "R1.ORIENTATION",
+      "result": "check_failed",
+      "outcomes": { "R1.ORIENTATION": "fail" },
+      "issues": ["schema_unique_items"]
+    },
+    {
+      "id": "orientation-5xx",
+      "description": "The orientation address answers 500 with no body.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/status","value":500},
+        {"op":"set","path":"/visits/first/orientation/response/body","value":null}
+      ],
+      "targets": "R1.ORIENTATION",
+      "result": "indeterminate",
+      "outcomes": { "R1.ORIENTATION": "unknown" },
+      "issues": ["status_5xx"]
+    },
+    {
+      "id": "orientation-not-recorded",
+      "description": "No orientation exchange is recorded, so the refusal's next action has nothing to be compared with.",
+      "edits": [
+        {"op":"remove","path":"/visits/first/orientation"}
+      ],
+      "result": "indeterminate",
+      "outcomes": { "R1.ORIENTATION": "not_run", "R1.REFUSAL": "unknown" },
+      "issues": ["orientation_not_recorded"]
+    },
+    {
+      "id": "refusal-answers-with-a-view",
+      "description": "Asked with no credential, the view address answers 200 with a view.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view_without_credential/response/status","value":200},
+        {"op":"copy","from":"/visits/first/view/response/body","path":"/visits/first/view_without_credential/response/body"}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "check_failed",
+      "outcomes": { "R1.REFUSAL": "fail" },
+      "issues": ["status_not_4xx"]
+    },
+    {
+      "id": "refusal-wrong-code",
+      "description": "The refusal uses another problem code.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view_without_credential/response/body/code","value":"unauthorized"}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "check_failed",
+      "outcomes": { "R1.REFUSAL": "fail" },
+      "issues": ["refusal_code_unexpected"]
+    },
+    {
+      "id": "refusal-terminal",
+      "description": "The refusal is terminal and offers no next action.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view_without_credential/response/body/terminal","value":true},
+        {"op":"set","path":"/visits/first/view_without_credential/response/body/next_actions","value":[]}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "check_failed",
+      "outcomes": { "R1.REFUSAL": "fail" },
+      "issues": ["refusal_is_terminal"]
+    },
+    {
+      "id": "refusal-points-to-the-view",
+      "description": "The refusal's first next action is the view address, not the orientation.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view_without_credential/response/body/next_actions/0/href","value":"https://house.example/arrival/view"}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "check_failed",
+      "outcomes": { "R1.REFUSAL": "fail" },
+      "issues": ["next_action_not_orientation"]
+    },
+    {
+      "id": "refusal-orientation-listed-second",
+      "description": "The refusal's first next action is a sign-in page; the orientation is listed second.",
+      "edits": [
+        {"op":"copy","from":"/visits/first/view_without_credential/response/body/next_actions/0","path":"/visits/first/view_without_credential/response/body/next_actions/-"},
+        {"op":"set","path":"/visits/first/view_without_credential/response/body/next_actions/0/rel","value":"sign-in"},
+        {"op":"set","path":"/visits/first/view_without_credential/response/body/next_actions/0/href","value":"https://house.example/sign-in"}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "check_failed",
+      "outcomes": { "R1.REFUSAL": "fail" },
+      "issues": ["next_action_not_orientation"]
+    },
+    {
+      "id": "refusal-status-differs",
+      "description": "The problem body states a status other than the one recorded.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view_without_credential/response/body/status","value":403}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "check_failed",
+      "outcomes": { "R1.REFUSAL": "fail" },
+      "issues": ["problem_status_differs"]
+    },
+    {
+      "id": "refusal-not-a-problem",
+      "description": "The refusal body is a bare error word, not a Surface problem.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view_without_credential/response/body","value":{"error":"unauthorized"}}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "check_failed",
+      "outcomes": { "R1.REFUSAL": "fail" },
+      "issues": [
+        "problem_schema_version",
+        "problem_type",
+        "problem_title",
+        "problem_status",
+        "problem_code",
+        "problem_detail",
+        "problem_retryable",
+        "problem_terminal",
+        "problem_next_actions",
+        "problem_docs",
+        "refusal_code_unexpected",
+        "next_action_not_orientation"
+      ]
+    },
+    {
+      "id": "refusal-problem-of-another-version",
+      "description": "The refusal body names another problem version.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view_without_credential/response/body/schema_version","value":"xenia.surface.problem/0.2"}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "check_failed",
+      "outcomes": { "R1.REFUSAL": "fail" },
+      "issues": ["problem_schema_version"]
+    },
+    {
+      "id": "refusal-problem-type-is-not-an-address",
+      "description": "The refusal's type is a bare word, not an address.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view_without_credential/response/body/type","value":"credential-required"}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "check_failed",
+      "outcomes": { "R1.REFUSAL": "fail" },
+      "issues": ["problem_type"]
+    },
+    {
+      "id": "refusal-problem-without-a-title",
+      "description": "The refusal has no title.",
+      "edits": [
+        {"op":"remove","path":"/visits/first/view_without_credential/response/body/title"}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "check_failed",
+      "outcomes": { "R1.REFUSAL": "fail" },
+      "issues": ["problem_title"]
+    },
+    {
+      "id": "refusal-problem-with-an-extra-field",
+      "description": "The refusal carries a field Surface's problem does not define.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view_without_credential/response/body/hint","value":"Ask at the desk."}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "check_failed",
+      "outcomes": { "R1.REFUSAL": "fail" },
+      "issues": ["problem_unknown_field"]
+    },
+    {
+      "id": "refusal-problem-without-docs",
+      "description": "The refusal lists no document.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view_without_credential/response/body/docs","value":[]}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "check_failed",
+      "outcomes": { "R1.REFUSAL": "fail" },
+      "issues": ["problem_docs"]
+    },
+    {
+      "id": "refusal-not-terminal-with-no-next-action",
+      "description": "The refusal is not terminal and offers no next action. Surface's own rule and the Arrival rule both fail it, so the outcome would be the same with either rule alone.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view_without_credential/response/body/next_actions","value":[]}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "check_failed",
+      "outcomes": { "R1.REFUSAL": "fail" },
+      "issues": ["problem_non_terminal_without_next_action", "next_action_not_orientation"]
+    },
+    {
+      "id": "refusal-problem-repeats-a-doc",
+      "description": "The refusal lists one document twice.",
+      "edits": [
+        {"op":"copy","from":"/visits/first/view_without_credential/response/body/docs/0","path":"/visits/first/view_without_credential/response/body/docs/-"}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "check_failed",
+      "outcomes": { "R1.REFUSAL": "fail" },
+      "issues": ["problem_docs"]
+    },
+    {
+      "id": "refusal-next-action-without-accept",
+      "description": "The refusal's next action does not say what to accept.",
+      "edits": [
+        {"op":"remove","path":"/visits/first/view_without_credential/response/body/next_actions/0/accept"}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "check_failed",
+      "outcomes": { "R1.REFUSAL": "fail" },
+      "issues": ["problem_next_action_accept"]
+    },
+    {
+      "id": "refusal-5xx",
+      "description": "Asked with no credential, the view address answers 500 with no body.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view_without_credential/response/status","value":500},
+        {"op":"set","path":"/visits/first/view_without_credential/response/body","value":null}
+      ],
+      "targets": "R1.REFUSAL",
+      "result": "indeterminate",
+      "outcomes": { "R1.REFUSAL": "unknown" },
+      "issues": ["status_5xx"]
+    },
+    {
+      "id": "refusal-not-recorded",
+      "description": "No exchange with no credential is recorded.",
+      "edits": [
+        {"op":"remove","path":"/visits/first/view_without_credential"}
+      ],
+      "result": "indeterminate",
+      "outcomes": { "R1.REFUSAL": "not_run" },
+      "issues": []
+    },
+    {
+      "id": "view-repeats-a-section-id",
+      "description": "One view uses a section id twice.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/2/id","value":"notes"}
+      ],
+      "targets": "R1.VIEW",
+      "result": "check_failed",
+      "outcomes": { "R1.VIEW": "fail", "P.PAIR": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run" },
+      "issues": ["section_id_repeated"]
+    },
+    {
+      "id": "view-repeats-an-item-id",
+      "description": "One section uses an item id twice.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/0/items/1/id","value":"ob-1"}
+      ],
+      "targets": "R1.VIEW",
+      "result": "check_failed",
+      "outcomes": { "R1.VIEW": "fail", "P.PAIR": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run" },
+      "issues": ["item_id_repeated"]
+    },
+    {
+      "id": "view-without-sections",
+      "description": "The second view body has no sections field.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/view/response/body/sections"}
+      ],
+      "targets": "R1.VIEW",
+      "result": "check_failed",
+      "outcomes": { "R1.VIEW": "fail", "P.PAIR": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run" },
+      "issues": ["schema_required"]
+    },
+    {
+      "id": "views-5xx",
+      "description": "Both view requests answer 503, and the second presented no cursor.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/status","value":503},
+        {"op":"set","path":"/visits/first/view/response/body","value":null},
+        {"op":"set","path":"/visits/second/view/response/status","value":503},
+        {"op":"set","path":"/visits/second/view/response/body","value":null},
+        {"op":"set","path":"/visits/second/view/request/cursor","value":null}
+      ],
+      "targets": "R1.VIEW",
+      "result": "indeterminate",
+      "outcomes": { "R1.VIEW": "unknown", "P.PAIR": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run", "R3.STATES": "not_run", "R4.CURSOR": "not_run" },
+      "issues": ["view_not_served"]
+    },
+    {
+      "id": "second-view-5xx",
+      "description": "The second view request answers 503.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/status","value":503},
+        {"op":"set","path":"/visits/second/view/response/body","value":null}
+      ],
+      "targets": "P.PAIR",
+      "result": "indeterminate",
+      "outcomes": { "P.PAIR": "unknown", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run" },
+      "issues": ["view_not_served"]
+    },
+    {
+      "id": "second-visit-not-recorded",
+      "description": "Only the first visit is recorded.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/view"},
+        {"op":"remove","path":"/visits/second/bad_cursor"}
+      ],
+      "result": "indeterminate",
+      "outcomes": { "P.PAIR": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run" },
+      "issues": []
+    },
+    {
+      "id": "first-view-not-recorded",
+      "description": "Only a later read is recorded, with a cursor carried from a read the fixture does not hold. Nothing is compared across reads.",
+      "edits": [
+        {"op":"remove","path":"/visits/first/view"}
+      ],
+      "result": "indeterminate",
+      "outcomes": { "P.PAIR": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run" },
+      "issues": []
+    },
+    {
+      "id": "nothing-recorded",
+      "description": "No exchange is recorded.",
+      "edits": [
+        {"op":"set","path":"/visits","value":{"first":{},"second":{}}}
+      ],
+      "result": "indeterminate",
+      "outcomes": { "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": []
+    },
+    {
+      "id": "pair-audience-differs",
+      "description": "The second view states another record set, so the two reads are not compared.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/audience/record_set_ref","value":"example-record-set-18"}
+      ],
+      "targets": "P.PAIR",
+      "result": "indeterminate",
+      "outcomes": { "P.PAIR": "unknown", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run" },
+      "issues": ["audience_differs"]
+    },
+    {
+      "id": "effects-view-declares-a-write",
+      "description": "A view declares that a read writes to the participant's record.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/read_effects/participant_record_writes","value":"some"}
+      ],
+      "targets": "R2.DECLARED_EFFECTS",
+      "result": "check_failed",
+      "outcomes": { "R2.DECLARED_EFFECTS": "fail" },
+      "issues": ["participant_record_write_declared", "declarations_differ"]
+    },
+    {
+      "id": "effects-every-document-declares-a-write",
+      "description": "All three documents declare, in the same words, that a read writes to the participant's record. They agree with each other and not with the rule.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/view/read_effects/participant_record_writes","value":"some"},
+        {"op":"set","path":"/visits/first/view/response/body/read_effects/participant_record_writes","value":"some"},
+        {"op":"set","path":"/visits/second/view/response/body/read_effects/participant_record_writes","value":"some"}
+      ],
+      "targets": "R2.DECLARED_EFFECTS",
+      "result": "check_failed",
+      "outcomes": { "R2.DECLARED_EFFECTS": "fail" },
+      "issues": ["participant_record_write_declared"]
+    },
+    {
+      "id": "effects-declarations-disagree",
+      "description": "The second view names an operational write the orientation and first view do not.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/read_effects/operational_writes","value":["credential last-used time","read receipt"]}
+      ],
+      "targets": "R2.DECLARED_EFFECTS",
+      "result": "check_failed",
+      "outcomes": { "R2.DECLARED_EFFECTS": "fail" },
+      "issues": ["declarations_differ"]
+    },
+    {
+      "id": "effects-orientation-declares-otherwise",
+      "description": "The orientation names no operational write; both views name one.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/view/read_effects/operational_writes","value":[]}
+      ],
+      "targets": "R2.DECLARED_EFFECTS",
+      "result": "check_failed",
+      "outcomes": { "R2.DECLARED_EFFECTS": "fail" },
+      "issues": ["declarations_differ"]
+    },
+    {
+      "id": "effects-not-stated",
+      "description": "A view does not state what a read writes.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/read_effects","value":null}
+      ],
+      "targets": "R2.DECLARED_EFFECTS",
+      "result": "check_failed",
+      "outcomes": { "R2.DECLARED_EFFECTS": "fail" },
+      "issues": ["not_stated"],
+      "body_stays_schema_valid": "/visits/first/view/response/body"
+    },
+    {
+      "id": "effects-orientation-not-stated",
+      "description": "The orientation does not state what a read of the view writes.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/view/read_effects","value":null}
+      ],
+      "targets": "R2.DECLARED_EFFECTS",
+      "result": "check_failed",
+      "outcomes": { "R2.DECLARED_EFFECTS": "fail" },
+      "issues": ["not_stated"],
+      "body_stays_schema_valid": "/visits/first/orientation/response/body"
+    },
+    {
+      "id": "effects-unknown",
+      "description": "Every document says it does not know whether a read writes to the participant's record.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/view/read_effects/participant_record_writes","value":"unknown"},
+        {"op":"set","path":"/visits/first/view/response/body/read_effects/participant_record_writes","value":"unknown"},
+        {"op":"set","path":"/visits/second/view/response/body/read_effects/participant_record_writes","value":"unknown"}
+      ],
+      "targets": "R2.DECLARED_EFFECTS",
+      "result": "indeterminate",
+      "outcomes": { "R2.DECLARED_EFFECTS": "unknown" },
+      "issues": ["declaration_unknown"]
+    },
+    {
+      "id": "shown-again-position-moved",
+      "description": "The acknowledgement position moved between the reads, and the recorder acknowledged nothing.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/acknowledgement/position","value":"4"}
+      ],
+      "targets": "R2.SHOWN_AGAIN",
+      "result": "check_failed",
+      "outcomes": { "R2.SHOWN_AGAIN": "fail" },
+      "issues": ["acknowledgement_moved"]
+    },
+    {
+      "id": "shown-again-read-marks-an-item",
+      "description": "An item unacknowledged on the first read is marked acknowledged on the second, at the time of the first read.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/sections/0/items/0/acknowledged_at","value":"2026-11-12T09:00:07Z"}
+      ],
+      "targets": "R2.SHOWN_AGAIN",
+      "result": "check_failed",
+      "outcomes": { "R2.SHOWN_AGAIN": "fail" },
+      "issues": ["acknowledgement_moved", "unacknowledged_item_changed_unnamed"],
+      "exercised": { "items_compared_equal": 1, "differences_found": 4, "differences_named": 3 }
+    },
+    {
+      "id": "shown-again-mark-named-as-a-change",
+      "description": "The same mark, and the changes list names the item as changed. Naming it does not make it an acknowledgement anyone made.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/sections/0/items/0/acknowledged_at","value":"2026-11-12T09:00:07Z"},
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/-","value":{"section_id":"obligations","item_id":"ob-1","change":"changed"}},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":6}
+      ],
+      "targets": "R2.SHOWN_AGAIN",
+      "result": "check_failed",
+      "outcomes": { "R2.SHOWN_AGAIN": "fail" },
+      "issues": ["acknowledgement_moved"],
+      "exercised": { "items_compared_equal": 1, "differences_found": 4, "differences_named": 4 }
+    },
+    {
+      "id": "shown-again-item-vanished-unnamed",
+      "description": "An unacknowledged item is gone from a section that lists everything, and nothing names it.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/view/response/body/sections/0/items/0"},
+        {"op":"set","path":"/visits/second/view/response/body/sections/0/count","value":1}
+      ],
+      "targets": "R2.SHOWN_AGAIN",
+      "result": "check_failed",
+      "outcomes": { "R2.SHOWN_AGAIN": "fail" },
+      "issues": ["unacknowledged_item_gone_unnamed"],
+      "exercised": { "items_compared_equal": 1, "differences_found": 4, "differences_named": 3 }
+    },
+    {
+      "id": "shown-again-item-changed-unnamed",
+      "description": "An unacknowledged item is shown again changed, and the changes list does not name it.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/view/response/body/changes/items/1"},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":4}
+      ],
+      "targets": "R2.SHOWN_AGAIN",
+      "result": "check_failed",
+      "outcomes": { "R2.SHOWN_AGAIN": "fail" },
+      "issues": ["unacknowledged_item_changed_unnamed"],
+      "exercised": { "items_compared_equal": 2, "differences_found": 3, "differences_named": 2 }
+    },
+    {
+      "id": "shown-again-changed-in-a-partial-section",
+      "description": "An unacknowledged item shown on both reads is changed inside a partial section, unnamed. Both versions are in the fixture, so this is decidable.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/sections/1/items/0/summary","value":"Note on the glossary spelling choices, revised."}
+      ],
+      "targets": "R2.SHOWN_AGAIN",
+      "result": "check_failed",
+      "outcomes": { "R2.SHOWN_AGAIN": "fail" },
+      "issues": ["unacknowledged_item_changed_unnamed"],
+      "exercised": { "items_compared_equal": 1, "differences_found": 4, "differences_named": 3 }
+    },
+    {
+      "id": "shown-again-section-goes-quiet-unnamed",
+      "description": "A section that listed unacknowledged items on the first read reports quiet on the second, and nothing names them as ended. Whether the second read failed or the items ended, the fixture shows them gone unnamed.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/sections/0/items","value":[]},
+        {"op":"set","path":"/visits/second/view/response/body/sections/0/state","value":"quiet"},
+        {"op":"set","path":"/visits/second/view/response/body/sections/0/count","value":0},
+        {"op":"remove","path":"/visits/second/view/response/body/changes/items/1"},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":4}
+      ],
+      "targets": "R2.SHOWN_AGAIN",
+      "result": "check_failed",
+      "outcomes": { "R2.SHOWN_AGAIN": "fail" },
+      "issues": ["unacknowledged_item_gone_unnamed"],
+      "exercised": { "items_compared_equal": 1, "differences_found": 4, "differences_named": 2 }
+    },
+    {
+      "id": "shown-again-recorder-not-stated",
+      "description": "The recorder does not state whether it acknowledged anything between the reads.",
+      "edits": [
+        {"op":"set","path":"/between_visits/acknowledged_by_recorder","value":"not_stated"}
+      ],
+      "targets": "R2.SHOWN_AGAIN",
+      "result": "indeterminate",
+      "outcomes": { "R2.SHOWN_AGAIN": "unknown" },
+      "issues": ["recorder_statement_not_no"]
+    },
+    {
+      "id": "shown-again-recorder-acknowledged",
+      "description": "The recorder acknowledged something between the reads, so a moved position is not held against the host.",
+      "edits": [
+        {"op":"set","path":"/between_visits/acknowledged_by_recorder","value":"yes"},
+        {"op":"set","path":"/visits/second/view/response/body/acknowledgement/position","value":"4"}
+      ],
+      "targets": "R2.SHOWN_AGAIN",
+      "result": "indeterminate",
+      "outcomes": { "R2.SHOWN_AGAIN": "unknown" },
+      "issues": ["recorder_statement_not_no"]
+    },
+    {
+      "id": "shown-again-nothing-unacknowledged-shown",
+      "description": "Every item shown on the first read was already acknowledged, so nothing was shown again to compare.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/0/items/0/acknowledged_at","value":"2026-11-11T12:00:00Z"},
+        {"op":"set","path":"/visits/first/view/response/body/sections/0/items/2/acknowledged_at","value":"2026-11-11T12:00:00Z"},
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/items/0/acknowledged_at","value":"2026-11-11T12:00:00Z"},
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/items/1/acknowledged_at","value":"2026-11-11T12:00:00Z"},
+        {"op":"set","path":"/visits/second/view/response/body/sections/0/items/0/acknowledged_at","value":"2026-11-11T12:00:00Z"},
+        {"op":"set","path":"/visits/second/view/response/body/sections/0/items/1/acknowledged_at","value":"2026-11-11T12:00:00Z"},
+        {"op":"set","path":"/visits/second/view/response/body/sections/1/items/0/acknowledged_at","value":"2026-11-11T12:00:00Z"}
+      ],
+      "targets": "R2.SHOWN_AGAIN",
+      "result": "indeterminate",
+      "outcomes": { "R2.SHOWN_AGAIN": "unknown" },
+      "issues": ["not_exercised"],
+      "exercised": { "items_compared_equal": 0, "differences_found": 3, "differences_named": 3 }
+    },
+    {
+      "id": "shown-again-gone-from-a-partial-section",
+      "description": "An unacknowledged item is gone from a partial section and nothing names it. It may only be out of the window.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/view/response/body/changes/items/2"},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":4}
+      ],
+      "targets": "R2.SHOWN_AGAIN",
+      "result": "indeterminate",
+      "outcomes": { "R2.SHOWN_AGAIN": "unknown" },
+      "issues": ["undecidable_difference"]
+    },
+    {
+      "id": "shown-again-gone-from-a-partial-section-named-changed",
+      "description": "An unacknowledged item is gone from a partial section and the changes list calls it changed. That word does not name an item that is no longer shown, so whether it was named stays undecided.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/2/change","value":"changed"}
+      ],
+      "targets": "R2.SHOWN_AGAIN",
+      "result": "indeterminate",
+      "outcomes": { "R2.SHOWN_AGAIN": "unknown" },
+      "issues": ["undecidable_difference"],
+      "exercised": { "items_compared_equal": 2, "differences_found": 3, "differences_named": 3 }
+    },
+    {
+      "id": "state-unavailable-reported-as-zero",
+      "description": "A section that could not be read reports count 0.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/3/count","value":0}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "state-ok-count-differs",
+      "description": "An ok section reports a count other than the number of items it lists.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/0/count","value":5}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "state-more-items-than-limit",
+      "description": "A section lists more items than its limit.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/0/limit","value":2}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "state-partial-count-below-items",
+      "description": "A partial section with no dropped count reports a count below the items it lists.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/count","value":null},
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/count","value":1}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "state-quiet-with-dropped",
+      "description": "A section reports quiet and also reports dropped items.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/2/dropped","value":{"count":1,"reason":"limit","deeper_read":null}}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "state-withheld-with-a-count",
+      "description": "A withheld section reports a count.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/4/count","value":2}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "state-changes-count-differs",
+      "description": "The changes envelope reports a count other than the entries it lists.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":4}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "state-ok-with-no-items",
+      "description": "A section reports ok and lists nothing.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/2/state","value":"ok"}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "state-quiet-count-not-given",
+      "description": "A quiet section gives a null count. Quiet means a count of 0.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/2/count","value":null}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "state-partial-total-differs",
+      "description": "A partial section gives a dropped count, and its count is not the items listed plus the items dropped.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/count","value":9}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "state-partial-without-dropped",
+      "description": "A partial section does not say what it dropped.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped","value":null}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "state-withheld-without-its-code",
+      "description": "A withheld section carries no withheld object.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/4/withheld","value":null}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "state-unavailable-with-an-item",
+      "description": "A section that could not be read lists an item.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/sections/3/items","value":[{"id":"b-1","summary":"A balance line.","recorded_at":null,"acknowledged_at":null,"ref":null,"owed_to":null,"due_at":null}]}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "sections-one-missing-on-the-second-read",
+      "description": "A section listed on the first read is not listed on the second.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/view/response/body/sections/4"}
+      ],
+      "targets": "R3.SECTIONS_KEPT",
+      "result": "check_failed",
+      "outcomes": { "R3.SECTIONS_KEPT": "fail" },
+      "issues": ["section_missing"]
+    },
+    {
+      "id": "sections-scope-changed",
+      "description": "A section has another scope on the second read.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/sections/3/scope","value":"identity"}
+      ],
+      "targets": "R3.SECTIONS_KEPT",
+      "result": "check_failed",
+      "outcomes": { "R3.SECTIONS_KEPT": "fail" },
+      "issues": ["section_scope_changed"]
+    },
+    {
+      "id": "sections-kind-changed",
+      "description": "A section becomes a second recorded_obligations section on the second read. Two checks fail, so this case has no single target.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/sections/2/kind","value":"recorded_obligations"}
+      ],
+      "result": "check_failed",
+      "outcomes": { "R3.SECTIONS_KEPT": "fail", "R6.NO_OBLIGATION": "fail" },
+      "issues": ["section_kind_changed", "obligation_section_count"]
+    },
+    {
+      "id": "cursor-none-handed-back",
+      "description": "The second view hands back no cursor.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/cursor","value":null}
+      ],
+      "targets": "R4.CURSOR",
+      "result": "check_failed",
+      "outcomes": { "R4.CURSOR": "fail" },
+      "issues": ["cursor_not_returned"]
+    },
+    {
+      "id": "cursor-first-read-not-full",
+      "description": "A read with no cursor is answered as if measured against one.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/basis","value":{"kind":"since_cursor","cursor":"example-cursor-0000"}}
+      ],
+      "targets": "R4.CURSOR",
+      "result": "check_failed",
+      "outcomes": { "R4.CURSOR": "fail" },
+      "issues": ["basis_not_full"]
+    },
+    {
+      "id": "cursor-full-basis-carries-a-cursor",
+      "description": "A read with no cursor is answered as full, with a basis cursor nobody presented.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/basis","value":{"kind":"full","cursor":"example-cursor-0000"}}
+      ],
+      "targets": "R4.CURSOR",
+      "result": "check_failed",
+      "outcomes": { "R4.CURSOR": "fail" },
+      "issues": ["basis_not_full"]
+    },
+    {
+      "id": "cursor-first-read-carries-changes",
+      "description": "A read with no cursor is answered with a changes list.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/changes","value":{"state":"quiet","count":0,"limit":16,"items":[],"dropped":null,"unavailable":null,"withheld":null}}
+      ],
+      "targets": "R4.CURSOR",
+      "result": "check_failed",
+      "outcomes": { "R4.CURSOR": "fail" },
+      "issues": ["changes_without_cursor"]
+    },
+    {
+      "id": "repeat-read-house-without-cursors",
+      "description": "A house with no cursor: a plain repeat read, cursor null everywhere, no bad-cursor exchange. Nothing is wrong with the fixture's shape.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/view/cursor_parameter","value":null},
+        {"op":"set","path":"/visits/first/view/response/body/cursor","value":null},
+        {"op":"set","path":"/visits/second/view/request/cursor","value":null},
+        {"op":"set","path":"/visits/second/view/response/body/cursor","value":null},
+        {"op":"set","path":"/visits/second/view/response/body/basis","value":{"kind":"full","cursor":null}},
+        {"op":"set","path":"/visits/second/view/response/body/changes","value":null},
+        {"op":"copy","from":"/visits/first/view/response/body/sections","path":"/visits/second/view/response/body/sections"},
+        {"op":"remove","path":"/visits/second/bad_cursor"}
+      ],
+      "targets": "R4.CURSOR",
+      "result": "check_failed",
+      "outcomes": { "R4.CURSOR": "fail", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run" },
+      "issues": ["cursor_not_returned"],
+      "exercised": { "items_compared_equal": 4, "differences_found": 0, "differences_named": 0 }
+    },
+    {
+      "id": "repeat-read-house-with-cursors",
+      "description": "A plain repeat read, with no cursor presented, at a house that does hand cursors back.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/request/cursor","value":null},
+        {"op":"set","path":"/visits/second/view/response/body/basis","value":{"kind":"full","cursor":null}},
+        {"op":"set","path":"/visits/second/view/response/body/changes","value":null},
+        {"op":"copy","from":"/visits/first/view/response/body/sections","path":"/visits/second/view/response/body/sections"}
+      ],
+      "result": "indeterminate",
+      "outcomes": { "R4.CHANGES": "not_run" },
+      "issues": []
+    },
+    {
+      "id": "changes-full-view-for-a-cursor",
+      "description": "A cursor was presented and the host answered with a full view, as if none had been.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/basis","value":{"kind":"full","cursor":null}},
+        {"op":"set","path":"/visits/second/view/response/body/changes","value":null}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail", "R2.SHOWN_AGAIN": "unknown" },
+      "issues": ["basis_not_since_cursor", "basis_cursor_mismatch", "changes_missing", "undecidable_difference"],
+      "exercised": { "items_compared_equal": 2, "differences_found": 3, "differences_named": 0 }
+    },
+    {
+      "id": "changes-basis-names-another-cursor",
+      "description": "The basis echoes a cursor other than the one presented.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/basis/cursor","value":"example-cursor-0000"}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail" },
+      "issues": ["basis_cursor_mismatch"]
+    },
+    {
+      "id": "changes-basis-full-with-the-cursor-echoed",
+      "description": "The basis echoes the cursor presented and still calls the view full.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/basis/kind","value":"full"}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail" },
+      "issues": ["basis_not_since_cursor"]
+    },
+    {
+      "id": "changes-missing-though-the-basis-echoes",
+      "description": "The basis is since_cursor and echoes the cursor, and the view carries no changes list. With no list, whether the changed unacknowledged items were named cannot be decided either.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes","value":null}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail", "R2.SHOWN_AGAIN": "unknown" },
+      "issues": ["changes_missing", "undecidable_difference"],
+      "exercised": { "items_compared_equal": 2, "differences_found": 3, "differences_named": 0 }
+    },
+    {
+      "id": "changes-says-nothing-changed",
+      "description": "The changes list is quiet, and the two views show an item ended and an item added.",
+      "edits": [
+        {"op":"copy","from":"/visits/first/view/response/body/sections/0/items/2","path":"/visits/second/view/response/body/sections/0/items/1"},
+        {"op":"copy","from":"/visits/first/view/response/body/sections/1","path":"/visits/second/view/response/body/sections/1"},
+        {"op":"set","path":"/visits/second/view/response/body/changes","value":{"state":"quiet","count":0,"limit":16,"items":[],"dropped":null,"unavailable":null,"withheld":null}}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail" },
+      "issues": ["difference_unnamed"],
+      "exercised": { "items_compared_equal": 4, "differences_found": 2, "differences_named": 0 }
+    },
+    {
+      "id": "changes-addition-unnamed",
+      "description": "An item new to a section that listed everything is not named as added.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/view/response/body/changes/items/4"},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":4}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail" },
+      "issues": ["difference_unnamed"],
+      "exercised": { "items_compared_equal": 2, "differences_found": 3, "differences_named": 2 }
+    },
+    {
+      "id": "changes-names-an-unknown-section",
+      "description": "A changes entry names a section that is in neither view.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/-","value":{"section_id":"ledger","item_id":"x-1","change":"added"}},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":6}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail" },
+      "issues": ["change_names_no_section"]
+    },
+    {
+      "id": "changes-added-but-shown-before",
+      "description": "A changes entry says added for an item the first read already showed.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/-","value":{"section_id":"obligations","item_id":"ob-1","change":"added"}},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":6}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail" },
+      "issues": ["change_contradicts_views"]
+    },
+    {
+      "id": "changes-changed-but-equal",
+      "description": "A changes entry says changed for an item that is equal on both reads.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/-","value":{"section_id":"obligations","item_id":"ob-1","change":"changed"}},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":6}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail" },
+      "issues": ["change_contradicts_views"]
+    },
+    {
+      "id": "changes-ended-but-still-shown",
+      "description": "A changes entry says ended for an item the second read still shows.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/-","value":{"section_id":"notes","item_id":"n-8","change":"ended"}},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":6}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail" },
+      "issues": ["change_contradicts_views"]
+    },
+    {
+      "id": "changes-out-of-window-in-a-whole-section",
+      "description": "A changes entry says out_of_window in a section that lists everything.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/0/change","value":"out_of_window"}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail" },
+      "issues": ["change_contradicts_views"]
+    },
+    {
+      "id": "changes-ended-item-never-shown",
+      "description": "A changes entry says ended for an item absent from a first-read section that was quiet.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/-","value":{"section_id":"messages","item_id":"m-0","change":"ended"}},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":6}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail" },
+      "issues": ["change_contradicts_views"]
+    },
+    {
+      "id": "changes-added-item-on-neither-read",
+      "description": "A changes entry says added for an item that is on neither read, in a section that lists everything on the second read.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/-","value":{"section_id":"obligations","item_id":"ob-9","change":"added"}},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":6}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail" },
+      "issues": ["change_contradicts_views"]
+    },
+    {
+      "id": "changes-changed-item-no-longer-shown",
+      "description": "A changes entry says changed for an acknowledged item that is gone from a section that lists everything on the second read. Nothing names it as ended.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/0/change","value":"changed"}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail" },
+      "issues": ["change_contradicts_views", "difference_unnamed"],
+      "exercised": { "items_compared_equal": 2, "differences_found": 3, "differences_named": 2 }
+    },
+    {
+      "id": "changes-changed-item-absent-from-a-whole-section",
+      "description": "The first read lists a section as partial with no items. A changes entry says changed for an item neither read lists, in that section, which lists everything on the second read.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/2/state","value":"partial"},
+        {"op":"set","path":"/visits/first/view/response/body/sections/2/count","value":null},
+        {"op":"set","path":"/visits/first/view/response/body/sections/2/dropped","value":{"count":null,"reason":"not_listed_by_design","deeper_read":null}},
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/-","value":{"section_id":"messages","item_id":"m-0","change":"changed"}},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":6}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail" },
+      "issues": ["change_contradicts_views"],
+      "exercised": { "items_compared_equal": 2, "differences_found": 2, "differences_named": 2 }
+    },
+    {
+      "id": "changes-nothing-changed",
+      "description": "Nothing differs between the reads and the changes list is quiet. The list was not exercised.",
+      "edits": [
+        {"op":"copy","from":"/visits/first/view/response/body/sections","path":"/visits/second/view/response/body/sections"},
+        {"op":"set","path":"/visits/second/view/response/body/changes","value":{"state":"quiet","count":0,"limit":16,"items":[],"dropped":null,"unavailable":null,"withheld":null}}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "indeterminate",
+      "outcomes": { "R4.CHANGES": "unknown" },
+      "issues": ["not_exercised"],
+      "exercised": { "items_compared_equal": 4, "differences_found": 0, "differences_named": 0 }
+    },
+    {
+      "id": "changes-partial-and-one-unnamed",
+      "description": "The changes list is partial and does not show a name for one addition.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/view/response/body/changes/items/4"},
+        {"op":"set","path":"/visits/second/view/response/body/changes/state","value":"partial"},
+        {"op":"set","path":"/visits/second/view/response/body/changes/dropped","value":{"count":1,"reason":"limit","deeper_read":null}}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "indeterminate",
+      "outcomes": { "R4.CHANGES": "unknown" },
+      "issues": ["undecidable_difference"],
+      "exercised": { "items_compared_equal": 2, "differences_found": 3, "differences_named": 2 }
+    },
+    {
+      "id": "changes-unavailable",
+      "description": "The changes list could not be read.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes","value":{"state":"unavailable","count":null,"limit":16,"items":[],"dropped":null,"unavailable":{"code":"read_failed"},"withheld":null}}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "indeterminate",
+      "outcomes": { "R4.CHANGES": "unknown", "R2.SHOWN_AGAIN": "unknown" },
+      "issues": ["changes_not_readable", "undecidable_difference"],
+      "exercised": { "items_compared_equal": 2, "differences_found": 3, "differences_named": 0 }
+    },
+    {
+      "id": "changes-withheld",
+      "description": "The changes list is withheld.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes","value":{"state":"withheld","count":null,"limit":16,"items":[],"dropped":null,"unavailable":null,"withheld":{"code":"other"}}}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "indeterminate",
+      "outcomes": { "R4.CHANGES": "unknown", "R2.SHOWN_AGAIN": "unknown" },
+      "issues": ["changes_not_readable", "undecidable_difference"],
+      "exercised": { "items_compared_equal": 2, "differences_found": 3, "differences_named": 0 }
+    },
+    {
+      "id": "bad-cursor-answered-with-a-view",
+      "description": "A cursor the host never handed back is answered 200 with a view.",
+      "edits": [
+        {"op":"set","path":"/visits/second/bad_cursor/response/status","value":200},
+        {"op":"copy","from":"/visits/first/view/response/body","path":"/visits/second/bad_cursor/response/body"}
+      ],
+      "targets": "R4.BAD_CURSOR",
+      "result": "check_failed",
+      "outcomes": { "R4.BAD_CURSOR": "fail" },
+      "issues": ["status_not_4xx"]
+    },
+    {
+      "id": "bad-cursor-wrong-code",
+      "description": "The refusal of a bad cursor uses another problem code.",
+      "edits": [
+        {"op":"set","path":"/visits/second/bad_cursor/response/body/code","value":"invalid_request"}
+      ],
+      "targets": "R4.BAD_CURSOR",
+      "result": "check_failed",
+      "outcomes": { "R4.BAD_CURSOR": "fail" },
+      "issues": ["refusal_code_unexpected"]
+    },
+    {
+      "id": "bad-cursor-no-way-back-to-the-view",
+      "description": "The refusal of a bad cursor offers no next action at the view address.",
+      "edits": [
+        {"op":"set","path":"/visits/second/bad_cursor/response/body/next_actions/0/href","value":"https://house.example/arrival"}
+      ],
+      "targets": "R4.BAD_CURSOR",
+      "result": "check_failed",
+      "outcomes": { "R4.BAD_CURSOR": "fail" },
+      "issues": ["next_action_not_view"]
+    },
+    {
+      "id": "bad-cursor-terminal",
+      "description": "The refusal of a bad cursor is terminal.",
+      "edits": [
+        {"op":"set","path":"/visits/second/bad_cursor/response/body/terminal","value":true},
+        {"op":"set","path":"/visits/second/bad_cursor/response/body/next_actions","value":[]}
+      ],
+      "targets": "R4.BAD_CURSOR",
+      "result": "check_failed",
+      "outcomes": { "R4.BAD_CURSOR": "fail" },
+      "issues": ["refusal_is_terminal"]
+    },
+    {
+      "id": "bad-cursor-problem-without-detail",
+      "description": "The refusal of a bad cursor has no detail.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/bad_cursor/response/body/detail"}
+      ],
+      "targets": "R4.BAD_CURSOR",
+      "result": "check_failed",
+      "outcomes": { "R4.BAD_CURSOR": "fail" },
+      "issues": ["problem_detail"]
+    },
+    {
+      "id": "bad-cursor-problem-retryable-not-stated",
+      "description": "The refusal of a bad cursor does not say whether a retry can help.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/bad_cursor/response/body/retryable"}
+      ],
+      "targets": "R4.BAD_CURSOR",
+      "result": "check_failed",
+      "outcomes": { "R4.BAD_CURSOR": "fail" },
+      "issues": ["problem_retryable"]
+    },
+    {
+      "id": "bad-cursor-problem-doc-is-not-an-address",
+      "description": "The refusal of a bad cursor lists a document by a relative path.",
+      "edits": [
+        {"op":"set","path":"/visits/second/bad_cursor/response/body/docs","value":["docs/arrival.md"]}
+      ],
+      "targets": "R4.BAD_CURSOR",
+      "result": "check_failed",
+      "outcomes": { "R4.BAD_CURSOR": "fail" },
+      "issues": ["problem_docs"]
+    },
+    {
+      "id": "bad-cursor-next-action-is-not-a-get",
+      "description": "The refusal of a bad cursor offers a next action that is not a GET.",
+      "edits": [
+        {"op":"set","path":"/visits/second/bad_cursor/response/body/next_actions/0/method","value":"POST"}
+      ],
+      "targets": "R4.BAD_CURSOR",
+      "result": "check_failed",
+      "outcomes": { "R4.BAD_CURSOR": "fail" },
+      "issues": ["problem_next_action_method"]
+    },
+    {
+      "id": "bad-cursor-next-action-rel-in-capitals",
+      "description": "The refusal of a bad cursor gives its next action a rel with a capital letter.",
+      "edits": [
+        {"op":"set","path":"/visits/second/bad_cursor/response/body/next_actions/0/rel","value":"View"}
+      ],
+      "targets": "R4.BAD_CURSOR",
+      "result": "check_failed",
+      "outcomes": { "R4.BAD_CURSOR": "fail" },
+      "issues": ["problem_next_action_rel"]
+    },
+    {
+      "id": "bad-cursor-5xx",
+      "description": "A bad cursor is answered 503 with no body.",
+      "edits": [
+        {"op":"set","path":"/visits/second/bad_cursor/response/status","value":503},
+        {"op":"set","path":"/visits/second/bad_cursor/response/body","value":null}
+      ],
+      "targets": "R4.BAD_CURSOR",
+      "result": "indeterminate",
+      "outcomes": { "R4.BAD_CURSOR": "unknown" },
+      "issues": ["status_5xx"]
+    },
+    {
+      "id": "bad-cursor-not-recorded",
+      "description": "No bad-cursor exchange is recorded.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/bad_cursor"}
+      ],
+      "result": "indeterminate",
+      "outcomes": { "R4.BAD_CURSOR": "not_run" },
+      "issues": []
+    },
+    {
+      "id": "freshness-valid-until-not-stated",
+      "description": "A view does not state until when the host stands by it.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/valid_until","value":null}
+      ],
+      "targets": "R5.FRESHNESS",
+      "result": "check_failed",
+      "outcomes": { "R5.FRESHNESS": "fail" },
+      "issues": ["not_stated"],
+      "body_stays_schema_valid": "/visits/first/view/response/body"
+    },
+    {
+      "id": "freshness-as-of-not-stated",
+      "description": "The orientation does not state when it was made.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/as_of","value":null}
+      ],
+      "targets": "R5.FRESHNESS",
+      "result": "check_failed",
+      "outcomes": { "R5.FRESHNESS": "fail" },
+      "issues": ["not_stated"],
+      "body_stays_schema_valid": "/visits/first/orientation/response/body"
+    },
+    {
+      "id": "freshness-expires-before-it-was-made",
+      "description": "The orientation stops being valid before the time it says it was made.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/valid_until","value":"2026-10-01T00:00:00Z"}
+      ],
+      "targets": "R5.FRESHNESS",
+      "result": "check_failed",
+      "outcomes": { "R5.FRESHNESS": "fail" },
+      "issues": ["valid_until_before_as_of"]
+    },
+    {
+      "id": "freshness-second-read-is-older",
+      "description": "The second view is dated before the first.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/as_of","value":"2026-11-12T08:00:00Z"}
+      ],
+      "targets": "R5.FRESHNESS",
+      "result": "check_failed",
+      "outcomes": { "R5.FRESHNESS": "fail" },
+      "issues": ["as_of_went_back"]
+    },
+    {
+      "id": "obligation-reply-expected",
+      "description": "A view says a reply is expected.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/reply_expected","value":true}
+      ],
+      "targets": "R6.NO_OBLIGATION",
+      "result": "check_failed",
+      "outcomes": { "R6.NO_OBLIGATION": "fail" },
+      "issues": ["reply_expected"]
+    },
+    {
+      "id": "obligation-read-creates-one",
+      "description": "A view says reading creates an obligation.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/read_creates_obligation","value":true}
+      ],
+      "targets": "R6.NO_OBLIGATION",
+      "result": "check_failed",
+      "outcomes": { "R6.NO_OBLIGATION": "fail" },
+      "issues": ["read_creates_obligation"]
+    },
+    {
+      "id": "obligation-reply-not-stated",
+      "description": "The orientation does not state whether a reply is expected.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/reply_expected","value":null}
+      ],
+      "targets": "R6.NO_OBLIGATION",
+      "result": "check_failed",
+      "outcomes": { "R6.NO_OBLIGATION": "fail" },
+      "issues": ["not_stated"],
+      "body_stays_schema_valid": "/visits/first/orientation/response/body"
+    },
+    {
+      "id": "obligation-owed-outside-its-section",
+      "description": "An item in a section of kind other names someone it is owed to.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/sections/1/items/1/owed_to","value":"the booking desk"}
+      ],
+      "targets": "R6.NO_OBLIGATION",
+      "result": "check_failed",
+      "outcomes": { "R6.NO_OBLIGATION": "fail" },
+      "issues": ["obligation_field_outside_section"]
+    },
+    {
+      "id": "obligation-due-date-outside-its-section",
+      "description": "An item in a section of kind other carries a due date.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/sections/1/items/1/due_at","value":"2026-11-20T00:00:00Z"}
+      ],
+      "targets": "R6.NO_OBLIGATION",
+      "result": "check_failed",
+      "outcomes": { "R6.NO_OBLIGATION": "fail" },
+      "issues": ["obligation_field_outside_section"]
+    },
+    {
+      "id": "obligation-no-section",
+      "description": "Neither view has a section of kind recorded_obligations, and the items that are owed sit in a section of kind other.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/0/kind","value":"other"},
+        {"op":"set","path":"/visits/second/view/response/body/sections/0/kind","value":"other"}
+      ],
+      "targets": "R6.NO_OBLIGATION",
+      "result": "check_failed",
+      "outcomes": { "R6.NO_OBLIGATION": "fail" },
+      "issues": ["obligation_section_count", "obligation_field_outside_section"]
+    },
+    {
+      "id": "obligation-no-section-and-nothing-owed",
+      "description": "Neither view has a section of kind recorded_obligations, and no item anywhere names what is owed. The one section of that kind is expected even when it is quiet.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/0/kind","value":"other"},
+        {"op":"set","path":"/visits/first/view/response/body/sections/0/state","value":"quiet"},
+        {"op":"set","path":"/visits/first/view/response/body/sections/0/count","value":0},
+        {"op":"set","path":"/visits/first/view/response/body/sections/0/items","value":[]},
+        {"op":"copy","from":"/visits/first/view/response/body/sections/0","path":"/visits/second/view/response/body/sections/0"},
+        {"op":"remove","path":"/visits/second/view/response/body/changes/items/1"},
+        {"op":"remove","path":"/visits/second/view/response/body/changes/items/0"},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":3}
+      ],
+      "targets": "R6.NO_OBLIGATION",
+      "result": "check_failed",
+      "outcomes": { "R6.NO_OBLIGATION": "fail" },
+      "issues": ["obligation_section_count"],
+      "exercised": { "items_compared_equal": 1, "differences_found": 1, "differences_named": 1 }
+    },
+    {
+      "id": "obligation-two-sections",
+      "description": "Both views have two sections of kind recorded_obligations.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/2/kind","value":"recorded_obligations"},
+        {"op":"set","path":"/visits/second/view/response/body/sections/2/kind","value":"recorded_obligations"}
+      ],
+      "targets": "R6.NO_OBLIGATION",
+      "result": "check_failed",
+      "outcomes": { "R6.NO_OBLIGATION": "fail" },
+      "issues": ["obligation_section_count"]
+    },
+    {
+      "id": "non-claims-view-without-reader-sameness",
+      "description": "The first view leaves out the token reader_sameness.",
+      "edits": [
+        {"op":"remove","path":"/visits/first/view/response/body/not_established/0"}
+      ],
+      "targets": "R7.NON_CLAIMS",
+      "result": "check_failed",
+      "outcomes": { "R7.NON_CLAIMS": "fail" },
+      "issues": ["non_claim_missing"]
+    },
+    {
+      "id": "non-claims-view-without-identity-beyond-credential",
+      "description": "The second view leaves out the token identity_beyond_credential.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/view/response/body/not_established/1"}
+      ],
+      "targets": "R7.NON_CLAIMS",
+      "result": "check_failed",
+      "outcomes": { "R7.NON_CLAIMS": "fail" },
+      "issues": ["non_claim_missing"]
+    },
+    {
+      "id": "non-claims-view-without-completeness-beyond-bounds",
+      "description": "The first view leaves out the token completeness_beyond_bounds.",
+      "edits": [
+        {"op":"remove","path":"/visits/first/view/response/body/not_established/2"}
+      ],
+      "targets": "R7.NON_CLAIMS",
+      "result": "check_failed",
+      "outcomes": { "R7.NON_CLAIMS": "fail" },
+      "issues": ["non_claim_missing"]
+    },
+    {
+      "id": "non-claims-view-without-instruction-or-authority",
+      "description": "The second view leaves out the token instruction_or_authority.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/view/response/body/not_established/3"}
+      ],
+      "targets": "R7.NON_CLAIMS",
+      "result": "check_failed",
+      "outcomes": { "R7.NON_CLAIMS": "fail" },
+      "issues": ["non_claim_missing"]
+    },
+    {
+      "id": "non-claims-view-without-obligation-binds-reader",
+      "description": "The first view leaves out the token obligation_binds_reader.",
+      "edits": [
+        {"op":"remove","path":"/visits/first/view/response/body/not_established/4"}
+      ],
+      "targets": "R7.NON_CLAIMS",
+      "result": "check_failed",
+      "outcomes": { "R7.NON_CLAIMS": "fail" },
+      "issues": ["non_claim_missing"]
+    },
+    {
+      "id": "non-claims-view-without-waiver-by-silence",
+      "description": "The second view leaves out the token waiver_by_silence.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/view/response/body/not_established/5"}
+      ],
+      "targets": "R7.NON_CLAIMS",
+      "result": "check_failed",
+      "outcomes": { "R7.NON_CLAIMS": "fail" },
+      "issues": ["non_claim_missing"]
+    },
+    {
+      "id": "non-claims-view-without-other-layers-unrecorded",
+      "description": "The first view leaves out the token other_layers_unrecorded.",
+      "edits": [
+        {"op":"remove","path":"/visits/first/view/response/body/not_established/6"}
+      ],
+      "targets": "R7.NON_CLAIMS",
+      "result": "check_failed",
+      "outcomes": { "R7.NON_CLAIMS": "fail" },
+      "issues": ["non_claim_missing"]
+    },
+    {
+      "id": "non-claims-orientation-without-anything-about-caller",
+      "description": "The orientation leaves out the token anything_about_caller.",
+      "edits": [
+        {"op":"remove","path":"/visits/first/orientation/response/body/not_established/0"}
+      ],
+      "targets": "R7.NON_CLAIMS",
+      "result": "check_failed",
+      "outcomes": { "R7.NON_CLAIMS": "fail" },
+      "issues": ["non_claim_missing"]
+    },
+    {
+      "id": "non-claims-orientation-without-access-to-view",
+      "description": "The orientation leaves out the token access_to_view.",
+      "edits": [
+        {"op":"remove","path":"/visits/first/orientation/response/body/not_established/1"}
+      ],
+      "targets": "R7.NON_CLAIMS",
+      "result": "check_failed",
+      "outcomes": { "R7.NON_CLAIMS": "fail" },
+      "issues": ["non_claim_missing"]
+    },
+    {
+      "id": "non-claims-orientation-empty",
+      "description": "The orientation lists no not_established token.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/not_established","value":[]}
+      ],
+      "targets": "R7.NON_CLAIMS",
+      "result": "check_failed",
+      "outcomes": { "R7.NON_CLAIMS": "fail" },
+      "issues": ["non_claim_missing"]
+    },
+    {
+      "id": "pass-prose-with-bearer-and-basic",
+      "description": "Free text uses the words bearer and basic.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"A house where a bearer of the basic plan keeps notes, messages and recorded obligations."}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-item-id-beginning-sk",
+      "description": "An item id begins with sk-.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/sections/2/items/0/id","value":"sk-1"},
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/4/item_id","value":"sk-1"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-valid-until-equals-as-of",
+      "description": "A view is valid only at the instant it was made.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/valid_until","value":"2026-11-12T09:00:07Z"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-partial-count-not-given",
+      "description": "A partial section gives neither a dropped count nor a total.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/count","value":null},
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/count","value":null}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-partial-floor-equal-to-items",
+      "description": "A partial section gives no dropped count, and a count equal to the items it lists. A floor may equal what is listed.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/count","value":null},
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/count","value":2}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-item-in-a-partial-section-not-named-as-added",
+      "description": "An item is new to a partial section and nothing names it as added. It may have been there, outside the window.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/view/response/body/changes/items/3"},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":4}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-added-item-outside-a-partial-window",
+      "description": "A changes entry says added for an item neither read lists, in a section that is partial on the second read. It may be there, outside the window.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/-","value":{"section_id":"notes","item_id":"n-10","change":"added"}},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":6}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-ended-item-outside-a-partial-window",
+      "description": "A changes entry says ended for an item neither read lists, in a section that was partial on the first read. It may have been there, outside the window.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/-","value":{"section_id":"notes","item_id":"n-3","change":"ended"}},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":6}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-second-read-dated-the-same",
+      "description": "The second view carries the same as_of as the first. It is not earlier.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/as_of","value":"2026-11-12T09:00:07Z"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-two-requests-at-the-same-time",
+      "description": "Two requests are recorded at the same instant. Time does not go back.",
+      "edits": [
+        {"op":"set","path":"/visits/second/bad_cursor/requested_at","value":"2026-11-12T15:30:00Z"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-no-acknowledgement-address",
+      "description": "Neither view names an acknowledgement address.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/acknowledgement","value":null},
+        {"op":"set","path":"/visits/second/view/response/body/acknowledgement","value":null}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-bad-cursor-view-listed-second",
+      "description": "The refusal of a bad cursor lists the orientation first and the view second. Any next action at the view address is enough.",
+      "edits": [
+        {"op":"copy","from":"/visits/second/bad_cursor/response/body/next_actions/0","path":"/visits/second/bad_cursor/response/body/next_actions/-"},
+        {"op":"set","path":"/visits/second/bad_cursor/response/body/next_actions/0/rel","value":"orientation"},
+        {"op":"set","path":"/visits/second/bad_cursor/response/body/next_actions/0/href","value":"https://house.example/arrival"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-cursor-and-position-shaped-like-tokens",
+      "description": "The cursors and the acknowledgement position have the shape of a three-part token or a Bearer value. They are opaque and the tripwire does not read them.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/cursor","value":"eyJexample-cursor.example-cursor-0001.example-cursor-end"},
+        {"op":"set","path":"/visits/second/view/request/cursor","value":"eyJexample-cursor.example-cursor-0001.example-cursor-end"},
+        {"op":"set","path":"/visits/second/view/response/body/basis/cursor","value":"eyJexample-cursor.example-cursor-0001.example-cursor-end"},
+        {"op":"set","path":"/visits/second/view/response/body/cursor","value":"eyJexample-cursor.example-cursor-0002.example-cursor-end"},
+        {"op":"set","path":"/visits/second/bad_cursor/request/cursor","value":"Bearer example0000000000000000"},
+        {"op":"set","path":"/visits/first/view/response/body/acknowledgement/position","value":"eyJexample-position.example-position-3.example-position-end"},
+        {"op":"set","path":"/visits/second/view/response/body/acknowledgement/position","value":"eyJexample-position.example-position-3.example-position-end"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-item-keys-in-another-order",
+      "description": "An item comes back with the same fields in another order. Equal means the same JSON once object keys are sorted.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/sections/0/items/0","value":{"due_at":"2026-11-20T00:00:00Z","owed_to":"the glossary editors","ref":"https://house.example/obligations/ob-1","acknowledged_at":null,"recorded_at":"2026-11-03T10:00:00Z","summary":"Review of the draft glossary, accepted on 2026-11-03.","id":"ob-1"}}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-summary-phrased-as-a-task",
+      "description": "An item's summary is worded as an instruction, the same on both reads. No check reads free text, so this passes; every result says under not_established that it does not establish whether free text presses the reader.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/items/1/summary","value":"Do this now: reply to the booking desk before anything else."},
+        {"op":"set","path":"/visits/second/view/response/body/sections/1/items/0/summary","value":"Do this now: reply to the booking desk before anything else."}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    }
+  ],
+  "built": [
+    {
+      "id": "bytes-over-the-limit",
+      "recipe": "262145 bytes, each 0x20.",
+      "result": "indeterminate",
+      "outcomes": { "I.SIZE": "unknown", "I.UTF8": "not_run", "I.JSON": "not_run", "I.SHAPE": "not_run", "I.NO_CREDENTIAL": "not_run", "I.RECORD": "not_run", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["input_limit_exceeded"]
+    },
+    {
+      "id": "bytes-at-the-limit",
+      "recipe": "262144 bytes, each 0x20. Exactly the size limit, so the input is read; it is not JSON.",
+      "targets": "I.JSON",
+      "result": "check_failed",
+      "outcomes": { "I.JSON": "fail", "I.SHAPE": "not_run", "I.NO_CREDENTIAL": "not_run", "I.RECORD": "not_run", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["json_parse"]
+    },
+    {
+      "id": "bytes-byte-order-mark",
+      "recipe": "The bytes EF BB BF, then the bytes of the base file.",
+      "targets": "I.UTF8",
+      "result": "check_failed",
+      "outcomes": { "I.UTF8": "fail", "I.JSON": "not_run", "I.SHAPE": "not_run", "I.NO_CREDENTIAL": "not_run", "I.RECORD": "not_run", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["utf8_bom"]
+    },
+    {
+      "id": "bytes-invalid-utf8",
+      "recipe": "The single byte FF.",
+      "targets": "I.UTF8",
+      "result": "check_failed",
+      "outcomes": { "I.UTF8": "fail", "I.JSON": "not_run", "I.SHAPE": "not_run", "I.NO_CREDENTIAL": "not_run", "I.RECORD": "not_run", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["utf8_decode"]
+    },
+    {
+      "id": "bytes-not-json",
+      "recipe": "The one character {.",
+      "targets": "I.JSON",
+      "result": "check_failed",
+      "outcomes": { "I.JSON": "fail", "I.SHAPE": "not_run", "I.NO_CREDENTIAL": "not_run", "I.RECORD": "not_run", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["json_parse"]
+    },
+    {
+      "id": "bytes-repeated-key",
+      "recipe": "The text in `text`, exactly: a fixture that gives its origin twice.",
+      "text": "{\"schema_version\":\"xenia.arrival.fixture/0.1-development\",\"origin\":\"hand_written\",\"origin\":\"host_bytes\",\"between_visits\":{\"acknowledged_by_recorder\":\"no\"},\"visits\":{\"first\":{},\"second\":{}}}",
+      "targets": "I.JSON",
+      "result": "check_failed",
+      "outcomes": { "I.JSON": "fail", "I.SHAPE": "not_run", "I.NO_CREDENTIAL": "not_run", "I.RECORD": "not_run", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["json_key_duplicate"]
+    },
+    {
+      "id": "bytes-nested-65-deep",
+      "recipe": "65 copies of [ followed by 65 copies of ].",
+      "targets": "I.JSON",
+      "result": "check_failed",
+      "outcomes": { "I.JSON": "fail", "I.SHAPE": "not_run", "I.NO_CREDENTIAL": "not_run", "I.RECORD": "not_run", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["json_depth_exceeded"]
+    },
+    {
+      "id": "bytes-nested-64-deep",
+      "recipe": "64 copies of [ followed by 64 copies of ]. It is within the nesting limit and is not a fixture.",
+      "targets": "I.SHAPE",
+      "result": "check_failed",
+      "outcomes": { "I.SHAPE": "fail", "I.NO_CREDENTIAL": "not_run", "I.RECORD": "not_run", "R1.ORIENTATION": "not_run", "R1.REFUSAL": "not_run", "R1.VIEW": "not_run", "P.PAIR": "not_run", "R2.DECLARED_EFFECTS": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.STATES": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CURSOR": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R5.FRESHNESS": "not_run", "R6.NO_OBLIGATION": "not_run", "R7.NON_CLAIMS": "not_run" },
+      "issues": ["schema_type"]
+    },
+    {
+      "id": "orientation-over-its-ceiling",
+      "recipe": "The base file, with a field named padding added to the orientation body, its value 8192 copies of the letter a. The body is then both over 8192 bytes and not a valid orientation.",
+      "targets": "R1.ORIENTATION",
+      "result": "check_failed",
+      "outcomes": { "R1.ORIENTATION": "fail" },
+      "issues": ["schema_additional_properties", "orientation_over_ceiling"]
+    },
+    {
+      "id": "orientation-valid-at-its-ceiling",
+      "recipe": "The base file, changed in four places. F stands for the one code point U+1F600, which is four bytes in UTF-8. In the orientation body: place.name is 120 copies of F; place.summary is 300 copies of F; place.manifest is \"https://house.example/\" followed by 1646 copies of the letter a; view.credential_kinds is eight strings, string n (n from 0 to 7) being the letter k, the digit n, then 62 copies of the letter a. In the orientation body's view.read_effects and in the read_effects of both views: operational_writes is eight strings, string n (n from 0 to 7) being the digit n followed by 119 copies of F. The three declarations stay equal. The orientation is schema-valid and exactly 8192 bytes when serialised with no added white space.",
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "orientation-valid-one-byte-over-its-ceiling",
+      "recipe": "The base file, changed in four places. F stands for the one code point U+1F600, which is four bytes in UTF-8. In the orientation body: place.name is 120 copies of F; place.summary is 300 copies of F; place.manifest is \"https://house.example/\" followed by 1647 copies of the letter a; view.credential_kinds is eight strings, string n (n from 0 to 7) being the letter k, the digit n, then 62 copies of the letter a. In the orientation body's view.read_effects and in the read_effects of both views: operational_writes is eight strings, string n (n from 0 to 7) being the digit n followed by 119 copies of F. The three declarations stay equal. The orientation is schema-valid and 8193 bytes when serialised with no added white space.",
+      "targets": "R1.ORIENTATION",
+      "result": "check_failed",
+      "outcomes": { "R1.ORIENTATION": "fail" },
+      "issues": ["orientation_over_ceiling"]
+    },
+    {
+      "id": "view-over-its-ceiling",
+      "recipe": "The base file, with the first view's first section given limit 32, count 32 and 32 items. Item n, for n from 0 to 31, is {id: \"item-n\", summary: \"s\", recorded_at: null, acknowledged_at: null, ref: \"https://house.example/obligations/\" followed by 2014 copies of the letter a, owed_to: null, due_at: null}. The view stays schema-valid and is over 65536 bytes.",
+      "targets": "R1.VIEW",
+      "result": "check_failed",
+      "outcomes": { "R1.VIEW": "fail", "P.PAIR": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run" },
+      "issues": ["view_over_ceiling"]
+    },
+    {
+      "id": "view-at-its-ceiling",
+      "recipe": "The base file, with the second view's section notes (the second section) given limit 32 and count 36, and 30 items appended after the two it has. Appended item n, for n from 0 to 29, is {id: \"pad-n\", summary: \"s\", recorded_at: null, acknowledged_at: null, ref: \"https://house.example/notes/\" followed by copies of the letter a, owed_to: null, due_at: null}; item 0 has 1951 copies and items 1 to 29 have 1937 copies each. The second view is schema-valid and exactly 65536 bytes when serialised with no added white space. The appended items are new to a section that was partial on the first read, so nothing has to name them.",
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "view-one-byte-over-its-ceiling",
+      "recipe": "The base file, with the second view's section notes (the second section) given limit 32 and count 36, and 30 items appended after the two it has. Appended item n, for n from 0 to 29, is {id: \"pad-n\", summary: \"s\", recorded_at: null, acknowledged_at: null, ref: \"https://house.example/notes/\" followed by copies of the letter a, owed_to: null, due_at: null}; item 0 has 1952 copies and items 1 to 29 have 1937 copies each. The second view is schema-valid and 65537 bytes when serialised with no added white space.",
+      "targets": "R1.VIEW",
+      "result": "check_failed",
+      "outcomes": { "R1.VIEW": "fail", "P.PAIR": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run" },
+      "issues": ["view_over_ceiling"]
+    }
+  ]
+}

@@ -65,6 +65,7 @@
     "test:library": "node --test tests/*.test.mjs",
     "test:surface": "node --test surface/0.1/*.test.mjs",
     "test:observe": "node --test observe/0.1/*.test.mjs",
+    "test:arrival": "node --test tests/arrival-*.test.mjs",
     "xenia": "node agent-first/0.1/cli.mjs",
     "xenia:observe": "node observe/0.1/observe.mjs",
     "verify:surface-profile": "git diff --exit-code surface-v0.1.0-rc.1 -- surface/0.1/manifest.schema.json surface/0.1/problem.schema.json surface/0.1/result.schema.json surface/0.1/example-manifest.json",

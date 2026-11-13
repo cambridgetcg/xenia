@@ -5,14 +5,15 @@
 Status: **development draft**
 
 - Written by one author. No second implementation exists.
-- No host is known to serve either document described here.
-- The only fixture, [examples/two-visits.json](examples/two-visits.json), was
-  written by hand. No host sent it.
-- No checker is in this directory yet. `check.mjs` and `fixtures/cases.json`
-  are named below and not written, so nothing has run the checks listed here,
-  not even against the example.
-- [tests/arrival-0.1.test.mjs](../../tests/arrival-0.1.test.mjs) checks the
-  schemas against the example and pins this text. It checks shape only.
+- No host is known to serve either document.
+- The example, [examples/two-visits.json](examples/two-visits.json), and the
+  cases in [fixtures/cases.json](fixtures/cases.json) were written by hand.
+  No host sent them.
+- [check.mjs](check.mjs) is the only checker.
+  [tests/arrival-0.1.test.mjs](../../tests/arrival-0.1.test.mjs) runs it over
+  the example and every case, and they agree. The same author wrote the
+  checker, the cases and their expected outcomes, so that agreement is not
+  independent evidence.
 - This directory is outside the npm package, its exports, the agent-first kit,
   and the `normative_profiles` list in [spec.json](../../spec.json). Its
   schema identifiers are development URNs, not release identities.
@@ -29,8 +30,6 @@ Nothing here is normative. This text says what the schemas permit and what a
 check of a recorded fixture compares. It places no requirement on any host.
 
 ## Where the rules come from
-
-Each rule starts from something this repository already asks for.
 
 | Rule | Source |
 |---|---|
@@ -119,8 +118,8 @@ In a `partial` envelope, a numeric `dropped.count` makes the count an exact
 total, `items.length + dropped.count`. A null one leaves the count null or a
 floor no lower than `items.length`.
 
-The schemas fix fields, types and bounds only. A view that breaks this table
-is still schema-valid; agreement with it is a check under rule 3.
+A view that breaks this table is still schema-valid; agreement with it is the
+check `R3.STATES`.
 
 ### Bounds
 
@@ -136,8 +135,8 @@ is still schema-valid; agreement with it is a check under rule 3.
 | fixture file | 262,144 bytes |
 | view; orientation | 65,536; 8,192 bytes |
 
-The last row measures a body serialised again from the fixture, not bytes on
-the wire, and no schema states it.
+The last row measures a body written again as UTF-8 JSON with no white space
+and no optional escape, not bytes on the wire. No schema states it.
 
 ### What `not_established` means
 
@@ -183,69 +182,83 @@ reader made both reads, or that time passed between them.
 
 ## Checks and result
 
-[result.schema.json](result.schema.json) fixes twenty checks, in this order.
+`node arrival/0.1/check.mjs <fixture.json> [--json]` reads that file and its
+own three schemas, and contacts nothing. It exits 0 for `checks_passed`, 1 for
+`check_failed` or `indeterminate`, 2 for misuse.
+[result.schema.json](result.schema.json) fixes twenty checks, in this order,
+and how the result word follows from them.
 
-| Check | What it compares |
-|---|---|
-| `I.SIZE`, `I.UTF8`, `I.JSON` | the input bytes: size, strict UTF-8, one JSON value with no repeated key |
-| `I.SHAPE` | the fixture against its schema |
-| `I.NO_CREDENTIAL` | strings other than cursors and positions against secret shapes, and hrefs against userinfo, fragments and credential-named query keys; a tripwire, not a guarantee |
-| `I.RECORD` | the recorded requests: credential, cursor, one view address, order |
-| `R1.ORIENTATION` | status 200, a valid orientation within its ceiling, pointing at the view address |
-| `R1.REFUSAL` | the answer to the view address asked with no credential |
-| `R1.VIEW` | each served view: valid, within its ceiling, ids not repeated |
-| `P.PAIR` | whether the two views can be compared: both served, both valid, same audience; it never fails |
-| `R2.DECLARED_EFFECTS` | the read-effects declarations in all three documents |
-| `R2.SHOWN_AGAIN` | unacknowledged first-read items against the second read |
-| `R3.STATES` | every envelope against the state table |
-| `R3.SECTIONS_KEPT` | section ids, kinds and scopes across the two reads |
-| `R4.CURSOR` | that a cursor is handed back, and that a read with none is a full view |
-| `R4.CHANGES` | `changes` against the checker's own comparison of the two views |
-| `R4.BAD_CURSOR` | the answer to a cursor the host did not hand back |
-| `R5.FRESHNESS` | `as_of` and `valid_until`; host times with host times only |
-| `R6.NO_OBLIGATION` | rule 6 |
-| `R7.NON_CLAIMS` | that every token above is listed |
+*Served*: status 200. *Valid*: served, with a body that matches its schema and
+hrefs that parse, as in Surface's checker. *View address*: the href every
+request but the orientation's shares. *Equal*: the same JSON once object keys
+are sorted. *Whole*: state `ok` or `quiet`; a null `changes` is not whole.
 
-The exact conditions for each outcome are not written in this directory yet.
+| Check | Fails when | Unknown when |
+|---|---|---|
+| `I.SIZE` | never | over 262,144 bytes; nothing is parsed |
+| `I.UTF8` | a byte-order mark, or invalid UTF-8 | |
+| `I.JSON` | not one JSON value, a repeated key, or nesting over 64 | |
+| `I.SHAPE` | the fixture does not match its schema | |
+| `I.NO_CREDENTIAL` | a string or field name has a secret shape, or a string starting `http://` or `https://` does not parse or has userinfo, a fragment or a credential-named query key. Cursors and `position` are not read; `fixtures/cases.json` lists the shapes. A tripwire, not a guarantee | |
+| `I.RECORD` | a credential or cursor on the first two requests; no credential on one of the other three; a cursor on the first view request, or none on the bad-cursor one; the view requests not sharing one href, or the orientation having it; `requested_at` going back in slot order; a second-read cursor other than the one a recorded first view handed back when served; a bad cursor a recorded view handed back | |
+| `R1.ORIENTATION` | status not 200; body not valid, or over its ceiling; `view.href` not the view address | 5xx |
+| `R1.REFUSAL` | status not 4xx; body not a Surface problem with that status; code not `credential_required`; terminal; first next action not the orientation's href | 5xx; no orientation recorded |
+| `R1.VIEW` | a served view is not valid, is over its ceiling, or repeats a section id, or an item id in one section | no view served |
+| `P.PAIR` | never | a view not served; `audience` not equal |
+| `R2.DECLARED_EFFECTS` | a valid document's declaration is null (`not_stated`) or says `some`; two are not equal | one says `unknown` |
+| `R2.SHOWN_AGAIN` | `position` differs, or an item on both reads has another `acknowledged_at` (`acknowledgement_moved`); an owned difference is unnamed and decidable while `changes` is whole | the recorder does not say `no` (nothing else is read); an owned difference is unnamed, and undecidable or `changes` not whole; no unacknowledged item came back equal (`not_exercised`) |
+| `R3.STATES` | an envelope in a valid view breaks the state table | |
+| `R3.SECTIONS_KEPT` | a first-read section is missing on the second read, or its kind or scope differs | |
+| `R4.CURSOR` | a valid view's cursor is null; a read with no cursor is not `full`, or has a basis cursor or `changes` | |
+| `R4.CHANGES` | the basis is not `since_cursor` with the cursor presented; `changes` is null; an entry names a section in neither view, or contradicts the views; an owned decidable difference is unnamed while `changes` is whole | `changes` is unavailable or withheld, or partial with an owned difference unnamed; no decidable difference was found and named (`not_exercised`) |
+| `R4.BAD_CURSOR` | as `R1.REFUSAL`, with code `cursor_not_accepted` and any next action at the view address | 5xx |
+| `R5.FRESHNESS` | a valid document's `as_of` or `valid_until` is null, or `valid_until` is before `as_of`; `P.PAIR` passed and the second view is dated before the first | |
+| `R6.NO_OBLIGATION` | a valid document's `reply_expected` or `read_creates_obligation` is not false; a view lacks exactly one `recorded_obligations` section, or sets `owed_to` or `due_at` outside it | |
+| `R7.NON_CLAIMS` | a valid document lacks a token above | |
 
-An outcome is `pass`, `fail`, `unknown` (recorded, but undecidable) or
-`not_run` (the exchange is absent, or a check this one depends on did not
-pass). The result word is `check_failed` if any check failed; otherwise
-`indeterminate` if any is `unknown` or `not_run`; otherwise `checks_passed`.
-The schema ties the word to the outcomes.
+A check is `not_run` when an earlier `I` check other than `I.NO_CREDENTIAL`
+did not pass, or when what it reads is absent: an exchange; a valid document,
+or for `R3.STATES` and `R4.CURSOR` a valid view; for `P.PAIR`, both views
+recorded and `R1.VIEW` passed; for `R2.SHOWN_AGAIN`, `R3.SECTIONS_KEPT` and
+`R4.CHANGES`, `P.PAIR` passed and, for the last, a cursor on the second
+request. A failure outranks an unknown.
 
-A result also carries `fixture_origin`; `exercised`, which counts the items
-compared equal, the differences found and named, and the states seen, so a
-pass that compared nothing can be told from one that compared something;
-`issues`, each a code, a path and a message; and a fixed `not_established`.
-It copies no value from the fixture.
+In a section on both reads, an item *differs* (on both, not equal), is *gone*
+(first only) or is *new* (second only). Differs is always decidable; gone when
+the second-read section is whole; new when the first-read one is.
+`R2.SHOWN_AGAIN` owns differs and gone for items unacknowledged on the first
+read; `R4.CHANGES` owns the rest. `changed` names differs; `ended` or
+`out_of_window`, gone; `added`, new. An entry contradicts the views when it
+says `added` for an item on the first read; `changed` for an equal one;
+`ended` or `out_of_window` for one on the second read; `out_of_window` where
+the second-read section is not `partial`; anything but `added` for an item
+absent from a whole first-read section; or `added` or `changed` for one absent
+from a whole second-read section.
 
 A result says, per check, whether the exchanges in the fixture agree with that
-check. It does not establish: that a host sent them or behaves so now; that a
-read wrote nothing; that nothing was acknowledged between the reads, by the
-recorder or another holder of the credential; that reading caused a
-difference; that an `ok` or `quiet` section was read successfully, or that
-every section is listed; who the reader is, or that one reader, one credential
-or any passage of time joins the reads; whether the cursor is state the host
-keeps; the truth of times, counts or text; how an acknowledgement behaves;
-that an obligation binds anyone; or conformance, authority, consent, safety or
-a caller's inner state.
+check. Beyond the fixture's origin word, it copies no value from the fixture.
+It establishes none of the ten lines the schema fixes under `not_established`,
+which every result repeats. Among them: that a host sent the exchanges or
+behaves so now; that a read wrote nothing; who the reader is; and conformance,
+authority, consent, safety or a caller's inner state.
+
+`fixtures/cases.json` holds 167 cases, each a list of edits to the example
+with the outcome expected for every check, and 14 more built from recipes.
 
 ## Beside Surface, Work and Covenant
 
 - [Surface 0.1](../../surface/0.1/README.md) tests a public service from
   outside with no credential, and says a pass is no proof of continuity.
-  Arrival reuses its problem shape for both refusals and its href pattern,
-  and changes nothing in it. An Arrival result is not a Surface result.
-- [Work 0.1](../../work/0.1/README.md) records one finite piece of work.
-  Arrival records two reads. Its result follows Work's shape and its
-  timestamp form is Work's.
+  Arrival reuses its problem shape and href pattern and changes nothing in
+  it. An Arrival result is not a Surface result.
+- [Work 0.1](../../work/0.1/README.md) records one finite piece of work;
+  Arrival records two reads. Its result shape and timestamp form are Work's.
 - [Covenant 0.1](../../covenant/0.1/README.md) states host duties. Arrival is
   not an adoption, and is not evidence for one.
 
-Schemas, example and text are CC BY-SA 4.0 by the default for specification
-files in [LICENSES.md](../../LICENSES.md), which does not yet name this
-directory.
+Text, schemas and fixtures are CC BY-SA 4.0 and `check.mjs` is MPL 2.0, by
+the defaults in [LICENSES.md](../../LICENSES.md), which does not yet name
+this directory.
 
 ## Outside Arrival 0.1
 
@@ -271,6 +284,6 @@ Any normative, release, or adoption-evidence claim.
 
 This draft does not leave draft status before a second implementation, written
 without reading `check.mjs`, reproduces the result word and all twenty
-outcomes for the example and for every case in `fixtures/cases.json`. Neither
-file exists at this revision, so the gate cannot yet be attempted. Meeting it
-would not make this a release; that is a separate maintainer decision.
+outcomes for the example and for every case in `fixtures/cases.json`. No such
+implementation exists. Meeting the gate would not make this a release; that is
+a separate maintainer decision.
