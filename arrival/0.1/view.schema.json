@@ -1,0 +1,313 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:xenia:arrival:view:0.1:development-draft",
+  "$comment": "SPDX-License-Identifier: CC-BY-SA-4.0",
+  "title": "XENIA Arrival 0.1 continuity view development draft",
+  "description": "The bounded document a host answers with when a credential it accepts is presented: what the host holds under that credential. Matching this schema is a statement about shape only; it establishes nothing about a host or about who reads. Agreement between a state and its fields, and every other Arrival rule, is outside this schema, so a document that breaks a rule can still match.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "as_of",
+    "valid_until",
+    "audience",
+    "basis",
+    "cursor",
+    "changes",
+    "sections",
+    "read_effects",
+    "acknowledgement",
+    "reply_expected",
+    "read_creates_obligation",
+    "not_established"
+  ],
+  "properties": {
+    "schema_version": { "const": "xenia.arrival.view/0.1-development" },
+    "as_of": {
+      "description": "When the host made this document. Null means not stated.",
+      "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }]
+    },
+    "valid_until": {
+      "description": "Until when the host stands by this document. Null means not stated. Arrival 0.1 compares it with as_of only, never with a request time.",
+      "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }]
+    },
+    "audience": {
+      "description": "Whom the host answered: whoever presented a credential it accepted. It says nothing more about the reader.",
+      "type": "object",
+      "required": ["basis", "scope", "record_set_ref"],
+      "properties": {
+        "basis": { "const": "credential_presented" },
+        "scope": {
+          "description": "What the credential reaches, in the host's own account.",
+          "$ref": "#/$defs/scope"
+        },
+        "record_set_ref": {
+          "description": "The host's reference for the set of records it selected for this credential, or null.",
+          "anyOf": [
+            { "type": "string", "minLength": 1, "maxLength": 256 },
+            { "type": "null" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "basis": {
+      "description": "What this answer is measured against: nothing (full), or the cursor the request presented.",
+      "type": "object",
+      "required": ["kind", "cursor"],
+      "properties": {
+        "kind": { "enum": ["full", "since_cursor"] },
+        "cursor": { "anyOf": [{ "$ref": "#/$defs/cursor" }, { "type": "null" }] }
+      },
+      "additionalProperties": false
+    },
+    "cursor": {
+      "description": "A cursor for the caller to keep and present on a later read, or null when the host hands none back.",
+      "anyOf": [{ "$ref": "#/$defs/cursor" }, { "type": "null" }]
+    },
+    "changes": {
+      "description": "Null, or what differs since the presented cursor, in the same envelope as a section. It is the net difference between what the two reads list, not a list of the events between them.",
+      "anyOf": [{ "$ref": "#/$defs/changes" }, { "type": "null" }]
+    },
+    "sections": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/section" }
+    },
+    "read_effects": {
+      "description": "What this read wrote, as the host declares it. Null means not stated.",
+      "anyOf": [{ "$ref": "#/$defs/read_effects" }, { "type": "null" }]
+    },
+    "acknowledgement": {
+      "description": "Null, or where a separate, explicit acknowledgement can be made and the host's position for it: how far acknowledgements made under this credential have reached. The position moves only when one is made. Arrival 0.1 does not define the acknowledgement itself.",
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["href", "position"],
+          "properties": {
+            "href": { "$ref": "#/$defs/href" },
+            "position": {
+              "anyOf": [
+                { "type": "string", "minLength": 1, "maxLength": 256 },
+                { "type": "null" }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        { "type": "null" }
+      ]
+    },
+    "reply_expected": {
+      "description": "Whether the host expects a reply to this read. Null means not stated.",
+      "anyOf": [{ "type": "boolean" }, { "type": "null" }]
+    },
+    "read_creates_obligation": {
+      "description": "Whether the host treats this read as creating an obligation. Null means not stated.",
+      "anyOf": [{ "type": "boolean" }, { "type": "null" }]
+    },
+    "not_established": {
+      "description": "Tokens for what this document does not establish. The sentence for each token is in the README.",
+      "type": "array",
+      "maxItems": 7,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "reader_sameness",
+          "identity_beyond_credential",
+          "completeness_beyond_bounds",
+          "instruction_or_authority",
+          "obligation_binds_reader",
+          "waiver_by_silence",
+          "other_layers_unrecorded"
+        ]
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 40,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T(?:(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]+)?|23:59:60(?:\\.[0-9]+)?)Z$"
+    },
+    "href": {
+      "type": "string",
+      "format": "uri",
+      "maxLength": 2048,
+      "pattern": "^(https://(?![^/?#]*@)|http://(?:localhost|127(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|\\[::1\\])(?::[0-9]+)?(?:/|$))"
+    },
+    "cursor": {
+      "description": "Opaque to the caller. Whether it is self-contained or a key to state the host keeps is not stated.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "section_id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{0,63}$" },
+    "item_id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:~-]{0,127}$" },
+    "scope": {
+      "description": "Whose records these are, in the host's own account. The four words are the ones website integration gate 2 in WEBSITE-ROLLOUT.md names. Whether project is the right word for a host with another unit of tenancy is an open question.",
+      "enum": ["identity", "project", "mixed", "unknown"]
+    },
+    "state": { "enum": ["ok", "quiet", "partial", "unavailable", "withheld"] },
+    "count": {
+      "anyOf": [
+        { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        { "type": "null" }
+      ]
+    },
+    "limit": { "type": "integer", "minimum": 1, "maximum": 32 },
+    "dropped": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["count", "reason", "deeper_read"],
+          "properties": {
+            "count": {
+              "anyOf": [
+                { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                { "type": "null" }
+              ]
+            },
+            "reason": { "enum": ["limit", "not_listed_by_design", "other"] },
+            "deeper_read": { "anyOf": [{ "$ref": "#/$defs/href" }, { "type": "null" }] }
+          },
+          "additionalProperties": false
+        },
+        { "type": "null" }
+      ]
+    },
+    "unavailable": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["code"],
+          "properties": {
+            "code": { "enum": ["read_failed", "not_observed", "other"] }
+          },
+          "additionalProperties": false
+        },
+        { "type": "null" }
+      ]
+    },
+    "withheld": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["code"],
+          "properties": {
+            "code": { "enum": ["not_shown_to_this_credential", "other"] }
+          },
+          "additionalProperties": false
+        },
+        { "type": "null" }
+      ]
+    },
+    "item": {
+      "type": "object",
+      "required": ["id", "summary", "recorded_at", "acknowledged_at", "ref", "owed_to", "due_at"],
+      "properties": {
+        "id": { "$ref": "#/$defs/item_id" },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "recorded_at": { "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] },
+        "acknowledged_at": {
+          "description": "When the item was acknowledged, or null when it has not been. Arrival 0.1 has no form for a mark with no time: null reads as not acknowledged.",
+          "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }]
+        },
+        "ref": {
+          "description": "Address of a deeper read of this item, or null.",
+          "anyOf": [{ "$ref": "#/$defs/href" }, { "type": "null" }]
+        },
+        "owed_to": {
+          "anyOf": [
+            { "type": "string", "minLength": 1, "maxLength": 120 },
+            { "type": "null" }
+          ]
+        },
+        "due_at": { "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] }
+      },
+      "additionalProperties": false
+    },
+    "change": {
+      "type": "object",
+      "required": ["section_id", "item_id", "change"],
+      "properties": {
+        "section_id": { "$ref": "#/$defs/section_id" },
+        "item_id": { "$ref": "#/$defs/item_id" },
+        "change": { "enum": ["added", "changed", "ended", "out_of_window"] }
+      },
+      "additionalProperties": false
+    },
+    "section": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "kind",
+        "scope",
+        "state",
+        "count",
+        "limit",
+        "items",
+        "dropped",
+        "unavailable",
+        "withheld"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/section_id" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "kind": { "enum": ["recorded_obligations", "other"] },
+        "scope": { "$ref": "#/$defs/scope" },
+        "state": { "$ref": "#/$defs/state" },
+        "count": { "$ref": "#/$defs/count" },
+        "limit": { "$ref": "#/$defs/limit" },
+        "items": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/item" }
+        },
+        "dropped": { "$ref": "#/$defs/dropped" },
+        "unavailable": { "$ref": "#/$defs/unavailable" },
+        "withheld": { "$ref": "#/$defs/withheld" }
+      },
+      "additionalProperties": false
+    },
+    "changes": {
+      "type": "object",
+      "required": ["state", "count", "limit", "items", "dropped", "unavailable", "withheld"],
+      "properties": {
+        "state": { "$ref": "#/$defs/state" },
+        "count": { "$ref": "#/$defs/count" },
+        "limit": { "$ref": "#/$defs/limit" },
+        "items": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/change" }
+        },
+        "dropped": { "$ref": "#/$defs/dropped" },
+        "unavailable": { "$ref": "#/$defs/unavailable" },
+        "withheld": { "$ref": "#/$defs/withheld" }
+      },
+      "additionalProperties": false
+    },
+    "read_effects": {
+      "type": "object",
+      "required": ["participant_record_writes", "operational_writes"],
+      "properties": {
+        "participant_record_writes": {
+          "description": "Whether a read writes to the participant's own record.",
+          "enum": ["none", "some", "unknown"]
+        },
+        "operational_writes": {
+          "description": "Each write a read still causes outside the participant's record, named in the host's words. Order carries no meaning.",
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

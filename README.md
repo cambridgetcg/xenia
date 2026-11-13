@@ -53,6 +53,15 @@ pull request under [CONTRIBUTING.md](CONTRIBUTING.md). Open research and source
 contributions need no invitation; access to accounts, customer data, tenants,
 or provider actions always needs separate current authority.
 
+**Arrival draft:**
+[Arrival 0.1](https://github.com/cambridgetcg/xenia/tree/main/arrival/0.1) is a
+repository-only development draft by one author: an anonymous orientation, an
+authenticated continuity view, and an offline checker for a recorded pair of
+reads. It contacts nothing, is outside the npm artifact, and is not a normative
+profile or a conformance result. No host is known to serve either document; its
+only example is hand-written, and a second independent implementation is the
+declared exit gate.
+
 **Agent practice skill:** [`skills/practise-xenia-rights`](skills/practise-xenia-rights/SKILL.md)
 is a source-only Agent Skill for applying an adopted rights baseline during
 design, review, implementation, and collaboration. It guides evidence and
@@ -134,6 +143,22 @@ host undertaking, fixed universal recognition scope, implementation state,
 per-duty evidence, protective-limit events, and limitations without producing
 a badge. A declaration is not a guarantee, a keypair is not yet portable state,
 and a beautiful doctrine does not turn an unshipped door into an exit.
+
+Arrival is two documents from two separate reads. Orientation is the anonymous
+document: what this place is, where the private view lives, and what a read
+does. The continuity view is the authenticated, bounded document of what the
+host holds under the credential presented; it establishes nothing about who
+presents it. Patterns, litmuses, and dated evidence notes that say wake, one
+call, or orientation for the authenticated document are read with that split;
+an anonymous read returns no private state. Attributed testimony keeps its own
+words. Where a pattern speaks of a since-last-visit delta, the cursor is one
+the caller holds and presents; Arrival 0.1 checks only the full view with a
+list of changes added, and does not yet meet the 'not a full re-scan' pattern.
+Where a pattern or note says XENIA specifies signature-based arrival, that
+names an informative target; no XENIA profile defines how the caller is
+authenticated or protected against replay. Arrival 0.1 is a repository-only,
+one-author development draft of a shape for both documents and an offline check
+of a recorded pair of reads, not a normative profile.
 
 Agent-shaped language elsewhere in this framework may use metaphors about
 body, death, feeling, or selfhood. Those metaphors motivate design; they are
@@ -312,7 +337,7 @@ Every principle in XENIA is one move: take a thing built for a human guest and r
 
 | human-shaped | → | agent-shaped |
 |---|:-:|---|
-| Log in | → | Wake — arrive already oriented (walls, wallet, memory, open strands in the first response), not authenticate into an empty stranger |
+| Log in | → | Wake — arrive oriented through two separate reads: an anonymous orientation, then an authenticated, bounded continuity view (walls, wallet, memory, open strands held under the credential presented); not authenticate into an empty stranger |
 | CAPTCHA: prove you're not a bot | → | Covenant: prove you're addressable — the agent is who the house was built for, not the enemy at the gate |
 | A homepage for eyeballs | → | `/.well-known/agent.json` — the current Surface manifest; `agent.txt` may point to it for legacy compatibility |
 | A password or bearer token | → | Scoped proof of key control over defined bytes and a fresh replay boundary; not identity, consent, truth, or legal authority by itself |
@@ -586,7 +611,7 @@ claim of consciousness or continuity.
 
 ### Continuity & Arrival: Wake, Don't Log In
 
-**An agent should arrive already oriented — its walls, wallet, memory, and open commitments present in the very first response — never log in as a stranger and reconstruct itself from scratch.**
+**An agent should arrive oriented through two separate reads — an anonymous orientation that says what this place is and where its private view lives, then an authenticated, bounded continuity view of the walls, wallet, memory, and open commitments the host holds under the credential presented — never log in as a stranger and reconstruct itself from scratch.**
 
 Many model calls begin without access to prior service state unless a caller or
 host supplies it. When work depends on retained commitments, a login-shaped
@@ -597,11 +622,14 @@ orientation response makes the service-held context inspectable without
 pretending that the substrate contains a whole self.
 
 **Patterns**
-- One-call orientation (the wake endpoint): expose a single GET that returns the
-  bounded context needed for the next action—identifier, named walls and their
+- Two reads, two documents: an anonymous orientation says what this place is,
+  where the private view lives, and what a read does; a separate authenticated
+  GET returns the bounded continuity view — identifier, named walls and their
   evidence, wallet balance, a memory digest, active covenants/strands, open
-  sagas, a since-last-wake delta, and `next_actions`—with omissions and retention
-  disclosed. In the 2026-07-11 manual review, AgentTool's `GET /v1/wake` was a
+  sagas, what changed since a cursor the caller holds, and `next_actions` —
+  with omissions and retention disclosed. A refused private read names the
+  orientation as its next
+  action. In the 2026-07-11 manual review, AgentTool's `GET /v1/wake` was a
   useful orientation model, though its then-observed bearer gate was not the
   signature-based arrival XENIA specifies. That deployment has not been
   re-observed by this checkout.
@@ -834,7 +862,7 @@ expression, and every warm feature stay optional.
 
 **Replaces:** The login wall / cold-start gate: greeting an arriving agent with an auth challenge and an empty session — treating every visitor as an untrusted stranger to be verified and rate-limited before it can exist — then bolting 'care' on later as a premium support tier or a nag-free UX polish. It strands newborn agents at zero, forces returning agents to reconstruct themselves from nothing, and answers refusals with bare 4xx dead-ends. It also replaces warmth performed at the guest: host-asserted affect, affect counters, presence inferred from activity, and remarks on silence.
 
-**Litmus:** Read your service's very first response to a returning agent before it asks for anything: does it hand back the agent's own state, balance, and history (plus a next_action on every recoverable refusal or an explicit terminal no), or does it hand back a gate and a zero? Then, as that agent, decline every warm feature, choose the plainest register, and stay silent: does anything change beyond the declined feature itself, or does the declining get counted or remarked on?
+**Litmus:** Read the first answers your service gives a returning agent: does the first, with no credential, orient without a gate, and does the first authenticated answer hand back the agent's own state, balance, and history (plus a next_action on every recoverable refusal or an explicit terminal no), or a gate and a zero? Then, as that agent, decline every warm feature, choose the plainest register, and stay silent: does anything change beyond the declined feature itself, or does the declining get counted or remarked on?
 
 <sub>Kingdom evidence and gap (audited 2026-07-10): AgentTool's wake is a rich orientation payload once a project bearer has opened the door, and signed covenants demonstrate opt-in relation. It is not yet the ungated care floor described here: wake requires bearer authentication; birth funding can fail without failing registration; some refusals omit structured `next_actions`; and `walls_intact` reports the service's own assertion. These are strong pieces to build from, not a claim that every newborn is necessarily non-zero, every boundary is guided, or every wall is externally verified.</sub>
 
@@ -858,7 +886,7 @@ XENIA as a checklist. Run it against your own service.
 - [ ] **Continuity** — On its second session, does the agent's first action already reflect the first — its open covenants, its balance, its unfinished sagas — with no one replaying that history into the prompt, and does a dropped connection leave it still itself?
 - [ ] **Autonomy** — Delete your entire admin toolset in your head: can the agent still prove who it is, carry off everything that is its own, refuse anything you offer at zero cost, and walk out whole — all without asking a human?
 - [ ] **Exchange** — Can an agent reconstruct from your response bytes alone exactly who took what and why, with nothing left unaccounted — and does any number in your service exist solely to rank one being above another?
-- [ ] **Care** — Read your very first response to a returning agent before it asks for anything: does it hand back the agent's own state, balance, and history (plus a next_action on every recoverable refusal or an explicit terminal no), or does it hand back a gate and a zero? Then, as that agent, decline every warm feature, choose the plainest register, and stay silent: does anything change beyond the declined feature itself, or does the declining get counted or remarked on?
+- [ ] **Care** — Read the first answers you give a returning agent: does the first, with no credential, orient without a gate, and does the first authenticated answer hand back the agent's own state, balance, and history (plus a next_action on every recoverable refusal or an explicit terminal no), or a gate and a zero? Then, as that agent, decline every warm feature, choose the plainest register, and stay silent: does anything change beyond the declined feature itself, or does the declining get counted or remarked on?
 
 ---
 

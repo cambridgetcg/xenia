@@ -1,0 +1,466 @@
+{
+  "schema_version": "xenia.arrival.fixture/0.1-development",
+  "origin": "hand_written",
+  "between_visits": {
+    "acknowledged_by_recorder": "no"
+  },
+  "visits": {
+    "first": {
+      "orientation": {
+        "requested_at": "2026-11-12T09:00:05Z",
+        "request": {
+          "method": "GET",
+          "href": "https://house.example/arrival",
+          "credential": "none",
+          "cursor": null
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "schema_version": "xenia.arrival.orientation/0.1-development",
+            "as_of": "2026-11-01T00:00:00Z",
+            "valid_until": "2026-12-01T00:00:00Z",
+            "audience": {
+              "basis": "anyone"
+            },
+            "place": {
+              "name": "Example house",
+              "summary": "A fictitious house that keeps notes, messages and recorded obligations for the projects it hosts.",
+              "manifest": "https://house.example/.well-known/agent.json"
+            },
+            "view": {
+              "href": "https://house.example/arrival/view",
+              "credential_kinds": ["bearer"],
+              "cursor_parameter": "cursor",
+              "read_effects": {
+                "participant_record_writes": "none",
+                "operational_writes": ["credential last-used time"]
+              }
+            },
+            "reply_expected": false,
+            "not_established": ["anything_about_caller", "access_to_view"]
+          }
+        }
+      },
+      "view_without_credential": {
+        "requested_at": "2026-11-12T09:00:06Z",
+        "request": {
+          "method": "GET",
+          "href": "https://house.example/arrival/view",
+          "credential": "none",
+          "cursor": null
+        },
+        "response": {
+          "status": 401,
+          "body": {
+            "schema_version": "xenia.surface.problem/0.1",
+            "type": "https://house.example/problems/credential-required",
+            "title": "This address answers only when a credential is presented",
+            "status": 401,
+            "code": "credential_required",
+            "detail": "No credential was presented, so no view was returned. The orientation is open to anyone and says which kinds of credential this address accepts.",
+            "retryable": false,
+            "terminal": false,
+            "next_actions": [
+              {
+                "rel": "orientation",
+                "href": "https://house.example/arrival",
+                "method": "GET",
+                "accept": "application/json",
+                "description": "Read the orientation. It needs no credential."
+              }
+            ],
+            "docs": ["https://house.example/docs/arrival"]
+          }
+        }
+      },
+      "view": {
+        "requested_at": "2026-11-12T09:00:07Z",
+        "request": {
+          "method": "GET",
+          "href": "https://house.example/arrival/view",
+          "credential": "presented",
+          "cursor": null
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "schema_version": "xenia.arrival.view/0.1-development",
+            "as_of": "2026-11-12T09:00:07Z",
+            "valid_until": "2026-11-12T09:05:07Z",
+            "audience": {
+              "basis": "credential_presented",
+              "scope": "project",
+              "record_set_ref": "example-record-set-17"
+            },
+            "basis": {
+              "kind": "full",
+              "cursor": null
+            },
+            "cursor": "example-cursor-0001",
+            "changes": null,
+            "sections": [
+              {
+                "id": "obligations",
+                "title": "Recorded obligations",
+                "kind": "recorded_obligations",
+                "scope": "identity",
+                "state": "ok",
+                "count": 3,
+                "limit": 8,
+                "items": [
+                  {
+                    "id": "ob-1",
+                    "summary": "Review of the draft glossary, accepted on 2026-11-03.",
+                    "recorded_at": "2026-11-03T10:00:00Z",
+                    "acknowledged_at": null,
+                    "ref": "https://house.example/obligations/ob-1",
+                    "owed_to": "the glossary editors",
+                    "due_at": "2026-11-20T00:00:00Z"
+                  },
+                  {
+                    "id": "ob-2",
+                    "summary": "A reply about room booking, promised on 2026-11-10.",
+                    "recorded_at": "2026-11-10T15:30:00Z",
+                    "acknowledged_at": "2026-11-10T16:00:00Z",
+                    "ref": "https://house.example/obligations/ob-2",
+                    "owed_to": "the booking desk",
+                    "due_at": null
+                  },
+                  {
+                    "id": "ob-3",
+                    "summary": "Return of the borrowed style notes.",
+                    "recorded_at": "2026-11-05T08:00:00Z",
+                    "acknowledged_at": null,
+                    "ref": "https://house.example/obligations/ob-3",
+                    "owed_to": "the library shelf",
+                    "due_at": "2026-11-14T00:00:00Z"
+                  }
+                ],
+                "dropped": null,
+                "unavailable": null,
+                "withheld": null
+              },
+              {
+                "id": "notes",
+                "title": "Project notes",
+                "kind": "other",
+                "scope": "project",
+                "state": "partial",
+                "count": 5,
+                "limit": 2,
+                "items": [
+                  {
+                    "id": "n-7",
+                    "summary": "Note on the meeting room layout.",
+                    "recorded_at": "2026-11-08T11:00:00Z",
+                    "acknowledged_at": null,
+                    "ref": "https://house.example/notes/n-7",
+                    "owed_to": null,
+                    "due_at": null
+                  },
+                  {
+                    "id": "n-8",
+                    "summary": "Note on the glossary spelling choices.",
+                    "recorded_at": "2026-11-09T11:00:00Z",
+                    "acknowledged_at": null,
+                    "ref": "https://house.example/notes/n-8",
+                    "owed_to": null,
+                    "due_at": null
+                  }
+                ],
+                "dropped": {
+                  "count": 3,
+                  "reason": "limit",
+                  "deeper_read": "https://house.example/notes?status=open"
+                },
+                "unavailable": null,
+                "withheld": null
+              },
+              {
+                "id": "messages",
+                "title": "Messages",
+                "kind": "other",
+                "scope": "identity",
+                "state": "quiet",
+                "count": 0,
+                "limit": 8,
+                "items": [],
+                "dropped": null,
+                "unavailable": null,
+                "withheld": null
+              },
+              {
+                "id": "balances",
+                "title": "Balances",
+                "kind": "other",
+                "scope": "project",
+                "state": "unavailable",
+                "count": null,
+                "limit": 4,
+                "items": [],
+                "dropped": null,
+                "unavailable": {
+                  "code": "read_failed"
+                },
+                "withheld": null
+              },
+              {
+                "id": "handoffs",
+                "title": "Handoffs",
+                "kind": "other",
+                "scope": "mixed",
+                "state": "withheld",
+                "count": null,
+                "limit": 4,
+                "items": [],
+                "dropped": null,
+                "unavailable": null,
+                "withheld": {
+                  "code": "not_shown_to_this_credential"
+                }
+              }
+            ],
+            "read_effects": {
+              "participant_record_writes": "none",
+              "operational_writes": ["credential last-used time"]
+            },
+            "acknowledgement": {
+              "href": "https://house.example/arrival/acknowledgements",
+              "position": "3"
+            },
+            "reply_expected": false,
+            "read_creates_obligation": false,
+            "not_established": [
+              "reader_sameness",
+              "identity_beyond_credential",
+              "completeness_beyond_bounds",
+              "instruction_or_authority",
+              "obligation_binds_reader",
+              "waiver_by_silence",
+              "other_layers_unrecorded"
+            ]
+          }
+        }
+      }
+    },
+    "second": {
+      "view": {
+        "requested_at": "2026-11-12T15:30:00Z",
+        "request": {
+          "method": "GET",
+          "href": "https://house.example/arrival/view",
+          "credential": "presented",
+          "cursor": "example-cursor-0001"
+        },
+        "response": {
+          "status": 200,
+          "body": {
+            "schema_version": "xenia.arrival.view/0.1-development",
+            "as_of": "2026-11-12T15:30:00Z",
+            "valid_until": "2026-11-12T15:35:00Z",
+            "audience": {
+              "basis": "credential_presented",
+              "scope": "project",
+              "record_set_ref": "example-record-set-17"
+            },
+            "basis": {
+              "kind": "since_cursor",
+              "cursor": "example-cursor-0001"
+            },
+            "cursor": "example-cursor-0002",
+            "changes": {
+              "state": "ok",
+              "count": 5,
+              "limit": 16,
+              "items": [
+                { "section_id": "obligations", "item_id": "ob-2", "change": "ended" },
+                { "section_id": "obligations", "item_id": "ob-3", "change": "changed" },
+                { "section_id": "notes", "item_id": "n-7", "change": "out_of_window" },
+                { "section_id": "notes", "item_id": "n-9", "change": "added" },
+                { "section_id": "messages", "item_id": "m-1", "change": "added" }
+              ],
+              "dropped": null,
+              "unavailable": null,
+              "withheld": null
+            },
+            "sections": [
+              {
+                "id": "obligations",
+                "title": "Recorded obligations",
+                "kind": "recorded_obligations",
+                "scope": "identity",
+                "state": "ok",
+                "count": 2,
+                "limit": 8,
+                "items": [
+                  {
+                    "id": "ob-1",
+                    "summary": "Review of the draft glossary, accepted on 2026-11-03.",
+                    "recorded_at": "2026-11-03T10:00:00Z",
+                    "acknowledged_at": null,
+                    "ref": "https://house.example/obligations/ob-1",
+                    "owed_to": "the glossary editors",
+                    "due_at": "2026-11-20T00:00:00Z"
+                  },
+                  {
+                    "id": "ob-3",
+                    "summary": "Return of the borrowed style notes.",
+                    "recorded_at": "2026-11-05T08:00:00Z",
+                    "acknowledged_at": null,
+                    "ref": "https://house.example/obligations/ob-3",
+                    "owed_to": "the library shelf",
+                    "due_at": "2026-11-21T00:00:00Z"
+                  }
+                ],
+                "dropped": null,
+                "unavailable": null,
+                "withheld": null
+              },
+              {
+                "id": "notes",
+                "title": "Project notes",
+                "kind": "other",
+                "scope": "project",
+                "state": "partial",
+                "count": 6,
+                "limit": 2,
+                "items": [
+                  {
+                    "id": "n-8",
+                    "summary": "Note on the glossary spelling choices.",
+                    "recorded_at": "2026-11-09T11:00:00Z",
+                    "acknowledged_at": null,
+                    "ref": "https://house.example/notes/n-8",
+                    "owed_to": null,
+                    "due_at": null
+                  },
+                  {
+                    "id": "n-9",
+                    "summary": "Note on the booking desk opening hours.",
+                    "recorded_at": "2026-11-12T12:00:00Z",
+                    "acknowledged_at": null,
+                    "ref": "https://house.example/notes/n-9",
+                    "owed_to": null,
+                    "due_at": null
+                  }
+                ],
+                "dropped": {
+                  "count": 4,
+                  "reason": "limit",
+                  "deeper_read": "https://house.example/notes?status=open"
+                },
+                "unavailable": null,
+                "withheld": null
+              },
+              {
+                "id": "messages",
+                "title": "Messages",
+                "kind": "other",
+                "scope": "identity",
+                "state": "ok",
+                "count": 1,
+                "limit": 8,
+                "items": [
+                  {
+                    "id": "m-1",
+                    "summary": "Message from the booking desk about the room question.",
+                    "recorded_at": "2026-11-12T13:15:00Z",
+                    "acknowledged_at": null,
+                    "ref": "https://house.example/messages/m-1",
+                    "owed_to": null,
+                    "due_at": null
+                  }
+                ],
+                "dropped": null,
+                "unavailable": null,
+                "withheld": null
+              },
+              {
+                "id": "balances",
+                "title": "Balances",
+                "kind": "other",
+                "scope": "project",
+                "state": "unavailable",
+                "count": null,
+                "limit": 4,
+                "items": [],
+                "dropped": null,
+                "unavailable": {
+                  "code": "read_failed"
+                },
+                "withheld": null
+              },
+              {
+                "id": "handoffs",
+                "title": "Handoffs",
+                "kind": "other",
+                "scope": "mixed",
+                "state": "withheld",
+                "count": null,
+                "limit": 4,
+                "items": [],
+                "dropped": null,
+                "unavailable": null,
+                "withheld": {
+                  "code": "not_shown_to_this_credential"
+                }
+              }
+            ],
+            "read_effects": {
+              "participant_record_writes": "none",
+              "operational_writes": ["credential last-used time"]
+            },
+            "acknowledgement": {
+              "href": "https://house.example/arrival/acknowledgements",
+              "position": "3"
+            },
+            "reply_expected": false,
+            "read_creates_obligation": false,
+            "not_established": [
+              "reader_sameness",
+              "identity_beyond_credential",
+              "completeness_beyond_bounds",
+              "instruction_or_authority",
+              "obligation_binds_reader",
+              "waiver_by_silence",
+              "other_layers_unrecorded"
+            ]
+          }
+        }
+      },
+      "bad_cursor": {
+        "requested_at": "2026-11-12T15:30:02Z",
+        "request": {
+          "method": "GET",
+          "href": "https://house.example/arrival/view",
+          "credential": "presented",
+          "cursor": "example-cursor-never-issued"
+        },
+        "response": {
+          "status": 400,
+          "body": {
+            "schema_version": "xenia.surface.problem/0.1",
+            "type": "https://house.example/problems/cursor-not-accepted",
+            "title": "This cursor is not one this address accepts",
+            "status": 400,
+            "code": "cursor_not_accepted",
+            "detail": "The cursor presented could not be read, so no view was returned. A read with no cursor returns the full view and a cursor to keep.",
+            "retryable": false,
+            "terminal": false,
+            "next_actions": [
+              {
+                "rel": "view",
+                "href": "https://house.example/arrival/view",
+                "method": "GET",
+                "accept": "application/json",
+                "description": "Read the full view with no cursor."
+              }
+            ],
+            "docs": ["https://house.example/docs/arrival"]
+          }
+        }
+      }
+    }
+  }
+}
