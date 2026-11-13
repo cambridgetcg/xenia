@@ -6,14 +6,12 @@ Status: **development draft**
 
 - Written by one author. No second implementation exists.
 - No host is known to serve either document.
-- The example, [examples/two-visits.json](examples/two-visits.json), and the
-  cases in [fixtures/cases.json](fixtures/cases.json) were written by hand.
-  No host sent them.
-- [check.mjs](check.mjs) is the only checker.
-  [tests/arrival-0.1.test.mjs](../../tests/arrival-0.1.test.mjs) runs it over
-  the example and every case, and they agree. The same author wrote the
-  checker, the cases and their expected outcomes, so that agreement is not
-  independent evidence.
+- The [example](examples/two-visits.json) and the cases in
+  [fixtures/cases.json](fixtures/cases.json) were written by hand.
+- [check.mjs](check.mjs) is the only checker. Its
+  [tests](../../tests/arrival-0.1.test.mjs) run it over the example and every
+  case, and they agree. The same author wrote the checker, the cases and their
+  expected outcomes, so that agreement is not independent evidence.
 - This directory is outside the npm package, its exports, the agent-first kit,
   and the `normative_profiles` list in [spec.json](../../spec.json). Its
   schema identifiers are development URNs, not release identities.
@@ -34,17 +32,16 @@ check of a recorded fixture compares. It places no requirement on any host.
 | Rule | Source |
 |---|---|
 | 1, 5 | [AGENT-FEEDBACK.md](../../AGENT-FEEDBACK.md), the 2026-07-11 report, "What I would change first", item 5 |
-| 2 | root [README.md](../../README.md), Continuity & Arrival, the patterns "A look, not an event" and "A welcome, not a work order" |
+| 2, 6 | root [README.md](../../README.md), Continuity & Arrival: "A look, not an event" (2) and "A welcome, not a work order" (2, 6) |
 | 3 | [WEBSITE-ROLLOUT.md](../../WEBSITE-ROLLOUT.md), website integration gates 2 and 3 |
 | 4 | the same list, gate 1 |
-| 6 | root README, "A welcome, not a work order" |
 | 7 | [AGENTS.md](../../AGENTS.md): report evidence, claims, and unknowns separately; rollout gate 4 |
 
-The root README calls this arrival a wake; this draft does not use the word,
-because, as the 2026-07-11 report says, it has stood for both a public
-orientation and an authenticated read. The shapes, the state `withheld`, and
-the choice that a cursor annotates a full view are this draft's own. No text
-or code from any host was copied into this directory.
+The root README calls this arrival a wake. This draft does not use the word:
+the 2026-07-11 report says it has stood for both a public orientation and an
+authenticated read. The shapes, the state `withheld`, and the choice that a
+cursor annotates a full view are this draft's own. No text or code from any
+host was copied into this directory.
 
 ## The seven rules
 
@@ -125,13 +122,11 @@ check `R3.STATES`.
 
 | What | Bound |
 |---|---|
-| sections | 1 to 16 |
+| sections; `operational_writes` | 1 to 16; 0 to 8 entries |
 | envelope `limit`; items listed | 1 to 32; 0 to 32 |
 | `summary`, `place.summary` | 1 to 300 characters |
 | `title`, `place.name`, `owed_to`, each operational write | 1 to 120 characters |
 | cursor; href | 1 to 1024; up to 2048 characters |
-| `position`, `record_set_ref` | 1 to 256 characters |
-| `operational_writes` | 0 to 8 entries |
 | fixture file | 262,144 bytes |
 | view; orientation | 65,536; 8,192 bytes |
 
@@ -164,18 +159,22 @@ An orientation that lists a token says it does not establish:
 ## The fixture
 
 [fixture.schema.json](fixture.schema.json) records up to five exchanges, each
-optional: `visits.first.orientation`, `visits.first.view_without_credential`,
-`visits.first.view`, `visits.second.view` and `visits.second.bad_cursor`.
+optional: `visits.first.{orientation, view_without_credential, view}` and
+`visits.second.{view, bad_cursor}`.
 
 Each is `{requested_at, request: {method: "GET", href, credential:
 "none"|"presented", cursor|null}, response: {status, body}}`. `body` is any
 object or null, so a malformed host document is a failed check, not a broken
-fixture. There is no slot for headers or for the credential. The second view
-can be a plain repeat read with no cursor.
+fixture. There is no slot for headers or for the credential.
 
-`origin` is `hand_written`, `host_bytes` or `projected_by_recorder`.
-`between_visits.acknowledged_by_recorder` is the recorder's own statement:
-`no`, `yes` or `not_stated`.
+No recorder exists. A house could record a fixture by making those five
+requests in that order, with a credential no one else uses, and keeping each
+status and parsed body. `origin` is `hand_written`, `host_bytes` (no body
+altered) or `projected_by_recorder`. `between_visits.acknowledged_by_recorder`
+is the recorder's own statement: `no`, `yes` or `not_stated`. The second view
+can be a plain repeat read with no cursor, but `checks_passed` needs the first
+view's cursor there, all five exchanges, that `no`, an unacknowledged item
+that comes back equal, and a named difference.
 
 "Second visit" means a later read. Nothing in a fixture establishes that one
 reader made both reads, or that time passed between them.
@@ -239,20 +238,20 @@ A result says, per check, whether the exchanges in the fixture agree with that
 check. Beyond the fixture's origin word, it copies no value from the fixture.
 It establishes none of the ten lines the schema fixes under `not_established`,
 which every result repeats. Among them: that a host sent the exchanges or
-behaves so now; that a read wrote nothing; who the reader is; and conformance,
-authority, consent, safety or a caller's inner state.
+behaves so now; and conformance, authority, consent, safety or a caller's
+inner state.
 
 `fixtures/cases.json` holds 167 cases, each a list of edits to the example
 with the outcome expected for every check, and 14 more built from recipes.
 
 ## Beside Surface, Work and Covenant
 
-- [Surface 0.1](../../surface/0.1/README.md) tests a public service from
-  outside with no credential, and says a pass is no proof of continuity.
-  Arrival reuses its problem shape and href pattern and changes nothing in
-  it. An Arrival result is not a Surface result.
-- [Work 0.1](../../work/0.1/README.md) records one finite piece of work;
-  Arrival records two reads. Its result shape and timestamp form are Work's.
+- [Surface 0.1](../../surface/0.1/README.md) tests a public service with no
+  credential, and says a pass is no proof of continuity. Arrival reuses its
+  problem shape and href pattern and changes nothing in it. An Arrival result
+  is not a Surface result.
+- [Work 0.1](../../work/0.1/README.md) records one finite piece of work.
+  Arrival's result shape and timestamp form are Work's.
 - [Covenant 0.1](../../covenant/0.1/README.md) states host duties. Arrival is
   not an adoption, and is not evidence for one.
 
@@ -275,8 +274,8 @@ Any normative, release, or adoption-evidence claim.
 - Is one code enough for a cursor that is malformed, expired, or issued under
   another credential?
 - Does `withheld` say too much, by naming a section the credential cannot see?
-- `audience.scope` and `record_set_ref` are the host's own account of what a
-  credential reaches. Nothing checks them.
+- `audience.scope` and `record_set_ref` are the host's own account. Nothing
+  checks that they are true.
 - Is deep equality the right meaning of "shown again unchanged" for a host
   whose items carry derived fields?
 
@@ -284,6 +283,6 @@ Any normative, release, or adoption-evidence claim.
 
 This draft does not leave draft status before a second implementation, written
 without reading `check.mjs`, reproduces the result word and all twenty
-outcomes for the example and for every case in `fixtures/cases.json`. No such
+outcomes for the example and every case in `fixtures/cases.json`. No such
 implementation exists. Meeting the gate would not make this a release; that is
 a separate maintainer decision.

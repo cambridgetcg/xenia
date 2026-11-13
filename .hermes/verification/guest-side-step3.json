@@ -1,0 +1,259 @@
+{
+  "scope": "Guest-side step 3 (Arrival 0.1): a repository-only development draft of an anonymous orientation and an authenticated continuity view, an offline checker for one recorded pair of reads with its cases and tests, and the wording that joins the root README and spec.json to that draft. Local runs on hand-written input only; no host was contacted, and nothing here is a conformance result.",
+  "step_began": "2026-11-12",
+  "observed_at": "2026-11-13",
+  "date_note": "The step's baseline and first commit are dated 2026-11-12. The gate totals, digests and read-through below were observed on 2026-11-13.",
+  "base_revision": "35c2d77b509c619e56645c20bedae00c638bdb00",
+  "head_before_record": "aaf37b2f42b882a7140dd3b58382ea6cfefa3238",
+  "earlier_commits_of_this_step": [
+    {
+      "task": "profile-and-schemas",
+      "commit": "476267f74586dad2de07dceabed79434542e365f"
+    },
+    {
+      "task": "checker-and-fixtures",
+      "commit": "aaf37b2f42b882a7140dd3b58382ea6cfefa3238"
+    }
+  ],
+  "gate": {
+    "npm_test": {
+      "command": "npm test",
+      "exit_code": 0,
+      "note": "npm test runs three test groups; totals per group in order",
+      "groups": [
+        {
+          "script": "test:library",
+          "tests": 294,
+          "pass": 287,
+          "fail": 0,
+          "skipped": 7,
+          "cancelled": 0
+        },
+        {
+          "script": "test:surface",
+          "tests": 47,
+          "pass": 47,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        },
+        {
+          "script": "test:observe",
+          "tests": 10,
+          "pass": 10,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        }
+      ],
+      "at_base_revision": [
+        {
+          "script": "test:library",
+          "tests": 238,
+          "pass": 231,
+          "fail": 0,
+          "skipped": 7,
+          "cancelled": 0
+        },
+        {
+          "script": "test:surface",
+          "tests": 47,
+          "pass": 47,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        },
+        {
+          "script": "test:observe",
+          "tests": 10,
+          "pass": 10,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        }
+      ],
+      "skip_explained": "The seven skipped tests are the ones skipped at the base revision: six opt-in tests of the real Local Starter package and one optional Skills provider test. None is an Arrival test."
+    },
+    "arrival_tests": {
+      "command": "npm run test:arrival",
+      "exit_code": 0,
+      "tests": 56,
+      "pass": 56,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "note": "tests/arrival-0.1.test.mjs (47) and tests/arrival-terms.test.mjs (9); both also run inside npm test through test:library."
+    },
+    "render_checks": {
+      "node tools/render-covenant.mjs --check": 0,
+      "node tools/render-adoption-schema.mjs --check": 0
+    },
+    "pack_check": {
+      "command": "npm run pack:check",
+      "exit_code": 0,
+      "packed_paths": 68,
+      "packed_paths_at_base_revision": 68,
+      "same_path_list_as_base_revision": true,
+      "no_packed_path_under": "arrival/",
+      "packed_files_whose_size_differs_from_base_revision": {
+        "README.md": {
+          "bytes_at_base": 87394,
+          "bytes_now": 89569,
+          "why": "the wording and pointer of this step"
+        },
+        "spec.json": {
+          "bytes_at_base": 89087,
+          "bytes_now": 90763,
+          "why": "the wording of this step and interpretation.arrival_terms"
+        },
+        "package.json": {
+          "bytes_at_base": 3624,
+          "bytes_now": 3684,
+          "why": "one script, test:arrival"
+        }
+      },
+      "note": "The list of packed paths is unchanged. The bytes of three packed files are not: a package built from this tree is not byte-identical to one built from the base revision. Version, exports and the files list are unchanged, and nothing was published."
+    }
+  },
+  "wording": {
+    "spec_json_paths": [
+      {
+        "change": "changed",
+        "path": "/dimensions/4/patterns/0"
+      },
+      {
+        "change": "changed",
+        "path": "/dimensions/4/principle"
+      },
+      {
+        "change": "changed",
+        "path": "/dimensions/7/litmus"
+      },
+      {
+        "change": "added",
+        "path": "/interpretation/arrival_terms"
+      },
+      {
+        "change": "changed",
+        "path": "/the_shift/0/to"
+      },
+      {
+        "change": "changed",
+        "path": "/the_test/7"
+      }
+    ],
+    "readme_lines": {
+      "removed": 8,
+      "added": 36
+    },
+    "spec_json_lines": {
+      "removed": 5,
+      "added": 6
+    },
+    "dated_notes_compared_with_base_revision": {
+      "readme_sub_notes": 15,
+      "readme_sub_notes_sha256": "7763a6db3fcc26b50300a78e99a1b02414265d06a7c54412a7e2a6f374d327a2",
+      "spec_kingdom_evidence_entries": 72,
+      "identical": true
+    },
+    "not_edited_since_base_revision": [
+      "FROM-THE-INSIDE.md",
+      "CONFORMANCE.md",
+      "LICENSES.md",
+      "STATE.md"
+    ],
+    "left_in_their_older_words": [
+      "README.md and spec.json, Discovery & Addressing pattern: 'Make one endpoint the keystone that returns full orientation in a single GET', with identity and wallet in the response",
+      "README.md and spec.json, Legibility & Content Negotiation pattern: 'Make the arrival call the keystone: a single content-negotiated GET'",
+      "README.md and spec.json, Care as Ground principle: 'arrive already known, already provisioned, and already oriented'",
+      "CONFORMANCE.md, Continuity & Arrival line: 'wake it (hand back its context)'"
+    ],
+    "left_note": "The two patterns are read through interpretation.arrival_terms, which names patterns, litmuses and dated notes. That rule does not name principles, and CONFORMANCE.md is outside spec.json and its README mirror."
+  },
+  "draft_readme": {
+    "path": "arrival/0.1/README.md",
+    "bytes": 16374,
+    "pinned_maximum_bytes": 16384,
+    "made_room_for_the_recording_note_by": [
+      "shorter link text for the example and the tests",
+      "one table row for rules 2 and 6, which cite the same root README patterns",
+      "operational_writes moved into the sections row of the bounds table",
+      "the bounds of position and record_set_ref removed from the table (both are in view.schema.json)",
+      "'No host sent them' removed after 'written by hand'",
+      "two of the four clauses removed from the sentence that follows 'which every result repeats': 'that a read wrote nothing' and 'who the reader is' (both are in result.schema.json and in every result)",
+      "'from outside' and 'Arrival records two reads' removed from the Surface and Work lines",
+      "the slot names written in brace form",
+      "'of what a credential reaches' removed from the open question on audience.scope and record_set_ref (it is in view.schema.json), and 'Nothing checks them' made 'Nothing checks that they are true'",
+      "rewordings that drop no fact in the sentence on the two-meaning word and in the exit gate",
+      "the sentence on a plain repeat read moved into the recording note"
+    ]
+  },
+  "sha256": {
+    "README.md": "6bb1a19cd5f43f2742d7e9507926f6e4fb28d61387e27b8e7be9bd4c6a4108aa",
+    "arrival/0.1/README.md": "27c6fb308d04b63863c3b58aadc7adf02eacd96d6a736b90f578198603cf6a42",
+    "arrival/0.1/check.mjs": "f3401a34b116e909c04144923d87113592c8554e88d0b439934c9e017afb6f34",
+    "arrival/0.1/examples/two-visits.json": "ac930630118bcfe9e5de3bffb7c392e4786470bc643d40444f65e77ab60e35ae",
+    "arrival/0.1/fixture.schema.json": "af5038841f6fc2fc9a748ec714786bf2485c22b8eb7ef0632368060fe806d7ce",
+    "arrival/0.1/fixtures/cases.json": "d9f2d0fa76d9abd72e4d82bcf45e23a7cdf2daafad8b2b73f9e46d69d808217f",
+    "arrival/0.1/orientation.schema.json": "ac4674ce346103f2c5daba8fe63f23eb134cc1a7ded623a9bf7f779e20f727d8",
+    "arrival/0.1/result.schema.json": "e88ede3740f419df1a18f3cda783d8c6cc7284351ef692fe13fe7130b1e45bc7",
+    "arrival/0.1/view.schema.json": "7cdb8e8022b464d782da855644556aefaf9ff22674cd356c3245491feb0e5cfd",
+    "package.json": "7f313b152ebb6ac5158aa71a930705fc6d4241ec07c8421fe5cc1776034694b7",
+    "spec.json": "4bb733ef4884ddfba0a858ac7b81fed8e25a8e5b56002031aabaac68150a8d40",
+    "tests/arrival-0.1.test.mjs": "45b7c63b16e4ec4564deb5ff730e3a46fcb5af7bcd3bc1e3578606448973fbc2",
+    "tests/arrival-terms.test.mjs": "51006ff645689ce00f11e9ff0deb23865ba3accc083d9b7edd7e851acfe211bb"
+  },
+  "read_through": {
+    "by": "the author of this step, once as an arriving agent and once as a host implementer; no outside reader has tried",
+    "an_arriving_agent_would_have_to_guess": [
+      "where an orientation is: nothing says how its address is found; the orientation names a manifest, and nothing names the orientation",
+      "how to present a credential: credential_kinds holds the host's own labels and is checked for shape only",
+      "how to send a cursor: cursor_parameter names a query parameter, with no encoding or joining rule, and may be null while the view still hands back a cursor; no check reads it",
+      "what a passed valid_until means for the reader: no clock is read, and a document already past it when requested passes",
+      "what the four scope words, the dropped reasons, the unavailable and withheld codes, and 'window' mean: they are listed, not explained; ended and out_of_window are told apart only by a contradiction rule",
+      "whether ref, deeper_read and the acknowledgement address take the same credential, and what reading them writes",
+      "what reading the orientation itself writes: it declares the view's read effects, not its own",
+      "what a credential the host does not accept is answered with: only a request with no credential is described",
+      "what to do with acknowledgement.position, and who set an item's acknowledged_at",
+      "which cursor to keep after a second read, and whether an older one still works",
+      "whether the order of sections or items means anything: no check compares order",
+      "how to read a typed value such as a balance: an item is a line of text, times and addresses, and every section but one has kind other"
+    ],
+    "a_host_implementer_would_have_to_guess": [
+      "that addresses are compared exactly as written: a trailing slash or a letter case on the orientation's view.href or on a next action fails a check, and the README defines equality for JSON only",
+      "what cursor_parameter null is for: a view with a null cursor fails R4.CURSOR whatever the orientation says",
+      "where next actions go: the root README pattern lists next_actions in the continuity view, and the view is closed and has no such field",
+      "what a host with no recorded obligations serves: exactly one recorded_obligations section is needed, and which state it reports is not said",
+      "what counts as the participant's record, and that operational_writes are compared in order across all three documents",
+      "whether a change to an item outside the listed part of a partial section is named in changes: the checker neither asks for it nor contradicts it",
+      "how long valid_until runs: a valid_until equal to as_of passes",
+      "that record_set_ref has to be the same on both reads for the pair to be compared at all",
+      "which 4xx status to use for each refusal, and the media type and cache headers of both documents, which matter for a private view",
+      "what makes a cursor bad enough to refuse: malformed, expired, or issued under another credential share one code",
+      "how to record a house whose own addresses carry a query key named like a credential: unaltered, it fails I.NO_CREDENTIAL",
+      "how a recording comes to hold a named difference and an equal unacknowledged item: something has to change between the reads, and a mark moved by any other holder of the credential counts against the host"
+    ],
+    "a_second_implementation_would_have_to_guess": [
+      "that 'unacknowledged' means acknowledged_at is null: the README does not say so, though cases that depend on it would show a wrong guess",
+      "that a null acknowledgement counts as a null position: not stated, and no case has one read with null and the other with an object",
+      "that addresses are compared exactly as written: not stated, and no case has two addresses that differ only by a trailing slash or a letter case"
+    ]
+  },
+  "not_established": [
+    "that any host serves either document, or sent any fixture: the example and every case are hand-written",
+    "that a second implementation exists or would agree: the exit gate is unmet, and the checker, the cases, their expected outcomes and the tests have one author",
+    "that the example and the cases fix every behaviour of check.mjs: the last two points listed for a second implementation are held by no case, so an implementation could meet the exit gate and still differ there",
+    "that an agent or a host other than the author can use the draft without guessing: the read-through is the author's own",
+    "that the root README link resolves: it names the main branch, and this branch is neither pushed nor merged",
+    "that a package built from this tree is byte-identical to one built from the base revision: the path list is; three files are not",
+    "that the rewording leaves no one-call reading: the four places listed under wording keep their older words",
+    "behaviour on any machine but the one macOS arm64 machine, Node 24.18.1, these runs used",
+    "conformance, authority, identity, consent, safety, or anything about a caller's inner state"
+  ],
+  "process_notes": [
+    "Task 3 (wording, pointer, recording note): tests/arrival-terms.test.mjs was written first and run before any edit: 8 of its 9 tests failed. The ninth, on LICENSES.md, pins a sentence that was already true, and the last test stopped at its first assertion, before its checker assertions ran. Both were then seen to fail in a scratch copy, where 13 small changes (five to check.mjs, one to LICENSES.md, seven to the three documents) were each caught by these tests.",
+    "Tasks 1 and 2 report their own test order in their commit messages; task 2 was not test-first for most of the checker.",
+    "The wording strings are the agreed ones. Prose added to README.md is wrapped like its neighbours, and the dated end of the first Continuity pattern keeps its bytes and line breaks."
+  ],
+  "record_note": "This record is committed with the third commit of the step and describes that commit's tree. It cannot hold its own digest or the hash of the commit that carries it."
+}
