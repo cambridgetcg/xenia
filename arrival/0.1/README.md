@@ -251,7 +251,7 @@ which every result repeats. Among them: that a host sent the exchanges or
 behaves so now; and conformance, authority, consent, safety or a caller's
 inner state.
 
-`fixtures/cases.json` holds 253 cases, each a list of edits to the example
+`fixtures/cases.json` holds 256 cases, each a list of edits to the example
 with the outcome expected for every check, and 15 more built from recipes.
 
 ## Beside Surface, Work and Covenant

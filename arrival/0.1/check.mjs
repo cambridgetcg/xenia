@@ -71,7 +71,7 @@ const CHECKS = Object.freeze([
   ["R4.CURSOR", "each served view hands back a cursor, and a view answering a request with no cursor is full, with no basis cursor and no changes"],
   ["R4.CHANGES", "the basis echoes the presented cursor, no changes entry names a section in neither view or contradicts the two views, every decidable difference this check owns is named, and at least one decidable difference was found and named"],
   ["R4.BAD_CURSOR", "a 4xx XENIA Surface 0.1 problem with code cursor_not_accepted, not terminal, with a next action back to the view address"],
-  ["R5.FRESHNESS", "every served document states as_of and valid_until, valid_until is not before as_of, and, where the two views are compared with each other, the second is not dated before the first; no time is compared with a request time or a clock"],
+  ["R5.FRESHNESS", "every served document states as_of and valid_until, valid_until is not before as_of, and, where P.PAIR passed, the second view is not dated before the first; no time is compared with a request time or a clock"],
   ["R6.NO_OBLIGATION", "every served document says no reply is expected, every served view says reading creates no obligation, and each view sets owed_to and due_at only in its one recorded_obligations section"],
   ["R7.NON_CLAIMS", "every served document lists every not_established token of its kind"],
 ]);
@@ -145,10 +145,13 @@ const ADDRESS_RUN = /https?:\/\/[^\s"'<>]+/gi;
 // Applied to a query or fragment key once it is normalised (see
 // normalisedKey). Whole parts only, so page_token, max_tokens and sort_key do
 // not match; key, auth, sig and pass count only as the whole key, because
-// each is also an ordinary word, and so does otp, so that otp_enabled does
-// not match. The name alone decides: token=USDC matches. code, state, sid and
-// PHPSESSID are not listed, and a credential under an unlisted name passes.
-const CREDENTIAL_NAMED = /(?:^|_)(?:password|passwd|pwd|passphrase|passcode|secret|authorization|bearer|credentials?|jwt|signature|cookie|session(?:id)?|(?:api|access|private|auth|app|client|consumer|subscription)_?key|(?<!page_)token)(?:_|$)|^(?:key|auth|sig|pass|otp)$/;
+// each is also an ordinary word, and so do otp and passcode, so that
+// otp_enabled and passcode_enabled do not match; user_passcode does not
+// either. Every other name counts wherever it stands as whole parts of a
+// key, so app_key_id matches. The name alone decides: token=USDC matches.
+// code, state, sid and PHPSESSID are not listed, and a credential under an
+// unlisted name passes.
+const CREDENTIAL_NAMED = /(?:^|_)(?:password|passwd|pwd|passphrase|secret|authorization|bearer|credentials?|jwt|signature|cookie|session(?:id)?|(?:api|access|private|auth|app|client|consumer|subscription)_?key|(?<!page_)token)(?:_|$)|^(?:key|auth|sig|pass|otp|passcode)$/;
 
 // The five exchange slots of a fixture, in the order their requests are read.
 const SLOTS = Object.freeze([
@@ -1149,11 +1152,11 @@ function checkPair(slots, views, report) {
   const tally = new Tally(report, "P.PAIR");
   for (const slot of [slots.first, slots.second]) {
     if (slot.status !== 200) {
-      tally.unknown("view_not_served", `${slot.path}/response/status`, "This view request was not answered with status 200, so the two reads cannot be compared.");
+      tally.unknown("view_not_served", `${slot.path}/response/status`, "This view request was not answered with status 200, so the comparisons that need P.PAIR to pass are not made.");
     }
   }
   if (views.first && views.second && !sameValue(views.first.audience, views.second.audience)) {
-    tally.unknown("audience_differs", `${bodyPath(slots.second)}/audience`, "The two views state different audiences, so they are not compared with each other.");
+    tally.unknown("audience_differs", `${bodyPath(slots.second)}/audience`, "The two views state different audiences, so the comparisons that need P.PAIR to pass are not made.");
   }
   tally.settle("Both views are served and valid and state the same audience.");
 }
@@ -1344,7 +1347,7 @@ function checkFreshness(documents, slots, views, pairPassed, report) {
   const order = pairPassed
     ? "; the second view is not dated before the first."
     : views.first && views.second
-      ? ". The two views were not compared with each other, so the order of their dates was not either."
+      ? ". P.PAIR did not pass, so the order of the two views' dates was not compared."
       : ".";
   tally.settle(`${plural(read.length, "served document")}: each states as_of and valid_until, and valid_until is not before as_of${order} Host times were compared with host times only: no request time and no clock was read, so a document already past its valid_until when it was requested is not held against the host.`);
 }

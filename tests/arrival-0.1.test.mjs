@@ -348,8 +348,10 @@ function statedSchema(schema, node) {
 
 // Holds one shape the README writes to the schema it describes: the same
 // field names in the same order, the same words where the README gives
-// words, null allowed wherever the README marks |null, and so on down.
-function assertReadmeShape(schema, node, entries, where, leftOut = []) {
+// words, null allowed wherever the README marks |null, and so on down. A
+// field the schema lets be null and the README does not mark is added to
+// `unmarked`, so that the caller can hold the list of those.
+function assertReadmeShape(schema, node, entries, where, leftOut = [], unmarked = []) {
   const object = statedSchema(schema, node).node;
   assert.deepEqual(
     entries.map((entry) => entry.name),
@@ -359,8 +361,9 @@ function assertReadmeShape(schema, node, entries, where, leftOut = []) {
   for (const entry of entries) {
     const child = statedSchema(schema, object.properties[entry.name]);
     if (entry.nullable) assert.ok(child.admitsNull, `${where}.${entry.name}: the README marks |null, and the schema allows null`);
+    else if (child.admitsNull) unmarked.push(`${where}.${entry.name}`);
     if (entry.words) assert.deepEqual(entry.words, child.node.enum ?? [child.node.const], `${where}.${entry.name}: the README's words are the schema's`);
-    if (entry.fields) assertReadmeShape(schema, object.properties[entry.name], entry.fields, `${where}.${entry.name}`);
+    if (entry.fields) assertReadmeShape(schema, object.properties[entry.name], entry.fields, `${where}.${entry.name}`, [], unmarked);
   }
 }
 
@@ -381,37 +384,63 @@ test("the document and fixture shapes are the field lists the README gives, sche
     assert.equal(list.replace(/`[^`]+`/g, "").replace(/[, ]/g, ""), "", `${where}: the list is code spans and commas only`);
     return readShape(`{${spans.join(", ")}}`);
   };
+  // Every field the schemas let be null and the README's shapes do not mark.
+  const unmarked = [];
   const orientationList = listed(documents[1], "**Orientation** ([orientation.schema.json](orientation.schema.json)): ", ". It has no field about the caller.");
-  assertReadmeShape(orientation, orientation, asShape(orientationList, "orientation"), "orientation", ["schema_version"]);
+  assertReadmeShape(orientation, orientation, asShape(orientationList, "orientation"), "orientation", ["schema_version"], unmarked);
   const viewList = listed(documents[2], "**View** ([view.schema.json](view.schema.json)): ", ".");
   const acknowledgement = / \(`null` or `(\{[^`]+\})`\)/.exec(viewList);
   assert.ok(acknowledgement, "the README gives the two forms of acknowledgement in brackets");
-  assertReadmeShape(view, view, asShape(viewList.replace(acknowledgement[0], ""), "view"), "view", ["schema_version"]);
-  assertReadmeShape(view, view.properties.acknowledgement, readShape(acknowledgement[1]), "view.acknowledgement");
+  assertReadmeShape(view, view, asShape(viewList.replace(acknowledgement[0], ""), "view"), "view", ["schema_version"], unmarked);
+  assertReadmeShape(view, view.properties.acknowledgement, readShape(acknowledgement[1]), "view.acknowledgement", [], unmarked);
   assert.ok(statedSchema(view, view.properties.acknowledgement).admitsNull);
   const shapes = /^A \*\*section\*\* is `([^`]+)` plus the envelope `([^`]+)`\. `changes` is `null`, or the same envelope holding `([^`]+)`\. An \*\*item\*\* has one shape: `([^`]+)`\.$/.exec(documents[3]);
   assert.ok(shapes, "the README gives the section, the envelope, a change and an item as four shapes");
-  assertReadmeShape(view, view.$defs.section, [...readShape(shapes[1]), ...readShape(shapes[2])], "section");
-  assertReadmeShape(view, view.$defs.changes, readShape(shapes[2]), "changes");
+  assertReadmeShape(view, view.$defs.section, [...readShape(shapes[1]), ...readShape(shapes[2])], "section", [], unmarked);
+  assertReadmeShape(view, view.$defs.changes, readShape(shapes[2]), "changes", [], unmarked);
   assert.ok(statedSchema(view, view.properties.changes).admitsNull);
-  assertReadmeShape(view, view.$defs.change, readShape(shapes[3]), "change");
-  assertReadmeShape(view, view.$defs.item, readShape(shapes[4]), "item");
+  assertReadmeShape(view, view.$defs.change, readShape(shapes[3]), "change", [], unmarked);
+  assertReadmeShape(view, view.$defs.item, readShape(shapes[4]), "item", [], unmarked);
   // The state table writes three more shapes, with the bar escaped for the table.
   const stateRows = blocksOf(readmeSection("### States")).join("\n").replaceAll("\\|", "|");
   for (const name of ["dropped", "unavailable", "withheld"]) {
     const written = new RegExp(`\`${name}: (\\{[^\`]+\\})\``).exec(stateRows);
     assert.ok(written, `the state table writes the shape of ${name}`);
-    assertReadmeShape(view, view.$defs[name], readShape(written[1]), name);
+    assertReadmeShape(view, view.$defs[name], readShape(written[1]), name, [], unmarked);
   }
 
   const recorded = blocksOf(readmeSection("## The fixture"));
   const slots = /`visits\.first\.(\{[^`]+\})` and `visits\.second\.(\{[^`]+\})`\.$/.exec(recorded[0]);
   assert.ok(slots, "the README lists the exchanges of each visit");
-  assertReadmeShape(fixture, fixture.properties.visits.properties.first, readShape(slots[1]), "visits.first");
-  assertReadmeShape(fixture, fixture.properties.visits.properties.second, readShape(slots[2]), "visits.second");
+  assertReadmeShape(fixture, fixture.properties.visits.properties.first, readShape(slots[1]), "visits.first", [], unmarked);
+  assertReadmeShape(fixture, fixture.properties.visits.properties.second, readShape(slots[2]), "visits.second", [], unmarked);
   const exchange = /^Each is `([^`]+)`\. /.exec(recorded[1]);
   assert.ok(exchange, "the README gives the shape of an exchange");
-  assertReadmeShape(fixture, fixture.$defs.exchange, readShape(exchange[1]), "exchange");
+  assertReadmeShape(fixture, fixture.$defs.exchange, readShape(exchange[1]), "exchange", [], unmarked);
+  // The |null mark, held the other way round: a field the schemas let be null
+  // is marked in the README's shapes, except where the README says so in
+  // words beside the shape. The five fields whose presence is a rule are named
+  // in the paragraph after the seven rules; the state table gives the four
+  // envelope fields; `changes`, `acknowledgement` and a recorded `body` are
+  // each written with the word null beside them.
+  const ruleFields = /^A field whose presence is itself a rule \(([^)]+)\) can be `null`, meaning not stated,/.exec(blocksOf(readmeSection("## The seven rules")).at(-1));
+  assert.ok(ruleFields, "the README names the fields whose presence is a rule");
+  const namedAsRules = ruleFields[1].split(", ").map((name) => name.slice(1, -1));
+  assert.deepEqual(namedAsRules, ["as_of", "valid_until", "read_effects", "reply_expected", "read_creates_obligation"]);
+  const envelopeFields = ["count", "dropped", "unavailable", "withheld"];
+  assert.deepEqual(unmarked, [
+    "orientation.as_of", "orientation.valid_until", "orientation.view.read_effects", "orientation.reply_expected",
+    "view.as_of", "view.valid_until", "view.changes", "view.read_effects", "view.acknowledgement", "view.reply_expected", "view.read_creates_obligation",
+    ...envelopeFields.map((name) => `section.${name}`),
+    ...envelopeFields.map((name) => `changes.${name}`),
+    "exchange.response.body",
+  ], "the fields that can be null and carry no |null mark in the README");
+  for (const name of unmarked.filter((entry) => /^(?:orientation|view)\./.test(entry)).map((entry) => entry.split(".").at(-1))) {
+    assert.ok([...namedAsRules, "changes", "acknowledgement"].includes(name), `${name} is named as a rule field or written with null beside it`);
+  }
+  assert.match(documents[3], /`changes` is `null`, or the same envelope/);
+  assert.match(documents[2], /`acknowledgement` \(`null` or `/);
+  assert.match(recorded[1], /`body` is any object or null,/);
   const origins = /`origin` is `([a-z_]+)`, `([a-z_]+)` \([^)]*\) or `([a-z_]+)` \([^)]*\)\./.exec(recorded[2]);
   assert.deepEqual(origins?.slice(1), fixture.properties.origin.enum, "the README's origin words are the schema's");
   const statements = /`between_visits\.acknowledged_by_recorder` is the recorder's own statement: `([a-z_]+)`, `([a-z_]+)` or `([a-z_]+)`\./.exec(recorded[2]);
@@ -1606,10 +1635,16 @@ test("the credential tripwire catches secret shapes built here, and leaves curso
     "https://house.example/docs/errors#auth",
     "https://house.example/a?page_token=abc&max_tokens=5&sort_key=name&keys=a&code=7",
     // The words that make a key name with "key" after them are not names on
-    // their own, otp counts only as the whole key, and sid, PHPSESSID and
-    // code are not listed.
+    // their own, otp and passcode count only as the whole key, and sid,
+    // PHPSESSID and code are not listed.
     "https://house.example/a?app=notes&app_id=7&client=web&client_id=9&consumer=team&subscription=free&subscription_id=3",
     "https://house.example/a?auth_type=basic&otp_enabled=true&otp_length=6&sid=4&PHPSESSID=5&keyboard=us&appkeys=2&monkey=1&passed=1",
+    // The nine passcode names the second check found failing by name alone.
+    "https://house.example/a?passcode_enabled=true&passcode_length=6&passcode_required=1&passcode_hint=pet&passcode_policy=strict",
+    "https://house.example/a?require_passcode=1&has_passcode=1&use_passcode=0&passcodeEnabled=true",
+    // The other side of that narrowing: a passcode under a longer name, or
+    // written as two words, is not caught.
+    "https://house.example/a?user_passcode=1&pass_code=2&passCode=3",
     // Userinfo is what stands before the host. An @ later in an address is not.
     "https://house.example/@reader/notes?to=reader@house.example",
   ]) {
@@ -1624,9 +1659,20 @@ test("the credential tripwire catches secret shapes built here, and leaves curso
   }
   assert.deepEqual(codesOf(check(withEdits([free, `https://house.example/a#state=1&token=${opaque32}`]))), ["href_credential_fragment_key"]);
   assert.deepEqual(codesOf(check(withEdits([free, `https://house.example/a#${shapes["a provider key"]}`]))), ["secret_shape"], "a secret shape in a fragment is still a secret shape");
+  // The README's sentence for the three assertions above, held beside them.
+  assert.ok(
+    readme.replace(/\s+/g, " ").includes(" has userinfo, or a query or fragment pair with a credential-named key and a value; an address in an address field does not parse. The name alone decides: `token=USDC` fails. A fragment with no such pair passes unless it has a secret shape. "),
+    "the README says a fragment with no such pair passes unless it has a secret shape",
+  );
   // The names added after the final check, each alone as a query key.
-  for (const key of ["auth_key", "authkey", "authKey", "app_key", "appKey", "client_key", "consumer_key", "subscription-key", "Ocp-Apim-Subscription-Key", "passcode", "otp", "OTP"]) {
+  for (const key of ["auth_key", "authkey", "authKey", "app_key", "appKey", "client_key", "consumer_key", "subscription-key", "Ocp-Apim-Subscription-Key", "passcode", "Passcode", "PASSCODE", "otp", "OTP"]) {
     assert.deepEqual(codesOf(check(withEdits([free, `https://house.example/a?page=2&${key}=${opaque32}`]))), ["href_credential_query_key"], key);
+  }
+  // A key that holds a listed name as whole parts fails with it, whatever
+  // stands beside it: the id of a key fails by name, for the names added
+  // after the final check as for the ones listed before.
+  for (const key of ["app_key_id", "client_key_id", "api_key_id", "access_key_id"]) {
+    assert.deepEqual(codesOf(check(withEdits([free, `https://house.example/a?page=2&${key}=7`]))), ["href_credential_query_key"], key);
   }
 
   // An address field is taken whole and asked to parse; the same text in a
@@ -1744,9 +1790,196 @@ test("the sk- and eyJ shapes, tried once in each run of token characters, match 
   assert.ok(matched > 1500 && unmatched > 1500, `${matched} texts matched and ${unmatched} did not`);
 });
 
+test("the sk- and eyJ shapes match where the patterns in cases.json match on long runs, other letter cases and long strings, as values and as field names", () => {
+  // The texts of the test above are short and mostly lower-case. A matcher
+  // that works run by run can be wrong in ways they do not reach: on a long
+  // run of token characters before a start, on several starts that are not at
+  // a word boundary, on a start written in another letter case, and on a
+  // shape that begins thousands of characters into a string. These texts
+  // reach there. Each is put to the checker twice, as a string value and as a
+  // field name. Nothing built here is a real secret, and none of it sits in
+  // the repository.
+  const patterns = cases.tripwire.secret_shapes.map(({ pattern, flags }) => new RegExp(pattern, flags));
+  const written = (text) => patterns.some((pattern) => pattern.test(text));
+  let seed = 20261114;
+  const random = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return seed / 2 ** 32;
+  };
+  const pick = (list) => list[Math.floor(random() * list.length)];
+  // 24 token characters with digits among them, and a three-part token: what
+  // follows a start in a text that matches.
+  const tail = ["A1b2C3d4", "E5f6G7h8", "I9j0K1l2"].join("");
+  const token = ["eyJhbGciOiJ9", "eyJzdWIiOiIxIn0", "c2lnbmF0dXJl"].join(".");
+
+  // Which of these texts the checker fails for a secret shape. Each fixture
+  // holds fewer texts than a result holds issues, so every failing text has
+  // its own issue, and stays within the input limit.
+  const failedByChecker = (texts, asFieldNames) => {
+    const failed = [];
+    for (let from = 0; from < texts.length;) {
+      let to = from;
+      let characters = 0;
+      while (to < texts.length && to - from < 200 && (to === from || characters + texts[to].length <= 100000)) {
+        characters += texts[to].length;
+        to += 1;
+      }
+      const batch = texts.slice(from, to);
+      const fixture = clone(example);
+      fixture.visits.second.bad_cursor.response = {
+        status: 503,
+        body: { note: asFieldNames ? batch.map((text) => ({ [text]: 1 })) : batch },
+      };
+      const bytes = Buffer.from(JSON.stringify(fixture));
+      assert.ok(bytes.length <= MAX_INPUT_BYTES, "the fixture is within the input limit");
+      const result = checkArrivalFixtureBytes(bytes, { now: fixedNow });
+      const tripped = new Set(result.issues.filter((entry) => entry.code === "secret_shape").map((entry) => entry.path));
+      batch.forEach((_, index) => failed.push(tripped.has(`$/visits/second/bad_cursor/response/body/*/${index}`)));
+      from = to;
+    }
+    return failed;
+  };
+
+  // Texts whose answer is stated here, so that the patterns as written are
+  // held to it as well as the checker.
+  const stated = [];
+  // A run of 40 to 200 token characters with no hyphen and no start in it,
+  // then a start: straight after a hyphen it is at a word boundary, and
+  // straight after the run it is not.
+  for (let length = 40; length <= 200; length += 1) {
+    const run = Array.from({ length }, () => pick(["a", "b", "X", "Y", "7", "_"])).join("");
+    stated.push([`${run}-sk-${tail}`, true], [`${run}sk-${tail}`, false], [`${run}-${token}`, true], [`${run}${token}`, false]);
+  }
+  // Three or more starts that are not at a word boundary, and then one that
+  // is, or none.
+  for (const count of [3, 4, 5, 8]) {
+    const letters = ["x", "y", "z", "w", "v", "u", "t", "r"].slice(0, count);
+    const passedOverSk = letters.map((letter) => `${letter}sk-`).join("");
+    const passedOverEyJ = letters.map((letter) => `${letter}eyJ`).join("");
+    stated.push(
+      [`${passedOverSk}${tail}`, false],
+      // The start itself ends in a hyphen, so a start written straight after
+      // another is at a word boundary.
+      [`${passedOverSk}sk-${tail}`, true],
+      [`${passedOverSk}q-sk-${tail}`, true],
+      [`${passedOverEyJ}${token.slice(3)}`, false],
+      [`${passedOverEyJ}-${token}`, true],
+      [`${passedOverEyJ}_${token}`, false],
+    );
+  }
+  // A start written in another letter case is not a start: the two patterns
+  // have no flag for case. One before a real start does not hide it, and one
+  // in place of a real start does not match.
+  for (const alike of ["SK-", "Sk-", "sK-"]) {
+    stated.push([`${alike}${tail}`, false], [`${alike}sk-${tail}`, true], [`${alike}x-sk-${tail}`, true], [`x-${alike}${tail}`, false]);
+  }
+  for (const alike of ["EYJ", "eyj", "Eyj", "EyJ", "eYJ"]) {
+    stated.push([`${alike}${token.slice(3)}`, false], [`${alike}-${token}`, true], [`${alike}x-${token}`, true], [`x-${alike}${token.slice(3)}`, false]);
+  }
+  // A shape that begins thousands of characters into a string.
+  for (const before of [4096, 5000, 12345, 70000]) {
+    const prose = "word ".repeat(before / 5).padEnd(before, " ");
+    assert.equal(prose.length, before);
+    stated.push(
+      [`${prose}sk-${tail}`, true],
+      [`${prose}${token}`, true],
+      [`${prose}live-sk-${tail} and more`, true],
+      [`${prose}live_sk-${tail}`, false],
+      [`${prose}x${token}`, false],
+      [`${prose}SK-${tail}`, false],
+    );
+  }
+  for (const [text, expected] of stated) {
+    assert.equal(written(text), expected, `the patterns as written on a text of ${text.length} characters that ends ${JSON.stringify(text.slice(-48))}`);
+  }
+
+  // Long strings built from a seed: 4,000 to 20,000 characters of words,
+  // look-alike starts and marks, and then a shape, a near shape, or nothing.
+  const filler = ["word ", "a-b ", "sk-x ", "eyJ.a ", "x_y-z.", "é ", "skew- ", "task-17 ", "SK-", "EyJ", "-", "_", "a".repeat(30)];
+  const built = Array.from({ length: 120 }, () => {
+    let text = "";
+    const length = 4000 + Math.floor(random() * 16000);
+    while (text.length < length) text += pick(filler);
+    const lead = pick(["", "-", "_", "x", " ", ".", "live-", "a_", "xsk-ysk-zsk-", "Sk-"]);
+    const shape = pick([`sk-${tail}`, token, `sk-${"a".repeat(24)}`, "eyJabc.def.ghi", `SK-${tail}`, ""]);
+    return `${text}${lead}${shape}${pick(["", " end", "-", "_x"])}`;
+  });
+
+  const texts = [...stated.map(([text]) => text), ...built];
+  assert.deepEqual([stated.length, built.length], [724, 120], "the number of texts with a stated answer, and of long strings built");
+  const expected = texts.map(written);
+  for (const [asFieldNames, what] of [[false, "string value"], [true, "field name"]]) {
+    const failed = failedByChecker(texts, asFieldNames);
+    for (const [index, text] of texts.entries()) {
+      assert.equal(
+        failed[index],
+        expected[index],
+        `as a ${what}, the checker and the patterns as written disagree on a text of ${text.length} characters that ends ${JSON.stringify(text.slice(-48))}`,
+      );
+    }
+  }
+  const matched = expected.filter(Boolean).length;
+  assert.ok(matched > 350 && texts.length - matched > 350, `${matched} of ${texts.length} texts matched`);
+  assert.ok(built.filter(written).length > 20 && built.filter((text) => !written(text)).length > 20, "the long strings hold both kinds");
+});
+
+// The words of the tripwire block in cases.json, held whole. The README sends
+// a second implementer to that block for the shapes, fields and names, so a
+// change to these words has to be made here as well, on purpose. The patterns
+// and the list of address fields are not here: the test below holds them to
+// check.mjs. The description of a case is held nowhere: a case is held by its
+// edits, its outcomes and its result word.
+const TRIPWIRE_WORDS = {
+  note: "What I.NO_CREDENTIAL looks for, with regular expressions in ECMAScript syntax and their flags. Adapted from work/0.1/check.mjs. A match is a failure whatever the value is; no match establishes nothing.",
+  secret_shapes_read: "Every field name in the fixture, and every string value except the four places under not_read.",
+  secret_shapes_applied: "A field name or string fails when any of the six patterns matches anywhere in it. Two patterns give a start. The three-part eyJ pattern is the one in work/0.1/check.mjs; the sk- pattern is that file's, asking for 20 or more token characters with a digit among them. Tried at every start in a long run of starts, each takes time that grows with the square of the run, so check.mjs tries them another way and gives the same answers: in each maximal run of the characters A to Z, a to z, 0 to 9, _ and -, it finds the first place where the start stands at the beginning of the run or straight after a -, and tries the pattern there only. A later such place in the same run can match only where that first one does. A start straight after a letter, a digit or _ is not at a word boundary, and neither pattern matches there.",
+  address_rules: [
+    "A string value is in an address field when the nearest field name above it is one of address_fields: it is that field's value, or an entry of a list that is. Such a value that matches address_start is one address, taken whole. In every other string value that is read, each run that matches address_run is an address.",
+    "An address in an address field fails when it does not parse as a URL by the WHATWG URL Standard (href_unparseable). An address inside other text is not asked to parse.",
+    "An address fails when the text between :// and the next /, ? or # holds @ (href_userinfo).",
+    "An address fails when its query or its fragment holds a pair whose key is credential-named and whose value is not empty (href_credential_query_key, href_credential_fragment_key). The query is the text after the first ? and before the first #; the fragment is the text after the first #. Each is read as application/x-www-form-urlencoded pairs: split at &, each pair split at its first =, then + and percent-escapes decoded. A fragment that holds no such pair is not held against the fixture by this rule, whatever else it holds.",
+  ],
+  credential_named: {
+    normalise: "Put a break between a lower-case letter or a digit and an upper-case letter that follows it. Lower-case the key. Split it at every run of characters other than a to z and 0 to 9, drop empty parts, and join the parts with _.",
+    note: "Applied to the normalised key. The name alone decides: token=USDC fails. key, auth, sig, pass, otp and passcode count only as the whole key: passcode_enabled passes, and so does user_passcode. Every other name counts wherever it stands as whole parts of a key: app_key_id fails. code, state, sid and PHPSESSID are not listed, and a token part straight after a page part is a paging key. A credential under a name that is not listed passes.",
+  },
+  not_read: [
+    "request/cursor of each exchange",
+    "response/body/cursor of each exchange",
+    "response/body/basis/cursor of each exchange",
+    "response/body/acknowledgement/position of each exchange",
+  ],
+};
+
 test("the tripwire shapes, fields and names listed in cases.json are the ones the checker uses", () => {
   const { tripwire } = cases;
-  assert.match(tripwire.note, /establishes nothing/);
+  // Every word of the block is held, and the block has no part that is
+  // neither held here nor compared with check.mjs below.
+  assert.deepEqual(Object.keys(tripwire), [
+    "note", "secret_shapes", "secret_shapes_read", "secret_shapes_applied", "address_fields", "address_start", "address_run",
+    "address_rules", "credential_named", "not_read",
+  ]);
+  assert.deepEqual(Object.keys(tripwire.credential_named), ["normalise", "pattern", "flags", "note"]);
+  assert.deepEqual(
+    {
+      note: tripwire.note,
+      secret_shapes_read: tripwire.secret_shapes_read,
+      secret_shapes_applied: tripwire.secret_shapes_applied,
+      address_rules: tripwire.address_rules,
+      credential_named: { normalise: tripwire.credential_named.normalise, note: tripwire.credential_named.note },
+      not_read: tripwire.not_read,
+    },
+    TRIPWIRE_WORDS,
+  );
+  for (const shape of tripwire.secret_shapes) {
+    assert.deepEqual(Object.keys(shape), shape.start === undefined ? ["pattern", "flags"] : ["pattern", "flags", "start"]);
+  }
+  // The four places that are not read are the four the checker sets aside.
+  for (const place of tripwire.not_read) {
+    const below = place.replace(/ of each exchange$/, "");
+    assert.ok(checkerSource.includes(`exempt.add(\`\${base}/${below}\`);`), `check.mjs sets aside ${below}`);
+  }
+  assert.equal(checkerSource.split("exempt.add(").length - 1, tripwire.not_read.length);
   assert.equal(tripwire.secret_shapes.length, 6);
   // Four shapes are applied as written. The two that give a start are written
   // in cases.json as what they match, a word boundary and then the start;
@@ -1766,8 +1999,6 @@ test("the tripwire shapes, fields and names listed in cases.json are the ones th
     assert.ok(pattern.startsWith(`\\b${start}`), `${start}: the pattern is a word boundary, then the start`);
     assert.ok(checkerSource.includes(`["${start}", /${pattern.slice(2)}/y]`), `check.mjs tries /${pattern.slice(2)}/ at a start it has found`);
   }
-  assert.match(tripwire.secret_shapes_applied, /gives the same answers/);
-  assert.match(tripwire.secret_shapes_applied, /the first place where the start stands at the beginning of the run or straight after a -/);
   // No other pattern literal in the checker is a secret shape: the two lists are whole.
   const literalsIn = (name) => {
     const from = checkerSource.indexOf(`const ${name} = Object.freeze([`);
@@ -1779,8 +2010,6 @@ test("the tripwire shapes, fields and names listed in cases.json are the ones th
   const fields = /const ADDRESS_FIELDS = new Set\(\[([^\]]*)\]\);/.exec(checkerSource);
   assert.ok(fields, "check.mjs lists its address fields in one place");
   assert.deepEqual(JSON.parse(`[${fields[1]}]`), tripwire.address_fields);
-  assert.equal(tripwire.address_rules.length, 4);
-  assert.equal(tripwire.not_read.length, 4);
 
   // The naming rule, applied here as cases.json words it, decides every
   // query-key case the way that case states. A second implementation has
@@ -1975,7 +2204,7 @@ test("every not_established token is needed, one by one", () => {
   }
 });
 
-test("the second view is held to the first view's date only when the two are compared", () => {
+test("the second view is held to the first view's date only where P.PAIR passed, and the result says so in those words", () => {
   const older = [`${SECOND_VIEW_PATH}/as_of`, "2026-11-12T08:00:00Z"];
   assert.equal(outcomesOf(check(withEdits(older)))["R5.FRESHNESS"], "fail");
   const notCompared = outcomesOf(check(withEdits(older, [`${SECOND_VIEW_PATH}/audience/scope`, "identity"])));
@@ -1994,14 +2223,49 @@ test("the second view is held to the first view's date only when the two are com
     assert.equal(entry.outcome, "pass");
     assert.equal(
       entry.expected,
-      "every served document states as_of and valid_until, valid_until is not before as_of, and, where the two views are compared with each other, the second is not dated before the first; no time is compared with a request time or a clock",
+      "every served document states as_of and valid_until, valid_until is not before as_of, and, where P.PAIR passed, the second view is not dated before the first; no time is compared with a request time or a clock",
     );
   }
-  // What was observed says whether the order was compared.
+  // What was observed says whether the order was compared, and names the
+  // check it hangs on.
+  const orderNotCompared = "3 served documents: each states as_of and valid_until, and valid_until is not before as_of. P.PAIR did not pass, so the order of the two views' dates was not compared. Host times were compared with host times only: no request time and no clock was read, so a document already past its valid_until when it was requested is not held against the host.";
+  assert.equal(views[0].observed, orderNotCompared);
+
+  // The second check's probe. With P.PAIR unknown the two views are still
+  // compared in one thing, their declarations, so no sentence of the result
+  // says the two views were not compared with each other.
+  const declared = clone(example);
+  declared.visits.second.view.response.body.audience.scope = "identity";
+  declared.visits.second.view.response.body.read_effects.operational_writes.push("one more write");
+  const declaredResult = check(declared);
+  const declaredOutcomes = outcomesOf(declaredResult);
+  assert.equal(declaredOutcomes["P.PAIR"], "unknown");
+  assert.equal(declaredOutcomes["R2.DECLARED_EFFECTS"], "fail");
+  assert.equal(declaredOutcomes["R5.FRESHNESS"], "pass");
+  assert.deepEqual(codesOf(declaredResult), ["audience_differs", "declarations_differ"]);
+  assert.equal(declaredResult.checks.find((entry) => entry.id === "R5.FRESHNESS").observed, orderNotCompared);
   assert.equal(
-    views[0].observed,
-    "3 served documents: each states as_of and valid_until, and valid_until is not before as_of. The two views were not compared with each other, so the order of their dates was not either. Host times were compared with host times only: no request time and no clock was read, so a document already past its valid_until when it was requested is not held against the host.",
+    declaredResult.issues.find((entry) => entry.code === "audience_differs").message,
+    "The two views state different audiences, so the comparisons that need P.PAIR to pass are not made.",
   );
+  assert.ok(!JSON.stringify(declaredResult).includes("compared with each other"));
+  // The other way P.PAIR comes to be unknown is said in the same words: the
+  // orientation's declaration is still compared with the one view served.
+  const unserved = check(withEdits(["/visits/second/view/response/status", 404]));
+  assert.equal(outcomesOf(unserved)["P.PAIR"], "unknown");
+  assert.equal(outcomesOf(unserved)["R2.DECLARED_EFFECTS"], "pass");
+  assert.equal(
+    unserved.issues.find((entry) => entry.code === "view_not_served").message,
+    "This view request was not answered with status 200, so the comparisons that need P.PAIR to pass are not made.",
+  );
+  // P.PAIR is not run, and does not pass, when a view repeats an id: the
+  // same words hold there.
+  const repeated = clone(example);
+  repeated.visits.second.view.response.body.sections[1].id = repeated.visits.second.view.response.body.sections[0].id;
+  const repeatedResult = check(repeated);
+  assert.equal(outcomesOf(repeatedResult)["P.PAIR"], "not_run");
+  assert.equal(outcomesOf(repeatedResult)["R5.FRESHNESS"], "pass");
+  assert.equal(repeatedResult.checks.find((entry) => entry.id === "R5.FRESHNESS").observed, orderNotCompared);
   assert.equal(
     views[1].observed,
     "3 served documents: each states as_of and valid_until, and valid_until is not before as_of; the second view is not dated before the first. Host times were compared with host times only: no request time and no clock was read, so a document already past its valid_until when it was requested is not held against the host.",

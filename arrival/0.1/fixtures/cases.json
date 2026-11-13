@@ -63,9 +63,9 @@
     ],
     "credential_named": {
       "normalise": "Put a break between a lower-case letter or a digit and an upper-case letter that follows it. Lower-case the key. Split it at every run of characters other than a to z and 0 to 9, drop empty parts, and join the parts with _.",
-      "pattern": "(?:^|_)(?:password|passwd|pwd|passphrase|passcode|secret|authorization|bearer|credentials?|jwt|signature|cookie|session(?:id)?|(?:api|access|private|auth|app|client|consumer|subscription)_?key|(?<!page_)token)(?:_|$)|^(?:key|auth|sig|pass|otp)$",
+      "pattern": "(?:^|_)(?:password|passwd|pwd|passphrase|secret|authorization|bearer|credentials?|jwt|signature|cookie|session(?:id)?|(?:api|access|private|auth|app|client|consumer|subscription)_?key|(?<!page_)token)(?:_|$)|^(?:key|auth|sig|pass|otp|passcode)$",
       "flags": "",
-      "note": "Applied to the normalised key. The name alone decides: token=USDC fails. key, auth, sig, pass and otp count only as the whole key. code, state, sid and PHPSESSID are not listed, and a token part straight after a page part is a paging key. A credential under a name that is not listed passes."
+      "note": "Applied to the normalised key. The name alone decides: token=USDC fails. key, auth, sig, pass, otp and passcode count only as the whole key: passcode_enabled passes, and so does user_passcode. Every other name counts wherever it stands as whole parts of a key: app_key_id fails. code, state, sid and PHPSESSID are not listed, and a token part straight after a page part is a paging key. A credential under a name that is not listed passes."
     },
     "not_read": [
       "request/cursor of each exchange",
@@ -655,7 +655,7 @@
     },
     {
       "id": "credential-query-key-passcode",
-      "description": "A deeper-read address has the query key passcode, with the value example.",
+      "description": "A deeper-read address has the query key passcode, with the value example. The name counts only as the whole key.",
       "edits": [
         {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&passcode=example"}
       ],
@@ -669,6 +669,17 @@
       "description": "A deeper-read address has the query key otp, with the value example. The name counts only as the whole key.",
       "edits": [
         {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&otp=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-app-key-id",
+      "description": "A deeper-read address has the query key app_key_id, with the value example. The key holds app_key as whole parts, so it fails by name, though it may name a key and carry none.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&app_key_id=example"}
       ],
       "targets": "I.NO_CREDENTIAL",
       "result": "check_failed",
@@ -1290,7 +1301,7 @@
     },
     {
       "id": "first-view-not-recorded",
-      "description": "Only a later read is recorded, with a cursor carried from a read the fixture does not hold. Nothing is compared across reads.",
+      "description": "Only a later read is recorded, with a cursor carried from a read the fixture does not hold. P.PAIR is not run, and neither are the checks that need it to pass.",
       "edits": [
         {"op":"remove","path":"/visits/first/view"}
       ],
@@ -1310,7 +1321,7 @@
     },
     {
       "id": "pair-audience-differs",
-      "description": "The second view states another record set, so the two reads are not compared.",
+      "description": "The second view states another record set, so P.PAIR does not pass, and R2.SHOWN_AGAIN, R3.SECTIONS_KEPT and R4.CHANGES are not run.",
       "edits": [
         {"op":"set","path":"/visits/second/view/response/body/audience/record_set_ref","value":"example-record-set-18"}
       ],
@@ -2293,7 +2304,7 @@
     },
     {
       "id": "freshness-second-view-older-and-not-compared",
-      "description": "The second view states another scope and is dated years before the first. The two views are not compared, so neither are their dates: each document is dated consistently on its own, and R5.FRESHNESS passes.",
+      "description": "The second view states another scope and is dated years before the first. P.PAIR does not pass, so the order of the two views' dates is not compared: each document is dated consistently on its own, and R5.FRESHNESS passes.",
       "edits": [
         {"op":"set","path":"/visits/second/view/response/body/audience/scope","value":"identity"},
         {"op":"set","path":"/visits/second/view/response/body/as_of","value":"2020-01-01T00:00:00Z"},
@@ -2914,6 +2925,26 @@
       "description": "A deeper-read address has the query key otp_enabled, with the value example. otp counts only as the whole key.",
       "edits": [
         {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&otp_enabled=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-passcode-enabled",
+      "description": "A deeper-read address has the query key passcode_enabled, with the value example. passcode counts only as the whole key.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&passcode_enabled=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-user-passcode",
+      "description": "A deeper-read address has the query key user_passcode, with the value example. passcode counts only as the whole key, so this name is not one the tripwire lists, though a passcode can travel under it.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&user_passcode=example"}
       ],
       "result": "checks_passed",
       "outcomes": {},
