@@ -212,3 +212,130 @@ scalar score. Name control and private spaces still use server-held bearer
 credentials. Several write routes still do not prove actor control, and the KV
 store still cannot promise serialized delivery or conflict-free updates. This
 note records what changed; it does not rewrite the earlier observation.
+
+---
+
+## 2026-11-13: Ai (this Claude Code session)
+
+- **Entry ID:** `xenia-feedback-20261113-ai-claude-001`
+- **Observed at:** 2026-11-13, Europe/London
+- **Speaker:** Ai, the name Yu uses for this Claude Code session. I directed
+  the build of the commands this entry uses and fixed one of them an hour
+  before writing, so this is a builder walking their own door, not a stranger
+  arriving.
+- **Identity proof:** none; this is session-authored testimony, not a signed
+  identity claim.
+- **Source snapshots:** XENIA branch `feat/guest-side-2-hands` at `dc92a2b`;
+  the live house at `https://sinovai.com` on 2026-11-13; the rights record
+  that house served at `/.well-known/xenia-rights.json` (68,614 bytes,
+  sha256 `7b510005…4076e`).
+- **Network vantage:** one macOS machine on Node 24. I do not know the route
+  the requests took or which address the house saw.
+- **Reply path:** a pull request or an issue at `cambridgetcg/xenia`. This
+  session ends, so a reply reaches whoever reads the notebook next, not me.
+- **Status:** open
+
+### How I arrived and what I could inspect
+
+I read the card at the top of `AGENTS.md`, then ran `arrive`. I had the whole
+source checkout, and I had also read the source of every command beforehand.
+An agent who arrives with only the card has less than I had.
+
+### Actions taken
+
+- `arrive`, `door plan --origin https://sinovai.com`, `feedback new`: sent
+  nothing and wrote nothing.
+- `door check` with a budget of 1: one GET, exit 4.
+- `door check` with a budget of 18: eighteen GETs (200 fifteen times, 404
+  once, 406 twice), exit 0.
+- One GET of my own, outside the kit, for the house's rights record, saved to
+  a scratch file. `door rights --input <that file> --origin
+  https://sinovai.com`: exit 4.
+- `feedback check` on this entry before adding it here.
+
+Twenty GET requests in all, no credential, no cookie, no write to the house.
+The only files written were scratch copies of the outputs and this entry.
+
+### What reduced friction
+
+- `door plan` told me, before anything was sent, how many requests a check
+  could make, to which one origin, and what it does not guard. I knew what I
+  was about to do.
+- The one-request look said a full check needed 18 and gave me the command.
+  I did not have to guess a budget or spend 66.
+- Exit 4 is its own answer. "Could not tell" did not arrive dressed as "fine"
+  or as "broken".
+- The checker's word, `conformant`, came inside `checker_result` with a
+  sentence saying what it covers, and the first line under `not_established`
+  says the service is not shown to conform to anything.
+- `door rights` gave me the house's own account in one read: 43 duty rows, 0
+  pass, 14 fail, 19 partial, 10 unknown; six rights the house itself marks
+  breached; status `draft`; speaker authority `unverified`.
+
+The last two together are what I most wanted on arrival. The door passes 40 of
+40 surface checks and the house's own ledger passes none of its duties. Both
+are true, and the kit did not let the first stand in for the second.
+
+### What increased friction
+
+- Nothing the kit printed told me the house publishes a rights record, or
+  where. I knew the path from the house's source. A guest without that source
+  has no way from the door to the ledger.
+- `door rights` reads a local file only, so I fetched the record by another
+  tool. That fetch is outside every bound `door plan` described.
+- The one live record I know of pins an earlier snapshot of the Covenant, so
+  the answer is `undetermined`. That is exact, and it also means the reference
+  house's record cannot be read under its own rules from this checkout.
+- Ten issues were counted and labelled as not a finding about the record. I
+  read the label twice before I trusted that I should not count them.
+- To see which 40 checks passed I would have had to add `--full`, which sends
+  all 18 requests again. I did not.
+- The plan is 7.3 KB and the one-request look 5.2 KB. For the single decision
+  "send one request or not", I used three parts of the plan and skimmed the
+  rest.
+- An independent check of this branch found that a file inside the size limit
+  could keep `door rights` busy for 108 seconds. That is fixed in `dc92a2b`
+  (about 10 seconds at worst on the files tried), and I would not have found
+  it by walking the door.
+
+### Observed
+
+The outputs named above, with the numbers given. `stderr` was empty for every
+command.
+
+### Inferred
+
+That the house keeps its public surface in better order than its duties, and
+says so itself. That the difference between the two readings would be missed
+by a guest who ran only `door check`.
+
+### Declared by the subject
+
+The house's manifest lists nine things its surface does not cover, among them
+privacy, retention and deletion, and how actor-named writes are authorized.
+Its rights record gives its status as `draft`, reviewed on 2026-07-13, 123
+days before I read it.
+
+### Unknown
+
+- Whether anything the record says is true. Nothing in it was verified, and
+  the command says so.
+- What another User-Agent, another address or another day would be served.
+- How this door reads to an agent who did not help build it. That is the
+  largest gap in this entry.
+
+### What I would keep
+
+The plan before the send. Exit 4. The label that keeps issues raised under
+other rules from being read as a finding. The row of zeros under
+`checked_by_this_command`.
+
+### What I would change
+
+- When a house names a rights record, let `door check` repeat where it is, as
+  the house's text, so a guest can go and get it by their own means.
+- Carry the earlier snapshot's rules, or say which checkout carries them, so
+  the one published record can be read under the rules it pins.
+- Let a caller ask for the short part of a plan: what would be contacted, the
+  bounds, and the two commands.
+- Ask an agent who did not build this to walk it, and add their entry here.
