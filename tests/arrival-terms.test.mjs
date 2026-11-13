@@ -74,7 +74,7 @@ function outcome(result, id) {
   return result.checks.find((entry) => entry.id === id).outcome;
 }
 
-test("spec.json states the arrival terms as informative, and the README mirrors them under 'How to read this standard'", () => {
+test("the arrival terms add no normative profile and state no requirement, and the README mirrors them under 'How to read this standard'", () => {
   const terms = spec.interpretation.arrival_terms;
   assert.equal(typeof terms, "string", "interpretation.arrival_terms");
   assert.match(spec.interpretation.normative, /Only the candidate profiles listed in normative_profiles define versioned requirements/);
@@ -222,7 +222,10 @@ test("the draft README says in words how a house could record a fixture", () => 
   for (const word of ["hand_written", "host_bytes", "projected_by_recorder", "not_stated"]) {
     assert.ok(arrivalReadme.includes(`\`${word}\``), `the README still lists ${word}`);
   }
-  assert.match(flatArrival, /`origin` is `hand_written`, `host_bytes` \(no body altered\) or `projected_by_recorder`\./);
+  assert.match(
+    flatArrival,
+    /`origin` is `hand_written`, `host_bytes` \(each body as parsed, none altered\) or `projected_by_recorder` \(reshaped; no value changed and none added\)\./,
+  );
   // The five requests "in that order" are the five slots the README lists,
   // in the order the checker reads them.
   const slots = flatArrival.indexOf("`visits.first.{orientation, view_without_credential, view}` and `visits.second.{view, bad_cursor}`");

@@ -659,7 +659,7 @@ test("the result schema fixes twenty checks in order and ties the result word to
 });
 
 test("the README is a short, non-normative status report that names what it leaves open", () => {
-  assert.ok(Buffer.byteLength(readme) <= 16 * 1024, "README is at most 16 KiB");
+  assert.ok(Buffer.byteLength(readme) <= 18 * 1024, "README is at most 18 KiB");
   assert.match(readme, /^Status: \*\*development draft\*\*$/m);
   assert.match(readme, /one author/);
   assert.match(readme, /No second implementation/);
@@ -895,6 +895,11 @@ const BUILDERS = {
     fixture.visits.first.orientation.response.body.padding = "a".repeat(8192);
     return Buffer.from(JSON.stringify(fixture));
   },
+  "tripwire-long-run-with-no-digit": () => {
+    const fixture = clone(example);
+    fixture.visits.second.bad_cursor.response = { status: 503, body: { note: "sk-".repeat(60000) } };
+    return Buffer.from(JSON.stringify(fixture));
+  },
   "orientation-valid-at-its-ceiling": () => wideOrientationFixture(1646),
   "orientation-valid-one-byte-over-its-ceiling": () => wideOrientationFixture(1647),
   "view-at-its-ceiling": () => paddedSecondViewFixture(1951),
@@ -1014,7 +1019,8 @@ test("the cases file is complete, uses three edit operations, and names only a f
   const cannotFail = ["I.SIZE", "P.PAIR"];
   assert.deepEqual([...failsAlone].sort(), CHECK_IDS.filter((id) => !cannotFail.includes(id)).sort());
   assert.deepEqual([...unknownSomewhere].sort(), [
-    "I.SIZE", "P.PAIR", "R1.ORIENTATION", "R1.REFUSAL", "R1.VIEW", "R2.DECLARED_EFFECTS", "R2.SHOWN_AGAIN", "R4.BAD_CURSOR", "R4.CHANGES",
+    "I.SIZE", "P.PAIR", "R1.ORIENTATION", "R1.REFUSAL", "R1.VIEW", "R2.DECLARED_EFFECTS", "R2.SHOWN_AGAIN", "R3.STATES",
+    "R4.BAD_CURSOR", "R4.CHANGES", "R4.CURSOR", "R5.FRESHNESS", "R6.NO_OBLIGATION", "R7.NON_CLAIMS",
   ]);
 
   const strings = [];
@@ -1408,28 +1414,106 @@ test("the credential tripwire catches secret shapes built here, and leaves curso
     assert.equal(check(withEdits([free, text])).result, "checks_passed", text);
   }
 
-  // Address rules: userinfo, fragment, credential-named query key, each alone.
+  // Address rules, each alone. Free text is searched for addresses anywhere:
+  // userinfo, and a query or fragment pair with a credential-named key and a
+  // value.
   const addresses = [
     ["https://reader@house.example/a", "href_userinfo"],
     ["HTTPS://reader@house.example/a", "href_userinfo"],
-    ["https://house.example/a#", "href_fragment"],
+    ["see https://reader@house.example/a", "href_userinfo"],
     ["https://house.example/a?session=1", "href_credential_query_key"],
     ["https://house.example/a?page=2&%74oken=1", "href_credential_query_key"],
     ["https://house.example/a?X-Api-Key=1", "href_credential_query_key"],
-    ["https://exa mple/", "href_unparseable"],
+    ["see https://house.example/x?access_token=abc for more", "href_credential_query_key"],
+    ["https://house.example/a#access_token=abc", "href_credential_fragment_key"],
+    ["read (https://house.example/a?b=1#id_token=abc).", "href_credential_fragment_key"],
+    // The query ends where the fragment begins.
+    ["https://house.example/a?b=1#c&id_token=abc", "href_credential_fragment_key"],
   ];
   for (const [address, code] of addresses) {
     assert.deepEqual(codesOf(check(withEdits([free, address]))), [code], address);
   }
-  for (const address of ["https://house.example/a?status=open&page=2", "see https://reader@house.example/a"]) {
-    assert.equal(check(withEdits([free, address])).result, "checks_passed", `${address}: only a string that begins as an address is read as one`);
+  // An anchor is not a credential, a name with no value carries nothing, free
+  // text is not asked to parse, and paging and sorting keys are not names of
+  // credentials.
+  for (const address of [
+    "https://house.example/a?status=open&page=2",
+    "https://house.example/a#",
+    "https://house.example/glossary#spelling was updated",
+    "http://localhost is where the test server runs",
+    "https://exa mple/",
+    "https://house.example/a?token=",
+    "https://house.example/docs/errors#auth",
+    "https://house.example/a?page_token=abc&max_tokens=5&sort_key=name&keys=a&code=7",
+    // Userinfo is what stands before the host. An @ later in an address is not.
+    "https://house.example/@reader/notes?to=reader@house.example",
+  ]) {
+    assert.equal(check(withEdits([free, address])).result, "checks_passed", address);
+  }
+
+  // An address field is taken whole and asked to parse; the same text in a
+  // field that is not an address field is not. The body here is one no other
+  // check reads, so the tripwire is the only thing that looks at it.
+  const unparsed = clone(example);
+  unparsed.visits.second.bad_cursor.response = {
+    status: 503,
+    body: { docs: ["https://house.example:99999/x"], note: "https://house.example:99999/x" },
+  };
+  const unparsedResult = check(unparsed);
+  assert.deepEqual(codesOf(unparsedResult), ["href_unparseable", "status_5xx"]);
+  assert.deepEqual(
+    unparsedResult.issues.filter((entry) => entry.code === "href_unparseable").map((entry) => entry.path),
+    ["$/visits/second/bad_cursor/response/body/docs/0"],
+  );
+
+  // The view address itself with a credential-named key, wherever it is
+  // written: every request to the view, the orientation's pointer, and the
+  // way back from a refused cursor. Built at run time.
+  const value = "9f8e7d6c".repeat(4);
+  for (const [key, trips] of [["key", true], ["sig", true], ["X-Amz-Signature", true], ["jwt", true], ["pwd", true], ["page_token", false]]) {
+    const keyed = clone(example);
+    const href = `https://house.example/arrival/view?${key}=${value}`;
+    for (const exchange of [keyed.visits.first.view_without_credential, keyed.visits.first.view, keyed.visits.second.view, keyed.visits.second.bad_cursor]) {
+      exchange.request.href = href;
+    }
+    keyed.visits.first.orientation.response.body.view.href = href;
+    keyed.visits.second.bad_cursor.response.body.next_actions[0].href = href;
+    const result = check(keyed);
+    assert.equal(outcomesOf(result)["I.NO_CREDENTIAL"], trips ? "fail" : "pass", `the view address with the key ${key}`);
+    assert.equal(result.result, trips ? "check_failed" : "checks_passed", `the view address with the key ${key}`);
+    assert.ok(!JSON.stringify(result).includes(value));
   }
 });
 
-test("the tripwire shapes listed in cases.json are the ones the checker uses", () => {
+test("the tripwire takes time that grows with the input, not with its square", () => {
+  // Each text is the worst one found for a shape: many places where a secret
+  // could start, and none that is one. 180,000 characters, inside the limit.
+  const timed = (note) => {
+    const fixture = clone(example);
+    fixture.visits.second.bad_cursor.response = { status: 503, body: { note } };
+    const bytes = Buffer.from(JSON.stringify(fixture));
+    assert.ok(bytes.length <= MAX_INPUT_BYTES);
+    const started = performance.now();
+    const result = checkArrivalFixtureBytes(bytes, { now: fixedNow });
+    return [performance.now() - started, result];
+  };
+  for (const [label, unit, copies] of [
+    ["sk- starts with no digit", "sk-", 60000],
+    ["eyJ starts with no second part", "eyJaaaaaaaa-", 15000],
+    ["Bearer followed by a short word", "Bearer aaaaaaaa ", 11250],
+    ["addresses with a query", "https://house.example/?a=b ", 6600],
+    ["one long address", "https://", 22500],
+  ]) {
+    const [elapsed, result] = timed(unit.repeat(copies));
+    assert.equal(outcomesOf(result)["I.NO_CREDENTIAL"], "pass", label);
+    assert.ok(elapsed < 2000, `${label}: ${Math.round(elapsed)} ms for ${unit.length * copies} characters`);
+  }
+});
+
+test("the tripwire shapes, fields and names listed in cases.json are the ones the checker uses", () => {
   const { tripwire } = cases;
   assert.match(tripwire.note, /establishes nothing/);
-  const listed = [...tripwire.secret_shapes, tripwire.credential_named];
+  const listed = [...tripwire.secret_shapes, tripwire.address_start, tripwire.address_run, tripwire.credential_named];
   assert.equal(tripwire.secret_shapes.length, 6);
   for (const { pattern, flags } of listed) {
     assert.ok(new RegExp(pattern, flags) instanceof RegExp);
@@ -1438,14 +1522,39 @@ test("the tripwire shapes listed in cases.json are the ones the checker uses", (
   // No other pattern literal in the checker is a secret shape: the list is whole.
   const block = checkerSource.slice(checkerSource.indexOf("const SECRET_SHAPES"), checkerSource.indexOf("]);", checkerSource.indexOf("const SECRET_SHAPES")));
   assert.equal(block.split("\n").filter((line) => line.trim().startsWith("/")).length, tripwire.secret_shapes.length);
-  assert.ok(checkerSource.includes(`/${tripwire.address_start.pattern}/${tripwire.address_start.flags}`));
+  const fields = /const ADDRESS_FIELDS = new Set\(\[([^\]]*)\]\);/.exec(checkerSource);
+  assert.ok(fields, "check.mjs lists its address fields in one place");
+  assert.deepEqual(JSON.parse(`[${fields[1]}]`), tripwire.address_fields);
+  assert.equal(tripwire.address_rules.length, 4);
   assert.equal(tripwire.not_read.length, 4);
+
+  // The naming rule, applied here as cases.json words it, decides every
+  // query-key case the way that case states. A second implementation has
+  // those words and that pattern to go on.
+  const normalise = (key) => key
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((part) => part !== "")
+    .join("_");
+  const named = new RegExp(tripwire.credential_named.pattern, tripwire.credential_named.flags);
+  let decided = 0;
+  for (const entry of cases.cases) {
+    const kind = /^(credential|pass)-query-key/.exec(entry.id);
+    if (!kind || entry.edits.length !== 1 || !entry.edits[0].path.endsWith("/deeper_read")) continue;
+    const pairs = [...new URL(entry.edits[0].value).searchParams];
+    const trips = pairs.some(([key, value]) => value !== "" && named.test(normalise(key)));
+    assert.equal(trips, kind[1] === "credential", `${entry.id}: the rule as written`);
+    assert.equal(entry.result, trips ? "check_failed" : "checks_passed", entry.id);
+    decided += 1;
+  }
+  assert.ok(decided >= 45, `${decided} query-key cases were decided by the rule as written`);
 });
 
 test("each state agrees with its own fields: the state table, row by row", () => {
   const envelope = (fields) => ({ state: "ok", count: 1, limit: 4, items: [], dropped: null, unavailable: null, withheld: null, ...fields });
   const item = (id) => ({ id, summary: "s", recorded_at: null, acknowledged_at: "2026-11-01T00:00:00Z", ref: null, owed_to: null, due_at: null });
-  const dropped = (count) => ({ count, reason: "limit", deeper_read: null });
+  const dropped = (count, reason = "other") => ({ count, reason, deeper_read: null });
   const rows = [
     ["ok with its items counted", { state: "ok", count: 2, items: [item("a"), item("b")] }, true],
     ["ok at its limit", { state: "ok", count: 4, items: ["a", "b", "c", "d"].map(item) }, true],
@@ -1457,12 +1566,22 @@ test("each state agrees with its own fields: the state table, row by row", () =>
     ["quiet with an item", { state: "quiet", count: 0, items: [item("a")] }, false],
     ["quiet with unavailable set", { state: "quiet", count: 0, unavailable: { code: "other" } }, false],
     ["partial with an exact total", { state: "partial", count: 5, items: [item("a"), item("b")], dropped: dropped(3) }, true],
-    ["partial listing nothing", { state: "partial", count: 3, items: [], dropped: dropped(3) }, true],
+    ["partial listing nothing, with an exact total", { state: "partial", count: 3, items: [], dropped: dropped(3) }, true],
     ["partial with a wrong total", { state: "partial", count: 6, items: [item("a"), item("b")], dropped: dropped(3) }, false],
     ["partial with a dropped count and a null total", { state: "partial", count: null, items: [item("a")], dropped: dropped(3) }, false],
     ["partial with a floor", { state: "partial", count: 9, items: [item("a")], dropped: dropped(null) }, true],
-    ["partial with a floor equal to the items", { state: "partial", count: 1, items: [item("a")], dropped: dropped(null) }, true],
+    ["partial with a floor one above the items", { state: "partial", count: 2, items: [item("a")], dropped: dropped(null) }, true],
+    // A partial envelope says at least one entry was dropped, so a floor is
+    // above what is listed, and 0 is never a floor.
+    ["partial with a floor equal to the items", { state: "partial", count: 1, items: [item("a")], dropped: dropped(null) }, false],
+    ["partial listing nothing, with a floor of 0", { state: "partial", count: 0, items: [], dropped: dropped(null) }, false],
+    ["partial listing nothing, with no count at all", { state: "partial", count: null, items: [], dropped: dropped(null) }, true],
     ["partial with no count at all", { state: "partial", count: null, items: [item("a")], dropped: dropped(null) }, true],
+    // Dropped for the limit means the list is full.
+    ["partial for its limit, with a full list", { state: "partial", count: 7, items: ["a", "b", "c", "d"].map(item), dropped: dropped(3, "limit") }, true],
+    ["partial for its limit, with room left", { state: "partial", count: 5, items: [item("a"), item("b")], dropped: dropped(3, "limit") }, false],
+    ["partial for its limit, listing nothing", { state: "partial", count: 3, items: [], dropped: dropped(3, "limit") }, false],
+    ["partial by design, with room left", { state: "partial", count: 5, items: [item("a"), item("b")], dropped: dropped(3, "not_listed_by_design") }, true],
     ["partial with a floor below the items", { state: "partial", count: 1, items: [item("a"), item("b")], dropped: dropped(null) }, false],
     ["partial without dropped", { state: "partial", count: 1, items: [item("a")] }, false],
     ["partial with withheld set", { state: "partial", count: 4, items: [item("a")], dropped: dropped(3), withheld: { code: "other" } }, false],
@@ -1576,8 +1695,12 @@ test("each ceiling is exact: a body at the limit is read, one byte over is not",
     assert.equal(Buffer.byteLength(JSON.stringify(body)), bytes);
     return fixture;
   };
-  assert.deepEqual(codesOf(check(padded(MAX_ORIENTATION_BYTES))), ["schema_additional_properties"]);
-  assert.deepEqual(codesOf(check(padded(MAX_ORIENTATION_BYTES + 1))), ["orientation_over_ceiling", "schema_additional_properties"]);
+  // (A body with an undefined field is also one the later checks do not read.)
+  assert.deepEqual(codesOf(check(padded(MAX_ORIENTATION_BYTES))), ["document_not_read", "schema_additional_properties"]);
+  assert.deepEqual(
+    codesOf(check(padded(MAX_ORIENTATION_BYTES + 1))),
+    ["document_not_read", "orientation_over_ceiling", "schema_additional_properties"],
+  );
 });
 
 test("every not_established token is needed, one by one", () => {
@@ -1655,6 +1778,62 @@ test("the checker bounds its issues, accepts three kinds of input, and refuses a
   assert.equal(outcomesOf(result)["I.NO_CREDENTIAL"], "fail");
   assert.match(result.checks.find((entry) => entry.id === "I.NO_CREDENTIAL").observed, /^300 /, "the count is of all disagreements, not only the issues kept");
 
+  // A full list still holds an issue for every check that fails or is
+  // unknown, and no check says an issue was recorded when it was left out.
+  const crowded = clone(example);
+  const first = crowded.visits.first.view.response.body;
+  const shaped = `gh${"p"}_${"A1b2C3d4".repeat(3)}`;
+  const filler = (index) => ({
+    id: `filler-${index}`, title: "Filler", kind: "other", scope: "project", state: "ok", count: 20, limit: 32,
+    items: Array.from({ length: 20 }, (_, at) => ({
+      id: `item-${at}`, summary: shaped, recorded_at: null, acknowledged_at: null, ref: null, owed_to: null, due_at: null,
+    })),
+    dropped: null, unavailable: null, withheld: null,
+  });
+  first.sections = [first.sections[0], ...Array.from({ length: 15 }, (_, index) => filler(index))];
+  crowded.visits.second.view.response.body.reply_expected = true;
+  const full = check(crowded);
+  const observedOf = (id) => full.checks.find((entry) => entry.id === id).observed;
+  const held = (code) => full.issues.filter((entry) => entry.code === code).length;
+  assert.equal(full.issues.length, MAX_ISSUES);
+  assert.equal(outcomesOf(full)["R6.NO_OBLIGATION"], "fail");
+  assert.equal(held("reply_expected"), 1, "the one issue of a later check is in the full list");
+  assert.equal(observedOf("R6.NO_OBLIGATION"), "1 disagreement recorded as an issue.");
+  assert.equal(outcomesOf(full)["R3.SECTIONS_KEPT"], "fail");
+  assert.ok(held("section_missing") >= 1, "at least one issue of every failing check is kept");
+  for (const [id, code, count] of [["I.NO_CREDENTIAL", "secret_shape", 300], ["R3.SECTIONS_KEPT", "section_missing", 15]]) {
+    assert.ok(held(code) < count, `${id}: some of its issues were left out`);
+    assert.equal(
+      observedOf(id),
+      `${count} disagreements; the issues list holds ${held(code)} of them and is full at ${MAX_ISSUES}.`,
+      `${id} says how many of its issues the list holds`,
+    );
+  }
+  assert.deepEqual(
+    full.checks.filter((entry) => entry.outcome === "fail").map((entry) => entry.id),
+    ["I.NO_CREDENTIAL", "R3.SECTIONS_KEPT", "R6.NO_OBLIGATION"],
+  );
+  assert.match(schemas.result.properties.issues.description, /first failure and the first undecidable point of each check are kept/);
+  // The issues that are kept stay in the order they arose.
+  assert.deepEqual(
+    full.issues.map((entry) => entry.code),
+    [...Array.from({ length: held("secret_shape") }, () => "secret_shape"), "reply_expected", "section_missing"],
+  );
+
+  // A body with more schema issues than the validator counts: the count is
+  // given as a floor, since the validator stopped at its bound.
+  const broken = clone(example);
+  const template = broken.visits.first.view.response.body.sections[2];
+  broken.visits.first.view.response.body.sections = Array.from({ length: 16 }, (_, index) => ({
+    ...template, id: `section-${index}`, items: Array.from({ length: 32 }, () => ({ id: 5 })),
+  }));
+  const overfull = check(broken);
+  assert.equal(overfull.issues.length, MAX_ISSUES);
+  assert.match(
+    overfull.checks.find((entry) => entry.id === "R1.VIEW").observed,
+    /^At least 256 disagreements; the issues list holds 2\d\d of them and is full at 256\.$/,
+  );
+
   const text = exampleBytes.toString("utf8");
   const fromText = checkArrivalFixtureBytes(text, { now: fixedNow });
   const fromBuffer = checkArrivalFixtureBytes(exampleBytes, { now: fixedNow });
@@ -1687,6 +1866,14 @@ test("the file reader takes one regular file within the limit", async () => {
     const notRead = await checkArrivalFixtureFile(larger, { now: fixedNow });
     assert.deepEqual(notRead.artifact, { complete: false, observed_bytes: MAX_INPUT_BYTES + 100 }, "an oversize file is sized from its metadata and not read");
     await assert.rejects(checkArrivalFixtureFile(scratch, { now: fixedNow }), /regular file|EISDIR/);
+    // A named pipe is refused before it is opened: opening one waits for a writer.
+    const pipe = join(scratch, "pipe");
+    if (process.platform !== "win32" && spawnSync("mkfifo", [pipe]).status === 0) {
+      const waited = spawnSync(process.execPath, [checkerPath, pipe], { encoding: "utf8", timeout: 10000 });
+      assert.equal(waited.status, 2, "the command line refuses a named pipe and does not wait on it");
+      assert.match(waited.stderr, /regular file/);
+      assert.equal(waited.stdout, "");
+    }
     await assert.rejects(checkArrivalFixtureFile(join(scratch, "absent.json"), { now: fixedNow }), /ENOENT/);
     await assert.rejects(checkArrivalFixtureFile("", { now: fixedNow }), /non-empty string/);
   } finally {
@@ -1774,7 +1961,7 @@ test("the checker imports only node: modules, reaches no network, and says what 
   assert.match(header, /copying, not by importing/);
 });
 
-test("the README's account of the checker matches the checker and the cases file", () => {
+test("the README names the checker's files, counts, exit codes and limits as they are", () => {
   const flat = readme.replace(/\s+/g, " ");
   assert.ok(readme.includes("[check.mjs](check.mjs)"));
   assert.ok(readme.includes("[fixtures/cases.json](fixtures/cases.json)"));
@@ -1805,11 +1992,328 @@ test("the README's account of the checker matches the checker and the cases file
   assert.equal(MAX_JSON_DEPTH, 64);
 });
 
-test("the arrival tests run inside npm test and have their own script", () => {
+test("the arrival tests run inside npm test, and the package manifest has no script for this draft", () => {
   const manifest = json("package.json", root);
-  assert.equal(manifest.scripts["test:arrival"], "node --test tests/arrival-*.test.mjs");
   // tests/*.test.mjs already takes in every arrival test file, so npm test
-  // runs them once, through test:library.
+  // runs them once, through test:library. package.json is a packed file and
+  // this draft adds nothing to it.
   assert.equal(manifest.scripts["test:library"], "node --test tests/*.test.mjs");
   assert.match(manifest.scripts.test, /npm run test:library/);
+  assert.ok(Object.keys(manifest.scripts).every((name) => !name.includes("arrival")), "no arrival script");
+  assert.ok(!JSON.stringify(manifest).includes("arrival"), "package.json does not name the draft");
+});
+
+// ---------------------------------------------------------------------------
+// Added after review: a served body that is not read, the fixed sentences of
+// a result, what the schemas say about the fields the checker relies on, and
+// the README held word for word.
+
+const PER_DOCUMENT_CHECKS = ["R2.DECLARED_EFFECTS", "R5.FRESHNESS", "R6.NO_OBLIGATION", "R7.NON_CLAIMS"];
+const PER_VIEW_CHECKS = ["R3.STATES", "R4.CURSOR"];
+
+function observedOf(result, id) {
+  return result.checks.find((entry) => entry.id === id).observed;
+}
+
+test("a served body that is not valid is not read, and no check passes over it", () => {
+  const every = [...PER_DOCUMENT_CHECKS, ...PER_VIEW_CHECKS];
+  for (const [path, reads] of [
+    [ORIENTATION_PATH, PER_DOCUMENT_CHECKS],
+    [VIEW_PATH, every],
+    [SECOND_VIEW_PATH, every],
+  ]) {
+    const result = check(withEdits([`${path}/unknown_field`, 1]));
+    const outcomes = outcomesOf(result);
+    for (const id of every) {
+      assert.equal(outcomes[id], reads.includes(id) ? "unknown" : "pass", `${id} when ${path} is served and not valid`);
+    }
+    assert.deepEqual(
+      result.issues.filter((entry) => entry.code === "document_not_read").map((entry) => entry.path),
+      [`$${path}`],
+      "one issue for the body that was not read",
+    );
+    for (const id of reads) {
+      assert.equal(
+        observedOf(result, id),
+        "Not decidable from this fixture: 1 served document was not read; see the document_not_read issue.",
+        `${id} says why it is unknown`,
+      );
+    }
+    assert.equal(result.result, "check_failed", "the body still fails its own R1 check");
+  }
+
+  // Everything a rule could hold against the unread view is in it, and none
+  // of it is passed over: the case is in cases.json for a second checker.
+  const byId = Object.fromEntries(cases.cases.map((entry) => [entry.id, entry]));
+  const unread = check(applyEdits(example, byId["view-unread-and-breaking-every-rule"].edits));
+  for (const id of every) assert.equal(outcomesOf(unread)[id], "unknown", id);
+
+  // A failure in a document that was read outranks the unknown.
+  const both = check(applyEdits(example, byId["view-unread-beside-a-view-that-fails"].edits));
+  assert.equal(outcomesOf(both)["R6.NO_OBLIGATION"], "fail");
+  assert.match(observedOf(both, "R6.NO_OBLIGATION"), /^1 disagreement recorded as an issue\.$/);
+
+  // An answer with another status is not a served document, so nothing is
+  // left unread and the checks read what there is.
+  for (const status of [403, 404, 503]) {
+    const refused = check(withEdits(["/visits/first/orientation/response/status", status]));
+    for (const id of every) assert.equal(outcomesOf(refused)[id], "pass", `${id} with the orientation answered ${status}`);
+    assert.ok(!codesOf(refused).includes("document_not_read"));
+  }
+
+  // not_run is kept for a fixture in which no document of the kind was served.
+  const none = check(applyEdits(example, byId["views-5xx"].edits));
+  for (const id of PER_VIEW_CHECKS) assert.equal(outcomesOf(none)[id], "not_run", id);
+  for (const id of PER_DOCUMENT_CHECKS) assert.equal(outcomesOf(none)[id], "pass", `${id} reads the orientation`);
+});
+
+test("the fixed sentences of a result say how far each comparison reaches", () => {
+  const result = check(exampleBytes);
+  const expected = (id) => result.checks.find((entry) => entry.id === id).expected;
+  for (const id of [...PER_DOCUMENT_CHECKS, ...PER_VIEW_CHECKS]) {
+    assert.match(expected(id), /\bserved\b/, `${id} speaks of served documents, since an unread one makes it unknown`);
+  }
+  assert.match(expected("R2.DECLARED_EFFECTS"), /the order of operational writes aside/);
+  assert.match(expected("R2.SHOWN_AGAIN"), /no item shown in the same section on both reads has a different mark/);
+  assert.match(observedOf(result, "R2.SHOWN_AGAIN"), /A named change is accepted whatever caused it\./);
+  assert.match(observedOf(result, "R2.SHOWN_AGAIN"), /recorder's own statement/);
+  assert.match(expected("R5.FRESHNESS"), /no time is compared with a request time or a clock/);
+  assert.match(expected("I.NO_CREDENTIAL"), /a query or fragment pair with a key named like a credential and a value/);
+  assert.match(expected("I.NO_CREDENTIAL"), /no address in an address field fails to parse/);
+  assert.match(expected("R3.STATES"), /state table/);
+  for (const entry of result.checks) assert.ok(entry.expected.length <= 1000, entry.id);
+});
+
+test("operational writes are compared as a set, and a mark set under another section passes with its limit stated", () => {
+  const writes = ["credential last-used time", "request log line"];
+  const reordered = withEdits(
+    [`${ORIENTATION_PATH}/view/read_effects/operational_writes`, writes],
+    [`${VIEW_PATH}/read_effects/operational_writes`, writes],
+    [`${SECOND_VIEW_PATH}/read_effects/operational_writes`, [...writes].reverse()],
+  );
+  assert.equal(check(reordered).result, "checks_passed", "the same writes in another order");
+  const other = withEdits(
+    [`${ORIENTATION_PATH}/view/read_effects/operational_writes`, writes],
+    [`${VIEW_PATH}/read_effects/operational_writes`, writes],
+    [`${SECOND_VIEW_PATH}/read_effects/operational_writes`, [writes[0], "read receipt"]],
+  );
+  assert.deepEqual(codesOf(check(other)), ["declarations_differ"], "another write is still a difference");
+
+  const byId = Object.fromEntries(cases.cases.map((entry) => [entry.id, entry]));
+  const moved = check(applyEdits(example, byId["pass-item-ended-and-added-elsewhere-with-a-mark"].edits));
+  assert.equal(moved.result, "checks_passed");
+  // The limit that case shows is one every result states.
+  assert.ok(moved.not_established.includes("that a read wrote nothing on the host; only declarations and the two recorded views were compared"));
+  assert.ok(moved.not_established.includes("that a difference between the reads was caused by reading"));
+});
+
+test("the schemas say what the checker relies on for a position, a change list, a mark, a scope, an origin and a house with no cursor", () => {
+  const { view, fixture, orientation } = schemas;
+  assert.match(view.properties.acknowledgement.description, /how far acknowledgements made under this credential have reached/);
+  assert.match(view.properties.acknowledgement.description, /moves only when one is made/);
+  assert.match(view.properties.changes.description, /the net difference between what the two reads list, not a list of the events between them/);
+  assert.match(view.$defs.item.properties.acknowledged_at.description, /no form for a mark with no time/);
+  assert.match(view.$defs.scope.description, /another unit of tenancy/);
+  assert.match(view.properties.valid_until.description, /never with a request time/);
+  for (const name of ["view", "orientation"]) {
+    assert.match(schemas[name].$defs.read_effects.properties.operational_writes.description, /Order carries no meaning/);
+  }
+  const origin = fixture.properties.origin.description;
+  assert.match(origin, /host_bytes: each body is the JSON a host answered with, parsed and not altered; the bytes themselves are not kept/);
+  assert.match(origin, /projected_by_recorder: .* changes no value and adds no statement the host did not make/);
+  assert.match(origin, /the field is left out and that body fails its check/);
+  assert.match(fixture.properties.visits.properties.second.properties.bad_cursor.description, /names no cursor parameter/);
+  assert.match(orientation.properties.view.properties.cursor_parameter.description, /no bad-cursor request/);
+});
+
+// Markdown split into the blocks a reader meets: a paragraph, a list item, or
+// a table row, each with its white space collapsed.
+function blocksOf(markdown) {
+  const blocks = [];
+  for (const chunk of markdown.trim().split(/\n{2,}/)) {
+    const lines = chunk.split("\n");
+    if (lines.every((line) => line.startsWith("|"))) {
+      blocks.push(...lines);
+      continue;
+    }
+    let current = null;
+    for (const line of lines) {
+      if (current === null || /^(?:- |[0-9]+\. )/.test(line)) {
+        if (current !== null) blocks.push(current);
+        current = line.trim();
+      } else {
+        current += ` ${line.trim()}`;
+      }
+    }
+    if (current !== null) blocks.push(current);
+  }
+  return blocks;
+}
+
+// The text under one heading, up to the next heading of the same or a higher level.
+function readmeSection(heading) {
+  const start = readme.indexOf(`\n${heading}\n`);
+  assert.ok(start >= 0, `README has the heading ${heading}`);
+  const rest = readme.slice(start + heading.length + 2);
+  const level = /^#+/.exec(heading)[0].length;
+  const next = rest.search(new RegExp(`\\n#{1,${level}} `));
+  return next < 0 ? rest : rest.slice(0, next);
+}
+
+// What the draft README says where a reader acts on it, held word for word.
+// A change to one of these sections has to be made here as well, on purpose.
+const README_PINNED = {
+  "## Where the rules come from": [
+    "| Rule | Source |",
+    "|---|---|",
+    "| 1, 5 | [AGENT-FEEDBACK.md](../../AGENT-FEEDBACK.md), the 2026-07-11 report, \"What I would change first\", item 5 |",
+    "| 2, 6 | root [README.md](../../README.md), Continuity & Arrival: \"A look, not an event\" (2) and \"A welcome, not a work order\" (2, 6) |",
+    "| 3 | [WEBSITE-ROLLOUT.md](../../WEBSITE-ROLLOUT.md), website integration gates 2 and 3 |",
+    "| 4 | the same list, gate 1 |",
+    "| 7 | [AGENTS.md](../../AGENTS.md): report evidence, claims, and unknowns separately; the same list, gate 4 |",
+    "The root README calls this arrival a wake. This draft does not use the word: the 2026-07-11 report says it has stood for both a public orientation and an authenticated read. The shapes, the state `withheld`, the two problem codes, and the choice that a cursor annotates a full view are this draft's own. No text or code from any host was copied into this directory.",
+  ],
+  "## The seven rules": [
+    "1. **Two addresses.** The orientation answers anyone. The view address answers a request with no credential by refusing: a [Surface 0.1 problem](../../surface/0.1/problem.schema.json) with code `credential_required` whose first next action is the orientation. It does not answer with a smaller view.",
+    "2. **A read is not an event.** Each document declares what a read writes. The declarations agree, and say `none` for the participant's record. An item shown and not acknowledged is shown again unchanged on the next read, or the change is named, whatever caused it.",
+    "3. **Quiet, partial, unavailable and withheld are different.** Each section says which it is, with its count and limit. A section that could not be read, or is not shown, has a null count, never 0. A section listed on one read is listed on the next.",
+    "4. **The caller keeps the cursor.** The view hands back a cursor. Presenting it returns the full view again, plus a list naming what differs. A cursor the host does not accept is refused with a Surface problem with code `cursor_not_accepted` and a next action back to the view. It is never answered with a view.",
+    "5. **Every document is dated.** `as_of` says when it was made. `valid_until` says until when the host stands by it. Neither is compared with a request time: a document past `valid_until` when requested still passes.",
+    "6. **Reading creates no obligation.** No reply is expected. Recorded obligations sit in exactly one section of that kind; `owed_to` and `due_at` are set nowhere else.",
+    "7. **Each document says what it does not establish.**",
+    "A field whose presence is itself a rule (`as_of`, `valid_until`, `read_effects`, `reply_expected`, `read_creates_obligation`) can be `null`, meaning not stated, and `not_established` can be empty. The document stays schema-valid; only that rule is unmet.",
+  ],
+  "### States": [
+    "| State | Items | Count | Other envelope fields |",
+    "|---|---|---|---|",
+    "| `ok` | 1 to `limit` | `items.length` | all null |",
+    "| `quiet` | none | 0 | all null |",
+    "| `partial` | 0 to `limit` | see below | `dropped: {count\\|null, reason, deeper_read\\|null}` |",
+    "| `unavailable` | none | null | `unavailable: {code}` |",
+    "| `withheld` | none | null | `withheld: {code}` |",
+    "In a `partial` envelope, a numeric `dropped.count` makes the count an exact total, `items.length + dropped.count`. A null one leaves the count null or a floor above `items.length`. With reason `limit`, `items.length` is `limit`.",
+    "A view that breaks this table is still schema-valid; agreement with it is the check `R3.STATES`.",
+  ],
+  "### What `not_established` means": [
+    "It holds tokens. A view that lists a token says it does not establish:",
+    "- `reader_sameness`: that whoever reads now made any earlier read;",
+    "- `identity_beyond_credential`: who presented the credential, beyond that the host accepted it;",
+    "- `completeness_beyond_bounds`: that nothing exists outside the listed sections, limits and counts;",
+    "- `instruction_or_authority`: that anything shown instructs the reader or gives authority to act;",
+    "- `obligation_binds_reader`: that a listed obligation is valid, or binds whoever reads it;",
+    "- `waiver_by_silence`: that not replying or not acknowledging waives or settles anything;",
+    "- `other_layers_unrecorded`: what proxies, caches, logs or other layers record about the read.",
+    "An orientation that lists a token says it does not establish:",
+    "- `anything_about_caller`: anything about who is asking;",
+    "- `access_to_view`: that the caller will be given the view.",
+  ],
+  "## Checks and result": [
+    "`node arrival/0.1/check.mjs <fixture.json> [--json]` reads that file and its own three schemas, and contacts nothing. It exits 0 for `checks_passed`, 1 for `check_failed` or `indeterminate`, 2 for misuse. [result.schema.json](result.schema.json) fixes twenty checks, in this order, and how the result word follows from them.",
+    "*Served*: status 200. *Valid*: served, with a body that matches its schema; `format` is asserted, so a `date-time` is a real time and a `uri` parses as a URL (WHATWG), as in Surface's checker. *View address*: the href every request but the orientation's shares. *Equal*: the same JSON once object keys are sorted. *Whole*: state `ok` or `quiet`; a null `changes` is not whole.",
+    "| Check | Fails when | Unknown when |",
+    "|---|---|---|",
+    "| `I.SIZE` | never | over 262,144 bytes; nothing is parsed |",
+    "| `I.UTF8` | a byte-order mark, or invalid UTF-8 | |",
+    "| `I.JSON` | not one JSON value, a repeated key, or nesting over 64 | |",
+    "| `I.SHAPE` | the fixture does not match its schema | |",
+    "| `I.NO_CREDENTIAL` | a string or field name has a secret shape; an address, in an address field or inside other text, has userinfo, or a query or fragment pair with a credential-named key and a value; an address in an address field does not parse. The name alone decides: `token=USDC` fails. Cursors and `position` are not read; `fixtures/cases.json` gives the shapes, fields and names. A tripwire, not a guarantee | |",
+    "| `I.RECORD` | a credential or cursor on the first two requests; no credential on one of the other three; a cursor on the first view request, or none on the bad-cursor one; the view requests not sharing one href, or the orientation having it; `requested_at` going back in slot order; a second-read cursor when a recorded first view was not served, or other than the one it handed back; a bad cursor a recorded view handed back | |",
+    "| `R1.ORIENTATION` | status not 200; body not valid, or over its ceiling; `view.href` not the view address | 5xx |",
+    "| `R1.REFUSAL` | status not 4xx; body not a Surface problem with that status; code not `credential_required`; terminal; first next action not the orientation's href | 5xx; no orientation recorded |",
+    "| `R1.VIEW` | a served view is not valid, is over its ceiling, or repeats a section id, or an item id in one section | no view served |",
+    "| `P.PAIR` | never | a view not served; `audience` not equal |",
+    "| `R2.DECLARED_EFFECTS` | a valid document's declaration is null (`not_stated`) or says `some`; two differ, the order of `operational_writes` aside | one says `unknown` |",
+    "| `R2.SHOWN_AGAIN` | `position` differs, or an item in one section on both reads has another `acknowledged_at` (`acknowledgement_moved`); an owned difference is unnamed and decidable while `changes` is whole | the recorder does not say `no` (nothing else is read); an owned difference is unnamed, and undecidable or `changes` not whole; no unacknowledged item came back equal (`not_exercised`) |",
+    "| `R3.STATES` | an envelope in a valid view breaks the state table | |",
+    "| `R3.SECTIONS_KEPT` | a first-read section is missing on the second read, or its kind or scope differs | |",
+    "| `R4.CURSOR` | a valid view's cursor is null; a read with no cursor is not `full`, or has a basis cursor or `changes` | |",
+    "| `R4.CHANGES` | the basis is not `since_cursor` with the cursor presented; `changes` is null; an entry names a section in neither view, or contradicts the views; an owned decidable difference is unnamed while `changes` is whole | `changes` is unavailable or withheld, or partial with an owned difference unnamed; no decidable difference was found and named (`not_exercised`) |",
+    "| `R4.BAD_CURSOR` | as `R1.REFUSAL`, with code `cursor_not_accepted` and any next action at the view address | 5xx |",
+    "| `R5.FRESHNESS` | a valid document's `as_of` or `valid_until` is null, or `valid_until` is before `as_of`; `P.PAIR` passed and the second view is dated before the first | |",
+    "| `R6.NO_OBLIGATION` | a valid document's `reply_expected` or `read_creates_obligation` is not false; a view lacks exactly one `recorded_obligations` section, or sets `owed_to` or `due_at` outside it | |",
+    "| `R7.NON_CLAIMS` | a valid document lacks a token above | |",
+    "A check is `not_run` when an earlier `I` check other than `I.NO_CREDENTIAL` did not pass, or when what it reads is absent: an exchange; a served document, or for `R3.STATES` and `R4.CURSOR` a served view; for `P.PAIR`, both views recorded and `R1.VIEW` passed; for `R2.SHOWN_AGAIN`, `R3.SECTIONS_KEPT` and `R4.CHANGES`, `P.PAIR` passed and, for the last, a cursor on the second request. A served body that is not valid fails its `R1` check and is not read further: each later check that reads valid documents or valid views of its kind is then `unknown` (`document_not_read`). A failure outranks an unknown.",
+    "In a section on both reads, an item *differs* (on both, not equal), is *gone* (first only) or is *new* (second only). Differs is always decidable; gone when the second-read section is whole; new when the first-read one is. `R2.SHOWN_AGAIN` owns differs and gone for items unacknowledged on the first read; `R4.CHANGES` owns the rest. `changed` names differs; `ended` or `out_of_window`, gone; `added`, new. An entry contradicts the views when it says `added` for an item on the first read; `changed` for an equal one; `ended` or `out_of_window` for one on the second read; `out_of_window` where the second-read section is not `partial`; anything but `added` for an item absent from a whole first-read section; or `added` or `changed` for one absent from a whole second-read section.",
+    "A result says, per check, whether the exchanges in the fixture agree with that check. Beyond the fixture's origin word, it copies no value from the fixture. It establishes none of the ten lines the schema fixes under `not_established`, which every result repeats. Among them: that a host sent the exchanges or behaves so now; and conformance, authority, consent, safety or a caller's inner state.",
+  ],
+  "## Beside Surface, Work and Covenant": [
+    "- [Surface 0.1](../../surface/0.1/README.md) tests a public service with no credential, and says a pass is no proof of continuity. Arrival reuses its problem shape and href pattern and changes nothing in it. An Arrival result is not a Surface result.",
+    "- [Work 0.1](../../work/0.1/README.md) records one finite piece of work. Arrival's result is modelled on Work's, with its own result words; its timestamp form is Work's.",
+    "- [Covenant 0.1](../../covenant/0.1/README.md) states host duties. Arrival is not an adoption, and is not evidence for one. The tokens `waiver_by_silence`, `other_layers_unrecorded` and `identity_beyond_credential` cover ground that the duties `rest.silence-is-not-consent`, `privacy.no-cross-layer-overclaim` and `identity.credentials-are-bounded` also cover. Arrival tests no duty.",
+    "Text, schemas and fixtures are CC BY-SA 4.0 and `check.mjs` is MPL 2.0, by the defaults in [LICENSES.md](../../LICENSES.md), which does not yet name this directory.",
+  ],
+  "## Outside Arrival 0.1": [
+    "A recorder. An endpoint. How a credential is presented, protection against replay, and signatures. Headers and content negotiation. The acknowledgement itself: only its address and position are shown. Answers that carry only the changes, or say nothing changed. Next actions inside the view, and typed values such as a balance. A record carried from one host to another. Any normative, release, or adoption-evidence claim.",
+  ],
+};
+
+test("the README's sources, rules, states, tokens, check table and place beside the other profiles are held word for word", () => {
+  for (const [heading, expected] of Object.entries(README_PINNED)) {
+    const found = blocksOf(readmeSection(heading)).filter((block) => !block.startsWith("`fixtures/cases.json` holds "));
+    assert.deepEqual(found, expected, `README section ${heading}`);
+  }
+
+  // The check table has one row for each check, in result order.
+  const rows = README_PINNED["## Checks and result"].filter((block) => block.startsWith("| `"));
+  assert.deepEqual(rows.map((row) => /^\| `([^`]+)` \|/.exec(row)[1]), CHECK_IDS);
+  // The state table has one row for each state, in schema order.
+  const states = README_PINNED["### States"].filter((block) => block.startsWith("| `"));
+  assert.deepEqual(states.map((row) => /^\| `([^`]+)` \|/.exec(row)[1]), STATES);
+  // The token lines are the schemas' tokens, in schema order.
+  const tokens = README_PINNED["### What `not_established` means"].filter((block) => block.startsWith("- `"));
+  assert.deepEqual(tokens.map((line) => /^- `([^`]+)`:/.exec(line)[1]), [...VIEW_TOKENS, ...ORIENTATION_TOKENS]);
+
+  // The duties the Covenant line names are duties of Covenant 0.1.
+  const covenant = text("covenant/0.1/covenant.json", root);
+  const named = README_PINNED["## Beside Surface, Work and Covenant"].join(" ").match(/`[a-z]+\.[a-z]+(?:-[a-z]+)+`/g);
+  assert.deepEqual(named, ["`rest.silence-is-not-consent`", "`privacy.no-cross-layer-overclaim`", "`identity.credentials-are-bounded`"]);
+  for (const id of named) assert.ok(covenant.includes(`"id": "${id.slice(1, -1)}"`), `${id} is a Covenant 0.1 duty`);
+});
+
+test("the README's bounds are the bounds the schemas and the checker hold", () => {
+  const { view, orientation } = schemas;
+  const writes = view.$defs.read_effects.properties.operational_writes;
+  const section = view.$defs.section.properties;
+  const item = view.$defs.item.properties;
+  const place = orientation.properties.place.properties;
+  const grouped = (value) => value.toLocaleString("en-US");
+  // Every text bound on one row is the same bound in the schema.
+  for (const node of [item.summary, place.summary]) assert.deepEqual([node.minLength, node.maxLength], [1, 300]);
+  for (const node of [section.title, place.name, item.owed_to.anyOf[0], writes.items]) {
+    assert.deepEqual([node.minLength, node.maxLength], [1, 120]);
+  }
+  assert.equal(view.$defs.limit.maximum, section.items.maxItems, "a limit cannot be above the items a section can list");
+  assert.equal(writes.minItems, undefined, "no operational write is a valid declaration");
+  assert.deepEqual(blocksOf(readmeSection("### Bounds")), [
+    "| What | Bound |",
+    "|---|---|",
+    `| sections; \`operational_writes\` | ${view.properties.sections.minItems} to ${view.properties.sections.maxItems}; 0 to ${writes.maxItems} entries |`,
+    `| envelope \`limit\`; items listed | ${view.$defs.limit.minimum} to ${view.$defs.limit.maximum}; 0 to ${section.items.maxItems} |`,
+    `| \`summary\`, \`place.summary\` | ${item.summary.minLength} to ${item.summary.maxLength} characters |`,
+    `| \`title\`, \`place.name\`, \`owed_to\`, each operational write | ${section.title.minLength} to ${section.title.maxLength} characters |`,
+    `| cursor; href | ${view.$defs.cursor.minLength} to ${view.$defs.cursor.maxLength}; up to ${view.$defs.href.maxLength} characters |`,
+    `| fixture file | ${grouped(MAX_INPUT_BYTES)} bytes |`,
+    `| view; orientation | ${grouped(MAX_VIEW_BYTES)}; ${grouped(MAX_ORIENTATION_BYTES)} bytes |`,
+    "The last row measures a body written again as UTF-8 JSON with no white space and no optional escape, not bytes on the wire. No schema states it.",
+  ]);
+});
+
+test("what the README says a recorder does at a house with no cursor, and with a partial list, is what the checker does", () => {
+  const flat = readme.replace(/\s+/g, " ");
+  assert.match(flat, /Where the orientation names no cursor parameter, the fifth is not made\./);
+  const byId = Object.fromEntries(cases.cases.map((entry) => [entry.id, entry]));
+  const house = byId["repeat-read-house-without-cursors"];
+  assert.equal(applyEdits(example, house.edits).visits.first.orientation.response.body.view.cursor_parameter, null);
+  assert.equal(expectedOutcomes(house)["R4.BAD_CURSOR"], "not_run");
+
+  assert.match(flat, /A null one leaves the count null or a floor above `items\.length`\. With reason `limit`, `items\.length` is `limit`\./);
+  assert.equal(expectedOutcomes(byId["state-partial-floor-equal-to-items"])["R3.STATES"], "fail");
+  assert.equal(expectedOutcomes(byId["state-partial-limit-reason-with-room"])["R3.STATES"], "fail");
+
+  assert.match(flat, /`changes` is a net list: what differs between what the two reads show, not the events between them\./);
+  assert.equal(expectedOutcomes(byId["changes-listed-as-events"])["R4.CHANGES"], "fail");
+  assert.match(flat, /`position` says how far acknowledgements under the credential have reached, and moves only when one is made\./);
+  assert.equal(expectedOutcomes(byId["shown-again-position-moved"])["R2.SHOWN_AGAIN"], "fail");
+
+  assert.match(flat, /`origin` is `hand_written`, `host_bytes` \(each body as parsed, none altered\) or `projected_by_recorder` \(reshaped; no value changed and none added\)\./);
 });

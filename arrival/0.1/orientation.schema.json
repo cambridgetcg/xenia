@@ -22,7 +22,7 @@
       "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }]
     },
     "valid_until": {
-      "description": "Until when the host stands by this document. Null means not stated.",
+      "description": "Until when the host stands by this document. Null means not stated. Arrival 0.1 compares it with as_of only, never with a request time.",
       "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }]
     },
     "audience": {
@@ -61,7 +61,7 @@
           "items": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$" }
         },
         "cursor_parameter": {
-          "description": "Name of the query parameter that carries a cursor to the view address, or null when the view takes none.",
+          "description": "Name of the query parameter that carries a cursor to the view address, or null when the view takes none. Where it is null, a recorder makes no bad-cursor request.",
           "anyOf": [
             { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,63}$" },
             { "type": "null" }
@@ -109,7 +109,7 @@
           "enum": ["none", "some", "unknown"]
         },
         "operational_writes": {
-          "description": "Each write a read still causes outside the participant's record, named in the host's words.",
+          "description": "Each write a read still causes outside the participant's record, named in the host's words. Order carries no meaning.",
           "type": "array",
           "maxItems": 8,
           "uniqueItems": true,

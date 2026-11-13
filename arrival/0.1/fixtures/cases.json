@@ -7,7 +7,7 @@
     "Each case starts from a fresh copy of the base file and applies its edits in order. The outcomes expected for the case are base_outcomes with the case's own outcomes laid over them; result is the result word.",
     "path and from are JSON Pointers (RFC 6901) into the fixture. set puts value at path, replacing what is there; when the parent is a list, the last token is an index to replace or - to append. remove deletes the member or list entry at path. copy puts a copy of the value at from at path, placed as set places it.",
     "targets names the one check a case is about. Where result is check_failed and targets is given, that check is the only one that fails.",
-    "issues lists the issue codes check.mjs reports for the case, each once. They are this checker's own words and are not part of the exit gate; the result word and the twenty outcomes are.",
+    "issues lists the issue codes check.mjs reports for the case, each once. They are this checker's own words and are not part of the exit gate; the result word and the twenty outcomes are. A result holds at most 256 issues; when more arise, at least one is kept for every check that fails or is unknown.",
     "exercised, where given, states counts expected in the result's exercised for that case; a count it leaves out is not stated. body_stays_schema_valid names a body that still matches its schema after the edits.",
     "built cases are not written as edits: some are not JSON, and the others would be very long. Each gives a recipe. Where a recipe starts from the base file, the input is that fixture written as JSON in any way that stays within the size limit."
   ],
@@ -15,10 +15,10 @@
   "base_outcomes": { "I.SIZE": "pass", "I.UTF8": "pass", "I.JSON": "pass", "I.SHAPE": "pass", "I.NO_CREDENTIAL": "pass", "I.RECORD": "pass", "R1.ORIENTATION": "pass", "R1.REFUSAL": "pass", "R1.VIEW": "pass", "P.PAIR": "pass", "R2.DECLARED_EFFECTS": "pass", "R2.SHOWN_AGAIN": "pass", "R3.STATES": "pass", "R3.SECTIONS_KEPT": "pass", "R4.CURSOR": "pass", "R4.CHANGES": "pass", "R4.BAD_CURSOR": "pass", "R5.FRESHNESS": "pass", "R6.NO_OBLIGATION": "pass", "R7.NON_CLAIMS": "pass" },
   "base_exercised": { "items_compared_equal": 2, "differences_found": 3, "differences_named": 3, "states_seen": { "ok": 4, "quiet": 1, "partial": 2, "unavailable": 2, "withheld": 2 } },
   "tripwire": {
-    "note": "What I.NO_CREDENTIAL looks for, as regular expressions in ECMAScript syntax with their flags. Adapted from work/0.1/check.mjs. A match is a failure; no match establishes nothing.",
+    "note": "What I.NO_CREDENTIAL looks for, with regular expressions in ECMAScript syntax and their flags. Adapted from work/0.1/check.mjs. A match is a failure whatever the value is; no match establishes nothing.",
     "secret_shapes": [
       {
-        "pattern": "\\bsk-(?=[A-Za-z0-9_-]*[0-9])[A-Za-z0-9_-]{20,}\\b",
+        "pattern": "(?<![A-Za-z0-9_-])sk-(?=[A-Za-z0-9_-]*[0-9])[A-Za-z0-9_-]{20,}\\b",
         "flags": ""
       },
       {
@@ -38,19 +38,31 @@
         "flags": "i"
       },
       {
-        "pattern": "\\beyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\b",
+        "pattern": "(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\b",
         "flags": ""
       }
     ],
     "secret_shapes_read": "Every field name in the fixture, and every string value except the four places under not_read.",
+    "address_fields": ["href", "ref", "deeper_read", "manifest", "type", "docs"],
     "address_start": {
       "pattern": "^https?:\\/\\/",
       "flags": "i"
     },
-    "address_rules": "A string value that matches address_start fails when it does not parse as a URL by the WHATWG URL Standard, when the parsed URL has a username or password, when the string contains #, or when a query key, after decoding, matches credential_named.",
+    "address_run": {
+      "pattern": "https?:\\/\\/[^\\s\"'<>]+",
+      "flags": "gi"
+    },
+    "address_rules": [
+      "A string value is in an address field when the nearest field name above it is one of address_fields: it is that field's value, or an entry of a list that is. Such a value that matches address_start is one address, taken whole. In every other string value that is read, each run that matches address_run is an address.",
+      "An address in an address field fails when it does not parse as a URL by the WHATWG URL Standard (href_unparseable). An address inside other text is not asked to parse.",
+      "An address fails when the text between :// and the next /, ? or # holds @ (href_userinfo).",
+      "An address fails when its query or its fragment holds a pair whose key is credential-named and whose value is not empty (href_credential_query_key, href_credential_fragment_key). The query is the text after the first ? and before the first #; the fragment is the text after the first #. Each is read as application/x-www-form-urlencoded pairs: split at &, each pair split at its first =, then + and percent-escapes decoded."
+    ],
     "credential_named": {
-      "pattern": "(?:password|passwd|secret|token|api[_-]?key|private[_-]?key|authorization|cookie|session)",
-      "flags": "i"
+      "normalise": "Put a break between a lower-case letter or a digit and an upper-case letter that follows it. Lower-case the key. Split it at every run of characters other than a to z and 0 to 9, drop empty parts, and join the parts with _.",
+      "pattern": "(?:^|_)(?:password|passwd|pwd|passphrase|secret|authorization|bearer|credentials?|jwt|signature|cookie|session(?:id)?|(?:api|access|private)_?key|(?<!page_)token)(?:_|$)|^(?:key|auth|sig|pass)$",
+      "flags": "",
+      "note": "Applied to the normalised key. The name alone decides: token=USDC fails. key, auth, sig and pass count only as the whole key. code and state are not listed, and a token part straight after a page part is a paging key."
     },
     "not_read": [
       "request/cursor of each exchange",
@@ -112,7 +124,7 @@
     },
     {
       "id": "credential-address-with-userinfo",
-      "description": "A string that is an address carries a name before its host.",
+      "description": "Free text that is an address carries a name before its host.",
       "edits": [
         {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"https://reader@house.example/about"}
       ],
@@ -122,32 +134,21 @@
       "issues": ["href_userinfo"]
     },
     {
-      "id": "credential-address-with-fragment",
-      "description": "An address carries a fragment.",
-      "edits": [
-        {"op":"set","path":"/visits/first/orientation/response/body/place/manifest","value":"https://house.example/.well-known/agent.json#top"}
-      ],
-      "targets": "I.NO_CREDENTIAL",
-      "result": "check_failed",
-      "outcomes": { "I.NO_CREDENTIAL": "fail" },
-      "issues": ["href_fragment"]
-    },
-    {
-      "id": "credential-address-with-empty-fragment",
-      "description": "An address ends in #, a fragment with nothing in it.",
-      "edits": [
-        {"op":"set","path":"/visits/first/orientation/response/body/place/manifest","value":"https://house.example/.well-known/agent.json#"}
-      ],
-      "targets": "I.NO_CREDENTIAL",
-      "result": "check_failed",
-      "outcomes": { "I.NO_CREDENTIAL": "fail" },
-      "issues": ["href_fragment"]
-    },
-    {
       "id": "credential-address-in-capitals-with-userinfo",
       "description": "A string that begins HTTPS:// in capitals is read as an address, and carries a name before its host.",
       "edits": [
         {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"HTTPS://reader@house.example/about"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_userinfo"]
+    },
+    {
+      "id": "credential-address-inside-a-sentence-with-userinfo",
+      "description": "An address in the middle of a sentence carries a name before its host.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"Write to https://reader@house.example/about for more."}
       ],
       "targets": "I.NO_CREDENTIAL",
       "result": "check_failed",
@@ -166,6 +167,424 @@
       "issues": ["href_credential_query_key"]
     },
     {
+      "id": "credential-query-key-inside-a-sentence",
+      "description": "An address in the middle of a sentence has a query key named like a credential.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"See https://house.example/notes?access_token=example for more."}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-fragment-key",
+      "description": "An address carries a fragment that holds a pair whose key is named like a credential.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/manifest","value":"https://house.example/.well-known/agent.json#access_token=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_fragment_key"]
+    },
+    {
+      "id": "credential-fragment-key-after-a-query",
+      "description": "An address has a plain query, and a fragment whose second pair has a key named like a credential. The query ends where the fragment begins, so one rule is broken and not two.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/manifest","value":"https://house.example/.well-known/agent.json?v=1#section&id_token=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_fragment_key"]
+    },
+    {
+      "id": "credential-query-key-names-a-currency",
+      "description": "A deeper-read address has the query pair token=USDC. The name alone decides, so this fails though the value is no credential.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/wallets/w1/deposit-address?chain=base&token=USDC"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-key",
+      "description": "A deeper-read address has the query key key, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&key=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-auth",
+      "description": "A deeper-read address has the query key auth, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&auth=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-sig",
+      "description": "A deeper-read address has the query key sig, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&sig=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-pass",
+      "description": "A deeper-read address has the query key pass, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&pass=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-password",
+      "description": "A deeper-read address has the query key password, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&password=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-passwd",
+      "description": "A deeper-read address has the query key passwd, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&passwd=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-pwd",
+      "description": "A deeper-read address has the query key pwd, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&pwd=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-passphrase",
+      "description": "A deeper-read address has the query key passphrase, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&passphrase=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-secret",
+      "description": "A deeper-read address has the query key secret, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&secret=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-client-secret",
+      "description": "A deeper-read address has the query key client_secret, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&client_secret=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-token",
+      "description": "A deeper-read address has the query key token, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&token=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-id-token",
+      "description": "A deeper-read address has the query key id_token, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&id_token=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-auth-token-camel",
+      "description": "A deeper-read address has the query key authToken, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&authToken=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-apikey",
+      "description": "A deeper-read address has the query key apikey, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&apikey=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-api-key",
+      "description": "A deeper-read address has the query key api_key, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&api_key=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-x-api-key",
+      "description": "A deeper-read address has the query key X-Api-Key, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&X-Api-Key=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-access-key",
+      "description": "A deeper-read address has the query key access_key, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&access_key=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-access-key-id-camel",
+      "description": "A deeper-read address has the query key accessKeyId, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&accessKeyId=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-private-key",
+      "description": "A deeper-read address has the query key private_key, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&private_key=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-privatekey",
+      "description": "A deeper-read address has the query key privatekey, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&privatekey=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-authorization",
+      "description": "A deeper-read address has the query key authorization, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&authorization=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-bearer",
+      "description": "A deeper-read address has the query key bearer, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&bearer=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-credential",
+      "description": "A deeper-read address has the query key credential, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&credential=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-x-amz-credential",
+      "description": "A deeper-read address has the query key X-Amz-Credential, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&X-Amz-Credential=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-credentials",
+      "description": "A deeper-read address has the query key credentials, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&credentials=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-jwt",
+      "description": "A deeper-read address has the query key jwt, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&jwt=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-signature",
+      "description": "A deeper-read address has the query key signature, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&signature=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-x-amz-signature",
+      "description": "A deeper-read address has the query key X-Amz-Signature, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&X-Amz-Signature=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-cookie",
+      "description": "A deeper-read address has the query key cookie, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&cookie=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-session",
+      "description": "A deeper-read address has the query key session, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&session=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-session-id",
+      "description": "A deeper-read address has the query key session_id, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&session_id=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-session-id-camel",
+      "description": "A deeper-read address has the query key sessionId, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&sessionId=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-sessionid",
+      "description": "A deeper-read address has the query key sessionid, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&sessionid=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
+      "id": "credential-query-key-token-percent-encoded",
+      "description": "A deeper-read address has the query key %74oken, with the value example.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&%74oken=example"}
+      ],
+      "targets": "I.NO_CREDENTIAL",
+      "result": "check_failed",
+      "outcomes": { "I.NO_CREDENTIAL": "fail" },
+      "issues": ["href_credential_query_key"]
+    },
+    {
       "id": "credential-bearer-value",
       "description": "Free text carries a token-shaped Bearer value.",
       "edits": [
@@ -177,25 +596,14 @@
       "issues": ["secret_shape"]
     },
     {
-      "id": "credential-address-does-not-parse",
-      "description": "A string that begins like an address does not parse as one.",
-      "edits": [
-        {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"https://house.example:99999/about"}
-      ],
-      "targets": "I.NO_CREDENTIAL",
-      "result": "check_failed",
-      "outcomes": { "I.NO_CREDENTIAL": "fail" },
-      "issues": ["href_unparseable"]
-    },
-    {
       "id": "credential-shaped-field-name",
       "description": "A body carries a field whose name has a secret shape. The field is also one the orientation schema does not define, so two checks fail and this case has no single target.",
       "edits": [
         {"op":"set","path":"/visits/first/orientation/response/body/Bearer example0000000000000000","value":true}
       ],
       "result": "check_failed",
-      "outcomes": { "I.NO_CREDENTIAL": "fail", "R1.ORIENTATION": "fail" },
-      "issues": ["secret_shape", "schema_additional_properties"]
+      "outcomes": { "I.NO_CREDENTIAL": "fail", "R1.ORIENTATION": "fail", "R2.DECLARED_EFFECTS": "unknown", "R5.FRESHNESS": "unknown", "R6.NO_OBLIGATION": "unknown", "R7.NON_CLAIMS": "unknown" },
+      "issues": ["secret_shape", "schema_additional_properties", "document_not_read"]
     },
     {
       "id": "record-orientation-with-credential",
@@ -348,8 +756,8 @@
       ],
       "targets": "R1.ORIENTATION",
       "result": "check_failed",
-      "outcomes": { "R1.ORIENTATION": "fail" },
-      "issues": ["schema_additional_properties"]
+      "outcomes": { "R1.ORIENTATION": "fail", "R2.DECLARED_EFFECTS": "unknown", "R5.FRESHNESS": "unknown", "R6.NO_OBLIGATION": "unknown", "R7.NON_CLAIMS": "unknown" },
+      "issues": ["schema_additional_properties", "document_not_read"]
     },
     {
       "id": "orientation-points-elsewhere",
@@ -370,8 +778,8 @@
       ],
       "targets": "R1.ORIENTATION",
       "result": "check_failed",
-      "outcomes": { "R1.ORIENTATION": "fail" },
-      "issues": ["schema_format"]
+      "outcomes": { "R1.ORIENTATION": "fail", "R2.DECLARED_EFFECTS": "unknown", "R5.FRESHNESS": "unknown", "R6.NO_OBLIGATION": "unknown", "R7.NON_CLAIMS": "unknown" },
+      "issues": ["schema_format", "document_not_read"]
     },
     {
       "id": "orientation-address-with-an-impossible-port",
@@ -380,8 +788,8 @@
         {"op":"set","path":"/visits/first/orientation/response/body/place/manifest","value":"https://house.example:99999/agent.json"}
       ],
       "result": "check_failed",
-      "outcomes": { "I.NO_CREDENTIAL": "fail", "R1.ORIENTATION": "fail" },
-      "issues": ["href_unparseable", "schema_format"]
+      "outcomes": { "I.NO_CREDENTIAL": "fail", "R1.ORIENTATION": "fail", "R2.DECLARED_EFFECTS": "unknown", "R5.FRESHNESS": "unknown", "R6.NO_OBLIGATION": "unknown", "R7.NON_CLAIMS": "unknown" },
+      "issues": ["href_unparseable", "schema_format", "document_not_read"]
     },
     {
       "id": "orientation-dated-on-a-day-that-does-not-exist",
@@ -391,8 +799,8 @@
       ],
       "targets": "R1.ORIENTATION",
       "result": "check_failed",
-      "outcomes": { "R1.ORIENTATION": "fail" },
-      "issues": ["schema_format"]
+      "outcomes": { "R1.ORIENTATION": "fail", "R2.DECLARED_EFFECTS": "unknown", "R5.FRESHNESS": "unknown", "R6.NO_OBLIGATION": "unknown", "R7.NON_CLAIMS": "unknown" },
+      "issues": ["schema_format", "document_not_read"]
     },
     {
       "id": "orientation-repeats-a-credential-kind",
@@ -402,8 +810,19 @@
       ],
       "targets": "R1.ORIENTATION",
       "result": "check_failed",
-      "outcomes": { "R1.ORIENTATION": "fail" },
-      "issues": ["schema_unique_items"]
+      "outcomes": { "R1.ORIENTATION": "fail", "R2.DECLARED_EFFECTS": "unknown", "R5.FRESHNESS": "unknown", "R6.NO_OBLIGATION": "unknown", "R7.NON_CLAIMS": "unknown" },
+      "issues": ["schema_unique_items", "document_not_read"]
+    },
+    {
+      "id": "orientation-served-with-no-body",
+      "description": "The orientation address answers 200 with no JSON object. Nothing was read, so each check that reads every served document is unknown.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body","value":null}
+      ],
+      "targets": "R1.ORIENTATION",
+      "result": "check_failed",
+      "outcomes": { "R1.ORIENTATION": "fail", "R2.DECLARED_EFFECTS": "unknown", "R5.FRESHNESS": "unknown", "R6.NO_OBLIGATION": "unknown", "R7.NON_CLAIMS": "unknown" },
+      "issues": ["schema_type", "document_not_read"]
     },
     {
       "id": "orientation-5xx",
@@ -661,8 +1080,62 @@
       ],
       "targets": "R1.VIEW",
       "result": "check_failed",
-      "outcomes": { "R1.VIEW": "fail", "P.PAIR": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run" },
-      "issues": ["schema_required"]
+      "outcomes": { "R1.VIEW": "fail", "P.PAIR": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run", "R2.DECLARED_EFFECTS": "unknown", "R5.FRESHNESS": "unknown", "R6.NO_OBLIGATION": "unknown", "R7.NON_CLAIMS": "unknown", "R3.STATES": "unknown", "R4.CURSOR": "unknown" },
+      "issues": ["schema_required", "document_not_read"]
+    },
+    {
+      "id": "view-unread-and-breaking-every-rule",
+      "description": "The second view carries one field its schema does not define, so it is not read. It also says a reply is expected and that reading creates an obligation, states no as_of, lists no non-claim, declares a write, counts a failed read as 0 and hands back no cursor. No check passes over it: each check that reads every served view is unknown.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/extra","value":1},
+        {"op":"set","path":"/visits/second/view/response/body/reply_expected","value":true},
+        {"op":"set","path":"/visits/second/view/response/body/read_creates_obligation","value":true},
+        {"op":"set","path":"/visits/second/view/response/body/as_of","value":null},
+        {"op":"set","path":"/visits/second/view/response/body/not_established","value":[]},
+        {"op":"set","path":"/visits/second/view/response/body/read_effects/participant_record_writes","value":"some"},
+        {"op":"set","path":"/visits/second/view/response/body/sections/3/count","value":0},
+        {"op":"set","path":"/visits/second/view/response/body/cursor","value":null}
+      ],
+      "targets": "R1.VIEW",
+      "result": "check_failed",
+      "outcomes": { "R1.VIEW": "fail", "P.PAIR": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run", "R2.DECLARED_EFFECTS": "unknown", "R5.FRESHNESS": "unknown", "R6.NO_OBLIGATION": "unknown", "R7.NON_CLAIMS": "unknown", "R3.STATES": "unknown", "R4.CURSOR": "unknown" },
+      "issues": ["schema_additional_properties", "document_not_read"]
+    },
+    {
+      "id": "view-unread-beside-a-view-that-fails",
+      "description": "The second view is not read, and the first view, which is read, says a reply is expected. A failure outranks an unknown. Two checks fail, so this case has no single target.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/reply_expected","value":true},
+        {"op":"set","path":"/visits/second/view/response/body/extra","value":1}
+      ],
+      "result": "check_failed",
+      "outcomes": { "R1.VIEW": "fail", "P.PAIR": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run", "R2.DECLARED_EFFECTS": "unknown", "R5.FRESHNESS": "unknown", "R6.NO_OBLIGATION": "fail", "R7.NON_CLAIMS": "unknown", "R3.STATES": "unknown", "R4.CURSOR": "unknown" },
+      "issues": ["schema_additional_properties", "document_not_read", "reply_expected"]
+    },
+    {
+      "id": "view-unread-and-the-only-view",
+      "description": "Only the first visit is recorded, and its view is not read. The checks that read every served view are unknown, not left unrun: a view was served.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/view"},
+        {"op":"remove","path":"/visits/second/bad_cursor"},
+        {"op":"set","path":"/visits/first/view/response/body/extra","value":1}
+      ],
+      "targets": "R1.VIEW",
+      "result": "check_failed",
+      "outcomes": { "R1.VIEW": "fail", "P.PAIR": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run", "R4.BAD_CURSOR": "not_run", "R2.DECLARED_EFFECTS": "unknown", "R5.FRESHNESS": "unknown", "R6.NO_OBLIGATION": "unknown", "R7.NON_CLAIMS": "unknown", "R3.STATES": "unknown", "R4.CURSOR": "unknown" },
+      "issues": ["schema_additional_properties", "document_not_read"]
+    },
+    {
+      "id": "views-both-unread",
+      "description": "Both served views leave out valid_until, as a host that never states it would. Neither is read.",
+      "edits": [
+        {"op":"remove","path":"/visits/first/view/response/body/valid_until"},
+        {"op":"remove","path":"/visits/second/view/response/body/valid_until"}
+      ],
+      "targets": "R1.VIEW",
+      "result": "check_failed",
+      "outcomes": { "R1.VIEW": "fail", "P.PAIR": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run", "R2.DECLARED_EFFECTS": "unknown", "R5.FRESHNESS": "unknown", "R6.NO_OBLIGATION": "unknown", "R7.NON_CLAIMS": "unknown", "R3.STATES": "unknown", "R4.CURSOR": "unknown" },
+      "issues": ["schema_required", "document_not_read"]
     },
     {
       "id": "views-5xx",
@@ -773,6 +1246,19 @@
       "description": "The orientation names no operational write; both views name one.",
       "edits": [
         {"op":"set","path":"/visits/first/orientation/response/body/view/read_effects/operational_writes","value":[]}
+      ],
+      "targets": "R2.DECLARED_EFFECTS",
+      "result": "check_failed",
+      "outcomes": { "R2.DECLARED_EFFECTS": "fail" },
+      "issues": ["declarations_differ"]
+    },
+    {
+      "id": "effects-one-write-differs-among-two",
+      "description": "Every document names two operational writes, and the second view's second one is another write.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/view/read_effects/operational_writes","value":["credential last-used time","request log line"]},
+        {"op":"set","path":"/visits/first/view/response/body/read_effects/operational_writes","value":["credential last-used time","request log line"]},
+        {"op":"set","path":"/visits/second/view/response/body/read_effects/operational_writes","value":["credential last-used time","read receipt"]}
       ],
       "targets": "R2.DECLARED_EFFECTS",
       "result": "check_failed",
@@ -1011,6 +1497,43 @@
       "edits": [
         {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/count","value":null},
         {"op":"set","path":"/visits/first/view/response/body/sections/1/count","value":1}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "state-partial-floor-equal-to-items",
+      "description": "A partial section gives no dropped count, and a count equal to the items it lists. A partial section dropped at least one entry, so a count given as a floor is above what is listed.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/count","value":null},
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/count","value":2}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "state-partial-nothing-listed-and-count-zero",
+      "description": "A section that lists nothing reports partial with a count of 0 and no dropped count. Something was dropped, so the count is not 0.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/3/state","value":"partial"},
+        {"op":"set","path":"/visits/first/view/response/body/sections/3/count","value":0},
+        {"op":"set","path":"/visits/first/view/response/body/sections/3/unavailable","value":null},
+        {"op":"set","path":"/visits/first/view/response/body/sections/3/dropped","value":{"count":null,"reason":"other","deeper_read":null}}
+      ],
+      "targets": "R3.STATES",
+      "result": "check_failed",
+      "outcomes": { "R3.STATES": "fail" },
+      "issues": ["state_mismatch"]
+    },
+    {
+      "id": "state-partial-limit-reason-with-room",
+      "description": "A partial section says entries were dropped for its limit, and lists 2 with a limit of 8.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/limit","value":8}
       ],
       "targets": "R3.STATES",
       "result": "check_failed",
@@ -1410,6 +1933,18 @@
       "exercised": { "items_compared_equal": 2, "differences_found": 2, "differences_named": 2 }
     },
     {
+      "id": "changes-listed-as-events",
+      "description": "The changes list holds two entries for one item, added and then changed, as a list of events would. The list is read as the net difference between what the two reads show, so the second entry contradicts the views.",
+      "edits": [
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/-","value":{"section_id":"messages","item_id":"m-1","change":"changed"}},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":6}
+      ],
+      "targets": "R4.CHANGES",
+      "result": "check_failed",
+      "outcomes": { "R4.CHANGES": "fail" },
+      "issues": ["change_contradicts_views"]
+    },
+    {
       "id": "changes-nothing-changed",
       "description": "Nothing differs between the reads and the changes list is quiet. The list was not exercised.",
       "edits": [
@@ -1428,7 +1963,7 @@
       "edits": [
         {"op":"remove","path":"/visits/second/view/response/body/changes/items/4"},
         {"op":"set","path":"/visits/second/view/response/body/changes/state","value":"partial"},
-        {"op":"set","path":"/visits/second/view/response/body/changes/dropped","value":{"count":1,"reason":"limit","deeper_read":null}}
+        {"op":"set","path":"/visits/second/view/response/body/changes/dropped","value":{"count":1,"reason":"other","deeper_read":null}}
       ],
       "targets": "R4.CHANGES",
       "result": "indeterminate",
@@ -1881,11 +2416,22 @@
       "issues": []
     },
     {
-      "id": "pass-partial-floor-equal-to-items",
-      "description": "A partial section gives no dropped count, and a count equal to the items it lists. A floor may equal what is listed.",
+      "id": "pass-partial-floor-above-items",
+      "description": "A partial section gives no dropped count, and a count one above the items it lists. The count is a floor.",
       "edits": [
         {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/count","value":null},
-        {"op":"set","path":"/visits/first/view/response/body/sections/1/count","value":2}
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/count","value":3}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-partial-other-reason-with-room",
+      "description": "A partial section lists 2 with a limit of 8 and gives a reason other than its limit for what it dropped.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/limit","value":8},
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/reason","value":"not_listed_by_design"}
       ],
       "result": "checks_passed",
       "outcomes": {},
@@ -2003,6 +2549,235 @@
       "result": "checks_passed",
       "outcomes": {},
       "issues": []
+    },
+    {
+      "id": "pass-operational-writes-in-another-order",
+      "description": "Every document names the same two operational writes, and the second view lists them in the other order. The list is a set.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/view/read_effects/operational_writes","value":["credential last-used time","request log line"]},
+        {"op":"set","path":"/visits/first/view/response/body/read_effects/operational_writes","value":["credential last-used time","request log line"]},
+        {"op":"set","path":"/visits/second/view/response/body/read_effects/operational_writes","value":["request log line","credential last-used time"]}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-view-past-its-valid-until-when-requested",
+      "description": "The first view was already past its own valid_until when it was requested. No check compares a document's times with a request time.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/as_of","value":"2026-11-12T08:00:00Z"},
+        {"op":"set","path":"/visits/first/view/response/body/valid_until","value":"2026-11-12T08:05:00Z"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-item-ended-and-added-elsewhere-with-a-mark",
+      "description": "An unacknowledged item leaves the obligations section and appears in the messages section with a mark set, named ended and added. Marks are compared only for an item shown in the same section on both reads, and a named change is accepted whatever caused it, so this passes; every result says it does not establish that a read wrote nothing.",
+      "edits": [
+        {"op":"remove","path":"/visits/second/view/response/body/sections/0/items/0"},
+        {"op":"set","path":"/visits/second/view/response/body/sections/0/count","value":1},
+        {"op":"set","path":"/visits/second/view/response/body/sections/2/items/-","value":{"id":"ob-1","summary":"Review of the draft glossary, accepted on 2026-11-03.","recorded_at":"2026-11-03T10:00:00Z","acknowledged_at":"2026-11-12T09:00:07Z","ref":"https://house.example/obligations/ob-1","owed_to":null,"due_at":null}},
+        {"op":"set","path":"/visits/second/view/response/body/sections/2/count","value":2},
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/-","value":{"section_id":"obligations","item_id":"ob-1","change":"ended"}},
+        {"op":"set","path":"/visits/second/view/response/body/changes/items/-","value":{"section_id":"messages","item_id":"ob-1","change":"added"}},
+        {"op":"set","path":"/visits/second/view/response/body/changes/count","value":7}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-address-with-an-anchor",
+      "description": "An address field carries an anchor. An anchor is not a credential.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/manifest","value":"https://house.example/.well-known/agent.json#top"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-address-ending-in-a-hash",
+      "description": "An address field ends in #, a fragment with nothing in it.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/manifest","value":"https://house.example/.well-known/agent.json#"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-problem-docs-with-an-anchor",
+      "description": "The refusal's document address carries an anchor, as XENIA Surface 0.1 allows.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view_without_credential/response/body/docs","value":["https://house.example/docs/arrival#credentials"]}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-problem-type-with-an-anchor",
+      "description": "The refusal's type carries an anchor, as XENIA Surface 0.1 allows.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view_without_credential/response/body/type","value":"https://house.example/problems#credential-required"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-anchor-named-like-a-credential",
+      "description": "The refusal's document address ends in the anchor auth. A name with no value carries nothing.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view_without_credential/response/body/docs","value":["https://house.example/docs/errors#auth"]}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-named-like-a-credential-with-no-value",
+      "description": "A deeper-read address has the query key token with an empty value.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&token="}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-page-token",
+      "description": "A deeper-read address has the query key page_token, with the value example. The name is not one the tripwire lists.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&page_token=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-next-page-token",
+      "description": "A deeper-read address has the query key next_page_token, with the value example. The name is not one the tripwire lists.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&next_page_token=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-page-token-camel",
+      "description": "A deeper-read address has the query key pageToken, with the value example. The name is not one the tripwire lists.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&pageToken=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-max-tokens",
+      "description": "A deeper-read address has the query key max_tokens, with the value example. The name is not one the tripwire lists.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&max_tokens=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-tokens-per-page",
+      "description": "A deeper-read address has the query key tokens_per_page, with the value example. The name is not one the tripwire lists.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&tokens_per_page=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-sort-key",
+      "description": "A deeper-read address has the query key sort_key, with the value example. The name is not one the tripwire lists.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&sort_key=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-public-key",
+      "description": "A deeper-read address has the query key public_key, with the value example. The name is not one the tripwire lists.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&public_key=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-keys",
+      "description": "A deeper-read address has the query key keys, with the value example. The name is not one the tripwire lists.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&keys=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-code",
+      "description": "A deeper-read address has the query key code, with the value example. The name is not one the tripwire lists.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&code=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-query-key-identity-id",
+      "description": "A deeper-read address has the query key identity_id, with the value example. The name is not one the tripwire lists.",
+      "edits": [
+        {"op":"set","path":"/visits/first/view/response/body/sections/1/dropped/deeper_read","value":"https://house.example/notes?status=open&identity_id=example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-address-with-an-at-sign-after-its-host",
+      "description": "Free text is an address with @ in its path and in a query value. Userinfo is what stands before the host.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"https://house.example/@reader/notes?to=reader@house.example"}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-free-text-opening-with-an-anchored-address",
+      "description": "Free text opens with an address that carries an anchor and goes on as a sentence.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"https://house.example/glossary#spelling was updated this week."}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
+    },
+    {
+      "id": "pass-free-text-address-that-does-not-parse",
+      "description": "Free text opens with an address that does not parse as one. Only an address field is asked to parse.",
+      "edits": [
+        {"op":"set","path":"/visits/first/orientation/response/body/place/summary","value":"https://house.example:99999/about is the old address."}
+      ],
+      "result": "checks_passed",
+      "outcomes": {},
+      "issues": []
     }
   ],
   "built": [
@@ -2075,8 +2850,8 @@
       "recipe": "The base file, with a field named padding added to the orientation body, its value 8192 copies of the letter a. The body is then both over 8192 bytes and not a valid orientation.",
       "targets": "R1.ORIENTATION",
       "result": "check_failed",
-      "outcomes": { "R1.ORIENTATION": "fail" },
-      "issues": ["schema_additional_properties", "orientation_over_ceiling"]
+      "outcomes": { "R1.ORIENTATION": "fail", "R2.DECLARED_EFFECTS": "unknown", "R5.FRESHNESS": "unknown", "R6.NO_OBLIGATION": "unknown", "R7.NON_CLAIMS": "unknown" },
+      "issues": ["schema_additional_properties", "orientation_over_ceiling", "document_not_read"]
     },
     {
       "id": "orientation-valid-at-its-ceiling",
@@ -2100,6 +2875,14 @@
       "result": "check_failed",
       "outcomes": { "R1.VIEW": "fail", "P.PAIR": "not_run", "R2.SHOWN_AGAIN": "not_run", "R3.SECTIONS_KEPT": "not_run", "R4.CHANGES": "not_run" },
       "issues": ["view_over_ceiling"]
+    },
+    {
+      "id": "tripwire-long-run-with-no-digit",
+      "recipe": "The base file, with the bad-cursor exchange answered with status 503 and the body {\"note\": S}, where S is the three characters sk- written 60000 times: 180000 characters with no digit among them. No secret shape matches. The case is here for the time a checker takes over it, which no outcome states.",
+      "targets": "R4.BAD_CURSOR",
+      "result": "indeterminate",
+      "outcomes": { "R4.BAD_CURSOR": "unknown" },
+      "issues": ["status_5xx"]
     },
     {
       "id": "view-at-its-ceiling",

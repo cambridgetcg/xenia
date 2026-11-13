@@ -173,6 +173,7 @@
       "items": false
     },
     "issues": {
+      "description": "At most 256. When more arise, the first failure and the first undecidable point of each check are kept, with every issue that several checks point at, and the rest of the list is filled in the order the issues arose. A check's observed sentence says so when the list does not hold all of its issues.",
       "type": "array",
       "maxItems": 256,
       "items": { "$ref": "#/$defs/issue" }

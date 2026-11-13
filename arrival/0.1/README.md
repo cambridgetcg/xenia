@@ -35,13 +35,13 @@ check of a recorded fixture compares. It places no requirement on any host.
 | 2, 6 | root [README.md](../../README.md), Continuity & Arrival: "A look, not an event" (2) and "A welcome, not a work order" (2, 6) |
 | 3 | [WEBSITE-ROLLOUT.md](../../WEBSITE-ROLLOUT.md), website integration gates 2 and 3 |
 | 4 | the same list, gate 1 |
-| 7 | [AGENTS.md](../../AGENTS.md): report evidence, claims, and unknowns separately; rollout gate 4 |
+| 7 | [AGENTS.md](../../AGENTS.md): report evidence, claims, and unknowns separately; the same list, gate 4 |
 
 The root README calls this arrival a wake. This draft does not use the word:
 the 2026-07-11 report says it has stood for both a public orientation and an
-authenticated read. The shapes, the state `withheld`, and the choice that a
-cursor annotates a full view are this draft's own. No text or code from any
-host was copied into this directory.
+authenticated read. The shapes, the state `withheld`, the two problem codes,
+and the choice that a cursor annotates a full view are this draft's own. No
+text or code from any host was copied into this directory.
 
 ## The seven rules
 
@@ -53,7 +53,7 @@ host was copied into this directory.
 2. **A read is not an event.** Each document declares what a read writes. The
    declarations agree, and say `none` for the participant's record. An item
    shown and not acknowledged is shown again unchanged on the next read, or
-   the change is named.
+   the change is named, whatever caused it.
 3. **Quiet, partial, unavailable and withheld are different.** Each section
    says which it is, with its count and limit. A section that could not be
    read, or is not shown, has a null count, never 0. A section listed on one
@@ -64,7 +64,8 @@ host was copied into this directory.
    `cursor_not_accepted` and a next action back to the view. It is never
    answered with a view.
 5. **Every document is dated.** `as_of` says when it was made. `valid_until`
-   says until when the host stands by it.
+   says until when the host stands by it. Neither is compared with a request
+   time: a document past `valid_until` when requested still passes.
 6. **Reading creates no obligation.** No reply is expected. Recorded
    obligations sit in exactly one section of that kind; `owed_to` and `due_at`
    are set nowhere else.
@@ -101,6 +102,10 @@ same envelope holding `{section_id, item_id, change:
 summary, recorded_at|null, acknowledged_at|null, ref|null, owed_to|null,
 due_at|null}`.
 
+`changes` is a net list: what differs between what the two reads show, not
+the events between them. `position` says how far acknowledgements under the
+credential have reached, and moves only when one is made.
+
 ### States
 
 | State | Items | Count | Other envelope fields |
@@ -113,7 +118,7 @@ due_at|null}`.
 
 In a `partial` envelope, a numeric `dropped.count` makes the count an exact
 total, `items.length + dropped.count`. A null one leaves the count null or a
-floor no lower than `items.length`.
+floor above `items.length`. With reason `limit`, `items.length` is `limit`.
 
 A view that breaks this table is still schema-valid; agreement with it is the
 check `R3.STATES`.
@@ -169,12 +174,14 @@ fixture. There is no slot for headers or for the credential.
 
 No recorder exists. A house could record a fixture by making those five
 requests in that order, with a credential no one else uses, and keeping each
-status and parsed body. `origin` is `hand_written`, `host_bytes` (no body
-altered) or `projected_by_recorder`. `between_visits.acknowledged_by_recorder`
-is the recorder's own statement: `no`, `yes` or `not_stated`. The second view
-can be a plain repeat read with no cursor, but `checks_passed` needs the first
-view's cursor there, all five exchanges, that `no`, an unacknowledged item
-that comes back equal, and a named difference.
+status and parsed body. Where the orientation names no cursor parameter, the
+fifth is not made. `origin` is `hand_written`, `host_bytes` (each body as
+parsed, none altered) or `projected_by_recorder` (reshaped; no value changed
+and none added). `between_visits.acknowledged_by_recorder` is the recorder's
+own statement: `no`, `yes` or `not_stated`. The second view can be a plain
+repeat read with no cursor, but `checks_passed` needs the first view's cursor
+there, all five exchanges, that `no`, an unacknowledged item that comes back
+equal, and a named difference.
 
 "Second visit" means a later read. Nothing in a fixture establishes that one
 reader made both reads, or that time passed between them.
@@ -187,10 +194,11 @@ own three schemas, and contacts nothing. It exits 0 for `checks_passed`, 1 for
 [result.schema.json](result.schema.json) fixes twenty checks, in this order,
 and how the result word follows from them.
 
-*Served*: status 200. *Valid*: served, with a body that matches its schema and
-hrefs that parse, as in Surface's checker. *View address*: the href every
-request but the orientation's shares. *Equal*: the same JSON once object keys
-are sorted. *Whole*: state `ok` or `quiet`; a null `changes` is not whole.
+*Served*: status 200. *Valid*: served, with a body that matches its schema;
+`format` is asserted, so a `date-time` is a real time and a `uri` parses as a
+URL (WHATWG), as in Surface's checker. *View address*: the href every request
+but the orientation's shares. *Equal*: the same JSON once object keys are
+sorted. *Whole*: state `ok` or `quiet`; a null `changes` is not whole.
 
 | Check | Fails when | Unknown when |
 |---|---|---|
@@ -198,14 +206,14 @@ are sorted. *Whole*: state `ok` or `quiet`; a null `changes` is not whole.
 | `I.UTF8` | a byte-order mark, or invalid UTF-8 | |
 | `I.JSON` | not one JSON value, a repeated key, or nesting over 64 | |
 | `I.SHAPE` | the fixture does not match its schema | |
-| `I.NO_CREDENTIAL` | a string or field name has a secret shape, or a string starting `http://` or `https://` does not parse or has userinfo, a fragment or a credential-named query key. Cursors and `position` are not read; `fixtures/cases.json` lists the shapes. A tripwire, not a guarantee | |
-| `I.RECORD` | a credential or cursor on the first two requests; no credential on one of the other three; a cursor on the first view request, or none on the bad-cursor one; the view requests not sharing one href, or the orientation having it; `requested_at` going back in slot order; a second-read cursor other than the one a recorded first view handed back when served; a bad cursor a recorded view handed back | |
+| `I.NO_CREDENTIAL` | a string or field name has a secret shape; an address, in an address field or inside other text, has userinfo, or a query or fragment pair with a credential-named key and a value; an address in an address field does not parse. The name alone decides: `token=USDC` fails. Cursors and `position` are not read; `fixtures/cases.json` gives the shapes, fields and names. A tripwire, not a guarantee | |
+| `I.RECORD` | a credential or cursor on the first two requests; no credential on one of the other three; a cursor on the first view request, or none on the bad-cursor one; the view requests not sharing one href, or the orientation having it; `requested_at` going back in slot order; a second-read cursor when a recorded first view was not served, or other than the one it handed back; a bad cursor a recorded view handed back | |
 | `R1.ORIENTATION` | status not 200; body not valid, or over its ceiling; `view.href` not the view address | 5xx |
 | `R1.REFUSAL` | status not 4xx; body not a Surface problem with that status; code not `credential_required`; terminal; first next action not the orientation's href | 5xx; no orientation recorded |
 | `R1.VIEW` | a served view is not valid, is over its ceiling, or repeats a section id, or an item id in one section | no view served |
 | `P.PAIR` | never | a view not served; `audience` not equal |
-| `R2.DECLARED_EFFECTS` | a valid document's declaration is null (`not_stated`) or says `some`; two are not equal | one says `unknown` |
-| `R2.SHOWN_AGAIN` | `position` differs, or an item on both reads has another `acknowledged_at` (`acknowledgement_moved`); an owned difference is unnamed and decidable while `changes` is whole | the recorder does not say `no` (nothing else is read); an owned difference is unnamed, and undecidable or `changes` not whole; no unacknowledged item came back equal (`not_exercised`) |
+| `R2.DECLARED_EFFECTS` | a valid document's declaration is null (`not_stated`) or says `some`; two differ, the order of `operational_writes` aside | one says `unknown` |
+| `R2.SHOWN_AGAIN` | `position` differs, or an item in one section on both reads has another `acknowledged_at` (`acknowledgement_moved`); an owned difference is unnamed and decidable while `changes` is whole | the recorder does not say `no` (nothing else is read); an owned difference is unnamed, and undecidable or `changes` not whole; no unacknowledged item came back equal (`not_exercised`) |
 | `R3.STATES` | an envelope in a valid view breaks the state table | |
 | `R3.SECTIONS_KEPT` | a first-read section is missing on the second read, or its kind or scope differs | |
 | `R4.CURSOR` | a valid view's cursor is null; a read with no cursor is not `full`, or has a basis cursor or `changes` | |
@@ -216,11 +224,13 @@ are sorted. *Whole*: state `ok` or `quiet`; a null `changes` is not whole.
 | `R7.NON_CLAIMS` | a valid document lacks a token above | |
 
 A check is `not_run` when an earlier `I` check other than `I.NO_CREDENTIAL`
-did not pass, or when what it reads is absent: an exchange; a valid document,
-or for `R3.STATES` and `R4.CURSOR` a valid view; for `P.PAIR`, both views
+did not pass, or when what it reads is absent: an exchange; a served document,
+or for `R3.STATES` and `R4.CURSOR` a served view; for `P.PAIR`, both views
 recorded and `R1.VIEW` passed; for `R2.SHOWN_AGAIN`, `R3.SECTIONS_KEPT` and
 `R4.CHANGES`, `P.PAIR` passed and, for the last, a cursor on the second
-request. A failure outranks an unknown.
+request. A served body that is not valid fails its `R1` check and is not read
+further: each later check that reads valid documents or valid views of its
+kind is then `unknown` (`document_not_read`). A failure outranks an unknown.
 
 In a section on both reads, an item *differs* (on both, not equal), is *gone*
 (first only) or is *new* (second only). Differs is always decidable; gone when
@@ -241,8 +251,8 @@ which every result repeats. Among them: that a host sent the exchanges or
 behaves so now; and conformance, authority, consent, safety or a caller's
 inner state.
 
-`fixtures/cases.json` holds 167 cases, each a list of edits to the example
-with the outcome expected for every check, and 14 more built from recipes.
+`fixtures/cases.json` holds 236 cases, each a list of edits to the example
+with the outcome expected for every check, and 15 more built from recipes.
 
 ## Beside Surface, Work and Covenant
 
@@ -251,9 +261,14 @@ with the outcome expected for every check, and 14 more built from recipes.
   problem shape and href pattern and changes nothing in it. An Arrival result
   is not a Surface result.
 - [Work 0.1](../../work/0.1/README.md) records one finite piece of work.
-  Arrival's result shape and timestamp form are Work's.
+  Arrival's result is modelled on Work's, with its own result words; its
+  timestamp form is Work's.
 - [Covenant 0.1](../../covenant/0.1/README.md) states host duties. Arrival is
-  not an adoption, and is not evidence for one.
+  not an adoption, and is not evidence for one. The tokens
+  `waiver_by_silence`, `other_layers_unrecorded` and
+  `identity_beyond_credential` cover ground that the duties
+  `rest.silence-is-not-consent`, `privacy.no-cross-layer-overclaim` and
+  `identity.credentials-are-bounded` also cover. Arrival tests no duty.
 
 Text, schemas and fixtures are CC BY-SA 4.0 and `check.mjs` is MPL 2.0, by
 the defaults in [LICENSES.md](../../LICENSES.md), which does not yet name
@@ -264,20 +279,26 @@ this directory.
 A recorder. An endpoint. How a credential is presented, protection against
 replay, and signatures. Headers and content negotiation. The acknowledgement
 itself: only its address and position are shown. Answers that carry only the
-changes, or say nothing changed. A record carried from one host to another.
-Any normative, release, or adoption-evidence claim.
+changes, or say nothing changed. Next actions inside the view, and typed
+values such as a balance. A record carried from one host to another. Any
+normative, release, or adoption-evidence claim.
 
 ## Open questions
 
 - `changes` annotates a full view. It does not make a return visit cheaper,
   which the root README's delta pattern asks for.
 - Is one code enough for a cursor that is malformed, expired, or issued under
-  another credential?
+  another credential? Is a fixed code word, first among the next actions, the
+  right test of a refusal that leads back to the orientation?
 - Does `withheld` say too much, by naming a section the credential cannot see?
 - `audience.scope` and `record_set_ref` are the host's own account. Nothing
-  checks that they are true.
+  checks that they are true. Is `project` the right word for a host with
+  another unit of tenancy?
 - Is deep equality the right meaning of "shown again unchanged" for a host
   whose items carry derived fields?
+- A mark with no time has no form: a null `acknowledged_at` reads as not
+  acknowledged. The orientation's pointer to the view has no "not stated"
+  form either.
 
 ## Exit gate (declared, unmet)
 

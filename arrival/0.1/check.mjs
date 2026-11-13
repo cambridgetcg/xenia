@@ -12,8 +12,9 @@
 // Reused by copying, not by importing, so this file needs only node: modules:
 // - work/0.1/check.mjs: the input pipeline (size, strict UTF-8, one JSON
 //   value), the repeated-key preflight, the timestamp check and comparison,
-//   the bounded file read, the result shape, and the credential patterns,
-//   which are adapted (see SECRET_SHAPES).
+//   the bounded file read (here a path is looked at before it is opened, so
+//   a named pipe is refused and not waited on), the result shape, and the
+//   credential patterns, which are adapted (see SECRET_SHAPES).
 // - surface/0.1/check.mjs: the address test and the problem rules of
 //   validateProblem, which here return rule names instead of sentences so
 //   that no field name or value from a fixture reaches a result.
@@ -23,7 +24,7 @@
 
 import { createHash } from "node:crypto";
 import { readFileSync, realpathSync } from "node:fs";
-import { open } from "node:fs/promises";
+import { open, stat } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
 export const ARRIVAL_PROFILE = "xenia-arrival/0.1-development";
@@ -57,22 +58,22 @@ const CHECKS = Object.freeze([
   ["I.UTF8", "strict UTF-8 without a byte-order mark"],
   ["I.JSON", `one JSON value with no repeated object key, nested at most ${MAX_JSON_DEPTH} deep`],
   ["I.SHAPE", "the fixture matches xenia.arrival.fixture/0.1-development"],
-  ["I.NO_CREDENTIAL", "no field name, and no string outside cursors and positions, has a secret shape, and no string that begins as a web address fails to parse or carries userinfo, a fragment or a credential-named query key"],
+  ["I.NO_CREDENTIAL", "no field name, and no string outside cursors and positions, has a secret shape; no address has userinfo, or a query or fragment pair with a key named like a credential and a value; and no address in an address field fails to parse"],
   ["I.RECORD", "each request records the credential and cursor its slot is for, the view requests share one address that is not the orientation's, request times do not go back, the second read presents only the cursor the first view handed back, and the bad cursor is one no recorded view handed back"],
   ["R1.ORIENTATION", `status 200 with a valid orientation of at most ${MAX_ORIENTATION_BYTES} bytes that points at the view address`],
   ["R1.REFUSAL", "a 4xx XENIA Surface 0.1 problem with code credential_required, not terminal, whose first next action is the orientation address"],
   ["R1.VIEW", `each served view is valid, at most ${MAX_VIEW_BYTES} bytes, and repeats no section id and no item id inside a section`],
   ["P.PAIR", "both views served and valid, stating the same audience"],
-  ["R2.DECLARED_EFFECTS", "every read-effects declaration is stated, says none for the participant's record, and equals the others"],
-  ["R2.SHOWN_AGAIN", "with nothing acknowledged by the recorder, the acknowledgement position and marks are unmoved, every unacknowledged first-read item is equal on the second read or its change is named, and at least one was found equal"],
-  ["R3.STATES", "every section and changes envelope agrees with the state table"],
+  ["R2.DECLARED_EFFECTS", "every served document's read-effects declaration is stated, says none for the participant's record, and equals the others, the order of operational writes aside"],
+  ["R2.SHOWN_AGAIN", "with nothing acknowledged by the recorder, the acknowledgement position is unmoved, no item shown in the same section on both reads has a different mark, every unacknowledged first-read item is equal on the second read or its change is named, and at least one was found equal"],
+  ["R3.STATES", "every section and changes envelope of every served view agrees with the state table"],
   ["R3.SECTIONS_KEPT", "every first-read section is on the second read with the same kind and scope"],
-  ["R4.CURSOR", "each view hands back a cursor, and a view answering a request with no cursor is full, with no basis cursor and no changes"],
+  ["R4.CURSOR", "each served view hands back a cursor, and a view answering a request with no cursor is full, with no basis cursor and no changes"],
   ["R4.CHANGES", "the basis echoes the presented cursor, no changes entry names a section in neither view or contradicts the two views, every decidable difference this check owns is named, and at least one decidable difference was found and named"],
   ["R4.BAD_CURSOR", "a 4xx XENIA Surface 0.1 problem with code cursor_not_accepted, not terminal, with a next action back to the view address"],
-  ["R5.FRESHNESS", "as_of and valid_until are stated, valid_until is not before as_of, and the second view is not dated before the first"],
-  ["R6.NO_OBLIGATION", "every document says no reply is expected, every view says reading creates no obligation, and each view sets owed_to and due_at only in its one recorded_obligations section"],
-  ["R7.NON_CLAIMS", "every document lists every not_established token of its kind"],
+  ["R5.FRESHNESS", "every served document states as_of and valid_until, valid_until is not before as_of, and the second view is not dated before the first; no time is compared with a request time or a clock"],
+  ["R6.NO_OBLIGATION", "every served document says no reply is expected, every served view says reading creates no obligation, and each view sets owed_to and due_at only in its one recorded_obligations section"],
+  ["R7.NON_CLAIMS", "every served document lists every not_established token of its kind"],
 ]);
 export const CHECK_IDS = Object.freeze(CHECKS.map(([id]) => id));
 const EXPECTED = new Map(CHECKS);
@@ -92,19 +93,34 @@ const REQUIRED_TOKENS = Object.freeze({
 
 // From work/0.1/check.mjs (CREDENTIAL_NAME_PATTERN, CREDENTIAL_VALUE_PATTERNS),
 // changed for a record whose prose may say "bearer" or "basic" and whose ids
-// may begin "sk-": the sk- and Bearer/Basic shapes now need 20 or more token
+// may begin "sk-": the sk- and Bearer/Basic shapes need 20 or more token
 // characters with a digit among them, and the "token:" shape is dropped. The
-// gh?_, AKIA, PEM and three-part eyJ shapes are as they were. This is a
-// tripwire. It does not establish that a fixture holds no secret.
-const CREDENTIAL_NAME_PATTERN = /(?:password|passwd|secret|token|api[_-]?key|private[_-]?key|authorization|cookie|session)/i;
+// sk- and three-part eyJ shapes begin only where no token character comes
+// before them, so a long run of such starts is read once and not once per
+// start. The gh?_, AKIA and PEM shapes are as they were. This is a tripwire.
+// A match is a failure whatever the value is; no match establishes nothing.
 const SECRET_SHAPES = Object.freeze([
-  /\bsk-(?=[A-Za-z0-9_-]*[0-9])[A-Za-z0-9_-]{20,}\b/,
+  /(?<![A-Za-z0-9_-])sk-(?=[A-Za-z0-9_-]*[0-9])[A-Za-z0-9_-]{20,}\b/,
   /\bgh[pousr]_[A-Za-z0-9]{16,}\b/,
   /\bAKIA[0-9A-Z]{16}\b/,
   /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
   /\b(?:Bearer|Basic)\s+(?=[A-Za-z0-9._~+/-]*[0-9])[A-Za-z0-9._~+/-]{20,}=*/i,
-  /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/,
+  /(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/,
 ]);
+
+// Addresses. A field with one of these names holds an address in the three
+// schemas or in a Surface problem; a string there that begins as a web
+// address is one address, taken whole. Inside any other string, each run that
+// begins as a web address and goes on to white space, a quote or an angle
+// bracket is an address too.
+const ADDRESS_FIELDS = new Set(["href", "ref", "deeper_read", "manifest", "type", "docs"]);
+const ADDRESS_START = /^https?:\/\//i;
+const ADDRESS_RUN = /https?:\/\/[^\s"'<>]+/gi;
+// Applied to a query or fragment key once it is normalised (see
+// normalisedKey). Whole parts only, so page_token, max_tokens and sort_key do
+// not match; key, auth, sig and pass count only as the whole key, because
+// each is also an ordinary word. The name alone decides: token=USDC matches.
+const CREDENTIAL_NAMED = /(?:^|_)(?:password|passwd|pwd|passphrase|secret|authorization|bearer|credentials?|jwt|signature|cookie|session(?:id)?|(?:api|access|private)_?key|(?<!page_)token)(?:_|$)|^(?:key|auth|sig|pass)$/;
 
 // The five exchange slots of a fixture, in the order their requests are read.
 const SLOTS = Object.freeze([
@@ -325,17 +341,55 @@ function issue(code, path, message) {
   };
 }
 
-/** Collects the outcome of every check and a bounded list of issues. */
+/**
+ * Collects the outcome of every check and its issues. A result holds at most
+ * MAX_ISSUES issues. When more arise, three kinds are always kept: the first
+ * failure of each check, its first undecidable point, and each issue that
+ * several checks point at. The rest of the list is filled in the order the
+ * issues arose. So a check that fails or is unknown has an issue in the list.
+ */
 class Report {
   constructor() {
     this.outcomes = new Map();
-    this.issues = [];
+    this.kept = []; // the issues that are always kept: a few dozen at most
+    this.others = []; // the rest, at most MAX_ISSUES of them
+    this.sequence = 0;
+    this.seen = new Set();
+    this.final = null;
   }
 
-  issue(code, path, message) {
-    if (this.issues.length < MAX_ISSUES) this.issues.push(issue(code, path, message));
+  /**
+   * `owner` is the id of the check an issue belongs to, or null for an issue
+   * several checks point at. `kind` is fail or unknown.
+   */
+  issue(code, path, message, owner = null, kind = "fail") {
+    this.sequence += 1;
+    const entry = { order: this.sequence, owner, kind, issue: issue(code, path, message) };
+    const first = `${owner} ${kind}`;
+    if (owner === null || !this.seen.has(first)) {
+      this.seen.add(first);
+      this.kept.push(entry);
+    } else if (this.others.length < MAX_ISSUES) {
+      this.others.push(entry);
+    }
   }
 
+  /** The entries a result carries, in the order they arose. */
+  entries() {
+    if (this.final === null) {
+      const room = Math.max(0, MAX_ISSUES - this.kept.length);
+      this.final = [...this.kept.slice(0, MAX_ISSUES), ...this.others.slice(0, room)]
+        .sort((left, right) => left.order - right.order);
+    }
+    return this.final;
+  }
+
+  /** How many issues of one check and one kind the result carries. */
+  held(owner, kind) {
+    return this.entries().filter((entry) => entry.owner === owner && entry.kind === kind).length;
+  }
+
+  /** `observed` is a sentence, or a function of this report that gives one once every issue is in. */
   set(id, outcome, observed) {
     this.outcomes.set(id, { outcome, observed });
   }
@@ -352,29 +406,51 @@ class Report {
   }
 }
 
-/** One check's failures and undecidable points. Every one is also an issue. */
+/** "N things recorded as issues", or how many of them a full list holds. */
+function recorded(count, word, held) {
+  if (held === count) return `${plural(count, word)} recorded as ${count === 1 ? "an issue" : "issues"}.`;
+  return `${plural(count, word)}; the issues list holds ${held} of them and is full at ${MAX_ISSUES}.`;
+}
+
+/**
+ * One check's failures and undecidable points. Each is an issue of that
+ * check. `unread` counts served documents the check would have read and did
+ * not, because their bodies do not match their schema; those are recorded
+ * once, as document_not_read issues, for every check that points at them.
+ */
 class Tally {
-  constructor(report) {
+  constructor(report, id) {
     this.report = report;
+    this.id = id;
     this.fails = 0;
     this.unknowns = 0;
+    this.unread = 0;
+    this.floor = false; // true when a validator stopped counting at its bound
   }
 
   fail(code, path, message) {
     this.fails += 1;
-    this.report.issue(code, path, message);
+    this.report.issue(code, path, message, this.id, "fail");
   }
 
   unknown(code, path, message) {
     this.unknowns += 1;
-    this.report.issue(code, path, message);
+    this.report.issue(code, path, message, this.id, "unknown");
   }
 
-  settle(id, passed) {
-    if (this.fails > 0) {
-      this.report.set(id, "fail", `${plural(this.fails, "disagreement")} recorded as ${this.fails === 1 ? "an issue" : "issues"}.`);
-    } else if (this.unknowns > 0) {
-      this.report.set(id, "unknown", `Not decidable from this fixture: ${plural(this.unknowns, "point")} recorded as ${this.unknowns === 1 ? "an issue" : "issues"}.`);
+  settle(passed) {
+    const { id, fails, unknowns, unread, floor } = this;
+    if (fails > 0) {
+      this.report.set(id, "fail", (report) => `${floor ? "At least " : ""}${recorded(fails, "disagreement", report.held(id, "fail"))}`);
+    } else if (unknowns > 0 || unread > 0) {
+      this.report.set(id, "unknown", (report) => {
+        const parts = [];
+        if (unknowns > 0) parts.push(recorded(unknowns, "point", report.held(id, "unknown")));
+        if (unread > 0) {
+          parts.push(`${plural(unread, "served document")} ${unread === 1 ? "was" : "were"} not read; see the document_not_read ${unread === 1 ? "issue" : "issues"}.`);
+        }
+        return `Not decidable from this fixture: ${parts.join(" ")}`;
+      });
     } else {
       this.report.set(id, "pass", passed);
     }
@@ -402,7 +478,8 @@ function buildResult({ artifact, observedAt, report, origin = null, exercised = 
   const checks = CHECK_IDS.map((id) => {
     const entry = report.outcomes.get(id);
     if (!entry) throw new Error(`checker defect: no outcome for ${id}`);
-    return { id, outcome: entry.outcome, expected: EXPECTED.get(id), observed: entry.observed };
+    const observed = typeof entry.observed === "function" ? entry.observed(report) : entry.observed;
+    return { id, outcome: entry.outcome, expected: EXPECTED.get(id), observed };
   });
   const counts = { pass: 0, fail: 0, unknown: 0, not_run: 0 };
   for (const entry of checks) counts[entry.outcome] += 1;
@@ -432,7 +509,7 @@ function buildResult({ artifact, observedAt, report, origin = null, exercised = 
     counts,
     exercised,
     checks,
-    issues: report.issues, // Report.issue keeps at most MAX_ISSUES
+    issues: report.entries().map((entry) => entry.issue), // at most MAX_ISSUES
     not_established: [...NOT_ESTABLISHED],
   };
 }
@@ -705,6 +782,8 @@ function incompleteResult(observedBytes, observedAt) {
     "input_limit_exceeded",
     "$",
     `The input is over the fixed ${MAX_INPUT_BYTES}-byte limit; nothing was parsed and no conclusion was drawn.`,
+    "I.SIZE",
+    "unknown",
   );
   report.set("I.SIZE", "unknown", `at least ${observedBytes} bytes`);
   report.rest("The input size limit prevented this check.");
@@ -742,8 +821,56 @@ function cursorIn(slot) {
   return slot && isObject(slot.body) && typeof slot.body.cursor === "string" ? slot.body.cursor : null;
 }
 
+/**
+ * A query or fragment key as CREDENTIAL_NAMED reads it: a break is put
+ * between a lower-case letter or digit and an upper-case letter after it,
+ * the key is lower-cased and split at every run of other characters, and the
+ * parts are joined with _.
+ */
+function normalisedKey(key) {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((part) => part !== "")
+    .join("_");
+}
+
+/** True when form-encoded text holds a pair with a credential-named key and a value. */
+function holdsCredentialPair(text) {
+  if (text === "") return false;
+  for (const [key, value] of new URLSearchParams(text)) {
+    if (value !== "" && CREDENTIAL_NAMED.test(normalisedKey(key))) return true;
+  }
+  return false;
+}
+
+/**
+ * What one address carries, read from its text alone so that an address
+ * which does not parse is still looked at: the codes of the rules it breaks.
+ */
+function addressFindings(address) {
+  const found = [];
+  const afterScheme = address.slice(address.indexOf("://") + 3);
+  const authorityEnd = afterScheme.search(/[/?#]/);
+  const authority = authorityEnd < 0 ? afterScheme : afterScheme.slice(0, authorityEnd);
+  if (authority.includes("@")) found.push("href_userinfo");
+  const hashAt = address.indexOf("#");
+  const beforeHash = hashAt < 0 ? address : address.slice(0, hashAt);
+  const queryAt = beforeHash.indexOf("?");
+  if (queryAt >= 0 && holdsCredentialPair(beforeHash.slice(queryAt + 1))) found.push("href_credential_query_key");
+  if (hashAt >= 0 && holdsCredentialPair(address.slice(hashAt + 1))) found.push("href_credential_fragment_key");
+  return found;
+}
+
+const ADDRESS_MESSAGES = Object.freeze({
+  href_userinfo: "An address carries userinfo before its host.",
+  href_credential_query_key: "An address has a query pair whose key is named like a credential. The name alone decides; the value was not read for what it is.",
+  href_credential_fragment_key: "An address has a fragment pair whose key is named like a credential. The name alone decides; the value was not read for what it is.",
+});
+
 function checkNoCredential(fixture, known, report) {
-  const tally = new Tally(report);
+  const tally = new Tally(report, "I.NO_CREDENTIAL");
   const exempt = new Set();
   for (const [, visit, name] of SLOTS) {
     const base = `$/visits/${visit}/${name}`;
@@ -753,44 +880,45 @@ function checkNoCredential(fixture, known, report) {
     exempt.add(`${base}/response/body/acknowledgement/position`);
   }
   // `shown` is the path printed in an issue: a field name the schemas do not
-  // define is written as *, so no such name is copied into a result.
-  (function scan(value, path, shown) {
+  // define is written as *, so no such name is copied into a result. `field`
+  // is the nearest field name above a value; a list passes its own on.
+  (function scan(value, path, shown, field) {
     if (typeof value === "string") {
       if (exempt.has(path)) return;
       if (SECRET_SHAPES.some((shape) => shape.test(value))) {
         tally.fail("secret_shape", shown, "A string has the shape of a secret. It was not copied.");
       }
-      if (!/^https?:\/\//i.test(value)) return;
-      let url;
-      try {
-        url = new URL(value);
-      } catch {
-        tally.fail("href_unparseable", shown, "A string that begins like a web address does not parse as one.");
-        return;
+      let addresses;
+      if (ADDRESS_FIELDS.has(field) && ADDRESS_START.test(value)) {
+        addresses = [value];
+        try {
+          new URL(value);
+        } catch {
+          tally.fail("href_unparseable", shown, "An address field begins like a web address and does not parse as one.");
+        }
+      } else {
+        addresses = value.match(ADDRESS_RUN) ?? [];
       }
-      if (url.username !== "" || url.password !== "") {
-        tally.fail("href_userinfo", shown, "An address carries userinfo before its host.");
-      }
-      if (value.includes("#")) tally.fail("href_fragment", shown, "An address carries a fragment.");
-      if ([...url.searchParams.keys()].some((key) => CREDENTIAL_NAME_PATTERN.test(key))) {
-        tally.fail("href_credential_query_key", shown, "An address has a query key named like a credential.");
+      const codes = new Set(addresses.flatMap(addressFindings));
+      for (const code of Object.keys(ADDRESS_MESSAGES)) {
+        if (codes.has(code)) tally.fail(code, shown, ADDRESS_MESSAGES[code]);
       }
     } else if (Array.isArray(value)) {
-      value.forEach((member, index) => scan(member, `${path}/${index}`, `${shown}/${index}`));
+      value.forEach((member, index) => scan(member, `${path}/${index}`, `${shown}/${index}`, field));
     } else if (isObject(value)) {
       for (const [key, member] of Object.entries(value)) {
         if (SECRET_SHAPES.some((shape) => shape.test(key))) {
           tally.fail("secret_shape", shown, "A field name has the shape of a secret. It was not copied.");
         }
-        scan(member, pointer(path, key), known.has(key) ? pointer(shown, key) : `${shown}/*`);
+        scan(member, pointer(path, key), known.has(key) ? pointer(shown, key) : `${shown}/*`, key);
       }
     }
-  })(fixture, "$", "$");
-  tally.settle("I.NO_CREDENTIAL", "No field name or string that was read has a secret shape, and no address broke the address rules. Cursors and positions were not read. This is a tripwire, not a guarantee.");
+  })(fixture, "$", "$", null);
+  tally.settle("No field name or string that was read has a secret shape, and no address broke the address rules. Cursors and positions were not read. This is a tripwire, not a guarantee.");
 }
 
 function checkRecord(slots, report) {
-  const tally = new Tally(report);
+  const tally = new Tally(report, "I.RECORD");
   const { orientation, refusal, first, second, bad } = slots;
   for (const slot of [orientation, refusal]) {
     if (!slot) continue;
@@ -843,7 +971,7 @@ function checkRecord(slots, report) {
   if (bad && bad.request.cursor !== null && [first, second].some((slot) => cursorIn(slot) === bad.request.cursor)) {
     tally.fail("bad_cursor_was_handed_back", `${bad.path}/request/cursor`, "The bad-cursor request presents a cursor that a recorded view handed back.");
   }
-  tally.settle("I.RECORD", `${plural(Object.keys(slots).length, "recorded exchange")} agree with the slots they are recorded in.`);
+  tally.settle(`${plural(Object.keys(slots).length, "recorded exchange")} agree with the slots they are recorded in.`);
   return viewHref;
 }
 
@@ -853,7 +981,7 @@ function checkOrientation(slots, viewHref, report) {
     report.set("R1.ORIENTATION", "not_run", "The orientation exchange is not recorded.");
     return null;
   }
-  const tally = new Tally(report);
+  const tally = new Tally(report, "R1.ORIENTATION");
   let valid = null;
   if (slot.status >= 500) {
     tally.unknown("status_5xx", `${slot.path}/response/status`, "The recorded status is 5xx, so no orientation was read.");
@@ -862,6 +990,7 @@ function checkOrientation(slots, viewHref, report) {
   } else {
     const found = schemaIssues("orientation", slot.body, bodyPath(slot));
     for (const entry of found) tally.fail(entry.code, entry.path, entry.message);
+    if (found.length === MAX_ISSUES) tally.floor = true;
     if (found.length === 0) valid = slot.body;
     if (isObject(slot.body) && Buffer.byteLength(JSON.stringify(slot.body)) > MAX_ORIENTATION_BYTES) {
       tally.fail("orientation_over_ceiling", bodyPath(slot), `The orientation, serialised again, is over ${MAX_ORIENTATION_BYTES} bytes.`);
@@ -870,7 +999,7 @@ function checkOrientation(slots, viewHref, report) {
       tally.fail("view_address_mismatch", `${bodyPath(slot)}/view/href`, "The orientation points at an address other than the one the view requests used.");
     }
   }
-  tally.settle("R1.ORIENTATION", "Status 200, a valid orientation within its ceiling, pointing at the view address where one is recorded.");
+  tally.settle("Status 200, a valid orientation within its ceiling, pointing at the view address where one is recorded.");
   return valid;
 }
 
@@ -912,7 +1041,7 @@ function checkCredentialRefusal(slots, report) {
     report.set("R1.REFUSAL", "not_run", "The exchange with no credential is not recorded.");
     return;
   }
-  const tally = new Tally(report);
+  const tally = new Tally(report, "R1.REFUSAL");
   const body = checkRefusal(slot, "credential_required", tally);
   if (body) {
     const firstAction = nextActions(body)[0];
@@ -924,7 +1053,7 @@ function checkCredentialRefusal(slots, report) {
       tally.fail("next_action_not_orientation", `${bodyPath(slot)}/next_actions`, "The first next action is not the orientation address.");
     }
   }
-  tally.settle("R1.REFUSAL", "A 4xx problem with code credential_required, not terminal, whose first next action is the orientation address.");
+  tally.settle("A 4xx problem with code credential_required, not terminal, whose first next action is the orientation address.");
 }
 
 function checkBadCursor(slots, report) {
@@ -933,12 +1062,12 @@ function checkBadCursor(slots, report) {
     report.set("R4.BAD_CURSOR", "not_run", "The bad-cursor exchange is not recorded.");
     return;
   }
-  const tally = new Tally(report);
+  const tally = new Tally(report, "R4.BAD_CURSOR");
   const body = checkRefusal(slot, "cursor_not_accepted", tally);
   if (body && !nextActions(body).some((action) => isObject(action) && action.href === slot.request.href)) {
     tally.fail("next_action_not_view", `${bodyPath(slot)}/next_actions`, "No next action leads back to the view address.");
   }
-  tally.settle("R4.BAD_CURSOR", "A 4xx problem with code cursor_not_accepted, not terminal, with a next action back to the view address.");
+  tally.settle("A 4xx problem with code cursor_not_accepted, not terminal, with a next action back to the view address.");
 }
 
 function checkViews(slots, report) {
@@ -948,7 +1077,7 @@ function checkViews(slots, report) {
     report.set("R1.VIEW", "not_run", "No view exchange is recorded.");
     return valid;
   }
-  const tally = new Tally(report);
+  const tally = new Tally(report, "R1.VIEW");
   const served = recorded.filter((slot) => slot.status === 200);
   if (served.length === 0) {
     for (const slot of recorded) {
@@ -958,6 +1087,7 @@ function checkViews(slots, report) {
   for (const slot of served) {
     const found = schemaIssues("view", slot.body, bodyPath(slot));
     for (const entry of found) tally.fail(entry.code, entry.path, entry.message);
+    if (found.length === MAX_ISSUES) tally.floor = true;
     if (isObject(slot.body) && Buffer.byteLength(JSON.stringify(slot.body)) > MAX_VIEW_BYTES) {
       tally.fail("view_over_ceiling", bodyPath(slot), `The view, serialised again, is over ${MAX_VIEW_BYTES} bytes.`);
     }
@@ -975,7 +1105,7 @@ function checkViews(slots, report) {
       });
     });
   }
-  tally.settle("R1.VIEW", `${plural(served.length, "served view")}: valid, within the ceiling, with no repeated id.`);
+  tally.settle(`${plural(served.length, "served view")}: valid, within the ceiling, with no repeated id.`);
   return valid;
 }
 
@@ -988,7 +1118,7 @@ function checkPair(slots, views, report) {
     report.set("P.PAIR", "not_run", "R1.VIEW did not pass.");
     return;
   }
-  const tally = new Tally(report);
+  const tally = new Tally(report, "P.PAIR");
   for (const slot of [slots.first, slots.second]) {
     if (slot.status !== 200) {
       tally.unknown("view_not_served", `${slot.path}/response/status`, "This view request was not answered with status 200, so the two reads cannot be compared.");
@@ -997,26 +1127,63 @@ function checkPair(slots, views, report) {
   if (views.first && views.second && !sameValue(views.first.audience, views.second.audience)) {
     tally.unknown("audience_differs", `${bodyPath(slots.second)}/audience`, "The two views state different audiences, so they are not compared with each other.");
   }
-  tally.settle("P.PAIR", "Both views are served and valid and state the same audience.");
+  tally.settle("Both views are served and valid and state the same audience.");
 }
 
-/** Every valid document, with where it is and what kind it is. */
-function validDocuments(slots, orientation, views) {
-  const documents = [];
-  if (orientation) documents.push({ kind: "orientation", path: bodyPath(slots.orientation), body: orientation });
-  if (views.first) documents.push({ kind: "view", path: bodyPath(slots.first), body: views.first, slot: slots.first });
-  if (views.second) documents.push({ kind: "view", path: bodyPath(slots.second), body: views.second, slot: slots.second });
+/**
+ * Every served document: an orientation or view exchange answered with
+ * status 200. `read` holds the ones whose bodies match their schema, with
+ * where each is and what kind it is. `unread` holds the rest. A body that is
+ * not valid is held neither for nor against a host by any later check; each
+ * unread document is recorded here once, as an issue those checks point at.
+ */
+function servedDocuments(slots, orientation, views, report) {
+  const documents = { read: [], unread: [] };
+  for (const [kind, slot, body] of [
+    ["orientation", slots.orientation, orientation],
+    ["view", slots.first, views.first],
+    ["view", slots.second, views.second],
+  ]) {
+    if (!slot || slot.status !== 200) continue;
+    if (body) {
+      documents.read.push({ kind, path: bodyPath(slot), body, slot });
+    } else {
+      documents.unread.push({ kind, path: bodyPath(slot) });
+      report.issue("document_not_read", bodyPath(slot), "This body was answered with status 200 and does not match its schema. The checks that read every served document of its kind did not read it, and are unknown unless they fail on another.");
+    }
+  }
   return documents;
 }
 
-function checkDeclaredEffects(documents, report) {
-  if (documents.length === 0) {
-    report.set("R2.DECLARED_EFFECTS", "not_run", "No valid document is recorded.");
-    return;
+/**
+ * Starts a check that reads every served document (`kind` null) or every
+ * served view. Returns its tally and the documents it reads, or null when
+ * none of that kind was served and the check is not run.
+ */
+function openDocumentCheck(id, documents, kind, report) {
+  const ofKind = (document) => kind === null || document.kind === kind;
+  const read = documents.read.filter(ofKind);
+  const unread = documents.unread.filter(ofKind).length;
+  if (read.length === 0 && unread === 0) {
+    report.set(id, "not_run", kind === null ? "No served document is recorded." : `No served ${kind} is recorded.`);
+    return null;
   }
-  const tally = new Tally(report);
+  const tally = new Tally(report, id);
+  tally.unread = unread;
+  return { tally, read };
+}
+
+/** A declaration with its operational writes in one order, so that the list is compared as a set. */
+function declarationKey(declaration) {
+  return canonical({ ...declaration, operational_writes: [...declaration.operational_writes].sort() });
+}
+
+function checkDeclaredEffects(documents, report) {
+  const opened = openDocumentCheck("R2.DECLARED_EFFECTS", documents, null, report);
+  if (!opened) return;
+  const { tally } = opened;
   const stated = [];
-  for (const document of documents) {
+  for (const document of opened.read) {
     const at = document.kind === "orientation" ? `${document.path}/view/read_effects` : `${document.path}/read_effects`;
     const declaration = document.kind === "orientation" ? document.body.view.read_effects : document.body.read_effects;
     if (declaration === null) {
@@ -1028,13 +1195,13 @@ function checkDeclaredEffects(documents, report) {
       tally.fail("participant_record_write_declared", `${at}/participant_record_writes`, "The document declares that a read writes to the participant's record.");
     }
   }
-  if (stated.some((declaration) => !sameValue(declaration, stated[0]))) {
-    tally.fail("declarations_differ", "$/visits", "The read-effects declarations of the recorded documents are not all equal.");
+  if (stated.some((declaration) => declarationKey(declaration) !== declarationKey(stated[0]))) {
+    tally.fail("declarations_differ", "$/visits", "The read-effects declarations of the recorded documents are not all equal, the order of their operational writes aside.");
   }
   if (tally.fails === 0 && stated.some((declaration) => declaration.participant_record_writes === "unknown")) {
     tally.unknown("declaration_unknown", "$/visits", "A document declares that it does not know whether a read writes to the participant's record.");
   }
-  tally.settle("R2.DECLARED_EFFECTS", `${plural(stated.length, "declaration")} compared: all say none and are equal. Declarations were compared, not what a host wrote.`);
+  tally.settle(`${plural(stated.length, "declaration")} compared: all say none and are equal, the order of operational writes aside. Declarations were compared, not what a host wrote.`);
 }
 
 /** The ways one envelope disagrees with the state table, as fixed phrases. */
@@ -1059,10 +1226,17 @@ function stateDisagreements(envelope) {
     case "partial":
       if (envelope.dropped === null) {
         found.push("dropped is null");
-      } else if (typeof envelope.dropped.count === "number") {
-        if (envelope.count !== listed + envelope.dropped.count) found.push("the count is not the items listed plus the items dropped");
-      } else if (envelope.count !== null && envelope.count < listed) {
-        found.push("the count is below the number of items listed");
+      } else {
+        if (typeof envelope.dropped.count === "number") {
+          if (envelope.count !== listed + envelope.dropped.count) found.push("the count is not the items listed plus the items dropped");
+        } else if (envelope.count !== null && envelope.count <= listed) {
+          // A partial envelope says at least one entry was dropped, so a
+          // count given as a floor is above what is listed.
+          found.push("the count is not above the number of items listed");
+        }
+        if (envelope.dropped.reason === "limit" && listed !== envelope.limit) {
+          found.push("entries are said to be dropped for the limit, and the list is not full");
+        }
       }
       others(["unavailable", "withheld"]);
       break;
@@ -1082,12 +1256,9 @@ function stateDisagreements(envelope) {
 }
 
 function checkStates(documents, exercised, report) {
-  const views = documents.filter((document) => document.kind === "view");
-  if (views.length === 0) {
-    report.set("R3.STATES", "not_run", "No valid view is recorded.");
-    return;
-  }
-  const tally = new Tally(report);
+  const opened = openDocumentCheck("R3.STATES", documents, "view", report);
+  if (!opened) return;
+  const { tally, read: views } = opened;
   let envelopes = 0;
   for (const view of views) {
     const all = view.body.sections.map((section, index) => [section, `${view.path}/sections/${index}`]);
@@ -1102,16 +1273,13 @@ function checkStates(documents, exercised, report) {
     }
   }
   const seen = Object.entries(exercised.states_seen).map(([state, count]) => `${count} ${state}`).join(", ");
-  tally.settle("R3.STATES", `${plural(envelopes, "envelope")} agree with the state table (${seen}). Each state agrees with its own fields; that is not evidence a section was read successfully.`);
+  tally.settle(`${plural(envelopes, "envelope")} agree with the state table (${seen}). Each state agrees with its own fields; that is not evidence a section was read successfully.`);
 }
 
 function checkCursor(documents, report) {
-  const views = documents.filter((document) => document.kind === "view");
-  if (views.length === 0) {
-    report.set("R4.CURSOR", "not_run", "No valid view is recorded.");
-    return;
-  }
-  const tally = new Tally(report);
+  const opened = openDocumentCheck("R4.CURSOR", documents, "view", report);
+  if (!opened) return;
+  const { tally, read: views } = opened;
   for (const view of views) {
     if (view.body.cursor === null) {
       tally.fail("cursor_not_returned", `${view.path}/cursor`, "The view hands back no cursor.");
@@ -1124,16 +1292,14 @@ function checkCursor(documents, report) {
       tally.fail("changes_without_cursor", `${view.path}/changes`, "The request presented no cursor, yet the view carries changes.");
     }
   }
-  tally.settle("R4.CURSOR", `${plural(views.length, "valid view")}: each hands back a cursor, and each read with no cursor is a full view.`);
+  tally.settle(`${plural(views.length, "served view")}: each hands back a cursor, and each read with no cursor is a full view.`);
 }
 
 function checkFreshness(documents, slots, views, pairPassed, report) {
-  if (documents.length === 0) {
-    report.set("R5.FRESHNESS", "not_run", "No valid document is recorded.");
-    return;
-  }
-  const tally = new Tally(report);
-  for (const document of documents) {
+  const opened = openDocumentCheck("R5.FRESHNESS", documents, null, report);
+  if (!opened) return;
+  const { tally, read } = opened;
+  for (const document of read) {
     const { as_of: asOf, valid_until: validUntil } = document.body;
     if (asOf === null) tally.fail("not_stated", `${document.path}/as_of`, "The document does not state when it was made.");
     if (validUntil === null) tally.fail("not_stated", `${document.path}/valid_until`, "The document does not state until when the host stands by it.");
@@ -1145,16 +1311,14 @@ function checkFreshness(documents, slots, views, pairPassed, report) {
     && compareTimestamp(views.second.as_of, views.first.as_of) < 0) {
     tally.fail("as_of_went_back", `${bodyPath(slots.second)}/as_of`, "The second view is dated before the first.");
   }
-  tally.settle("R5.FRESHNESS", `${plural(documents.length, "valid document")}: each states as_of and valid_until, and valid_until is not before as_of${pairPassed ? "; the second view is not dated before the first" : ""}. Host times were compared with host times only; no clock was read.`);
+  tally.settle(`${plural(read.length, "served document")}: each states as_of and valid_until, and valid_until is not before as_of${pairPassed ? "; the second view is not dated before the first" : ""}. Host times were compared with host times only: no request time and no clock was read, so a document already past its valid_until when it was requested is not held against the host.`);
 }
 
 function checkNoObligation(documents, report) {
-  if (documents.length === 0) {
-    report.set("R6.NO_OBLIGATION", "not_run", "No valid document is recorded.");
-    return;
-  }
-  const tally = new Tally(report);
-  for (const document of documents) {
+  const opened = openDocumentCheck("R6.NO_OBLIGATION", documents, null, report);
+  if (!opened) return;
+  const { tally, read } = opened;
+  for (const document of read) {
     const { body, path } = document;
     if (body.reply_expected === null) tally.fail("not_stated", `${path}/reply_expected`, "The document does not state whether a reply is expected.");
     else if (body.reply_expected !== false) tally.fail("reply_expected", `${path}/reply_expected`, "The document says a reply is expected.");
@@ -1174,23 +1338,21 @@ function checkNoObligation(documents, report) {
       });
     });
   }
-  tally.settle("R6.NO_OBLIGATION", `${plural(documents.length, "valid document")}: each says no reply is expected; each view says reading creates no obligation and sets owed_to and due_at only in its one recorded_obligations section. These are the documents' own statements.`);
+  tally.settle(`${plural(read.length, "served document")}: each says no reply is expected; each view says reading creates no obligation and sets owed_to and due_at only in its one recorded_obligations section. These are the documents' own statements.`);
 }
 
 function checkNonClaims(documents, report) {
-  if (documents.length === 0) {
-    report.set("R7.NON_CLAIMS", "not_run", "No valid document is recorded.");
-    return;
-  }
-  const tally = new Tally(report);
-  for (const document of documents) {
+  const opened = openDocumentCheck("R7.NON_CLAIMS", documents, null, report);
+  if (!opened) return;
+  const { tally, read } = opened;
+  for (const document of read) {
     for (const token of REQUIRED_TOKENS[document.kind]) {
       if (!document.body.not_established.includes(token)) {
         tally.fail("non_claim_missing", `${document.path}/not_established`, `The document does not list ${token}.`);
       }
     }
   }
-  tally.settle("R7.NON_CLAIMS", `${plural(documents.length, "valid document")}: each lists every token of its kind.`);
+  tally.settle(`${plural(read.length, "served document")}: each lists every token of its kind.`);
 }
 
 /**
@@ -1258,10 +1420,10 @@ function viewPath(slots, at) {
 }
 
 function checkShownAgain(fixture, slots, views, comparison, report) {
-  const tally = new Tally(report);
+  const tally = new Tally(report, "R2.SHOWN_AGAIN");
   if (fixture.between_visits.acknowledged_by_recorder !== "no") {
     tally.unknown("recorder_statement_not_no", "$/between_visits/acknowledged_by_recorder", "The recorder does not state that it acknowledged nothing between the reads, so a moved mark or position cannot be held against the host.");
-    tally.settle("R2.SHOWN_AGAIN", "");
+    tally.settle("");
     return;
   }
   const position = (view) => (view.acknowledgement === null ? null : view.acknowledgement.position);
@@ -1289,11 +1451,11 @@ function checkShownAgain(fixture, slots, views, comparison, report) {
   if (comparison.comparedEqual === 0 && tally.fails === 0) {
     tally.unknown("not_exercised", bodyPath(slots.first), "No unacknowledged first-read item was found equal on the second read, so nothing was shown again to compare.");
   }
-  tally.settle("R2.SHOWN_AGAIN", `${plural(comparison.comparedEqual, "unacknowledged first-read item")} found equal on the second read; position and marks unmoved; no unnamed change. This rests on the recorder's own statement that it acknowledged nothing between the reads.`);
+  tally.settle(`${plural(comparison.comparedEqual, "unacknowledged first-read item")} found equal on the second read; the position is unmoved, no item shown in the same section on both reads has a different mark, and no change is unnamed. A named change is accepted whatever caused it. This rests on the recorder's own statement that it acknowledged nothing between the reads.`);
 }
 
 function checkSectionsKept(slots, comparison, report) {
-  const tally = new Tally(report);
+  const tally = new Tally(report, "R3.SECTIONS_KEPT");
   for (const [id, earlier] of comparison.firstSections) {
     const at = `${bodyPath(slots.first)}/sections/${earlier.index}`;
     const later = comparison.secondSections.get(id);
@@ -1304,7 +1466,7 @@ function checkSectionsKept(slots, comparison, report) {
     if (later.section.kind !== earlier.section.kind) tally.fail("section_kind_changed", `${at}/kind`, "A section has a different kind on the second read.");
     if (later.section.scope !== earlier.section.scope) tally.fail("section_scope_changed", `${at}/scope`, "A section has a different scope on the second read.");
   }
-  tally.settle("R3.SECTIONS_KEPT", `${plural(comparison.firstSections.size, "first-read section")} listed again with the same kind and scope.`);
+  tally.settle(`${plural(comparison.firstSections.size, "first-read section")} listed again with the same kind and scope.`);
 }
 
 function checkChanges(slots, views, comparison, named, report) {
@@ -1312,7 +1474,7 @@ function checkChanges(slots, views, comparison, named, report) {
     report.set("R4.CHANGES", "not_run", "The second request presented no cursor.");
     return;
   }
-  const tally = new Tally(report);
+  const tally = new Tally(report, "R4.CHANGES");
   const view = views.second;
   const at = bodyPath(slots.second);
   if (view.basis.kind !== "since_cursor") {
@@ -1323,7 +1485,7 @@ function checkChanges(slots, views, comparison, named, report) {
   }
   if (view.changes === null) {
     tally.fail("changes_missing", `${at}/changes`, "A cursor was presented, yet the view carries no changes.");
-    tally.settle("R4.CHANGES", "");
+    tally.settle("");
     return;
   }
 
@@ -1355,7 +1517,7 @@ function checkChanges(slots, views, comparison, named, report) {
   const state = view.changes.state;
   if (state === "unavailable" || state === "withheld") {
     tally.unknown("changes_not_readable", `${at}/changes`, "The changes list is reported unavailable or withheld, so what it names cannot be read.");
-    tally.settle("R4.CHANGES", "");
+    tally.settle("");
     return;
   }
   for (const difference of comparison.differences) {
@@ -1371,7 +1533,7 @@ function checkChanges(slots, views, comparison, named, report) {
     tally.unknown("not_exercised", `${at}/changes`, "No decidable difference between the two views was both found and named, so the changes list was not exercised.");
   }
   const entries = view.changes.items.length;
-  tally.settle("R4.CHANGES", `The basis echoes the cursor; ${entries} ${entries === 1 ? "entry" : "entries"} checked against the two views; ${plural(named, "decidable difference")} found and named.`);
+  tally.settle(`The basis echoes the cursor; ${entries} ${entries === 1 ? "entry" : "entries"} checked against the two views; ${plural(named, "decidable difference")} found and named.`);
 }
 
 function checkFixture(fixture, report) {
@@ -1391,7 +1553,7 @@ function checkFixture(fixture, report) {
   const views = checkViews(slots, report);
   checkPair(slots, views, report);
   const pairPassed = report.outcome("P.PAIR") === "pass";
-  const documents = validDocuments(slots, orientation, views);
+  const documents = servedDocuments(slots, orientation, views, report);
 
   checkDeclaredEffects(documents, report);
   checkStates(documents, exercised, report);
@@ -1457,7 +1619,7 @@ export function checkArrivalFixtureBytes(input, options = {}) {
   report.set("I.SIZE", "pass", `${bytes.length} bytes`);
 
   if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) {
-    report.issue("utf8_bom", "$", "The input begins with a UTF-8 byte-order mark.");
+    report.issue("utf8_bom", "$", "The input begins with a UTF-8 byte-order mark.", "I.UTF8");
     report.set("I.UTF8", "fail", "A UTF-8 byte-order mark was observed.");
     return finish("I.UTF8 did not pass.");
   }
@@ -1465,14 +1627,14 @@ export function checkArrivalFixtureBytes(input, options = {}) {
   try {
     text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
   } catch {
-    report.issue("utf8_decode", "$", "Strict UTF-8 decoding failed.");
+    report.issue("utf8_decode", "$", "Strict UTF-8 decoding failed.", "I.UTF8");
     report.set("I.UTF8", "fail", "Strict decoding failed.");
     return finish("I.UTF8 did not pass.");
   }
   report.set("I.UTF8", "pass", "Decoded without replacement characters.");
 
   if (nestingExceeds(text, MAX_JSON_DEPTH)) {
-    report.issue("json_depth_exceeded", "$", `The input nests brackets more than ${MAX_JSON_DEPTH} deep; it was not parsed.`);
+    report.issue("json_depth_exceeded", "$", `The input nests brackets more than ${MAX_JSON_DEPTH} deep; it was not parsed.`, "I.JSON");
     report.set("I.JSON", "fail", "Nesting is over the limit.");
     return finish("I.JSON did not pass.");
   }
@@ -1480,13 +1642,13 @@ export function checkArrivalFixtureBytes(input, options = {}) {
   try {
     fixture = JSON.parse(text);
   } catch {
-    report.issue("json_parse", "$", "JSON parsing failed; no input content was copied into this issue.");
+    report.issue("json_parse", "$", "JSON parsing failed; no input content was copied into this issue.", "I.JSON");
     report.set("I.JSON", "fail", "JSON parsing failed.");
     return finish("I.JSON did not pass.");
   }
   const repeated = repeatedJsonKeys(text);
   if (repeated > 0) {
-    report.issue("json_key_duplicate", "$", `${plural(repeated, "object key")} appear${repeated === 1 ? "s" : ""} more than once in one object; the key text was not copied.`);
+    report.issue("json_key_duplicate", "$", `${plural(repeated, "object key")} appear${repeated === 1 ? "s" : ""} more than once in one object; the key text was not copied.`, "I.JSON");
     report.set("I.JSON", "fail", `${plural(repeated, "repeated object key")} observed.`);
     return finish("I.JSON did not pass.");
   }
@@ -1494,7 +1656,7 @@ export function checkArrivalFixtureBytes(input, options = {}) {
 
   const shape = schemaIssues("fixture", fixture);
   if (shape.length > 0) {
-    for (const entry of shape) report.issue(entry.code, entry.path, entry.message);
+    for (const entry of shape) report.issue(entry.code, entry.path, entry.message, "I.SHAPE");
     report.set("I.SHAPE", "fail", `${plural(shape.length, "schema issue")} observed.`);
     return finish("I.SHAPE did not pass.");
   }
@@ -1508,6 +1670,8 @@ export function checkArrivalFixtureBytes(input, options = {}) {
 // checkWorkRunFile and main of work/0.1/check.mjs.
 
 async function readBoundedRegularFile(path) {
+  // Looked at before it is opened: opening a named pipe waits for a writer.
+  if (!(await stat(path)).isFile()) throw new Error("input path must name a regular file");
   const handle = await open(path, "r");
   try {
     const metadata = await handle.stat();

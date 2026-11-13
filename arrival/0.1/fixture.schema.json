@@ -9,7 +9,7 @@
   "properties": {
     "schema_version": { "const": "xenia.arrival.fixture/0.1-development" },
     "origin": {
-      "description": "How the fixture came to be: written by hand, the bytes a host sent, or a host's answers mapped into these shapes by the recorder.",
+      "description": "How the fixture came to be. hand_written: written by hand. host_bytes: each body is the JSON a host answered with, parsed and not altered; the bytes themselves are not kept. projected_by_recorder: a host's answers mapped into these shapes by the recorder, which renames and reshapes fields, changes no value and adds no statement the host did not make; where a schema has no null for something the host did not say, the field is left out and that body fails its check.",
       "enum": ["hand_written", "host_bytes", "projected_by_recorder"]
     },
     "between_visits": {
@@ -40,7 +40,10 @@
           "type": "object",
           "properties": {
             "view": { "$ref": "#/$defs/exchange" },
-            "bad_cursor": { "$ref": "#/$defs/exchange" }
+            "bad_cursor": {
+              "description": "The view address asked with a cursor the host did not hand back. Where the orientation names no cursor parameter, a recorder leaves this exchange out.",
+              "$ref": "#/$defs/exchange"
+            }
           },
           "additionalProperties": false
         }

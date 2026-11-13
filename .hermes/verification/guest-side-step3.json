@@ -1,10 +1,10 @@
 {
-  "scope": "Guest-side step 3 (Arrival 0.1): a repository-only development draft of an anonymous orientation and an authenticated continuity view, an offline checker for one recorded pair of reads with its cases and tests, and the wording that joins the root README and spec.json to that draft. Local runs on hand-written input only; no host was contacted, and nothing here is a conformance result.",
+  "scope": "Guest-side step 3 (Arrival 0.1): a repository-only development draft of an anonymous orientation and an authenticated continuity view, an offline checker for one recorded pair of reads with its cases and tests, the wording that joins the root README and spec.json to that draft, and the fixes made after three reviews of the step. Local runs on hand-written input only; no host was contacted, and nothing here is a conformance result.",
   "step_began": "2026-11-12",
   "observed_at": "2026-11-13",
-  "date_note": "The step's baseline and first commit are dated 2026-11-12. The gate totals, digests and read-through below were observed on 2026-11-13.",
+  "date_note": "The step's baseline and first commit are dated 2026-11-12. The review fixes, and the gate totals, digests and read-through below, are of 2026-11-13.",
   "base_revision": "35c2d77b509c619e56645c20bedae00c638bdb00",
-  "head_before_record": "aaf37b2f42b882a7140dd3b58382ea6cfefa3238",
+  "head_before_record": "c43b6bd6b96dca03fff0303f0b1812a177c8199a",
   "earlier_commits_of_this_step": [
     {
       "task": "profile-and-schemas",
@@ -13,6 +13,10 @@
     {
       "task": "checker-and-fixtures",
       "commit": "aaf37b2f42b882a7140dd3b58382ea6cfefa3238"
+    },
+    {
+      "task": "wording-pointer-and-recording-note",
+      "commit": "c43b6bd6b96dca03fff0303f0b1812a177c8199a"
     }
   ],
   "gate": {
@@ -23,8 +27,8 @@
       "groups": [
         {
           "script": "test:library",
-          "tests": 294,
-          "pass": 287,
+          "tests": 302,
+          "pass": 295,
           "fail": 0,
           "skipped": 7,
           "cancelled": 0
@@ -75,14 +79,14 @@
       "skip_explained": "The seven skipped tests are the ones skipped at the base revision: six opt-in tests of the real Local Starter package and one optional Skills provider test. None is an Arrival test."
     },
     "arrival_tests": {
-      "command": "npm run test:arrival",
+      "command": "node --test tests/arrival-*.test.mjs",
       "exit_code": 0,
-      "tests": 56,
-      "pass": 56,
+      "tests": 64,
+      "pass": 64,
       "fail": 0,
       "skipped": 0,
       "cancelled": 0,
-      "note": "tests/arrival-0.1.test.mjs (47) and tests/arrival-terms.test.mjs (9); both also run inside npm test through test:library."
+      "note": "tests/arrival-0.1.test.mjs (55) and tests/arrival-terms.test.mjs (9); both also run inside npm test through test:library. package.json has no script for them."
     },
     "render_checks": {
       "node tools/render-covenant.mjs --check": 0,
@@ -105,14 +109,12 @@
           "bytes_at_base": 89087,
           "bytes_now": 90763,
           "why": "the wording of this step and interpretation.arrival_terms"
-        },
-        "package.json": {
-          "bytes_at_base": 3624,
-          "bytes_now": 3684,
-          "why": "one script, test:arrival"
         }
       },
-      "note": "The list of packed paths is unchanged. The bytes of three packed files are not: a package built from this tree is not byte-identical to one built from the base revision. Version, exports and the files list are unchanged, and nothing was published."
+      "note": "The list of packed paths is unchanged. The bytes of two packed files are not, README.md and spec.json: a package built from this tree is not byte-identical to one built from the base revision. package.json is byte-identical to the base revision again: the test:arrival script the step had added was removed after review. Version, exports and the files list are unchanged, and nothing was published.",
+      "packed_files_restored_to_the_base_revision": [
+        "package.json"
+      ]
     }
   },
   "wording": {
@@ -172,8 +174,8 @@
   },
   "draft_readme": {
     "path": "arrival/0.1/README.md",
-    "bytes": 16374,
-    "pinned_maximum_bytes": 16384,
+    "bytes": 18093,
+    "pinned_maximum_bytes": 18432,
     "made_room_for_the_recording_note_by": [
       "shorter link text for the example and the tests",
       "one table row for rules 2 and 6, which cite the same root README patterns",
@@ -186,30 +188,33 @@
       "'of what a credential reaches' removed from the open question on audience.scope and record_set_ref (it is in view.schema.json), and 'Nothing checks them' made 'Nothing checks that they are true'",
       "rewordings that drop no fact in the sentence on the two-meaning word and in the exit gate",
       "the sentence on a plain repeat read moved into the recording note"
-    ]
+    ],
+    "pin_raised_after_review": {
+      "from_bytes": 16384,
+      "to_bytes": 18432,
+      "why": "The review asked the README to state more than it had room for: what happens to a served body that is not valid, the narrowed tripwire, the partial rows, the net change list and the position, what a recorder does at a house with no cursor, the Covenant duties its tokens touch, and four open questions. The agreed design pinned 16 KiB; this is a departure from it, made so that no sentence the review asked for was left out for want of bytes. It is the owner's to keep or reverse."
+    }
   },
   "sha256": {
     "README.md": "6bb1a19cd5f43f2742d7e9507926f6e4fb28d61387e27b8e7be9bd4c6a4108aa",
-    "arrival/0.1/README.md": "27c6fb308d04b63863c3b58aadc7adf02eacd96d6a736b90f578198603cf6a42",
-    "arrival/0.1/check.mjs": "f3401a34b116e909c04144923d87113592c8554e88d0b439934c9e017afb6f34",
+    "arrival/0.1/README.md": "fde8bb2e935bff1434fe4c36986fa79e98509e5d7ee2f72ffe4f608bb1319492",
+    "arrival/0.1/check.mjs": "63ec0b7ff3461360c928fce86a96221dff7fd170a8c0a7b114358fa559f9b60f",
     "arrival/0.1/examples/two-visits.json": "ac930630118bcfe9e5de3bffb7c392e4786470bc643d40444f65e77ab60e35ae",
-    "arrival/0.1/fixture.schema.json": "af5038841f6fc2fc9a748ec714786bf2485c22b8eb7ef0632368060fe806d7ce",
-    "arrival/0.1/fixtures/cases.json": "d9f2d0fa76d9abd72e4d82bcf45e23a7cdf2daafad8b2b73f9e46d69d808217f",
-    "arrival/0.1/orientation.schema.json": "ac4674ce346103f2c5daba8fe63f23eb134cc1a7ded623a9bf7f779e20f727d8",
-    "arrival/0.1/result.schema.json": "e88ede3740f419df1a18f3cda783d8c6cc7284351ef692fe13fe7130b1e45bc7",
-    "arrival/0.1/view.schema.json": "7cdb8e8022b464d782da855644556aefaf9ff22674cd356c3245491feb0e5cfd",
-    "package.json": "7f313b152ebb6ac5158aa71a930705fc6d4241ec07c8421fe5cc1776034694b7",
+    "arrival/0.1/fixture.schema.json": "b982e5c8cc61dff935e098f2d5b28fa1a9cfbe79b979aa91ae2f4251affe432f",
+    "arrival/0.1/fixtures/cases.json": "6635341efde968111453e44fa52df5b010423a52719fb19c1767b84c1cb4f99f",
+    "arrival/0.1/orientation.schema.json": "57cee3098886c4912931e518a72b40d00a34bbc682b36a52ff1e9f741064c595",
+    "arrival/0.1/result.schema.json": "00e5ae04bed129169c28e9b717a0db09ee35ec7230d00ce3657e7e5ee864656a",
+    "arrival/0.1/view.schema.json": "c16e29b91451621aaee8f30ab7bf78c734a19dae20cbbb1802db19ca1730d73f",
     "spec.json": "4bb733ef4884ddfba0a858ac7b81fed8e25a8e5b56002031aabaac68150a8d40",
-    "tests/arrival-0.1.test.mjs": "45b7c63b16e4ec4564deb5ff730e3a46fcb5af7bcd3bc1e3578606448973fbc2",
-    "tests/arrival-terms.test.mjs": "51006ff645689ce00f11e9ff0deb23865ba3accc083d9b7edd7e851acfe211bb"
+    "tests/arrival-0.1.test.mjs": "b4a8cc72d2c9acada3ff5dfc7f114381cca4a692d766aa1fb7a67e6ee81c479f",
+    "tests/arrival-terms.test.mjs": "637a6b87b570895ff128c98ca2ea4252a1a8243447e9f606910eb8b57962aef7"
   },
   "read_through": {
-    "by": "the author of this step, once as an arriving agent and once as a host implementer; no outside reader has tried",
+    "by": "the author of this step, once as an arriving agent and once as a host implementer; no outside reader has tried. Four points the review fixes now state were taken off these lists; they are named under review_fixes.",
     "an_arriving_agent_would_have_to_guess": [
       "where an orientation is: nothing says how its address is found; the orientation names a manifest, and nothing names the orientation",
       "how to present a credential: credential_kinds holds the host's own labels and is checked for shape only",
       "how to send a cursor: cursor_parameter names a query parameter, with no encoding or joining rule, and may be null while the view still hands back a cursor; no check reads it",
-      "what a passed valid_until means for the reader: no clock is read, and a document already past it when requested passes",
       "what the four scope words, the dropped reasons, the unavailable and withheld codes, and 'window' mean: they are listed, not explained; ended and out_of_window are told apart only by a contradiction rule",
       "whether ref, deeper_read and the acknowledgement address take the same credential, and what reading them writes",
       "what reading the orientation itself writes: it declares the view's read effects, not its own",
@@ -217,24 +222,24 @@
       "what to do with acknowledgement.position, and who set an item's acknowledged_at",
       "which cursor to keep after a second read, and whether an older one still works",
       "whether the order of sections or items means anything: no check compares order",
-      "how to read a typed value such as a balance: an item is a line of text, times and addresses, and every section but one has kind other"
+      "how to read a typed value such as a balance: an item is a line of text, times and addresses, and every section but one has kind other",
+      "what the orientation's cursor_parameter means for a check: no check reads it, and the README says only what a recorder does when it is null"
     ],
     "a_host_implementer_would_have_to_guess": [
       "that addresses are compared exactly as written: a trailing slash or a letter case on the orientation's view.href or on a next action fails a check, and the README defines equality for JSON only",
       "what cursor_parameter null is for: a view with a null cursor fails R4.CURSOR whatever the orientation says",
-      "where next actions go: the root README pattern lists next_actions in the continuity view, and the view is closed and has no such field",
       "what a host with no recorded obligations serves: exactly one recorded_obligations section is needed, and which state it reports is not said",
-      "what counts as the participant's record, and that operational_writes are compared in order across all three documents",
+      "what counts as the participant's record",
       "whether a change to an item outside the listed part of a partial section is named in changes: the checker neither asks for it nor contradicts it",
       "how long valid_until runs: a valid_until equal to as_of passes",
       "that record_set_ref has to be the same on both reads for the pair to be compared at all",
       "which 4xx status to use for each refusal, and the media type and cache headers of both documents, which matter for a private view",
       "what makes a cursor bad enough to refuse: malformed, expired, or issued under another credential share one code",
       "how to record a house whose own addresses carry a query key named like a credential: unaltered, it fails I.NO_CREDENTIAL",
-      "how a recording comes to hold a named difference and an equal unacknowledged item: something has to change between the reads, and a mark moved by any other holder of the credential counts against the host"
+      "how a recording comes to hold a named difference and an equal unacknowledged item: something has to change between the reads, and a mark moved by any other holder of the credential counts against the host",
+      "what to do about an address the tripwire fails by name alone, such as a filter named session_id or the pair token=USDC: the README says the name decides, and gives no way to record such a house and pass"
     ],
     "a_second_implementation_would_have_to_guess": [
-      "that 'unacknowledged' means acknowledged_at is null: the README does not say so, though cases that depend on it would show a wrong guess",
       "that a null acknowledgement counts as a null position: not stated, and no case has one read with null and the other with an object",
       "that addresses are compared exactly as written: not stated, and no case has two addresses that differ only by a trailing slash or a letter case"
     ]
@@ -242,10 +247,12 @@
   "not_established": [
     "that any host serves either document, or sent any fixture: the example and every case are hand-written",
     "that a second implementation exists or would agree: the exit gate is unmet, and the checker, the cases, their expected outcomes and the tests have one author",
-    "that the example and the cases fix every behaviour of check.mjs: the last two points listed for a second implementation are held by no case, so an implementation could meet the exit gate and still differ there",
+    "that the example and the cases fix every behaviour of check.mjs: a null acknowledgement counted as a null position, and addresses compared exactly as written, are held by no case, so an implementation could meet the exit gate and still differ there",
     "that an agent or a host other than the author can use the draft without guessing: the read-through is the author's own",
+    "that the tripwire's names are complete or right for any host: a name alone decides, so a harmless pair can fail and a credential under an unlisted name passes",
+    "that the fixes close every finding of the reviews: what was left is under review_fixes.left_open, and the fixes themselves have not been reviewed",
     "that the root README link resolves: it names the main branch, and this branch is neither pushed nor merged",
-    "that a package built from this tree is byte-identical to one built from the base revision: the path list is; three files are not",
+    "that a package built from this tree is byte-identical to one built from the base revision: the path list is; README.md and spec.json are not",
     "that the rewording leaves no one-call reading: the four places listed under wording keep their older words",
     "behaviour on any machine but the one macOS arm64 machine, Node 24.18.1, these runs used",
     "conformance, authority, identity, consent, safety, or anything about a caller's inner state"
@@ -253,7 +260,47 @@
   "process_notes": [
     "Task 3 (wording, pointer, recording note): tests/arrival-terms.test.mjs was written first and run before any edit: 8 of its 9 tests failed. The ninth, on LICENSES.md, pins a sentence that was already true, and the last test stopped at its first assertion, before its checker assertions ran. Both were then seen to fail in a scratch copy, where 13 small changes (five to check.mjs, one to LICENSES.md, seven to the three documents) were each caught by these tests.",
     "Tasks 1 and 2 report their own test order in their commit messages; task 2 was not test-first for most of the checker.",
-    "The wording strings are the agreed ones. Prose added to README.md is wrapped like its neighbours, and the dated end of the first Continuity pattern keeps its bytes and line breaks."
+    "The wording strings are the agreed ones. Prose added to README.md is wrapped like its neighbours, and the dated end of the first Continuity pattern keeps its bytes and line breaks.",
+    "Review fixes: see review_fixes.tests_first. The gate was run on the tree of the fix commit before this record was rewritten; the record is not read by any test."
   ],
-  "record_note": "This record is committed with the third commit of the step and describes that commit's tree. It cannot hold its own digest or the hash of the commit that carries it."
+  "record_note": "This record was first committed with the third commit of the step and was rewritten with the commit that carries the review fixes; it describes that commit's tree. It cannot hold its own digest or the hash of the commit that carries it.",
+  "review_fixes": {
+    "reviewed_commit": "c43b6bd6b96dca03fff0303f0b1812a177c8199a",
+    "lenses": [
+      "checker-soundness",
+      "source-fidelity",
+      "standard-consistency"
+    ],
+    "what_changed_in_the_checker": [
+      "A served body (status 200) that does not match its schema is no longer skipped in silence. R2.DECLARED_EFFECTS, R3.STATES, R4.CURSOR, R5.FRESHNESS, R6.NO_OBLIGATION and R7.NON_CLAIMS are unknown, with one document_not_read issue for the body, unless a document that was read fails them. They are not_run only when no document of the kind they read was served.",
+      "I.NO_CREDENTIAL names credentials by whole parts of a query or fragment key (key, auth, sig, pass, pwd, jwt, signature, credential, bearer and access_key among them), and no longer by any part of the key that contains a listed word: page_token, max_tokens and sort_key pass. A pair counts only when it has a value.",
+      "I.NO_CREDENTIAL no longer fails an address for having a fragment. A fragment fails when it holds a pair with a credential-named key and a value. This departs from the agreed check table, which said an href with a fragment fails.",
+      "I.NO_CREDENTIAL looks for addresses anywhere in free text and holds them to the userinfo and credential-pair rules; only a string in an address field (href, ref, deeper_read, manifest, type, an entry of docs) is asked to parse.",
+      "The sk- and eyJ shapes begin only where no token character comes before them. The built case tripwire-long-run-with-no-digit, 180,000 characters of sk- starts in a 188,652-byte fixture, took about 6.5 seconds with the checker of the reviewed commit and under 10 milliseconds with this one, three runs each on the machine named under not_established.",
+      "R3.STATES: in a partial envelope with no dropped count, a count is null or above the number of items listed; with reason limit, the list is full.",
+      "R2.DECLARED_EFFECTS compares operational_writes as a set.",
+      "When more than 256 issues arise, the first failure and the first undecidable point of each check are kept, and a check's observed sentence says how many of its issues the list holds.",
+      "The command line looks at a path before opening it, so a named pipe is refused with exit code 2 and not waited on. work/0.1/check.mjs, from which the reader was copied, still opens first; it was not changed here."
+    ],
+    "departures_from_the_agreed_design": [
+      "The draft README pin went from 16 KiB to 18 KiB; see draft_readme.pin_raised_after_review.",
+      "A fragment alone no longer fails I.NO_CREDENTIAL; see what_changed_in_the_checker."
+    ],
+    "tests_first": "The cases, the tests and the README pins were changed before the checker, the schemas and the README. Run then, 19 of 64 arrival tests failed; after the changes 64 of 64 pass. 59 small falsifying edits (40 to check.mjs, 17 to the draft README, 2 to schema descriptions) were then tried one at a time on a scratch copy: 55 were caught at first, tests were added for the other 4, and all 59 are caught now. The edits were chosen by the author of the fixes.",
+    "taken_off_the_read_through": [
+      "what a passed valid_until means: rule 5 of the README now says no request time is compared",
+      "where next actions go: the README now lists next actions inside the view as outside Arrival 0.1",
+      "that operational_writes are compared in order: they are now compared as a set",
+      "that unacknowledged means acknowledged_at is null: the README and the view schema now say so"
+    ],
+    "left_open": [
+      "No check reads the orientation's cursor_parameter. A fixture that says null there and still records cursors and a bad-cursor exchange passes.",
+      "A mark set on read passes R2.SHOWN_AGAIN when it is presented as an ended item and an added one, under a new id or in another section. The README, the pass sentence and a case state this limit.",
+      "interpretation.arrival_terms says no XENIA profile defines protection against replay, while Covenant duty consent.exact-authority names a nonce or replay boundary. The sentence is true of mechanism only. The string was agreed word for word and was not edited.",
+      "The Care principle, the closing and CONFORMANCE.md still describe one arrival that already knows the caller, and arrival_terms does not name principles. Not edited: the wording was agreed.",
+      "interpretation.arrival_terms carries no status label of its own, unlike its neighbours in spec.json.",
+      "work/0.1/check.mjs waits on a named pipe, as this checker did.",
+      "The eyJ, gh and Bearer shapes were not measured beyond the worst texts tried in the tests."
+    ]
+  }
 }

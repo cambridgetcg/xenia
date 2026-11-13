@@ -27,7 +27,7 @@
       "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }]
     },
     "valid_until": {
-      "description": "Until when the host stands by this document. Null means not stated.",
+      "description": "Until when the host stands by this document. Null means not stated. Arrival 0.1 compares it with as_of only, never with a request time.",
       "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }]
     },
     "audience": {
@@ -65,7 +65,7 @@
       "anyOf": [{ "$ref": "#/$defs/cursor" }, { "type": "null" }]
     },
     "changes": {
-      "description": "Null, or what differs since the presented cursor, in the same envelope as a section.",
+      "description": "Null, or what differs since the presented cursor, in the same envelope as a section. It is the net difference between what the two reads list, not a list of the events between them.",
       "anyOf": [{ "$ref": "#/$defs/changes" }, { "type": "null" }]
     },
     "sections": {
@@ -79,7 +79,7 @@
       "anyOf": [{ "$ref": "#/$defs/read_effects" }, { "type": "null" }]
     },
     "acknowledgement": {
-      "description": "Null, or where a separate, explicit acknowledgement can be made and the host's current position for it. Arrival 0.1 does not define the acknowledgement itself.",
+      "description": "Null, or where a separate, explicit acknowledgement can be made and the host's position for it: how far acknowledgements made under this credential have reached. The position moves only when one is made. Arrival 0.1 does not define the acknowledgement itself.",
       "anyOf": [
         {
           "type": "object",
@@ -146,7 +146,10 @@
     },
     "section_id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{0,63}$" },
     "item_id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:~-]{0,127}$" },
-    "scope": { "enum": ["identity", "project", "mixed", "unknown"] },
+    "scope": {
+      "description": "Whose records these are, in the host's own account. The four words are the ones website integration gate 2 in WEBSITE-ROLLOUT.md names. Whether project is the right word for a host with another unit of tenancy is an open question.",
+      "enum": ["identity", "project", "mixed", "unknown"]
+    },
     "state": { "enum": ["ok", "quiet", "partial", "unavailable", "withheld"] },
     "count": {
       "anyOf": [
@@ -208,7 +211,10 @@
         "id": { "$ref": "#/$defs/item_id" },
         "summary": { "type": "string", "minLength": 1, "maxLength": 300 },
         "recorded_at": { "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] },
-        "acknowledged_at": { "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] },
+        "acknowledged_at": {
+          "description": "When the item was acknowledged, or null when it has not been. Arrival 0.1 has no form for a mark with no time: null reads as not acknowledged.",
+          "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }]
+        },
         "ref": {
           "description": "Address of a deeper read of this item, or null.",
           "anyOf": [{ "$ref": "#/$defs/href" }, { "type": "null" }]
@@ -294,7 +300,7 @@
           "enum": ["none", "some", "unknown"]
         },
         "operational_writes": {
-          "description": "Each write a read still causes outside the participant's record, named in the host's words.",
+          "description": "Each write a read still causes outside the participant's record, named in the host's words. Order carries no meaning.",
           "type": "array",
           "maxItems": 8,
           "uniqueItems": true,
