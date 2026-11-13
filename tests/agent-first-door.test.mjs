@@ -235,6 +235,8 @@ test('at the CLI a refused target exits 2, never echoes a password, and every ne
   const echoed=runCli(['door','plan','--origin','https://Door.Example.org:8443']);
   assert.deepEqual(echoed.value.problem.next_actions[1].argv,['door','plan','--origin','https://door.example.org:8443/','--allow-local-target']);
   assert.match(echoed.value.problem.detail,/repeats? the target's origin/);
+  // Once, in that suggested plan, and nowhere else in what is printed.
+  assert.equal(echoed.stdout.split('door.example.org').length-1,1,'the host of a refused target is printed once');
   for(const typed of ['https://door.example.org/PRIVATEPATH','https://door.example.org/?q=PRIVATEQUERY','https://door.example.org/#PRIVATEFRAGMENT','https://user:PRIVATEWORD@10.0.0.5']){
     const r=runCli(['door','plan','--origin',typed]);
     assert.equal(r.status,2,typed);assert.equal(r.value.error.reason,'not_an_origin',typed);
@@ -765,9 +767,8 @@ test('door check is held to what it will not say: no body blesses the service, a
     const sent=body.requests.sent;
     assert.equal(body.scope,`What the User-Agent ${CHECKER_USER_AGENT} was served on the ${sent} GET request${sent===1?'':'s'} this command sent to ${ORIGIN}/, observed once, at observed_at. Nothing wider, and nothing after expires_at.`);
     // What the checker's word covers, and that it is not more.
-    assert.match(body.checker_result.covers.rule,/computed only from the checks in counts/);
-    assert.match(body.checker_result.covers.not_more,/It is not a statement about the service as a whole/);
-    assert.match(body.checker_result.covers.not_more,/not about anything in not_tested/);
+    assert.equal(body.checker_result.covers.rule,'The word is the checker\'s own, computed only from the checks in counts: nonconformant if any failed; otherwise indeterminate if any was unknown or not run; otherwise conformant.');
+    assert.equal(body.checker_result.covers.not_more,'It covers those checks, for this User-Agent, at observed_at. It is not a statement about the service as a whole, and not about anything in not_tested.');
     // The list of what is not established, line by line.
     for(const pattern of [/that the service conforms to anything/,/another User-Agent, another address or another moment/,/true, current, or an instruction to follow/,
       /identity, authority, consent, privacy or safety/,/inspected no DNS answer/,/on the wire/,/anything after expires_at/,/anything about whoever ran this command/])

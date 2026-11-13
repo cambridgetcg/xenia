@@ -11,7 +11,8 @@
 // This file adds five things around them: which release the record pins, a
 // clock (--as-of) for evidence expiry, a short report in which the record's
 // own words sit only under `record_says`, a list of what was not checked, and
-// two bounds on the JSON Schema check, which has none of its own.
+// bounds on the two checks, which have none of their own: a screen on array
+// length before the JSON Schema check, and one time limit on each run.
 // It sends nothing, fetches nothing and writes nothing.
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -33,9 +34,10 @@ const RECORD_PREFIX='xenia.covenant.adoption/';
 // What `invoke` prints (invoke.mjs): a receipt, with the operation's output under `result`.
 const RECEIPT_KIND='one-shot-invocation-receipt';
 
-// The JSON Schema check is stopped after this long. It collects every issue (allErrors), and measured on this
-// checkout its time grew with the square of the length of an over-long array: 0.3 s at 8,000 items, 1.2 s at 16,000.
-// At that rate a file inside the byte limit keeps it busy for hours.
+// Each run of the installed checks is stopped after this long. The JSON Schema check collects every issue (allErrors),
+// and measured on this checkout its time grew with the square of the length of an over-long array: 0.3 s at 8,000
+// items, 1.2 s at 16,000. The other check reads the record's reviewed_at again for every restriction event: 108 s was
+// measured on a file inside the byte limit. At those rates either keeps a reader busy for minutes or hours.
 export const CHECK_TIME_LIMIT_MS=5000;
 // The longest array the installed schema allows anywhere: its largest maxItems.
 export function longestArrayAllowed(schema){
@@ -105,12 +107,13 @@ async function load(){
 }
 
 // Runs the installed checks. Nothing about a failed load is copied out: the
-// reason is one of five fixed words. The JSON Schema check is bounded twice.
-// A record that holds an array longer than the installed schema allows for
-// any array is not handed to it: the check's time grew with the square of
-// such an array when measured. And it is stopped after `limitMs`. Either way
-// the other check, which took at most 0.12 s on the shapes tried, is run by
-// itself, and no finding is made from the length or from the time.
+// reason is one of five fixed words. A record that holds an array longer than
+// the installed schema allows for any array is not handed to the JSON Schema
+// check: its time grew with the square of such an array when measured. Each
+// run is stopped after `limitMs`: first Observe's inspection, which runs the
+// JSON Schema check and then the other check, and, when that did not finish
+// or was not started, the other check by itself. So the two runs together
+// are held to twice the limit. No finding is made from a length or a stop.
 async function runChecks(lib,bytes,record,limitMs){
   let reason='observe_not_present';
   const allowed=longestArrayAllowed(lib.schema);
@@ -123,18 +126,25 @@ async function runChecks(lib,bytes,record,limitMs){
       reason='observe_failed';
       try{
         const result=within(()=>inspect(bytes,undefined),limitMs);
-        return {schema:{state:'run',issues:list(result.schemaValidation.issues).slice(0,ISSUE_LIMIT)},cross:list(result.crossDocumentValidation.issues).slice(0,ISSUE_LIMIT)};
+        return {schema:{state:'run',issues:list(result.schemaValidation.issues).slice(0,ISSUE_LIMIT)},cross:{state:'run',issues:list(result.crossDocumentValidation.issues).slice(0,ISSUE_LIMIT)}};
       }catch(error){if(error?.code===STOPPED)reason='time_limit_reached';}
     }
   }
-  return {schema:{state:'not_run',reason,how:NOT_RUN_HOW[reason]({allowed,limitMs})},cross:list(lib.validateCovenantAdoption(record).issues).slice(0,ISSUE_LIMIT)};
+  const schema={state:'not_run',reason,how:NOT_RUN_HOW[reason]({allowed,limitMs})};
+  try{
+    return {schema,cross:{state:'run',issues:list(within(()=>lib.validateCovenantAdoption(record),limitMs).issues).slice(0,ISSUE_LIMIT)}};
+  }catch(error){
+    if(error?.code!==STOPPED)throw error;
+    return {schema,cross:{state:'not_run',reason:'time_limit_reached',
+      how:`The other check, run by itself, was stopped after ${limitMs} ms, and what it had found by then was dropped. No issue was raised from the stop itself.`}};
+  }
 }
 const NOT_RUN_HOW={
   observe_not_present:()=>'This copy has no observe/0.1 beside the kit; a full Xenia source checkout has it.',
   observe_did_not_load:()=>'observe/0.1/observe.mjs is here but could not be loaded. From the Xenia checkout, `npm ci --ignore-scripts` installs what it needs; then repeat the command.',
-  observe_failed:()=>'observe/0.1/observe.mjs was loaded and its inspection stopped with an error. The other check was run by itself.',
-  array_longer_than_schema_allows:({allowed})=>`The record holds an array of more than ${allowed} items, the most the installed schema allows for any array, so the JSON Schema check was not run on it: its time grows with the square of such an array's length. The other check was run by itself. No issue was raised from the length itself.`,
-  time_limit_reached:({limitMs})=>`The JSON Schema check was stopped after ${limitMs} ms, and what it had found by then was dropped. The other check was run by itself.`,
+  observe_failed:()=>'observe/0.1/observe.mjs was loaded and its inspection stopped with an error. The other check was then run by itself.',
+  array_longer_than_schema_allows:({allowed})=>`The record holds an array of more than ${allowed} items, the most the installed schema allows for any array, so the JSON Schema check was not run on it: its time grows with the square of such an array's length. The other check was then run by itself. No issue was raised from the length itself.`,
+  time_limit_reached:({limitMs})=>`Observe's inspection, which runs the JSON Schema check, then the other check, was stopped after ${limitMs} ms, and what it had found by then was dropped; which of the two it was in is not recorded. The other check was then run by itself, under the same limit.`,
 };
 
 // An HTTP(S) origin read out of a URL, or null. Only the origin is kept: a
@@ -197,12 +207,32 @@ function countIssues(issues,topLevel){
   return {byCode:Object.fromEntries(byCode),byField:Object.fromEntries(byField),inLedger,rows:rows.size};
 }
 
+// One reading of a time: what the given parseRfc3339 returns, with the zeros at the end of the fraction dropped.
+// Without them two fractions compare as text, in the time of the shorter one. The loop is in place of a pattern,
+// which would walk a long run of zeros once for every place it could start.
+export function readTime(parse,value){
+  const time=parse(value);
+  if(time===null)return null;
+  let end=time.fraction.length;
+  while(end>0&&time.fraction.charCodeAt(end-1)===48)end-=1;
+  return {seconds:time.wholeSeconds,phase:time.phase,fraction:time.fraction.slice(0,end),text:value};
+}
+// -1, 0 or 1 for two readings, by the rule of compareRfc3339 in covenant/0.1/rfc3339.mjs: whole seconds, then the
+// leap-second phase, then the fraction. A test compares the two on a table of pairs. That function reads both of
+// its values again on every call, so comparing every row with one long value costs rows times its length.
+export function orderOfTimes(left,right){
+  if(left.seconds!==right.seconds)return left.seconds<right.seconds?-1:1;
+  if(left.phase!==right.phase)return left.phase<right.phase?-1:1;
+  return left.fraction<right.fraction?-1:left.fraction>right.fraction?1:0;
+}
+
 // One pass over the duty rows: what the record says in each, and when the
-// evidence behind it expires.
+// evidence behind it expires. Each expires_at is read once.
 function readLedger(lib,record,asOf){
   const outcomes=tally(RECORD_WORDS.outcomes),evidenceStates=tally(RECORD_WORDS.evidence_states),rightStates=tally(RECORD_WORDS.right_states);
   const expiry={with:0,expired:0,pass:0,passExpired:0,passUnreadable:0,earliest:null,latest:null};
-  let rows=0;
+  const asOfTime=readTime(lib.parseRfc3339,asOf);
+  let rows=0,earliest=null,latest=null;
   const row=item=>{
     rows+=1;
     const outcome=word(item?.outcome,RECORD_WORDS.outcomes);
@@ -210,18 +240,19 @@ function readLedger(lib,record,asOf){
     const evidence=isRecord(item?.evidence)?item.evidence:{};
     evidenceStates[word(evidence.state,RECORD_WORDS.evidence_states)]+=1;
     if(outcome==='pass')expiry.pass+=1;
-    const expires=evidence.expires_at;
-    if(lib.parseRfc3339(expires)===null){if(outcome==='pass')expiry.passUnreadable+=1;return;}
+    const expires=readTime(lib.parseRfc3339,evidence.expires_at);
+    if(expires===null){if(outcome==='pass')expiry.passUnreadable+=1;return;}
     expiry.with+=1;
-    if(lib.compareRfc3339(expires,asOf)<=0){expiry.expired+=1;if(outcome==='pass')expiry.passExpired+=1;}
-    if(expiry.earliest===null||lib.compareRfc3339(expires,expiry.earliest)<0)expiry.earliest=expires;
-    if(expiry.latest===null||lib.compareRfc3339(expires,expiry.latest)>0)expiry.latest=expires;
+    if(orderOfTimes(expires,asOfTime)<=0){expiry.expired+=1;if(outcome==='pass')expiry.passExpired+=1;}
+    if(earliest===null||orderOfTimes(expires,earliest)<0)earliest=expires;
+    if(latest===null||orderOfTimes(expires,latest)>0)latest=expires;
   };
   for(const right of list(record.rights)){
     rightStates[word(right?.service_obligation_state,RECORD_WORDS.right_states)]+=1;
     for(const item of list(right?.requirement_results))row(item);
   }
   for(const item of list(record.protective_limit_results))row(item);
+  expiry.earliest=earliest?.text??null;expiry.latest=latest?.text??null;
   return {rows,outcomes,evidenceStates,rightStates,expiry};
 }
 
@@ -229,6 +260,7 @@ const FINDING_WORDS={
   no_issue_under_installed_rules:'no_inconsistency_found',
   issues_under_installed_rules:'inconsistent',
   json_schema_not_run:'undetermined',
+  no_check_finished:'undetermined',
   pins_an_earlier_snapshot:'undetermined',
   pins_not_recognised:'undetermined',
 };
@@ -276,23 +308,25 @@ export async function doorRights({file,asOf,origin,full=false}={},deps={}){
   const limitMs=Number.isInteger(deps.checkTimeLimitMs)&&deps.checkTimeLimitMs>0?deps.checkTimeLimitMs:CHECK_TIME_LIMIT_MS;
   const checks=await runChecks(lib,bytes,record,limitMs);
   const names=schemaNames(lib.schema),topLevel=isRecord(lib.schema.properties)?Object.keys(lib.schema.properties):[];
+  // A message is cut to MESSAGE_LENGTH characters; the first slice keeps a very long one from being split whole first.
   const tidy=check=>issue=>({check,code:typeof issue?.code==='string'&&/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(issue.code)?issue.code:'other',rawPath:issue?.path,
-    message:typeof issue?.message==='string'?[...issue.message].slice(0,MESSAGE_LENGTH).join(''):''});
+    message:typeof issue?.message==='string'?[...issue.message.slice(0,MESSAGE_LENGTH*2)].slice(0,MESSAGE_LENGTH).join(''):''});
   const schemaIssues=checks.schema.state==='run'?checks.schema.issues.map(tidy('json_schema')):[];
-  const crossIssues=checks.cross.map(tidy('cross_document'));
+  const crossIssues=checks.cross.state==='run'?checks.cross.issues.map(tidy('cross_document')):[];
   const everyIssue=[...schemaIssues,...crossIssues];
   const counted=countIssues(everyIssue,topLevel);
   const issueRows=everyIssue.map(({check,code,rawPath,message})=>({check,code,...shownPath(rawPath,names),message}));
 
   const ledger=readLedger(lib,record,asOfValue);
   const reason=relation==='earlier_snapshot'?'pins_an_earlier_snapshot':relation==='not_recognised'?'pins_not_recognised':
-    everyIssue.length?'issues_under_installed_rules':checks.schema.state==='not_run'?'json_schema_not_run':'no_issue_under_installed_rules';
+    everyIssue.length?'issues_under_installed_rules':checks.cross.state==='not_run'?'no_check_finished':checks.schema.state==='not_run'?'json_schema_not_run':'no_issue_under_installed_rules';
   const expiredPasses=ledger.expiry.passExpired;
   const [code,baseReason]={
     pins_an_earlier_snapshot:[4,'The record pins an earlier snapshot of covenant/0.1, whose rules this checkout does not carry. What the installed rules raise is shown, labelled, and is not a finding about the record.'],
     pins_not_recognised:[4,'The record pins digests this command does not recognise, so it was not checked under the rules it names. What the installed rules raise is shown, labelled, and is not a finding about the record.'],
     issues_under_installed_rules:[3,`The record pins the installed bytes, and the installed rules raise ${plural(everyIssue.length,'issue','issues')} on it. under_installed_rules counts them; --full lists them.`],
     json_schema_not_run:[4,'The JSON Schema check was not run (under_installed_rules.json_schema says why), and the other check raised nothing. Whether the record raises an issue under the installed rules is not known.'],
+    no_check_finished:[4,'Neither check finished: the JSON Schema check was not run, and the other check was stopped at its time limit (under_installed_rules says why for each). Whether the record raises an issue under the installed rules is not known.'],
     no_issue_under_installed_rules:expiredPasses?
       [3,`No issue was raised under the installed rules, and ${plural(expiredPasses,'row','rows')} the record gives as \`pass\` ${expiredPasses===1?'rests':'rest'} on evidence that had expired at as_of. See expiry.`]:
       [0,'No issue was raised under the installed rules, which this record pins, and no evidence behind a row the record gives as `pass` had expired at as_of. A 0 covers that and nothing else: see not_established and checked_by_this_command.'],
@@ -344,7 +378,7 @@ export async function doorRights({file,asOf,origin,full=false}={},deps={}){
       label:`Raised by the two checks installed in this checkout (covenant/0.1, release tag ${lib.release.tag}). ${relation==='installed'?'The record pins these bytes.':
         'The record pins other bytes, so these are not a finding about the record: they include the pin differences themselves, and anything the two sets of rules treat differently.'}`,
       json_schema:checks.schema.state==='run'?checkOf('run',schemaIssues):{state:'not_run',reason:checks.schema.reason,how:checks.schema.how},
-      cross_document:checkOf('run',crossIssues),
+      cross_document:checks.cross.state==='run'?checkOf('run',crossIssues):{state:'not_run',reason:checks.cross.reason,how:checks.cross.how},
       issues_by_top_level_field:counted.byField,
       issues_in_ledger_rows:{issues:counted.inLedger,duty_rows_with_an_issue:counted.rows},
     },
@@ -353,7 +387,7 @@ export async function doorRights({file,asOf,origin,full=false}={},deps={}){
       evidence_with_expiry:ledger.expiry.with,expired_at_as_of:ledger.expiry.expired,
       pass_rows:ledger.expiry.pass,pass_rows_on_expired_evidence:expiredPasses,pass_rows_with_no_readable_expiry:ledger.expiry.passUnreadable,
       earliest_expires_at:shownTime(ledger.expiry.earliest),latest_expires_at:shownTime(ledger.expiry.latest),
-      note:'The installed rules compare expires_at with the record\'s own reviewed_at only. The comparison with as_of is made by this command, with compareRfc3339 from covenant/0.1/rfc3339.mjs.',
+      note:'The installed rules compare expires_at with the record\'s own reviewed_at only. The comparison with as_of is made by this command, on times read with parseRfc3339 from covenant/0.1/rfc3339.mjs and ordered by the rule of its compareRfc3339. A time longer than 40 characters is counted and compared but not shown: earliest_expires_at or latest_expires_at is then null.',
     },
     record_says:{
       note:'Copied or counted from the record, in its own words. Whoever wrote the file wrote these, and this command checked none of them. `other` is a value outside the installed lists, or no value.',

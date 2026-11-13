@@ -24,7 +24,8 @@ import addFormats from 'ajv-formats';
 const kit=new URL('../agent-first/0.1/',import.meta.url);
 const kitDir=fileURLToPath(kit),repo=fileURLToPath(new URL('../',import.meta.url));
 const cli=path.join(kitDir,'cli.mjs');
-const {doorRights,EARLIER_SNAPSHOTS,INPUT_LIMIT_BYTES,ISSUE_LIMIT,RECORD_WORDS,CHECK_TIME_LIMIT_MS,ALSO_WORDS,longestArrayAllowed,schemaNames,shownPath}=await import(new URL('door-rights.mjs',kit).href);
+const {doorRights,EARLIER_SNAPSHOTS,INPUT_LIMIT_BYTES,ISSUE_LIMIT,RECORD_WORDS,CHECK_TIME_LIMIT_MS,ALSO_WORDS,longestArrayAllowed,schemaNames,shownPath,readTime,orderOfTimes}=await import(new URL('door-rights.mjs',kit).href);
+const {parseRfc3339,compareRfc3339}=await import(new URL('../covenant/0.1/rfc3339.mjs',import.meta.url).href);
 const {EXIT_CODES,checkArgv,exitOf}=await import(new URL('problems.mjs',kit).href);
 
 let realFetchCalls=0;
@@ -668,8 +669,86 @@ test('the JSON Schema check is stopped at a stated time limit, and the other che
   const rulesText=runCli(['help','door']).value.rules.join(' ');
   assert.match(rulesText,/stopped after 5 seconds/);assert.match(rulesText,/array longer than/);
   const readme=fs.readFileSync(new URL('README.md',kit),'utf8');
-  assert.doesNotMatch(readme,/There is no time limit on the two checks/);
+  assert.doesNotMatch(readme,/There is no time limit on the two checks/);assert.doesNotMatch(readme,/The other check has no time limit/);
   assert.match(readme,/stopped after 5 seconds/);assert.match(readme,/array_longer_than_schema_allows/);assert.match(readme,/time_limit_reached/);
+});
+
+test('the other check has the same time limit: when neither check finishes, the finding is undetermined and the exit is 4',async()=>{
+  // The other check reads the record's reviewed_at again for every restriction event, so its time grows with the number
+  // of events times the length of that value. Both are inside the byte limit here.
+  const slow=fabricated();slow.declaration.reviewed_at=`2026-10-01T00:00:00.${'0'.repeat(200_000)}Z`;
+  slow.protective_limit_results[0].restriction_events=Array(30_000).fill({});
+  const file=put('slow-other-check.json',JSON.stringify(slow));
+  assert.ok(fs.statSync(file).size<INPUT_LIMIT_BYTES);
+  const started=process.hrtime.bigint();
+  const body=await inProcess(file,{},{checkTimeLimitMs:60});
+  const seconds=Number(process.hrtime.bigint()-started)/1e9;
+  assert.ok(seconds<2,`took ${seconds.toFixed(2)} s`);
+  const rules=body.under_installed_rules;
+  assert.deepEqual({state:rules.json_schema.state,reason:rules.json_schema.reason},{state:'not_run',reason:'array_longer_than_schema_allows'});
+  assert.deepEqual(Object.keys(rules.cross_document),['state','reason','how']);
+  assert.deepEqual({state:rules.cross_document.state,reason:rules.cross_document.reason},{state:'not_run',reason:'time_limit_reached'});
+  assert.match(rules.cross_document.how,/stopped after 60 ms/);assert.match(rules.cross_document.how,/dropped/);
+  assert.equal(exitOf(body),4);
+  assert.deepEqual({word:body.finding.word,reason:body.finding.reason},{word:'undetermined',reason:'no_check_finished'});
+  assert.match(body.exit_reason,/Neither check finished/);assert.match(body.exit_reason,/is not known/);
+  assert.deepEqual(body.under_installed_rules.issues_by_top_level_field,{});
+  assert.equal(body.issues.count,0);
+  // Nothing in the body takes the stop for a finding about the record, and the long value is not shown.
+  assert.equal(body.record_says.reviewed_at.value,null);
+  assert.ok(JSON.stringify(body).length<8000);
+
+  // Every array within the schema's bound, so Observe's inspection starts; it is stopped, and so is the other check run by
+  // itself after it. What was stopped is named for what it is: the inspection runs both checks.
+  const both=fabricated();both.declaration.reviewed_at=`2026-10-01T00:00:00.${'0'.repeat(1_000_000)}Z`;
+  for(const item of both.protective_limit_results)item.restriction_events=Array(1024).fill({});
+  const second=await inProcess(put('slow-both.json',JSON.stringify(both)),{},{checkTimeLimitMs:60});
+  const twice=second.under_installed_rules;
+  assert.deepEqual({state:twice.json_schema.state,reason:twice.json_schema.reason},{state:'not_run',reason:'time_limit_reached'});
+  assert.match(twice.json_schema.how,/Observe's inspection/);assert.match(twice.json_schema.how,/the JSON Schema check, then the other check/);
+  assert.doesNotMatch(twice.json_schema.how,/^The JSON Schema check was stopped/);
+  assert.deepEqual({state:twice.cross_document.state,reason:twice.cross_document.reason},{state:'not_run',reason:'time_limit_reached'});
+  assert.equal(exitOf(second),4);assert.equal(second.finding.reason,'no_check_finished');
+
+  // A record read after two stops is read whole.
+  const after=await inProcess(put('after-two-stops.json',fabricated()));
+  assert.equal(exitOf(after),0);assert.deepEqual(after.under_installed_rules.cross_document,{state:'run',issues:0,limit:ISSUE_LIMIT,by_code:{}});
+  // Help and the README say that both have the limit, and what exit follows.
+  const rulesText=runCli(['help','door']).value.rules.join(' ');
+  assert.match(rulesText,/each is stopped after 5 seconds/);assert.match(rulesText,/neither check finished/);
+  const readme=fs.readFileSync(new URL('README.md',kit),'utf8');
+  assert.match(readme,/no_check_finished/);assert.match(readme,/Observe's inspection/);
+});
+
+test('the expiry pass reads each time once: one very long expires_at among many rows does not slow it',async()=>{
+  const DIGITS=900_000,ROWS=14_000,long=`2026-12-01T00:00:00.${'5'.repeat(DIGITS)}Z`;
+  const many=fabricated();
+  many.rights[0].requirement_results=[{outcome:'pass',evidence:{state:'tested',expires_at:long}},
+    ...Array.from({length:ROWS},()=>({outcome:'pass',evidence:{expires_at:EXPIRES}}))];
+  const before=fabricated(),kept=before.rights.slice(1).reduce((n,right)=>n+right.requirement_results.length,0)+before.protective_limit_results.length;
+  const file=put('long-expiry.json',JSON.stringify(many));
+  assert.ok(fs.statSync(file).size<INPUT_LIMIT_BYTES);
+  const started=process.hrtime.bigint();
+  const body=await inProcess(file);
+  const seconds=Number(process.hrtime.bigint()-started)/1e9;
+  assert.ok(seconds<2.5,`took ${seconds.toFixed(2)} s`);
+  assert.equal(body.record_says.duty_rows,ROWS+1+kept);
+  assert.equal(body.expiry.evidence_with_expiry,ROWS+1+kept);
+  assert.equal(body.expiry.expired_at_as_of,0);
+  // The earliest is the long one, which is not shown; the latest is an ordinary one.
+  assert.equal(body.expiry.earliest_expires_at,null);assert.equal(body.expiry.latest_expires_at,EXPIRES);
+  assert.match(body.expiry.note,/longer than 40 characters is counted and compared but not shown/);
+
+  // The order this command uses is the installed one: the same answer as compareRfc3339 for every pair of these.
+  const times=['2026-12-01T00:00:00Z','2026-12-01T00:00:00.0Z','2026-12-01T00:00:00.5Z','2026-12-01T00:00:00.50Z','2026-12-01T00:00:00.49Z','2026-12-01T00:00:00.499999Z',
+    '2026-12-01T00:00:00.05Z','2026-12-01T01:00:00+01:00','2026-11-30T23:59:59.999-00:00','2016-12-31T23:59:60Z','2016-12-31T23:59:60.5Z','2016-12-31T23:59:59.9Z','2017-01-01T00:00:00Z',
+    '2016-12-31T23:59:59Z','2027-01-01t00:00:00z',long,`2026-12-01T00:00:00.5${'0'.repeat(1000)}Z`,`2026-12-01T00:00:00.${'5'.repeat(DIGITS-1)}6Z`];
+  for(const left of times)for(const right of times){
+    const [a,b]=[readTime(parseRfc3339,left),readTime(parseRfc3339,right)];
+    assert.ok(a!==null&&b!==null);
+    assert.equal(orderOfTimes(a,b),compareRfc3339(left,right),`${left.slice(0,40)} against ${right.slice(0,40)}`);
+  }
+  for(const not of ['2026-13-01T00:00:00Z','2026-12-01','',null,5,'2026-12-31T23:59:60Z'])assert.equal(readTime(parseRfc3339,not),null,String(not));
 });
 
 test('what an exit of 0 or 3 leaves unsaid is in `finding.also` and in the exit reason: status, the clock, the origin, expired evidence',async()=>{

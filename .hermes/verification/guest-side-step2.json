@@ -5,7 +5,7 @@
   "base_revision": "35c2d77b509c619e56645c20bedae00c638bdb00",
   "merge_base_with_origin_main": "415980f48aa52b329dd4d0fee9b6031f0907d61e",
   "merge_base_note": "As this checkout knew origin/main when the record was written; nothing was fetched for it.",
-  "head_before_record": "d79bc939af65c8c640c48e4636788b66882f3b47",
+  "head_before_record": "4865e942fe80f1dd1865b92923cfba600268ebe0",
   "commits": [
     {
       "task": "door plan and door check",
@@ -25,6 +25,10 @@
     },
     {
       "task": "review fixes",
+      "commit": "4865e942fe80f1dd1865b92923cfba600268ebe0"
+    },
+    {
+      "task": "final gate fixes",
       "commit": "the commit that carries this file"
     }
   ],
@@ -35,8 +39,8 @@
       "note": "npm test runs three test groups; totals per group in order",
       "groups": [
         {
-          "tests": 336,
-          "pass": 329,
+          "tests": 338,
+          "pass": 331,
           "fail": 0,
           "skipped": 7,
           "cancelled": 0
@@ -63,8 +67,8 @@
       "exit_code": 0,
       "groups": [
         {
-          "tests": 336,
-          "pass": 335,
+          "tests": 338,
+          "pass": 337,
           "fail": 0,
           "skipped": 1,
           "cancelled": 0
@@ -90,23 +94,23 @@
       "node tools/render-covenant.mjs --check": 0,
       "node tools/render-adoption-schema.mjs --check": 0
     },
-    "runs": "Both runs and both render checks were made on the tree of the commit that carries this file, with this file in place. The first group had 322 tests before the review fixes; the 14 added are 6 in tests/agent-first-door.test.mjs, 4 in tests/agent-first-door-rights.test.mjs and 4 in tests/agent-first-feedback.test.mjs. The second and third groups (surface/0.1 and observe/0.1) were not changed."
+    "runs": "Both runs and both render checks were made on the tree of the commit that carries this file, with this file in place. The first group had 322 tests before the review fixes and 336 after them; the 2 added since are in tests/agent-first-door-rights.test.mjs. The second and third groups (surface/0.1 and observe/0.1) were not changed."
   },
   "sha256": {
     "AGENT-FEEDBACK.md": "947e0c459821ebad9d4c8b3cf6cdd91965988f58daf359c7c8409f9c3385f952",
     "AGENTS.md": "d1f81236423f7c6745c326c9e264f0ef518a4803afeaa1a86925fd964c62fb6d",
     "CLAUDE.md": "3d100f06500e5d0e87b375ef73eb331b20afd241f9374493d99011269801bafa",
     "CONTRIBUTING.md": "00863ec8610aa5c9a2a6090fe88bfac6e2fca6f8deb124130fadfed5cf40873b",
-    "agent-first/0.1/README.md": "12081561270103a6b0d4cbd184ad9dba350d620c464b477eaeaf29e14e24b2c6",
+    "agent-first/0.1/README.md": "bdf2d96b9128f7444b7fce2bb51abc7bec3a387a37d06b7db090900df054e34e",
     "agent-first/0.1/arrive.mjs": "11284cc26a8311e26aedfe874b6a998b06f6e6028a19615fbfcdb9bb33cc74dd",
     "agent-first/0.1/cli.mjs": "d3d6bfee64bfa71e844239c3c37dd06ec3fc9bddd25896fd632d5a2bf2dbd99b",
-    "agent-first/0.1/door-rights.mjs": "04f32b054c173090420a2b32a3088e807339efac4e5829546d02fecfbd48dae4",
+    "agent-first/0.1/door-rights.mjs": "5e2e6bd9249bd99bfd2c558277d02fc1d3e7f82960bcbe24936b8499473ff3df",
     "agent-first/0.1/door.mjs": "7de435ca7de78a474feb2f8d6582156aeb4905818da127d4e376cb2d09d9e54d",
     "agent-first/0.1/feedback.mjs": "e74efc213b2e921f8068434f6f772b97392ce6421471006b1cb2a1e38da81366",
     "agent-first/0.1/motifs.json": "10e5a25ab1c28d31bc35db654bfc450d384dfa2b4056d453c86534f2257f71bc",
-    "agent-first/0.1/problems.mjs": "1c2ddfd3f1b89b0bfb06d620de3b617bbb36a96b5563405397d15173571e86b9",
-    "tests/agent-first-door-rights.test.mjs": "dfc1a9b00fe7cb57e97e4c52aa6d1640c7373997a9cffd3fa830d1c6bfd0b158",
-    "tests/agent-first-door.test.mjs": "4c2bb130dd87623c872cff7f8bd00c4cb5ffe95062dda5d876fed7e1e221a24a",
+    "agent-first/0.1/problems.mjs": "41aac19d201adf1a818a15016957ab9caa0194182ec1aeeb792267d6ff5612d1",
+    "tests/agent-first-door-rights.test.mjs": "7484d43f4c5066e1d4fb28898ebd0697bb56ab1d10496f91cf72cd5ab6deea95",
+    "tests/agent-first-door.test.mjs": "b3e4ef2bba4ee13ea6d65e870fdb4037f5115c9788d5fe18ce5f484b611b378e",
     "tests/agent-first-feedback.test.mjs": "a7bd4fa8485b3ab4f138f2c40fd3a33553d07145c195e3b1aff6c5e6ba08a810",
     "tests/agent-first-floor.test.mjs": "3902a3076d06d57b07101d14a8377bda56aaaef17c091a3ca41fb472abd2ca06",
     "tests/agent-first-problems.test.mjs": "ac61b876a99a8dfe387c89014d23be1cf33192effdb481bb6821173a6cb0b76e",
@@ -224,7 +228,7 @@
     "Windows or non-macOS behaviour; observations are from one macOS machine on Node 24",
     "that the order of work in the first three tasks of this step was test-first: this record's author saw only their commits",
     "that the warning patterns in feedback check find every credential or path: they are fourteen fixed shapes, and a secret with no name beside it and no known prefix is not seen",
-    "that 5 seconds is the most door rights spends in the JSON Schema check on every platform: the limit is the timeout of node:vm, exercised here on one macOS machine on Node 24; the other check has no limit and took at most 0.12 s on the shapes tried"
+    "that 5 seconds is where each run of the checks in door rights stops on every platform: the limit is the timeout of node:vm, seen working here on one macOS machine on Node 24. Each of the two runs has it, so both together are held to about 10 seconds; the slowest file tried took 10.3 s in all"
   ],
   "process_notes": [
     "Own door: tests/own-door.test.mjs was written first and run before AGENTS.md and CLAUDE.md were changed: 9 of 11 failed. The two that passed check things that already held (links resolve; the excluded register is absent).",
@@ -267,7 +271,8 @@
       "door plan target_rule gained refused_by_default_as and literal_address.",
       "door rights finding gained also; record_says.reviewed_at gained relation; json_schema not_run has two more reasons.",
       "feedback check has three more warning kinds for patterns and one for reading; feedback new parts lost asks.",
-      "A failure problem can carry missing. EXIT_CODES[0] was reworded."
+      "A failure problem can carry missing. EXIT_CODES[0] was reworded.",
+      "Final gate fixes: door rights cross_document can be {state: not_run, reason: time_limit_reached, how}; finding.reason gained no_check_finished (undetermined, exit 4); expiry.note says a time longer than 40 characters is not shown."
     ],
     "mutations": "72 single text changes were made one at a time to a scratch copy and the test file for the changed source was run: 72 made it fail in the end. One of them, the own-name guard in usageHelp, passed at first, and a test line was added for it. One further change written for the run altered nothing and is not counted. They include the changes the review used to show the gap in H1 (a scope and an exit reason that say the service conforms, each of four not_established lines deleted, covers.not_more emptied). For H6, a scratch git repository was made from a copy of the tree: the own-door test passed, and failed once a .mcp.json was added to its index.",
     "earlier_statements_now_out_of_date": [
@@ -275,5 +280,21 @@
       "readme_commands.ran lists what was run for the fourth commit. For this one, the commands the fixes touch were run again by hand through npm run --silent xenia with files in a scratch folder: arrive, help, help door, help door plan, help feedback check, door plan (accepted, refused, lifted), door check with a missing and an out-of-range number, invoke xenia.covenant draft, door rights on the receipt, on its result, and with --as-of, --origin and --full, feedback new, feedback new --out twice, feedback check with and without --input. stderr was empty for each. No door check was sent."
     ]
   },
-  "record_note": "This record was first committed with the fourth task. The review-fix commit that carries this version changed it: the gate totals, the sha256 map and arrive_bytes are of that final tree, review_fixes was added, and head_before_record is the commit before it."
+  "final_gate_fixes": {
+    "note": "An independent final check of the review-fix commit returned one major and three minor findings. Each was reproduced on that commit before anything was changed. The tests for the first three were written first and seen failing.",
+    "findings": {
+      "C1-other-check-unbounded": "fixed. The other check, run by itself, now has the same time limit as Observe's inspection; when it is stopped, cross_document is not_run, the finding is undetermined with reason no_check_finished, and the exit is 4. The expiry pass reads each expires_at once and orders readings by the rule of compareRfc3339 (a test compares the two on 18 times, every pair). The file that had taken 108 s took 5.3 s; the long-expiry file that had taken 5.9 s took 0.3 s.",
+      "time-limit-names-the-wrong-check": "fixed. The sentence names what is stopped: Observe's inspection, which runs the JSON Schema check and then the other check; which of the two it was in is not recorded. The other check is then run by itself under the same limit, not without one.",
+      "H1-two-changes-still-pass": "fixed. checker_result.covers.rule and covers.not_more are compared whole, and for a refused target the flag could admit, the host is counted in stdout: once.",
+      "agreed-design-departures": "accepted, no change: the reworded exit-0 sentence and the added output keys stay as the review fixes left them. They are listed under review_fixes.changes_to_agreed_shapes."
+    },
+    "measured": "Through the CLI with the 5-second limit, on files the final check built (none is in the repository): 1,957,397 bytes with a 950,000-digit reviewed_at and 320,000 restriction events, 5.3 s, exit 4, no_check_finished (was 108 s, exit 3); 1,854,841 bytes with every array within 1,024 items, 10.3 s, exit 4, both runs stopped (was 16.4 s); 1,961,708 bytes with one 1,000,000-digit expires_at among 18,000 rows, 0.3 s, exit 3 (was 5.9 s); the 600,000-row file, 0.5 s; the fabricated all-pass record, 0.3 s, exit 0.",
+    "red_first": "The two new tests in tests/agent-first-door-rights.test.mjs failed before the code changed. With the fix in place and the old comparison put back for the earliest expiry alone, the expiry test failed again at 3.95 s against 0.09 s.",
+    "requests_sent_by_the_final_check": "The independent final check ran door check by hand against two public hosts that belong to this repository's owner: 20 GET requests in all, no credential. No test sends a request, and none was sent while these fixes were made.",
+    "not_established": [
+      "that the time limit stops a run on Node 22, on Linux or on Windows: it was seen on one macOS machine on Node 24",
+      "that no other input keeps door rights busy longer than the two limits together: the shapes tried are the ones above and those in the tests"
+    ]
+  },
+  "record_note": "This record was first committed with the fourth task and changed by the review-fix commit. The commit that carries this version changed it again: the gate totals and the sha256 map are of this final tree, final_gate_fixes was added, one not_established line was rewritten, and head_before_record is the review-fix commit."
 }
