@@ -27,7 +27,7 @@ const synthetic=(code,extra={})=>({code,operation_started:false,effect_outcome:'
 
 test('the problem table covers every code the sources can throw',()=>{
   const found=new Set();
-  const files=['cli.mjs','invoke.mjs','input-file.mjs','command-state.mjs','context.mjs','modules.mjs','motif-studies.mjs','provider.mjs','runtime.mjs','adapters/local-starter.mjs'];
+  const files=['cli.mjs','invoke.mjs','input-file.mjs','command-state.mjs','context.mjs','door.mjs','door-rights.mjs','feedback.mjs','modules.mjs','motif-studies.mjs','provider.mjs','runtime.mjs','adapters/local-starter.mjs'];
   for(const file of files){
     const text=fs.readFileSync(new URL(file,dir),'utf8');
     for(const m of text.matchAll(/ModuleError\('([A-Z_]+)'/g))found.add(m[1]);
@@ -206,7 +206,7 @@ test('PROVIDER_PIN_MISMATCH names what was expected and which file differed',()=
 test('-h and --help work at top level and after a subcommand; exit codes are documented',()=>{
   for(const args of [['-h'],['--help'],['help'],['bogus','--help']]){
     const r=run(args);assert.equal(r.status,0,args.join(' '));
-    assert.deepEqual(Object.keys(r.value.exit_codes).sort(),['0','1','2']);
+    assert.deepEqual(Object.keys(r.value.exit_codes).sort(),['0','1','2','3','4']);
     assert.ok(r.value.commands.some(c=>c.startsWith('motifs study')));
     assert.ok(r.value.not_established.length>0);
   }
@@ -214,7 +214,7 @@ test('-h and --help work at top level and after a subcommand; exit codes are doc
     const r=run(args);assert.equal(r.status,0,args.join(' '));
     assert.equal(r.value.command,args[args[0]==='help'?1:0]);
     assert.ok(r.value.usage.includes(r.value.command));
-    assert.deepEqual(Object.keys(r.value.exit_codes).sort(),['0','1','2']);
+    assert.deepEqual(Object.keys(r.value.exit_codes).sort(),['0','1','2','3','4']);
   }
   assert.equal(run(['help','bogus']).value.error.code,'UNKNOWN_COMMAND');
 });

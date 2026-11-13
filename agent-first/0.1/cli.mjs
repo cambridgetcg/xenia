@@ -9,7 +9,7 @@ import {commandFailure,finishProvider} from './command-state.mjs';
 import {adapterRows,describeAdapter,ADAPTER_IDS} from './adapter-catalog.mjs';
 import {buildArrival} from './arrive.mjs';
 import {runInvoke} from './invoke.mjs';
-import {COMMANDS,EXIT_CODES,USAGE_CODES,buildProblem,usageHelp} from './problems.mjs';
+import {COMMANDS,EXIT_CODES,NETWORK_NOTE,REPORT_ROUTE,USAGE_CODES,buildProblem,exitOf,usageHelp} from './problems.mjs';
 
 const makeRuntime=()=>{const runtime=createModuleRuntime();for(const module of createXeniaModules())runtime.register(module);return runtime;};
 const exampleOf=(runtime,id)=>runtime.describe(id).operations[0].input.example;
@@ -109,11 +109,18 @@ async function starterSmoke(args){
 
 const isHelp=arg=>arg==='-h'||arg==='--help';
 const GENERAL_HELP=['arrive','help [command]','motifs [motif-id]','motifs study [list|show <study-id|motif-id>|run <study-id>|journey]','catalog','explain <module-id>','invoke <module-id> <operation-id> --input <file>','demo [--full]',
+  'door plan --origin <origin> [--allow-local-target]',
+  'door check --origin <origin> --max-requests <1..66> --total-timeout-ms <100..120000> [--allow-local-target] [--full]',
+  'door rights --input <file> [--as-of <rfc3339>] [--origin <origin>] [--full]',
+  'feedback new [--out <absolute-new-file>]',
+  'feedback check --input <file>',
   'context <init|status|render> --package <reviewed-package-dir> --dir <notes-dir>',
   'context handoff --package <reviewed-package-dir> --dir <notes-dir> --input <chosen-file> --expect <current-sha256>',
   'starter-smoke --package <reviewed-package-dir> --dir <new-notes-dir>'];
 
 function unknownCommand(word){return Object.assign(new ModuleError('UNKNOWN_COMMAND'),{word});}
+// A command is a name in the table itself; a word such as `toString`, which every object answers to, is not one.
+const isCommand=word=>typeof word==='string'&&Object.hasOwn(COMMANDS,word);
 
 export async function main(args){
   const [command,...rest]=args;
@@ -134,14 +141,14 @@ export async function main(args){
   if(!command||command==='help'||wantsHelp){
     const words=args.filter(arg=>!isHelp(arg));
     if(words[0]==='help')words.shift();
-    if(!wantsHelp&&command==='help'&&words.length>1)throw new ModuleError('INVALID_ARGUMENTS');
-    if(!wantsHelp&&command==='help'&&words.length===1&&!COMMANDS[words[0]])throw unknownCommand(words[0]);
-    if(words.length&&COMMANDS[words[0]]&&(wantsHelp||command==='help'))return envelope(usageHelp(words[0]));
+    // `help door plan` is answered as `help door`: the words after a command name are not read.
+    if(!wantsHelp&&command==='help'&&words.length>=1&&!isCommand(words[0]))throw unknownCommand(words[0]);
+    if(words.length&&isCommand(words[0])&&(wantsHelp||command==='help'))return envelope(usageHelp(words[0]));
     return envelope({title:'Xenia agent-first module kit',status:'repository-only development',commands:GENERAL_HELP,
       start_here:'Run: arrive. It is one read-only orientation document and expects no reply.',
       principle:'Inspect → activate deliberately → invoke through the host gate → pause, upgrade or retire.',
-      exit_codes:EXIT_CODES,output:'stdout is one JSON document; stderr is silent. A failure has error (what happened) and problem (what you may do next).',
-      limits:MODULE_INPUT_LIMITS,notes:['No automatic installs, services, host hooks, accounts, publication or model calls.','Runtime state is in-process; the caller owns persistence.','Trusted module code is not an OS sandbox.'],
+      exit_codes:EXIT_CODES,output:'stdout is one JSON document; stderr is silent. A failure has error (what happened) and problem (what you may do next). A `door` or `feedback` document states its own exit as exit_code, exit_reason and exit_meaning.',
+      network:NETWORK_NOTE,limits:MODULE_INPUT_LIMITS,notes:['No automatic installs, services, host hooks, accounts, publication or model calls.','Runtime state is in-process; the caller owns persistence.','Trusted module code is not an OS sandbox.'],
       not_established:['that any listed command will succeed here','that this list is every capability of the host']});
   }
   if(command==='motifs'&&!rest.length)return {...JSON.parse(fs.readFileSync(new URL('./motifs.json',import.meta.url),'utf8')),next:[
@@ -156,6 +163,16 @@ export async function main(args){
     return envelope({kind:'motif-card',motif:card,not_established:['that this card describes a running service',card.limit]});
   }
   if(command==='starter-smoke')return starterSmoke(rest);
+  if(command==='door'){
+    // Loaded only for this command: the other commands never import the checker, the target rule or the covenant checks.
+    const {runDoorCommand}=await import('./door.mjs');
+    return runDoorCommand(rest);
+  }
+  if(command==='feedback'){
+    // Loaded only for this command. It imports the bounded reader and the problem table, and nothing that sends.
+    const {runFeedbackCommand}=await import('./feedback.mjs');
+    return runFeedbackCommand(rest);
+  }
   if(command==='context'){
     const {runContextCommand}=await import('./context.mjs');
     return envelope(await runContextCommand(rest));
@@ -164,12 +181,13 @@ export async function main(args){
   if(command==='arrive'&&!rest.length){
     const lock=JSON.parse(fs.readFileSync(new URL('./agenttool.lock.json',import.meta.url),'utf8')).local_starter;
     const core=runtime.catalog().map(({id,title,operations})=>({id,title,effects:[...new Set(operations.flatMap(op=>op.effects))]}));
-    return buildArrival({lock,core,adapters:adapterRows()});
+    return buildArrival({lock,core,adapters:adapterRows(),networkNote:NETWORK_NOTE,report:REPORT_ROUTE});
   }
   if(command==='catalog'&&!rest.length)return envelope({modules:runtime.catalog(),adapters:adapterRows(),
     runtime:{scope:'this process only',note:'state, revision and in_flight describe a runtime this command just created; they are not live shared state. Every module here starts as registered, revision 1, nothing in flight.',
       not_established:['the state of any runtime in another process or host']},
-    adapters_note:'Adapters are present in this checkout but not bound: no provider was imported and none is registered here. Each lists what must be supplied.',limits:MODULE_INPUT_LIMITS});
+    adapters_note:'Adapters are present in this checkout but not bound: no provider was imported and none is registered here. Each lists what must be supplied.',
+    network:NETWORK_NOTE,limits:MODULE_INPUT_LIMITS});
   if(command==='explain'&&rest.length===1){
     const adapter=describeAdapter(rest[0]);
     if(adapter)return envelope(adapter);
@@ -184,7 +202,7 @@ export async function main(args){
   if(command==='invoke')return envelope(await runInvoke(rest,{runtime,adapters:adapterRows()}));
   if(command==='demo'&&!rest.length)return demo(false);
   if(command==='demo'&&rest.length===1&&rest[0]==='--full')return demo(true);
-  if(!COMMANDS[command])throw unknownCommand(command);
+  if(!isCommand(command))throw unknownCommand(command);
   throw new ModuleError('INVALID_ARGUMENTS');
 }
 
@@ -211,7 +229,13 @@ function failureEnvelope(error,argv){
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){
   const argv=process.argv.slice(2);
-  try{console.log(JSON.stringify(await main(argv),null,2));}
+  try{
+    const body=await main(argv);
+    console.log(JSON.stringify(body,null,2));
+    // Only a body that set its own exit (door, feedback) changes it; every other success stays 0.
+    const exit=exitOf(body);
+    if(exit!==undefined)process.exitCode=exit;
+  }
   catch(error){
     const {exit,body}=failureEnvelope(error,argv);
     console.log(JSON.stringify(body,null,2));
