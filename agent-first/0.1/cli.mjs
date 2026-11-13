@@ -111,6 +111,7 @@ const isHelp=arg=>arg==='-h'||arg==='--help';
 const GENERAL_HELP=['arrive','help [command]','motifs [motif-id]','motifs study [list|show <study-id|motif-id>|run <study-id>|journey]','catalog','explain <module-id>','invoke <module-id> <operation-id> --input <file>','demo [--full]',
   'door plan --origin <origin> [--allow-local-target]',
   'door check --origin <origin> --max-requests <1..66> --total-timeout-ms <100..120000> [--allow-local-target] [--full]',
+  'door rights --input <file> [--as-of <rfc3339>] [--origin <origin>] [--full]',
   'context <init|status|render> --package <reviewed-package-dir> --dir <notes-dir>',
   'context handoff --package <reviewed-package-dir> --dir <notes-dir> --input <chosen-file> --expect <current-sha256>',
   'starter-smoke --package <reviewed-package-dir> --dir <new-notes-dir>'];
@@ -159,7 +160,7 @@ export async function main(args){
   }
   if(command==='starter-smoke')return starterSmoke(rest);
   if(command==='door'){
-    // Loaded only for this command: the other commands never import the checker or the target rule.
+    // Loaded only for this command: the other commands never import the checker, the target rule or the covenant checks.
     const {runDoorCommand}=await import('./door.mjs');
     return runDoorCommand(rest);
   }

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // `door plan` and `door check`: looking at one HTTP(S) origin from outside.
+// (`door rights`, which reads a local file and sends nothing, is in
+// door-rights.mjs and is loaded from here for that operation only.)
 //
 // The checking itself is the unchanged Surface 0.1 checker (checkSurface in
 // surface/0.1/check.mjs). This file adds four things around it: a plan that
@@ -316,6 +318,11 @@ export async function runDoorCommand(args,deps={}){
   const flags=parseFlags(rest,DOOR_FLAGS[operation]);
   if(!flags)throw new ModuleError('INVALID_ARGUMENTS');
   const origin=flags.values['--origin'],allowLocalTarget=flags.switches.includes('--allow-local-target');
+  if(operation==='rights'){
+    // Loaded only for this operation, so plan and check never import the covenant checks.
+    const {doorRights}=await import('./door-rights.mjs');
+    return doorRights({file:flags.values['--input'],asOf:flags.values['--as-of'],origin,full:flags.switches.includes('--full')},deps);
+  }
   if(operation==='plan')return doorPlan({origin,allowLocalTarget});
   if(operation==='check')return doorCheck({origin,maxRequests:wholeNumber(flags.values['--max-requests']),totalTimeoutMs:wholeNumber(flags.values['--total-timeout-ms']),
     allowLocalTarget,full:flags.switches.includes('--full')},deps);

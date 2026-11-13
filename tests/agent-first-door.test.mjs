@@ -575,10 +575,15 @@ test('with fetch, sockets and name lookups made to fail, every other command sti
     const preload=writePreload(path.join(dir,'no-network.mjs'),marker);
     const example=path.join(dir,'surface-input.json');
     fs.writeFileSync(example,JSON.stringify(runCli(['explain','xenia.surface']).value.example));
+    // A record for `door rights`: the all-unknown draft the kit's own covenant module makes.
+    const draftInput=path.join(dir,'covenant-input.json'),record=path.join(dir,'record.json');
+    fs.writeFileSync(draftInput,JSON.stringify(runCli(['explain','xenia.covenant']).value.example));
+    fs.writeFileSync(record,JSON.stringify(runCli(['invoke','xenia.covenant','draft','--input',draftInput]).value.result));
     const run=args=>spawnSync(process.execPath,['--import',preload,cli,...args],{cwd:dir,encoding:'utf8',timeout:30000,env:{PATH:process.env.PATH}});
     const others=[['arrive'],['help'],['help','door'],['motifs'],['motifs','standing'],['motifs','study','list'],['motifs','study','journey'],['catalog'],
       ['explain','xenia.surface'],['explain','agenttool.telescope-surface'],['demo'],['invoke','xenia.surface','manifest','--input',example],
-      ['door','plan','--origin',ORIGIN],['door','plan','--origin','https://10.0.0.5','--allow-local-target'],['door','plan','--origin','https://user:pw@door.example.org']];
+      ['door','plan','--origin',ORIGIN],['door','plan','--origin','https://10.0.0.5','--allow-local-target'],['door','plan','--origin','https://user:pw@door.example.org'],
+      ['door','rights','--input',record,'--as-of','2026-11-13T00:00:00Z'],['door','rights','--input',record,'--origin',ORIGIN,'--full']];
     for(const args of others){
       const r=run(args);
       assert.equal(r.stderr,'',args.join(' '));

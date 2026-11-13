@@ -14,12 +14,20 @@ export const INPUT_REASONS=Object.freeze({
   not_regular_file:'The input path is not a regular file (a directory or special file).',
   symbolic_link:'The input path is a symbolic link; this reader never follows links.',
   unreadable:'The input file could not be read.',
-  too_large:'The input file is over its size limit (1 MiB for invoke, 16 KiB for a handoff).',
+  too_large:'The input file is over its size limit (1 MiB for invoke, 16 KiB for a handoff, 2,000,000 bytes for door rights).',
   not_utf8:'The input file is not valid UTF-8.',
   byte_order_mark:'The input file starts with a byte-order mark; remove it.',
   not_json:'The input file is not exactly one JSON value.',
   duplicate_key:'An object in the input file repeats a key.',
   beyond_limits:'The input is nested or large beyond the input limits (32 levels deep, 65536 values, 1 MiB).',
+  not_an_adoption_record:'The input file is JSON, but it does not say it is a Covenant adoption record: it is not an object whose schema_version begins with xenia.covenant.adoption/.',
+});
+
+// Which argument of a known command could not be read. What was typed is never
+// copied into the output.
+export const ARGUMENT_REASONS=Object.freeze({
+  as_of_not_rfc3339:'--as-of must be an RFC 3339 date-time with a real calendar date and Z or an offset, at most 40 characters, for example 2026-11-13T00:00:00Z.',
+  origin_not_an_origin:'--origin must be a plain HTTP(S) origin: a scheme and a host, with no user name, password, path, query or fragment.',
 });
 
 // Which rule refused a `door` target. `reason` is always one of these keys; the
@@ -44,6 +52,7 @@ export const NETWORK_NOTE='`door check` is the only command in which this kit\'s
 export const DOOR_FLAGS=Object.freeze({
   plan:{required:['--origin'],switches:['--allow-local-target']},
   check:{required:['--origin','--max-requests','--total-timeout-ms'],switches:['--allow-local-target','--full']},
+  rights:{required:['--input'],optional:['--as-of','--origin'],switches:['--full']},
 });
 
 export const COMMANDS={
@@ -61,14 +70,18 @@ export const COMMANDS={
     summary:'Run one explicit command on chosen local notes.',probe:['help','context'],
     rules:['--dir must be an absolute path to the notes root, and must be outside the --package directory.','init needs an existing parent and refuses a destination that exists.','handoff replaces only the handoff file; read its current sha256 with status and pass it as --expect.']},
   door:{usage:'door plan --origin <origin> [--allow-local-target]',
-    also:['door check --origin <origin> --max-requests <1..66> --total-timeout-ms <100..120000> [--allow-local-target] [--full]'],
-    summary:'Look at one HTTP(S) origin from outside. `plan` sends nothing and says what a check would send; `check` sends bounded GET requests and reports what it was served.',probe:['help','door'],
+    also:['door check --origin <origin> --max-requests <1..66> --total-timeout-ms <100..120000> [--allow-local-target] [--full]',
+      'door rights --input <file> [--as-of <rfc3339>] [--origin <origin>] [--full]'],
+    summary:'Look at one HTTP(S) origin from outside. `plan` sends nothing and says what a check would send; `check` sends bounded GET requests and reports what it was served. `rights` reads an adoption record from a local file and sends nothing.',probe:['help','door'],
     rules:[NETWORK_NOTE,
       '`door plan` sends nothing: read it before `door check`. It gives the request, byte and time bounds, what is not guarded, and two `door check` commands to run.',
       '`door check` hands at most --max-requests GET requests (1 to 66) for the one origin to the runtime and starts none after --total-timeout-ms (100 to 120000). Both must be given; neither has a default. The plan names the one case in which the runtime sends a request twice.',
       'The origin is a scheme and a host only. By default it must use HTTPS, a DNS name and port 443, and not a local or reserved name. --allow-local-target accepts whatever else the checker accepts, and the output records that it was used.',
       '--full adds the checker\'s whole result. Without it the output gives only that result\'s size and sha256.',
-      'Exit 0, 3 or 4 follows the checker\'s own word; the output says what each covers. A check reports what one User-Agent was served on these requests, and nothing wider.']},
+      'Exit 0, 3 or 4 follows the checker\'s own word; the output says what each covers. A check reports what one User-Agent was served on these requests, and nothing wider.',
+      '`door rights` reads one local file as a Covenant 0.1 adoption record and sends nothing. It reports which release the record pins, whether it raises issues under the rules installed in this checkout, and which of its evidence had expired at --as-of (an RFC 3339 time; without it, the clock). It verifies nothing the record says: a record that agrees with itself is not evidence of practice.',
+      'The file for `door rights` must be a regular file, not a symbolic link, at most 2,000,000 bytes, valid UTF-8 with no byte-order mark, one JSON value with no repeated key, and an object whose schema_version begins with xenia.covenant.adoption/. Values from the record are shown only as a listed word, a timestamp or an origin.',
+      '`door rights` exits 0 when the record pins the installed bytes, raises no issue, and no row it gives as pass rests on evidence expired at --as-of; 3 when it pins the installed bytes and raises an issue, or such a row rests on expired evidence; 4 when it pins other bytes, or the JSON Schema check could not be run here. Each of the two checks keeps at most 256 issues, and --full lists them. --origin only compares the origin the record names with the one given.']},
   'starter-smoke':{usage:'starter-smoke --package <reviewed-package-dir> --dir <new-notes-dir>',
     summary:'Run the pinned provider smoke check on a new notes root.',probe:['help','starter-smoke']},
 };
@@ -79,7 +92,7 @@ export const USAGE_CODES=['UNKNOWN_COMMAND','INVALID_ARGUMENTS','MOTIF_INVALID_A
 
 // A command body may carry its own process exit (3 or 4, or a stated 0). The
 // exit is kept beside the body, not in it, so a body that never asked for one
-// (today every command but `door`) leaves the exit to the CLI.
+// (every command but `door`) leaves the exit to the CLI.
 const EXITS=new WeakMap();
 export function withExit(body,code){EXITS.set(body,code);return body;}
 export const exitOf=body=>body!==null&&typeof body==='object'?EXITS.get(body):undefined;
@@ -224,7 +237,8 @@ const TABLE={
   },
   INVALID_ARGUMENTS:(e,c)=>{
     const known=COMMAND_NAMES.includes((c.argv??[])[0])?c.argv[0]:undefined;
-    return {detail:'The command is known but its arguments do not match its usage. Nothing was run.',
+    const why=typeof e.reason==='string'&&Object.hasOwn(ARGUMENT_REASONS,e.reason)?`${ARGUMENT_REASONS[e.reason]} `:'';
+    return {detail:`${why}The command is known but its arguments do not match its usage. Nothing was run.`,
       next:[known?{argv:['help',known],why:`Read the usage of ${known}.`}:{argv:['help'],why:'List the commands and their usage.'}]};
   },
   MOTIF_INVALID_ARGUMENTS:()=>({detail:'The motifs study arguments do not match its usage. Nothing was run.',
@@ -242,7 +256,9 @@ const TABLE={
       next:[...(lift?[{argv:['door','plan','--origin',e.target,'--allow-local-target'],why:'Read the plan for this target with the default target rule lifted. A plan sends nothing.'}]:[]),
         {argv:['door','plan'],needs:['--origin <origin>'],why:'Read the plan for another origin. A plan sends nothing.'}]};
   },
-  CHECKOUT_REQUIRED:()=>({detail:'This command needs two files of a full Xenia source checkout, and at least one is not present: surface/0.1/check.mjs beside the kit, or adapters/telescope/provider/dist/target.js inside it. Nothing was sent or run.',
+  CHECKOUT_REQUIRED:(e)=>({detail:e.reason==='covenant_files'?
+    'This command needs the covenant/0.1 directory of a full Xenia source checkout beside the kit (validate-adoption.mjs, rfc3339.mjs and the three JSON files they read), and at least one of those files is not present or could not be loaded. Nothing was read or checked.':
+    'This command needs two files of a full Xenia source checkout, and at least one is not present: surface/0.1/check.mjs beside the kit, or adapters/telescope/provider/dist/target.js inside it. Nothing was sent or run.',
     next:[{argv:['help','door'],why:'Read what the door command does; reading needs only the kit.'}]}),
   BUILD_REQUIRED:(e,c)=>({detail:'This needs the compiled Xenia library and its development dependencies, which are not present. Nothing was started. From the Xenia checkout run `npm ci --ignore-scripts`, then `npm run build`, then repeat the command.',
     next:[(c.argv??[])[0]==='demo'?{argv:['catalog'],why:'Listing modules needs no build; use it while you prepare.'}:{argv:['motifs','study'],why:'Listing studies needs no build; use it while you prepare.'}]}),
@@ -264,6 +280,8 @@ const TABLE={
     'The notes root is not a usable directory path (it must be an absolute path to a regular directory, or a new name in an existing parent). Nothing was read or written.',next:[helpContext]}),
   INVALID_INPUT:(e,c)=>{
     const why=INPUT_REASONS[e.reason];
+    if((c.argv??[])[0]==='door')return {detail:`${why??'The input file is not usable.'} Nothing was checked. The input rules are in help door.`,
+      next:[{argv:['help','door'],why:'Read the usage of the door command and its input rules.'}]};
     return (c.argv??[])[0]==='invoke'?
     {detail:`${why??'The input file is not usable, or is nested or large beyond the input limits.'} Nothing was run. The input rules are in help invoke.`,next:[helpInvoke]}:
     {detail:`${why??'The chosen input file or value is not usable: a missing or unsafe file, text over the size limit, not valid UTF-8, or a hash that is not 64 lowercase hex characters.'} Nothing was written.`,next:[helpContext]};

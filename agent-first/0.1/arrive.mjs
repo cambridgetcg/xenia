@@ -11,6 +11,7 @@ export const READ_ONLY=[
   {argv:['invoke','xenia.surface','manifest'],needs:['--input <file>'],what:'Run one effect-free core operation once on a JSON file you supply; prints a receipt. The `explain` output shows an input example.'},
   {argv:['demo'],what:'Run the local reference tools and a synthetic lifecycle. Needs the Xenia build; contacts nothing.'},
   {argv:['door','plan'],needs:['--origin <origin>'],what:'Read what a check of one HTTP(S) origin would send, to whom and how much, and what it does not guard. Sends nothing.'},
+  {argv:['door','rights'],needs:['--input <file>'],what:'Read one local file as a Covenant adoption record: which release it pins, whether it raises issues under the installed rules, and which evidence has expired. Sends nothing, and verifies nothing the record says.'},
 ];
 // The one command that sends requests. It is kept out of the list above.
 export const SENDS=[
