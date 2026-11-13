@@ -22,6 +22,30 @@ export const INPUT_REASONS=Object.freeze({
   beyond_limits:'The input is nested or large beyond the input limits (32 levels deep, 65536 values, 1 MiB).',
 });
 
+// Which rule refused a `door` target. `reason` is always one of these keys; the
+// text given on the command line is never copied into the output.
+export const TARGET_REASONS=Object.freeze({
+  not_an_origin:'The target is not a plain HTTP(S) origin: give a scheme and a host, with no user name, password, path, query or fragment.',
+  http_not_loopback:'Plain HTTP is accepted only for localhost, 127.x and [::1]; any other target must use HTTPS.',
+  refused_by_checker:'The checker refused the target.',
+  https_required:'The default target rule accepts HTTPS only.',
+  unsafe_port:'The default target rule accepts port 443 only.',
+  ip_literal_not_allowed:'The default target rule accepts a DNS name, not an IP address.',
+  single_label_host_not_allowed:'The default target rule accepts a host name with at least one dot.',
+  local_or_reserved_host_not_allowed:'The default target rule does not accept a local or reserved host name.',
+  hostname_too_long:'The host name is longer than DNS allows.',
+  refused_by_target_rule:'The default target rule refused the target.',
+});
+
+// One sentence, used word for word in arrive, help, catalog, the README and motifs.json.
+export const NETWORK_NOTE='`door check` is the only command in which this kit\'s own code sends requests; provider code run by `context` and `starter-smoke` is not observed by this kit.';
+
+// The flags each `door` operation takes; checkArgv and door.mjs both read this.
+export const DOOR_FLAGS=Object.freeze({
+  plan:{required:['--origin'],switches:['--allow-local-target']},
+  check:{required:['--origin','--max-requests','--total-timeout-ms'],switches:['--allow-local-target','--full']},
+});
+
 export const COMMANDS={
   arrive:{usage:'arrive',summary:'Read one bounded orientation document. Expects no reply; activates nothing.',probe:['arrive']},
   help:{usage:'help [command]',summary:'Show this help, or the usage of one command.',probe:['help']},
@@ -36,12 +60,30 @@ export const COMMANDS={
     also:['context handoff --package <reviewed-package-dir> --dir <notes-dir> --input <chosen-file> --expect <current-sha256>'],
     summary:'Run one explicit command on chosen local notes.',probe:['help','context'],
     rules:['--dir must be an absolute path to the notes root, and must be outside the --package directory.','init needs an existing parent and refuses a destination that exists.','handoff replaces only the handoff file; read its current sha256 with status and pass it as --expect.']},
+  door:{usage:'door plan --origin <origin> [--allow-local-target]',
+    also:['door check --origin <origin> --max-requests <1..66> --total-timeout-ms <100..120000> [--allow-local-target] [--full]'],
+    summary:'Look at one HTTP(S) origin from outside. `plan` sends nothing and says what a check would send; `check` sends bounded GET requests and reports what it was served.',probe:['help','door'],
+    rules:[NETWORK_NOTE,
+      '`door plan` sends nothing: read it before `door check`. It gives the request, byte and time bounds, what is not guarded, and two `door check` commands to run.',
+      '`door check` hands at most --max-requests GET requests (1 to 66) for the one origin to the runtime and starts none after --total-timeout-ms (100 to 120000). Both must be given; neither has a default. The plan names the one case in which the runtime sends a request twice.',
+      'The origin is a scheme and a host only. By default it must use HTTPS, a DNS name and port 443, and not a local or reserved name. --allow-local-target accepts whatever else the checker accepts, and the output records that it was used.',
+      '--full adds the checker\'s whole result. Without it the output gives only that result\'s size and sha256.',
+      'Exit 0, 3 or 4 follows the checker\'s own word; the output says what each covers. A check reports what one User-Agent was served on these requests, and nothing wider.']},
   'starter-smoke':{usage:'starter-smoke --package <reviewed-package-dir> --dir <new-notes-dir>',
     summary:'Run the pinned provider smoke check on a new notes root.',probe:['help','starter-smoke']},
 };
 export const COMMAND_NAMES=Object.keys(COMMANDS);
-export const EXIT_CODES={0:'success',1:'operation failure or refusal: see error and problem',2:'usage error: the command line was not understood'};
-export const USAGE_CODES=['UNKNOWN_COMMAND','INVALID_ARGUMENTS','MOTIF_INVALID_ARGUMENTS','STUDY_NOT_FOUND','MOTIF_NOT_FOUND','MODULE_NOT_FOUND'];
+export const EXIT_CODES={0:'ran; no finding; the body says what a 0 covers',1:'operation failure or refusal: see error and problem',2:'usage error: the command line was not understood',
+  3:'ran, reports a finding',4:'ran, could not determine'};
+export const USAGE_CODES=['UNKNOWN_COMMAND','INVALID_ARGUMENTS','MOTIF_INVALID_ARGUMENTS','STUDY_NOT_FOUND','MOTIF_NOT_FOUND','MODULE_NOT_FOUND','INVALID_TARGET'];
+
+// A command body may carry its own process exit (3 or 4, or a stated 0). The
+// exit is kept beside the body, not in it, so a body that never asked for one
+// (today every command but `door`) leaves the exit to the CLI.
+const EXITS=new WeakMap();
+export function withExit(body,code){EXITS.set(body,code);return body;}
+export const exitOf=body=>body!==null&&typeof body==='object'?EXITS.get(body):undefined;
+export const exitFields=(code,reason)=>({exit_code:code,exit_reason:reason,exit_meaning:EXIT_CODES[code]});
 
 const STUDY_SUBS=['list','help','--help','-h','journey'];
 function flagsOk(rest,required){
@@ -52,6 +94,22 @@ function flagsOk(rest,required){
     seen.set(rest[i],rest[i+1]);
   }
   return true;
+}
+// Flags given as `--name value` pairs and bare switches, in any order. Returns
+// {values, switches}, or undefined when the list does not match: a flag that
+// was not named, a repeat, a missing value or a missing required flag.
+export function parseFlags(rest,{required=[],optional=[],switches=[]}={}){
+  const values={},on=[];
+  const known=[...required,...optional,...switches];
+  for(let i=0;i<rest.length;i+=1){
+    const flag=rest[i];
+    if(switches.includes(flag)){if(on.includes(flag))return undefined;on.push(flag);continue;}
+    if(!required.includes(flag)&&!optional.includes(flag))return undefined;
+    const value=rest[i+=1];
+    if(Object.hasOwn(values,flag)||typeof value!=='string'||!value||known.includes(value))return undefined;
+    values[flag]=value;
+  }
+  return required.every(flag=>Object.hasOwn(values,flag))?{values,switches:on}:undefined;
 }
 // Does this CLI accept this argv? `needs` names flags the caller still adds.
 export function checkArgv(argv,needs=[]){
@@ -78,6 +136,11 @@ export function checkArgv(argv,needs=[]){
     const [moduleId,operation,...flags]=rest;
     if(!moduleId||!operation||moduleId.startsWith('-')||operation.startsWith('-'))return bad('invoke needs a module id and an operation id');
     return flagsOk(flags,['--input'])?{ok:true}:bad('invoke flags');
+  }
+  if(command==='door'){
+    const [op,...flags]=rest;
+    if(!Object.hasOwn(DOOR_FLAGS,op??''))return bad('unknown door operation');
+    return parseFlags(flags,DOOR_FLAGS[op])?{ok:true}:bad('door flags');
   }
   if(command==='context'){
     const [op,...flags]=rest;
@@ -172,6 +235,15 @@ const TABLE={
     next:[{argv:['motifs'],why:'Read the motif map.'}]}),
   MODULE_NOT_FOUND:(e,c)=>({valid:c.moduleIds,detail:`That is not a registered module id.${c.moduleIds?` Valid module ids: ${c.moduleIds.join(', ')}.`:''} Nothing was activated.`,
     next:[catalogAction]}),
+  INVALID_TARGET:(e)=>{
+    const why=typeof e.reason==='string'&&Object.hasOwn(TARGET_REASONS,e.reason)?TARGET_REASONS[e.reason]:TARGET_REASONS.refused_by_target_rule;
+    const lift=e.liftable&&typeof e.target==='string';
+    return {detail:`${why} Nothing was sent.${lift?' --allow-local-target lifts the default rule and accepts whatever else the checker accepts; the output then records that it was used. Whether to lift it is not decided by this kit.':''}`,
+      next:[...(lift?[{argv:['door','plan','--origin',e.target,'--allow-local-target'],why:'Read the plan for this target with the default target rule lifted. A plan sends nothing.'}]:[]),
+        {argv:['door','plan'],needs:['--origin <origin>'],why:'Read the plan for another origin. A plan sends nothing.'}]};
+  },
+  CHECKOUT_REQUIRED:()=>({detail:'This command needs two files of a full Xenia source checkout, and at least one is not present: surface/0.1/check.mjs beside the kit, or adapters/telescope/provider/dist/target.js inside it. Nothing was sent or run.',
+    next:[{argv:['help','door'],why:'Read what the door command does; reading needs only the kit.'}]}),
   BUILD_REQUIRED:(e,c)=>({detail:'This needs the compiled Xenia library and its development dependencies, which are not present. Nothing was started. From the Xenia checkout run `npm ci --ignore-scripts`, then `npm run build`, then repeat the command.',
     next:[(c.argv??[])[0]==='demo'?{argv:['catalog'],why:'Listing modules needs no build; use it while you prepare.'}:{argv:['motifs','study'],why:'Listing studies needs no build; use it while you prepare.'}]}),
   MOTIF_STUDY_UNAVAILABLE:()=>({detail:'This study is described but has no runner yet. Nothing was run.',next:[{argv:['motifs','study'],why:'List the studies.'}]}),

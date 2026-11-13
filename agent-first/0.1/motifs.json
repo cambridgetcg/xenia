@@ -79,6 +79,7 @@
     "reference_demo": "The normal prepared Xenia build and the Work checker's installed development dependencies.",
     "chosen_context": "An explicitly supplied, locally pinned Local Starter distribution and a separately selected notes directory.",
     "not_required": ["hosted account", "model call", "database", "MCP", "network after local preparation"],
+    "network": "`door check` is the only command in which this kit's own code sends requests; provider code run by `context` and `starter-smoke` is not observed by this kit.",
     "not_promised": ["OS sandbox", "durable workflow scheduling", "automatic host activation", "whole-framework conformance"]
   }
 }

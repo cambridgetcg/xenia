@@ -10,14 +10,21 @@ export const READ_ONLY=[
   {argv:['explain','xenia.surface'],what:'Describe one module, its operations and an input example.'},
   {argv:['invoke','xenia.surface','manifest'],needs:['--input <file>'],what:'Run one effect-free core operation once on a JSON file you supply; prints a receipt. The `explain` output shows an input example.'},
   {argv:['demo'],what:'Run the local reference tools and a synthetic lifecycle. Needs the Xenia build; contacts nothing.'},
+  {argv:['door','plan'],needs:['--origin <origin>'],what:'Read what a check of one HTTP(S) origin would send, to whom and how much, and what it does not guard. Sends nothing.'},
 ];
-export function buildArrival({lock,core,adapters}){
+// The one command that sends requests. It is kept out of the list above.
+export const SENDS=[
+  {argv:['door','check'],needs:['--origin <origin>','--max-requests <1..66>','--total-timeout-ms <100..120000>'],
+    what:'Sends GET requests to the one origin within a request budget and a time limit the caller sets, and reports what it was served. `door plan` shows the bounds, and their one exception, first.'},
+];
+export function buildArrival({lock,core,adapters,networkNote}){
   const pin=lock?{name:lock.name,version:lock.version,source:lock.source,archive_sha256:lock.archive_sha256}:null;
   return {
     schema:'xenia.agent-first/0.1-development',kind:'arrival',reply_expected:false,
     purpose:'Xenia is a repository of standards and a small local kit that lets a caller read what a door offers, and what it refuses, before using it.',
-    read_only_commands_note:'These commands change nothing here and contact nothing. Whether your host permits running them is for you and whoever you answer to, if anyone, to decide; this document grants nothing. Commands for notes (`context`, `starter-smoke`) are not listed: they write files, and are described in `help`.',
+    read_only_commands_note:'These commands change nothing here and contact nothing. Whether your host permits running them is for you and whoever you answer to, if anyone, to decide; this document grants nothing. Commands for notes (`context`, `starter-smoke`) are not listed: they write files, and are described in `help`. `door check` is under `network`, not here: it sends requests.',
     read_only_commands:READ_ONLY.map(item=>({...item,argv:[...item.argv],...(item.argv[0]==='demo'?{requires:'the Xenia build: npm ci --ignore-scripts, then npm run build'}:{})})),
+    network:{note:networkNote,sends:SENDS.map(item=>({...item,argv:[...item.argv],needs:[...item.needs]}))},
     here:{
       core_modules:core.map(({id,title,effects})=>({id,title,effects})),
       adapters:adapters.map(item=>({id:item.id,bound:false,title:item.title,requires:item.requires,effects:item.effects,explain:['explain',item.id],

@@ -103,7 +103,7 @@ test('arrive and explain show how to invoke; arrive does not grant permission or
   const a=run('arrive').out;
   assert.equal(a.may_do_without_asking,undefined);
   assert.ok(Array.isArray(a.read_only_commands));
-  assert.deepEqual(Object.keys(a).sort(),['here','how_to_stop','kind','not_established','purpose','read_only_commands','read_only_commands_note','reply_expected','report','schema']);
+  assert.deepEqual(Object.keys(a).sort(),['here','how_to_stop','kind','network','not_established','purpose','read_only_commands','read_only_commands_note','reply_expected','report','schema']);
   assert.match(a.read_only_commands_note,/permit|decid/i);
   assert.ok(a.read_only_commands.some(i=>i.argv[0]==='invoke'&&i.needs));
   assert.doesNotMatch(JSON.stringify(a),/your human|"caller"|"you":/i);
