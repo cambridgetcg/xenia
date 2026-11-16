@@ -78,8 +78,10 @@
     "motifs_and_catalog": "Node 22+ and this checkout; no provider or build required.",
     "reference_demo": "The normal prepared Xenia build and the Work checker's installed development dependencies.",
     "chosen_context": "An explicitly supplied, locally pinned Local Starter distribution and a separately selected notes directory.",
+    "collab_adapter": "Only for `session --collab-config`: a config file naming a bundle whose bytes match the kit's pin, a Bun executable, a journal path, and an `--allow` list naming the operations to run. Its backend keeps a database and speaks MCP over stdio.",
     "not_required": ["hosted account", "model call", "database", "MCP", "network after local preparation"],
-    "network": "`door check` is the only command in which this kit's own code sends requests; provider code run by `context` and `starter-smoke`, and the backend process `session --collab-config` can start, are not observed by this kit.",
+    "not_required_note": "Not required by the kit. The optional Collab adapter needs a database (its backend's journal) and an MCP backend.",
+    "network": "`door check` is the only command in which this kit's own code sends network requests; provider code run by `context` and `starter-smoke`, and the backend process `session --collab-config` can start, are not observed by this kit, which speaks to that backend over stdio only.",
     "not_promised": ["OS sandbox", "durable workflow scheduling", "automatic host activation", "whole-framework conformance"]
   }
 }

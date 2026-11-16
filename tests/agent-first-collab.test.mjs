@@ -1726,6 +1726,36 @@ test('a config the door cannot use is one session_not_started line that says whi
   assert.equal(twice.status,2);assert.equal(linesOf(twice.stdout)[0].error.code,'INVALID_ARGUMENTS');
 });
 
+test('explain names the lineage note, gives a config to copy, and qualifies what the backend does as read, not observed',()=>{
+  const explained=JSON.parse(runCli(['explain',COLLAB_ID]).stdout);
+  assert.deepEqual(explained.lineage_note,card.lineage_note);
+  assert.equal(explained.lineage_note.path,'agent-first/0.1/LINEAGE.md');
+  assert.ok(fs.existsSync(new URL('LINEAGE.md',kit)));
+  assert.match(explained.lineage_note.says,/superseded/);
+  // An example config: every key the form has, and the form accepts it (its paths name nothing that exists).
+  const example=explained.config.example;
+  assert.deepEqual(Object.keys(example).sort(),['actor','bunPath','bundlePath','databasePath','homeDir','journal','timeoutMs','workspace']);
+  assert.deepEqual(checkCollabConfig(example),{...example});
+  // A sentence about what the backend does is the card's reading of the pinned bundle, or the backend's own word, and says which.
+  const backendSays=line=>/\bthe backend\b/i.test(line)&&!/^(Sends|Reads|Starts|Creates)\b/.test(line);
+  for(const [id,op] of Object.entries(card.operations))for(const line of op.does.filter(backendSays)){
+    assert.match(line,/As read in the pinned bundle|as read in the pinned bundle|the backend says|The backend says/,`${id}: ${line}`);
+  }
+  for(const line of card.at_end.filter(line=>/credential file/.test(line)))assert.match(line,/the backend says|as read in the pinned bundle/,line);
+});
+
+test('at the door, an operation declined because open has not returned offers open as the next request',async t=>{
+  const s=boundSession(t);
+  await s.next();
+  await s.ask({method:'activate',module:COLLAB_ID});
+  const early=await s.invoke('status');
+  assert.equal(early.error.refusal.code,'not_open');
+  assert.deepEqual(early.problem.next_actions[0],{request:{method:'invoke',module:COLLAB_ID,operation:'open'},needs:['id'],why:early.problem.next_actions[0].why});
+  assert.match(early.problem.next_actions[0].why,/allow list/);
+  assert.deepEqual(checkRequest(early.problem.next_actions[0].request,['id']).ok,true);
+  await s.end();
+});
+
 test('help, arrive and the one-shot invoke say where the adapter is reached',()=>{
   const help=JSON.parse(runCli(['help','session']).stdout);
   assert.match(help.usage,/--collab-config <absolute-file>/);
@@ -1737,7 +1767,8 @@ test('help, arrive and the one-shot invoke say where the adapter is reached',()=
   assert.equal(checkArgv(['session','--collab-config']).ok,false);
   // The one sentence about the network now names the session too.
   assert.match(NETWORK_NOTE,/`session --collab-config`/);
-  assert.match(NETWORK_NOTE,/`door check` is the only command in which this kit's own code sends requests/);
+  assert.match(NETWORK_NOTE,/`door check` is the only command in which this kit's own code sends network requests/);
+  assert.match(NETWORK_NOTE,/stdio/,'the adapter\'s own requests to its backend are named as what they are');
   // invoke has no gate: it points to the door that has one.
   const file=path.join(scratch,'empty-input.json');
   fs.writeFileSync(file,'{}');

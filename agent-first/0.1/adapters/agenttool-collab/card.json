@@ -3,6 +3,10 @@
   "status": "repository-only development",
   "license": "MPL-2.0",
   "origin": "Ported from modules/0.1/adapters/agenttool-collab/module.json of this project's other lineage, kept at origin/hermes/agent-first-modules (beed37a); the fork at origin/hermes/agent-first-modules-compose (4119d4d) holds the same card with one effect fewer. Carried over: the eight operations, their input schemas and the limits. Changed here: operation ids take this kit's form, effects are declared for each operation, open is an operation of its own, each schema is tightened to the backend's input rules as read in the pinned bundle, each operation says what comes back and what it refuses, and the bundle's digest moved from the caller's config to the kit's lock. Licence: module.json was runtime configuration under that lineage's licence map, so MPL-2.0; this card is a modification of it, is read by index.mjs to build the module, and stays MPL-2.0.",
+  "lineage_note": {
+    "path": "agent-first/0.1/LINEAGE.md",
+    "says": "Where the other module host, modules/0.1, is kept, that it is superseded by this kit, and what was and was not carried over."
+  },
   "module": {
     "id": "agenttool.collab",
     "version": "0.1.0-dev.0",
@@ -28,7 +32,18 @@
       "actor": "A display label for the native session: 1 to 200 characters, no control character, no space at either end. It is not an identity.",
       "journal": "`new`: nothing may be at databasePath yet. `existing`: a regular file must be there.",
       "timeoutMs": "Optional, 100 to 9000, default 8000: how long one request to the backend may take."
-    }
+    },
+    "example": {
+      "bundlePath": "/absolute/path/to/collab-bundle.js",
+      "bunPath": "/absolute/path/to/bun",
+      "databasePath": "/absolute/path/to/collab-state/journal.db",
+      "homeDir": "/absolute/path/to/collab-home",
+      "workspace": "/absolute/path/to/workspace",
+      "actor": "an-agent-label",
+      "journal": "new",
+      "timeoutMs": 8000
+    },
+    "example_note": "The shape only: every path here is a placeholder and must name a place on this device. timeoutMs may be left out."
   },
   "pin": "agent-first/0.1/agenttool.lock.json, key `collab`: the sha256 of the bundle, and the server name, version and protocol the backend must state. The caller's config cannot state any of them.",
   "limits": [
@@ -46,7 +61,7 @@
     "This card is metadata. Reading it starts nothing and grants nothing."
   ],
   "at_end": [
-    "If open returned, the backend is still running and no call has an outcome that is unknown or still pending, the binding reads each task it has claimed and releases the claim, then ends its native session, which removes that session's credential file. The gate is not asked for these writes. Otherwise it sends nothing.",
+    "If open returned, the backend is still running and no call has an outcome that is unknown or still pending, the binding reads each task it has claimed and releases the claim, then ends its native session; as read in the pinned bundle, ending it removes that session's credential file. The gate is not asked for these writes. Otherwise it sends nothing.",
     "If a backend process was started, it is closed, and the copy of the bundle under homeDir is removed.",
     "The journal, its tasks and reports, the workspace and homeDir are not removed."
   ],
@@ -525,7 +540,7 @@
       ],
       "does": [
         "Sends one collab_report_append call. The adapter adds confidence unknown, no evidence references and the relation informs. A decision cannot be sent from here.",
-        "The backend appends the report to the journal, where other sessions of the workspace can read it."
+        "As read in the pinned bundle, the backend appends the report to the journal, where other sessions of the workspace can read it."
       ]
     },
     "task-create": {
@@ -603,8 +618,8 @@
         }
       ],
       "does": [
-        "Sends one collab_task_create call with the work mode coordination: a task to coordinate around, not one that edits files. The backend chooses the task id.",
-        "The backend appends the task to the journal."
+        "Sends one collab_task_create call with the work mode coordination: a task to coordinate around, not one that edits files. As read in the pinned bundle, the backend chooses the task id.",
+        "As read in the pinned bundle, the backend appends the task to the journal."
       ]
     },
     "task-get": {
@@ -959,7 +974,7 @@
       ],
       "does": [
         "Sends one collab_task_release call with the lease id this binding remembers for the task.",
-        "The backend returns the task to open in the journal. It does not mark the task completed."
+        "As read in the pinned bundle, the backend returns the task to open in the journal. It does not mark the task completed."
       ]
     }
   }

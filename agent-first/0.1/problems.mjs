@@ -109,7 +109,7 @@ export const TARGET_REASONS=Object.freeze({
 });
 
 // One sentence, used word for word in arrive, help, catalog, the README and motifs.json.
-export const NETWORK_NOTE='`door check` is the only command in which this kit\'s own code sends requests; provider code run by `context` and `starter-smoke`, and the backend process `session --collab-config` can start, are not observed by this kit.';
+export const NETWORK_NOTE='`door check` is the only command in which this kit\'s own code sends network requests; provider code run by `context` and `starter-smoke`, and the backend process `session --collab-config` can start, are not observed by this kit, which speaks to that backend over stdio only.';
 
 // What an operation's card is and who checks an input. Used word for word in
 // catalog, explain, help and the README.
@@ -594,11 +594,13 @@ const SESSION_TABLE={
       const at=typeof e.pointer!=='string'?'a place that was not recorded':e.pointer===''?'the top of the request':e.pointer.slice(0,200);
       where=` The first miss is at ${at}${typeof e.keyword==='string'?`, keyword ${e.keyword.slice(0,40)}`:''}; error.expected is what the form allows there.`;
     }
-    return {detail:`${why}${where} The line was not run and nothing changed. Nothing from the line is repeated here.`,
-      next:[e.reason==='resume_needs_paused'?askModule(e,c,'Read the module\'s state.'):askSession('Read the request forms this session accepts, and its modules.')]};
+    const repeated=e.reason==='resume_needs_paused'?'Of the line, only its id, method and module are repeated.':'Of the line, only its id and method are repeated, each only when it matches its form.';
+    const next=e.reason!=='resume_needs_paused'?askSession('Read the request forms this session accepts, and its modules.'):
+      inSession(e,c)&&c.state==='registered'?ask({method:'activate',module:e.module},'The module was never activated: activate opens it to calls.'):askModule(e,c,'Read the module\'s state.');
+    return {detail:`${why}${where} The line was not run and nothing changed. ${repeated}`,next:[next]};
   },
   SESSION_ENDING:()=>({detail:'This session was closed to new requests before this line was started, so the line was not run. Nothing changed.',terminal:true}),
-  DEADLINE_EXCEEDED:()=>({detail:'The call had started and did not answer within its deadline. The deadline ends the wait; it does not stop the handler, which is still running. Whether anything changed is not known. Read the current state before repeating a write.',
+  DEADLINE_EXCEEDED:()=>({detail:'The call had started and did not answer within its deadline. The deadline ends the wait; it does not stop the handler, which is still running. Whether anything changed is not known. Read the current state before repeating a write. A session that ends while the call is still running can leave a bound module\'s end writes unsent: its at_end says when.',
     next:[askSession('Read `late`: how this call settled, once it has.')]}),
   MODULE_NOT_FOUND:(e,c)=>({valid:c.moduleIds,detail:`No module with that id is in this session.${Array.isArray(c.moduleIds)?` Its modules: ${c.moduleIds.slice(0,16).join(', ')}.`:''} Nothing changed.`,
     next:[askSession('List the modules in this session and their states.')]}),
@@ -615,8 +617,8 @@ const SESSION_TABLE={
     }
     return {detail:`${INPUT_REASONS.beyond_limits} Nothing was run.`,next:[askCard(e,c,'Read the operation\'s card: what to send.')]};
   },
-  POLICY_BLOCKED:(e,c)=>({detail:'This operation declares effects, and the allow list this session was started with does not name it. The list is fixed for the whole session. This is an admission result, not a person’s refusal. Nothing ran.',
-    next:[askModule(e,c,'Read which operations of this module the session allows.')]}),
+  POLICY_BLOCKED:()=>({detail:'This operation declares effects, and the allow list this session was started with does not name it. The list is fixed for the whole session, so no request here changes this. Only a session started with this operation on its allow list runs it. This is an admission result, not a person’s refusal. Nothing ran.',
+    terminal:true}),
   ADMISSION_CHANGED:(e,c)=>({detail:'The module changed state while the call was waiting for admission. Nothing ran. Read its state and repeat.',retryable:true,next:[askModule(e,c,'Read the module\'s state.')]}),
   MODULE_RETIRED:()=>({detail:'This module is retired in this session and takes no new calls; it cannot be activated again here. That is complete. A new session starts with every module registered.',terminal:true}),
   OPERATION_FAILED:(e,c)=>({detail:'The operation started and failed in a way the module did not declare. Whether it changed anything is not known. Read the current state before repeating a write.',
@@ -624,8 +626,11 @@ const SESSION_TABLE={
   DECLINED:(e,c)=>{
     const r=e.refusal??{};
     const extra=typeof r.detail==='string'&&r.detail?` Reported: ${r.detail.slice(0,200)}`:'';
+    // The Collab binding opens once, with its own operation: before it has, that is the step that moves a caller on.
+    const first=r.code==='not_open'&&e.module===SESSION_BOUND&&inSession(e,c)&&e.operation!=='open'?
+      [ask({method:'invoke',module:SESSION_BOUND,operation:'open'},'Open the binding first. open declares effects, so it runs only if the allow list names it.')]:[];
     return {detail:`${declinedWords(r.meaning)}${extra}`,
-      next:[askCard(e,c,'Read the operation\'s card and the refusals it declares.')]};
+      next:[...first,askCard(e,c,'Read the operation\'s card and the refusals it declares.')]};
   },
   BUILD_REQUIRED:()=>({detail:'This operation needs the compiled Xenia library and its development dependencies, which are not present. Nothing was started, and no request in this session supplies them. Outside the session, from the Xenia checkout: `npm ci --ignore-scripts`, then `npm run build`.',terminal:true}),
   CLI_FAILED:()=>({detail:'An unexpected failure that this session has no specific code for. Whether anything changed is not known; read the current state before repeating a write.',terminal:true}),

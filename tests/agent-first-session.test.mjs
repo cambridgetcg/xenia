@@ -207,7 +207,7 @@ test('each verb answers with one line and the module state: inspect, activate, i
   const whole=await s.ask({id:'a',method:'inspect'});
   assertOk(whole);
   assert.equal(whole.id,'a');assert.equal(whole.line,1);assert.equal(whole.method,'inspect');assert.equal(whole.state,null);
-  assert.deepEqual(Object.keys(whole.result),['kind','modules','allow','late','lines','requests','limits']);
+  assert.deepEqual(Object.keys(whole.result),['kind','modules','allow','late','lines','requests','request_fields','examples','limits']);
   assert.equal(whole.result.kind,'session');
   assert.deepEqual(whole.result.modules,[{id:M,state:'registered',revision:1,in_flight:0,build:'not_needed'}]);
   assert.deepEqual(whole.result.allow,[]);
@@ -317,7 +317,8 @@ test('the gate is default-deny: an operation that declares effects runs only whe
     assertRefused(blocked,'POLICY_BLOCKED',operation);
     assert.equal(blocked.error.operation_started,false);assert.equal(blocked.error.effect_outcome,'not_attempted');
     assert.match(blocked.problem.detail,/allow list/);assert.match(blocked.problem.detail,/not a person/);
-    assert.deepEqual(blocked.problem.next_actions[0].request,{method:'inspect',module:M});
+    // Nothing in this session can change the list, so the problem is terminal and says what would admit the call.
+    assert.equal(blocked.problem.terminal,true);assert.match(blocked.problem.detail,/Only a session started with this operation on its allow list runs it/);
   }
   assert.deepEqual(calls,[],'neither handler ran');
   await s.end();
@@ -1395,6 +1396,90 @@ test('at the door: a signal sent as soon as the first line is read still ends th
       assert.equal(s.lines[1].ended_by,'signal');assert.equal(s.lines[1].signal,signal);
     }
   }
+});
+
+test('inspect of the session carries each request form in full: the fields, the rule for each field and an example',async()=>{
+  const s=open({modules:[fixture()]});
+  const start=await s.next();
+  const whole=await s.ask({id:'a',method:'inspect'});
+  assert.deepEqual(whole.result.request_fields,start.request_fields);
+  assert.deepEqual(Object.keys(whole.result.examples),REQUEST_METHODS);
+  for(const method of REQUEST_METHODS)assert.deepEqual(whole.result.examples[method],start.requests[method].example,method);
+  // The next request every INVALID_REQUEST offers leads here, so it must hold what the first line held about the forms.
+  const bad=await s.ask('{"id":"b","method":"inspect","extra":1}');
+  assert.deepEqual(bad.problem.next_actions[0].request,{method:'inspect'});
+  await s.end();
+});
+
+test('what a refused line repeats is said exactly: its id and method, and for resume its module',async()=>{
+  const s=open({modules:[fixture()]});await s.next();
+  const bad=await s.ask('{"id":"m6","method":"inspect","extraSENTINEL":1}');
+  assertRefused(bad,'INVALID_REQUEST');
+  assert.equal(bad.id,'m6');assert.equal(bad.method,'inspect');
+  assert.equal(bad.problem.detail.includes('Nothing from the line is repeated'),false,bad.problem.detail);
+  assert.match(bad.problem.detail,/Of the line, only its id and method are repeated/);
+  assert.equal(JSON.stringify(bad).includes('SENTINEL'),false);
+  const resume=await s.ask({id:'r',method:'resume',module:M});
+  assertRefused(resume,'INVALID_REQUEST');
+  assert.match(resume.problem.detail,/only its id, method and module are repeated/);
+  await s.end();
+});
+
+test('resume of a module that was never activated suggests activate, and pause and resume say what they do from registered',async()=>{
+  const s=open({modules:[fixture()]});
+  const start=await s.next();
+  assert.match(start.requests.pause.changes,/registered/);
+  assert.equal(start.requests.resume.changes.includes('again'),false,start.requests.resume.changes);
+  const resume=await s.ask({id:'r',method:'resume',module:M});
+  assertRefused(resume,'INVALID_REQUEST');assert.equal(resume.state,'registered');
+  assert.deepEqual(resume.problem.next_actions[0].request,{method:'activate',module:M});
+  await s.ask(activate);
+  const again=await s.ask({id:'r2',method:'resume',module:M});
+  assert.deepEqual(again.problem.next_actions[0].request,{method:'inspect',module:M},'an active module has nothing to resume: read its state');
+  await s.end();
+});
+
+test('a terminal problem does not list a suggested next action among what it does not establish',async()=>{
+  const s=open({modules:[fixture()]});await s.next();
+  await s.ask({id:'k',method:'retire',module:M});
+  const retired=await s.ask({id:'x',method:'invoke',module:M,operation:'echo'});
+  assertRefused(retired,'MODULE_RETIRED');assert.equal(retired.problem.terminal,true);
+  assert.equal(retired.not_established.includes('that a suggested next action will succeed'),false);
+  assert.ok(retired.not_established.includes('that the same request would succeed in a new session'));
+  const unknown=await s.ask({id:'y',method:'activate',module:'no.such.module'});
+  assertRefused(unknown,'MODULE_NOT_FOUND');assert.equal(unknown.problem.terminal,false);
+  assert.ok(unknown.not_established.includes('that a suggested next action will succeed'));
+  await s.end();
+});
+
+test('retire of a bound module says its binding is closed when the session ends, and a deadline says what ending early skips',async()=>{
+  const s=open({modules:[fixture()],bindings:[{module:bound(),close:()=>({complete:true,did:[],did_not:[],left_behind:[]})}]});
+  const start=await s.next();
+  assert.match(start.requests.retire.changes,/bound module/);
+  await s.ask({id:'on',method:'activate',module:'bound.fixture'});
+  const retired=await s.ask({id:'k',method:'retire',module:'bound.fixture'});
+  assertOk(retired);assert.equal(retired.result.binding_closes,'at_session_end');
+  const plain=await s.ask({id:'k2',method:'retire',module:M});
+  assert.equal(plain.result.binding_closes,undefined,'a module with no binding has nothing to close');
+  await s.end();
+  const t=open({modules:[fixture()],endMs:100});await t.next();
+  await t.ask(activate);
+  const late=await t.ask({id:'h',method:'invoke',module:M,operation:'hang',deadline_ms:20});
+  assertRefused(late,'DEADLINE_EXCEEDED');
+  assert.match(late.problem.detail,/at_end/);
+  await t.end();
+});
+
+test('a core operation given no input is refused in the kit\'s own words, not the engine\'s',async()=>{
+  const {createXeniaModules}=await import(new URL('modules.mjs',kit).href);
+  const s=open({modules:createXeniaModules()});await s.next();
+  await s.ask({id:'on',method:'activate',module:'xenia.covenant'});
+  const refused=await s.ask({id:'7',method:'invoke',module:'xenia.covenant',operation:'draft'});
+  assertRefused(refused,'DECLINED');
+  assert.equal(refused.error.refusal.code,'invalid_input');
+  assert.equal(refused.error.refusal.detail,'The input is not one JSON object. In a session, a request that leaves out input sends null.');
+  assert.doesNotMatch(JSON.stringify(refused),/destructure|object null/);
+  await s.end();
 });
 
 test('every line any session printed in this file was one compact JSON object',()=>{

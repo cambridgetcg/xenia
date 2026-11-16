@@ -8,7 +8,7 @@
 | Branch | Revision | What it holds |
 |---|---|---|
 | `origin/hermes/agent-first-modules` | beed37a (`beed37ac9b1d8282c8566aa657572578d953ffc6`) | `modules/0.1` as found: `host.mjs`, `cli.mjs`, `catalog.json`, a motif atlas (`motifs.json`, `motifs.mjs`), and the Collab adapter under `adapters/agenttool-collab/` (`adapter.mjs`, `module.json`, `stdio.mjs`), each with its tests. Its `package.json` has the scripts `xenia:modules` and `test:modules`. |
-| `origin/hermes/agent-first-modules-compose` | 4119d4d (`4119d4dec7f6b198f5538bef75912e8fb511c842`) | A fork of the same folder with a composition layer added: `composition.mjs`, `composition-cli.mjs`, `motifs/*.mjs`, one example plan, and the commands `compose` and `compose-demo`. Its adapter and its stdio port have the same bytes as the first branch. |
+| `origin/hermes/agent-first-modules-compose` | 4119d4d (`4119d4dec7f6b198f5538bef75912e8fb511c842`) | A fork of the same folder with a composition layer added: `composition.mjs`, `composition-cli.mjs`, `motifs/*.mjs`, one example plan, and the commands `compose` and `compose-demo`. It is without `motifs.json` and `MOTIFS.md`, and its Collab card (`module.json`) declares one effect fewer. Its adapter and its stdio port have the same bytes as the first branch. |
 
 Where a checkout knows those branches, `git show origin/hermes/agent-first-modules:modules/0.1/README.md` prints that host's own guide. Nothing here deletes either branch, and nothing in this kit loads a file from them.
 

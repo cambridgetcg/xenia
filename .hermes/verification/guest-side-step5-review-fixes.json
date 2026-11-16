@@ -1,0 +1,61 @@
+{
+  "$comment": "SPDX-License-Identifier: CC-BY-SA-4.0",
+  "scope": "Fixes made after the review of guest-side step 5 (one kernel). Each finding was reproduced first; every behaviour change below has a test that was seen failing before its fix, or, where a test guards against a regression, seen failing under that regression.",
+  "observed_at": "2026-11-16",
+  "base_revision": "2c2b49b",
+  "commits": [
+    {"what": "behaviour: a lost output, path guards, open and close of the Collab binding, read-ahead, early signals, the declined lead, the card licence, two test guards", "commit": "178d0f0"},
+    {"what": "wording and reach: what a refusal repeats and suggests, the lineage note, the network sentence, the motif map, the core input check, the request forms on inspect, and this record", "commit": "the commit that carries this file"}
+  ],
+  "gate": {
+    "node": "v24.18.1",
+    "default_run": {"command": "npm test", "exit_code": 0, "groups": [
+      {"tests": 557, "pass": 550, "fail": 0, "skipped": 7},
+      {"tests": 47, "pass": 47, "fail": 0, "skipped": 0},
+      {"tests": 10, "pass": 10, "fail": 0, "skipped": 0}]},
+    "with_real_starter": {"command": "XENIA_STARTER_TEST_PACKAGE=<reviewed-local-package> npm test", "exit_code": 0, "groups": [
+      {"tests": 557, "pass": 556, "fail": 0, "skipped": 1},
+      {"tests": 47, "pass": 47, "fail": 0, "skipped": 0},
+      {"tests": 10, "pass": 10, "fail": 0, "skipped": 0}]},
+    "render_checks": {"node tools/render-covenant.mjs --check": 0, "node tools/render-adoption-schema.mjs --check": 0},
+    "skip_explained": "As in the step record: the default run skips the six opt-in Local Starter tests and the optional Skills provider test; with the package supplied only the Skills provider test is skipped. The two path-spelling tests in tests/agent-first-collab.test.mjs each skip themselves where their second spelling is not there; in these runs both spellings were there, so neither skipped.",
+    "not_run": "Node 22 was not run: one machine, macOS, the Node version above."
+  },
+  "findings": {
+    "correctness-safety C1": "fixed. An output that stops taking lines closes admission (ended_by output_error): nothing more is read or started, the end still runs, exit 1. Tests: in memory, an output failing on its third write, five effect-declaring calls behind it, one started; and a child process whose reader goes away, with an allowed local-write operation that wrote nothing.",
+    "correctness-safety C2": "fixed. The Collab config and open compare homeDir, the workspace, the repository top and the journal folder as folders (device and inode, with identity and lineage from provider.mjs) as well as by spelling. Tests: another case of the same folder, and the same folder through /System/Volumes/Data, at config time and at open.",
+    "correctness-safety C3": "fixed. A homeDir that cannot be created, with nothing made, is the refusal home_dir_unavailable, and open can be asked again; an open that began to write and failed is never run again, whatever step it reached. The partial case (mkdir made a folder and then failed) is in the code and has no test.",
+    "correctness-safety C4": "fixed. Once close() has begun, every operation is declined before anything is sent.",
+    "correctness-safety C5": "fixed, with arriving-agent cold-1.",
+    "correctness-safety C6": "fixed. The input is paused at 256 lines or 4 MiB of lines read and not started; limits.read_ahead says so. Memory was not measured.",
+    "arriving-agent cold-1": "fixed. A declined result's detail leads with 'The operation declined, and its module declares that nothing was applied:'.",
+    "arriving-agent cold-2": "fixed. The signal handlers are installed before the first line is written. Test: twelve runs, a signal sent as soon as line 1 is read.",
+    "arriving-agent cold-3": "fixed. The detail says which fields of the line are repeated; the README says id, method, and module or operation ids in error.module and error.operation.",
+    "arriving-agent cold-4": "fixed. POLICY_BLOCKED is terminal in a session; resume of a registered module suggests activate; not_open on agenttool.collab suggests invoking open; a terminal problem names a new session instead of a next action in not_established.",
+    "arriving-agent cold-5": "fixed by wording, not by waiting: DEADLINE_EXCEEDED and the README say that a session ending while the call runs can leave a bound module's end writes unsent. close() still does not wait for a pending call; a test pins that.",
+    "arriving-agent cold-6": "fixed. explain agenttool.collab carries lineage_note (path and what it says, with the word superseded); LINEAGE.md's fork row names the dropped motif files and the one effect fewer, and a test checks both against git where git has the commit.",
+    "arriving-agent cold-7": "partly fixed. inspect of the session carries request_fields and one example per method; the card's config has an example object. help session was not split.",
+    "arriving-agent cold-8": "fixed. The Surface and Covenant operations decline an input that is not one JSON object in the kit's words before the native function sees it. The Work checker is unchanged: it answers such an input with its own report.",
+    "arriving-agent cold-9": "fixed by wording. pause says it applies to a registered module too; resume no longer says 'again'; retire says a bound module's binding is closed at the end, and its answer carries binding_closes: at_session_end.",
+    "standard-consistency C1": "fixed. card.json is MPL-2.0, as module.json was under that lineage's map; its origin, the adapter README and the kit README say so.",
+    "standard-consistency C2": "fixed. A session test holds a 400 ms deadline to an answer between 395 and 1000 ms; it failed with the timer at three times the deadline.",
+    "standard-consistency C3": "fixed. The over-long-string check runs in a child process with a 10 s limit; with maxLength off by one it failed in 10 s instead of hanging.",
+    "standard-consistency C4": "fixed. The README sentence now says three held and a fourth gained an assertion that failed first.",
+    "standard-consistency C5": "fixed. NETWORK_NOTE says network requests, and that the kit speaks to the Collab backend over stdio only.",
+    "standard-consistency C6": "fixed. motifs.json self_sufficiency has collab_adapter and not_required_note.",
+    "standard-consistency C7": "fixed. The at_end line, the README lines and the four does entries say 'as read in the pinned bundle'."
+  },
+  "edited_existing_tests": [
+    "tests/agent-first-problems.test.mjs: the three expected declined leads.",
+    "tests/agent-first-collab.test.mjs: the card licence test expects MPL-2.0; the workspace linked into homeDir is made after binding, because the config check now refuses it before; the network sentence pattern.",
+    "tests/agent-first-session.test.mjs: the keys of inspect of the session; POLICY_BLOCKED is terminal, so its next action is no longer asserted.",
+    "tests/agent-first-door.test.mjs: the network sentence word for word.",
+    "tests/agent-first-schema.test.mjs: the slow-pattern check moved into a child process."
+  ],
+  "not_established": [
+    "that the adapter works with the real bundle: every Collab test runs the stand-in",
+    "that every second spelling of a folder is caught: two kinds were tested on one volume; a path whose existing part cannot be looked at is judged by its names",
+    "that a deadline stops code, or how much memory read-ahead holds",
+    "anything about who calls the door, or whether they may"
+  ]
+}

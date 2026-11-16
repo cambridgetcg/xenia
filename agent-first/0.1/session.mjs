@@ -88,9 +88,9 @@ const CHANGES=Object.freeze({
   inspect:'Nothing. With no module: this session (module states, the allow list, calls still running past their deadline, the request forms). With a module: its description, state and operations and, for a bound module, what its binding holds in memory and what it was bound to. With a module and an operation: that operation\'s card.',
   activate:'A registered or paused module becomes active and takes calls.',
   invoke:'Runs one operation of an active module, once. What it changes is what the operation declares as effects, which this session does not observe. One that declares effects runs only if the allow list names it.',
-  pause:'The module stops taking new calls until it is resumed. A call already running goes on.',
-  resume:'A paused module becomes active again. Refused in any other state.',
-  retire:'The module takes no new calls for the rest of this session and cannot be activated again in it. A call already running goes on.',
+  pause:'The module, active or registered, stops taking new calls until it is resumed; resume then makes it active. A call already running goes on.',
+  resume:'A paused module becomes active. Refused in any other state.',
+  retire:'The module takes no new calls for the rest of this session and cannot be activated again in it. A call already running goes on. A bound module\'s binding is closed when the session ends, not now: until then what it holds is kept.',
 });
 const REQUEST_FIELDS=Object.freeze({
   id:'A string of 1 to 128 of A-Z a-z 0-9 . _ : - chosen by the sender. It is repeated on the response.',
@@ -117,6 +117,8 @@ const NOT_ESTABLISHED=Object.freeze({
   inspect:Object.freeze(['that an operation described here will be admitted or will succeed','anything about a runtime in another process or a later session']),
 });
 
+const NEXT_ACTION_LINE='that a suggested next action will succeed';
+const TERMINAL_LINE='that the same request would succeed in a new session';
 const usage=(reason,fields={})=>Object.assign(new ModuleError('INVALID_ARGUMENTS'),{reason,...fields});
 const unusable=reason=>Object.assign(new ModuleError('INVALID_MODULE'),{reason});
 const known=error=>error instanceof ModuleError?error:new ModuleError('CLI_FAILED',true);
@@ -173,7 +175,7 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
 
   const allowed=new Set();
   const bound=new Map();
-  let runtime,ids,start;
+  let runtime,ids,start,examples;
   const allowedOf=(id,op)=>op.effects.length===0||allowed.has(`${id}:${op.id}`);
   const deadlineOf=(id,operation)=>{
     const stated=bound.get(id)?.deadlines;
@@ -244,7 +246,7 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
     const short=op=>op.input?.example!==undefined&&sizeOf(op.input.example)<=512;
     const candidates=catalog.flatMap(described=>described.operations.map(op=>({module:described.id,op})));
     const chosen=candidates.find(({op})=>op.effects.length===0&&short(op))??candidates[0];
-    const examples={
+    examples={
       inspect:{id:'1',method:'inspect'},
       activate:{id:'2',method:'activate',module:chosen.module},
       invoke:{id:'3',method:'invoke',module:chosen.module,operation:chosen.op.id,...(short(chosen.op)?{input:chosen.op.input.example}:{})},
@@ -279,7 +281,9 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
   const accept=(request,state,result,notEstablished)=>answer(request,state,{outcome:'returned',result,not_established:[...notEstablished]});
   function refuse(request,error,state=null){
     const problem=buildProblem(error,{session:true,moduleIds:ids,state});
-    return answer(request,state,{error:errorProjection(error,problem.retryable),problem,not_established:failureNotEstablished(error)});
+    // A terminal problem suggests nothing, so what it leaves open is a later session, not a next action.
+    const open=failureNotEstablished(error).map(line=>problem.terminal&&line===NEXT_ACTION_LINE?TERMINAL_LINE:line);
+    return answer(request,state,{error:errorProjection(error,problem.retryable),problem,not_established:open});
   }
 
   // ---- calls past their deadline ----
@@ -292,7 +296,8 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
   }
   const sessionView=()=>({kind:'session',
     modules:runtime.catalog().map(described=>({id:described.id,state:described.state,revision:described.revision,in_flight:described.in_flight,build:buildOf(described.id)})),
-    allow:[...allowed].sort(),late:lateView(),lines:{...counts},requests:Object.fromEntries(REQUEST_METHODS.map(method=>[method,fieldsOf(method)])),limits:limitsView()});
+    allow:[...allowed].sort(),late:lateView(),lines:{...counts},requests:Object.fromEntries(REQUEST_METHODS.map(method=>[method,fieldsOf(method)])),
+    request_fields:{...REQUEST_FIELDS},examples:structuredClone(examples),limits:limitsView()});
   // What a binding holds in memory, when it can be shown: bounded JSON data, within the size one inspect line leaves for it.
   function lookOf(binding){
     let value,copy;
@@ -337,7 +342,8 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
         throw Object.assign(new ModuleError('INVALID_REQUEST',false,{module:id,module_version:before.version,module_revision:before.revision}),{reason:'resume_needs_paused'});
       }
       const after=method==='pause'?runtime.pause(id):method==='retire'?runtime.retire(id):runtime.activate(id);
-      return accept(request,after.state,{from:before.state,to:after.state,...(method==='retire'?{in_flight:after.in_flight}:{})},NOT_ESTABLISHED.lifecycle);
+      return accept(request,after.state,{from:before.state,to:after.state,...(method==='retire'?{in_flight:after.in_flight}:{}),
+        ...(method==='retire'&&bound.has(id)?{binding_closes:'at_session_end'}:{})},NOT_ESTABLISHED.lifecycle);
     }catch(failure){return refuse(request,known(failure),stateOf(id));}
   }
   async function invoke(request){

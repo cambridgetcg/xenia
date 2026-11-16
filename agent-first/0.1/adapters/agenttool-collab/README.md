@@ -58,7 +58,7 @@ From step 2 on, with that one exception, a failure is not a refusal: it is answe
 | `open` | local-read, local-write | The steps above, once for each binding. |
 | `status` | local-read | Task counts and the active native sessions of the workspace. |
 | `task-get` | local-read | One task: its status, version and lease. |
-| `next` | local-read, local-write | The next page of journal events after the session's cursor. It does not acknowledge; the backend stamps the session as seen, which is why it declares a write. |
+| `next` | local-read, local-write | The next page of journal events after the session's cursor. It does not acknowledge; as read in the pinned bundle, the backend stamps the session as seen, which is why it declares a write. |
 | `acknowledge` | local-read, local-write | Moves the session's cursor to the anchor of the page this binding last read, and no other. |
 | `report` | local-read, local-write | Appends one observation, inference or proposal. A decision cannot be sent from here. |
 | `task-create` | local-read, local-write | Appends one coordination task. |
@@ -104,7 +104,7 @@ Everything else that fails after a call was sent is answered `OPERATION_FAILED` 
 
 The module's row in `session_start` carries `at_end`, so a caller reads it before sending anything: what the binding writes when the session ends, without the gate being asked.
 
-- If `open` returned, the backend is still running and no call has an outcome that is unknown or still pending, the binding reads each task it has claimed and releases the claim, then ends its native session, which removes that session's credential file. A release the backend does not confirm stops it there: the session is not ended, and the task is named as left.
+- If `open` returned, the backend is still running and no call has an outcome that is unknown or still pending, the binding reads each task it has claimed and releases the claim, then ends its native session; as read in the pinned bundle, ending it removes that session's credential file. A release the backend does not confirm stops it there: the session is not ended, and the task is named as left.
 - Otherwise it sends nothing.
 - In every case a backend process that was started is closed, and the copy of the bundle under `homeDir` is removed.
 

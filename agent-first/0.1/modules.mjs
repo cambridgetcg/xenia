@@ -12,7 +12,11 @@ import {Decline,DETAIL_LIMIT} from './runtime.mjs';
 const invalidInput=[{code:'invalid_input',effect:'not_applied',
   meaning:'The existing Xenia function rejected this input. Nothing was produced or changed.',
   next:'Fix the input using the detail, or read the example on the operation\'s card: explain <module-id> at the command line, inspect in a session.'}];
-const native=(fn,input)=>{
+// The Surface and Covenant cards ask for one JSON object. Anything else is refused here, in the kit's words, before
+// the native function sees it: given null, the Covenant generator would answer with the engine's own text.
+const NOT_AN_OBJECT='The input is not one JSON object. In a session, a request that leaves out input sends null.';
+const native=(fn,input,{object=false}={})=>{
+  if(object&&(input===null||typeof input!=='object'||Array.isArray(input)))throw new Decline('invalid_input',NOT_AN_OBJECT);
   try{return fn(input);}
   catch(error){
     const message=typeof error?.message==='string'?error.message.slice(0,DETAIL_LIMIT):undefined;
@@ -30,7 +34,7 @@ export function createXeniaModules() {
         input:{summary:'One JSON object: service {name, canonicalUrl, description} and resources [{id, href}].',
           example:{service:{name:'Local example',canonicalUrl:'https://example.com/',description:'An unserved reference example.'},resources:[{id:'about',href:'https://example.com/about'}]}},
         returns:{summary:'One JSON object: a Surface 0.1 manifest (schema_version xenia.surface.manifest/0.1) built from the definition, with the builder\'s defaults filled in. It is built here; nothing is served, published or observed.'},
-        async run(input){const {defineSurfaceManifest}=await import('../../dist/surface-0.1.js');return native(defineSurfaceManifest,input);}}},
+        async run(input){const {defineSurfaceManifest}=await import('../../dist/surface-0.1.js');return native(defineSurfaceManifest,input,{object:true});}}},
     },
     {
       id:'xenia.covenant',version:'0.1.0-dev.0',contract:'xenia.module.covenant/0.1-development',
@@ -41,7 +45,7 @@ export function createXeniaModules() {
         input:{summary:'One JSON object: hostName, canonicalUrl, speakerId and reviewedAt (an RFC 3339 time).',
           example:{hostName:'Local example',canonicalUrl:'https://example.com/',speakerId:'https://example.com/#operator',reviewedAt:'2026-10-09T00:00:00Z'}},
         returns:{summary:'One JSON object: a Covenant 0.1 adoption record (schema_version xenia.covenant.adoption/0.1) with declaration.status draft, every duty outcome unknown and release verification unverified. It is a draft to review, not an adoption.'},
-        async run(input){const {createUnknownCovenantAdoption}=await import('../../covenant/0.1/create-adoption.mjs');return native(createUnknownCovenantAdoption,input);}}},
+        async run(input){const {createUnknownCovenantAdoption}=await import('../../covenant/0.1/create-adoption.mjs');return native(createUnknownCovenantAdoption,input,{object:true});}}},
     },
     {
       id:'xenia.work',version:'0.1.0-dev.0',contract:'xenia.module.work/0.1-development',

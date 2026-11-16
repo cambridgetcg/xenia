@@ -202,6 +202,13 @@ test('the note about the other lineage says where it is kept, that it is superse
     assert.ok(note.includes(revision),`the note gives ${revision.slice(0,7)} in full`);
     if(git(['cat-file','-e',`${revision}^{commit}`]).status!==0)continue;
     for(const name of holds)assert.equal(git(['cat-file','-e',`${revision}:${name}`]).status,0,`${revision.slice(0,7)} holds ${name}`);
+    // The fork dropped the motif atlas and declares one effect fewer on its card; the note says so.
+    if(revision.startsWith('4119d4d')){
+      for(const name of ['modules/0.1/motifs.json','MOTIFS.md'])assert.notEqual(git(['cat-file','-e',`${revision}:${name}`]).status,0,`the fork has no ${name}`);
+      const effects=rev=>JSON.parse(git(['show',`${rev}:modules/0.1/adapters/agenttool-collab/module.json`]).stdout).descriptor.effects.length;
+      assert.equal(effects(revision),effects('beed37ac9b1d8282c8566aa657572578d953ffc6')-1);
+      assert.match(note,/without `motifs\.json` and `MOTIFS\.md`/);assert.match(note,/one effect fewer/);
+    }
     const scripts=JSON.parse(git(['show',`${revision}:package.json`]).stdout).scripts;
     assert.equal(scripts['xenia:modules'],'node modules/0.1/cli.mjs');assert.ok(Object.hasOwn(scripts,'test:modules'));
     // The stdio port: below its header comment, this branch's file is that commit's file.

@@ -77,7 +77,7 @@ function describeCard(meta){
     module:{id:meta.id,version:meta.version,contract:meta.contract,title:meta.title,description:meta.description,source:meta.source,
       operations:Object.entries(card.operations).map(([id,op])=>({id,...structuredClone(op)}))},
     refusals_note:card.refusals_note,refusals:structuredClone(card.refusals),
-    ...(card.backend_reading===undefined?{}:{backend_reading:structuredClone(card.backend_reading)}),card_file:meta.card_file,origin:card.origin,license:card.license,
+    ...(card.backend_reading===undefined?{}:{backend_reading:structuredClone(card.backend_reading)}),card_file:meta.card_file,origin:card.origin,...(card.lineage_note===undefined?{}:{lineage_note:structuredClone(card.lineage_note)}),license:card.license,
     interpretation:'This is the adapter\'s card, read as data: nothing was imported, bound, started or activated. State and revision exist only once a session binds the module; from then on the runtime holds each input to the schema on the operation\'s card. `does`, every meaning and every place under `sites` are the adapter author\'s statements, which nothing here checks: no command reads the backend\'s bundle.',
     not_established:[...(Array.isArray(card.not_established)?card.not_established:[]),'that a session has bound this module','that what the card says the backend does is what a given backend does']};
 }
