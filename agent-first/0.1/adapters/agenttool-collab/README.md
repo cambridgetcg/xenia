@@ -5,7 +5,7 @@
 
 | File | What it is |
 |---|---|
-| [card.json](card.json) | The module's card, as data (CC BY-SA 4.0): each operation's input schema, example, what comes back, refusals and a `does` list; the config keys; the limits; what the end writes. The adapter builds its module from this file, and `catalog` and `explain` read the same file. |
+| [card.json](card.json) | The module's card, as data (CC BY-SA 4.0): each operation's input schema, example, what comes back, refusals and a `does` list; the config keys; the limits; what the end writes; and `backend_reading`, how the backend's refusals were read. The adapter builds its module from this file, and `catalog` and `explain` read the same file. |
 | [index.mjs](index.mjs) | The adapter (MPL-2.0): the config check, `open`, the eight other operations, what the binding remembers, and the end. |
 | [stdio.mjs](stdio.mjs) | The bounded JSON-RPC port the adapter speaks through (MPL-2.0). |
 
@@ -72,7 +72,27 @@ Each operation's card carries a closed input schema, tightened to the backend's 
 A refusal is declared (`DECLINED`, `not_applied`) only in two cases.
 
 - **The adapter's own, raised before anything is sent**: the seven `open` refusals above and `already_open`; `not_open`; `busy` (one call at a time); `backend_not_running`; `earlier_outcome_unknown` (writes only); `unobserved_anchor`; `lease_not_held_by_module`; `lease_limit`; `text_too_long`; `request_too_large`. Each operation lists the codes it can answer with, and the card words each code once.
-- **The backend's**, only when the card lists the code for that operation, the answer has the plain refusal shape, and the key a success carries is not in it. **The card lists none yet.** Which of the backend's refusals leave the journal untouched has to be read in the pinned bundle, site by site, and that reading is not done.
+- **The backend's**, only when the card lists the code for that operation, the answer has the plain refusal shape, and the key a success carries is not in it.
+
+**Which of the backend's refusals are listed is a reading, not an observation.** The pinned bundle was read as text, and never run. For each operation, the tool it calls and each candidate code, every place that can raise the code was looked for, called as this adapter calls the tool: after `open`, in a bound native session, with no `actor` argument. A code is listed only when every such place comes before the commit of the journal change. The card keeps the result with each entry, as `sites` (the raising line and its stage), and says how it was read under `backend_reading`; the full table, with the lines each place is reached through and what was left out, is in [the record for this step](../../../../.hermes/verification/guest-side-step5.json).
+
+| Operation | Tool | Codes passed on |
+|---|---|---|
+| `acknowledge` | `collab_cursor_ack` | `cursor_version_conflict`, `session_auth_failed` |
+| `report` | `collab_report_append` | `idempotency_conflict`, `session_auth_failed`, `task_not_found` |
+| `task-create` | `collab_task_create` | `idempotency_conflict`, `session_auth_failed` |
+| `task-get` | `collab_task_get` | `task_not_found` |
+| `task-claim` | `collab_task_claim` | `idempotency_conflict`, `recovery_required`, `session_auth_failed`, `task_blocked`, `task_claimed`, `task_completed`, `task_not_found`, `version_conflict` |
+| `task-release` | `collab_task_release` | `idempotency_conflict`, `lease_expired`, `lease_not_active`, `lease_not_holder`, `session_auth_failed`, `task_not_found`, `version_conflict` |
+| `open`, `status`, `next` | | none |
+
+What the reading found that a caller should know:
+
+- **Most places are inside a transaction, after its first write.** The tool writes a guard row, then checks, then raises. That nothing of it stays rests on the rollback, which is done by the Bun program's SQLite binding. That binding is not in the bundle, and Bun is not pinned. Each meaning says so.
+- **A claim runs git before most of its refusals.** Each `task-claim` meaning says the backend had run git, or may have.
+- **`next` passes nothing on.** Its tool checks the session twice, and the second check comes after its first transaction has committed. So a session the backend no longer accepts is `session_auth_failed`, declined, on the other writes, and unknown on `next`, after which the binding sends no more writes.
+- **An answer with the refusal shape can come after a commit.** Read in the bundle: after a write commits, the backend tightens file modes, and after an acknowledgement it rewrites the credential file; a failure there is answered like any refusal, with a code of its own. This is why the shape alone is never enough, and why a code the card does not list stays unknown.
+- **A refused release leaves the claim in `look.claims`**, where it still counts toward the 4. Once a lease has run out the backend refuses its release (`lease_expired`) and this adapter has no recover; at the end of the session the release is sent once more, and the end is reported as not complete.
 
 Everything else that fails after a call was sent is answered `OPERATION_FAILED` with an unknown effect: a refusal the card does not list, a JSON-RPC error, an answer that cannot be read, a frame over 1 MiB, a backend that ends or does not answer within `timeoutMs`. After such a failure of a write the binding sends no more writes, and never sends that one again. A read that fails latches nothing. `status`, `task-get` and `inspect` stay available while the backend runs, so a caller can read what the journal holds before deciding anything. Nothing the backend wrote in a refusal or an error is passed on.
 
@@ -93,14 +113,15 @@ The module's row in `session_start` carries `at_end`, so a caller reads it befor
 ## Not established
 
 - That the adapter works with the real bundle. Every test runs a stand-in backend written in this repository ([tests/fixtures/agent-first-collab-standin.cjs](../../../../tests/fixtures/agent-first-collab-standin.cjs)), which was written from a reading of the pinned bundle and never checked against it.
-- That a refusal marked `not_applied` was observed to change nothing. For the adapter's own refusals it is how the code is written.
+- That a refusal marked `not_applied` was observed to change nothing. For the adapter's own refusals it is how the code is written. For the backend's it was read in the pinned bundle, by hand: a place that was missed could make a written change read as not applied, and no test here can find such a miss, because none reads the bundle.
+- That the backend undoes what a refused call had begun. That is left to the Bun program at `bunPath`.
 - That Bun or git is a particular program or version: the file at `bunPath` and the git on `PATH` are run as they are found.
 - That a deadline or a timeout stops code.
 - Anything about who is calling, or whether they may. The adapter is not an operating-system sandbox: the backend is local code that runs with this user's rights.
 
 ## Where it came from
 
-The adapter, the card and the port come from this project's other lineage: `modules/0.1/adapters/agenttool-collab/` at `origin/hermes/agent-first-modules` (beed37a), with the same adapter and port bytes at `origin/hermes/agent-first-modules-compose` (4119d4d). Same project, same licence map.
+The adapter, the card and the port come from this project's other lineage: `modules/0.1/adapters/agenttool-collab/` at `origin/hermes/agent-first-modules` (beed37a), with the same adapter and port bytes at `origin/hermes/agent-first-modules-compose` (4119d4d). Same project, same licence map. What else that lineage held, and what was not carried over, is in [LINEAGE.md](../../LINEAGE.md).
 
 - [stdio.mjs](stdio.mjs) is that lineage's file, unchanged below its header comment, and [tests/agent-first-collab-stdio.test.mjs](../../../../tests/agent-first-collab-stdio.test.mjs) is its test file with only the import path changed.
 - [index.mjs](index.mjs) is a port of `adapter.mjs`. Carried over: the digest check before use; the private read-only copy of the checked bytes; the Bun flags and the short environment; the `initialize` and `tools/list` handshake; the task view; the rule that only an observed anchor is acknowledged; the remembered leases; release-then-end at the end. Changed: it runs on the kit runtime; its input checks are the schemas on the card; the digest and the server version come from the kit's lock and not from the caller; the refusal handling above; the copy of the bundle is removed at the end.

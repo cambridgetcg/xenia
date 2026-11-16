@@ -217,7 +217,8 @@ export const COMMANDS={
       'A line that is not a usable request is answered INVALID_REQUEST with a reason, or with a pointer, a keyword and what the form expects there; the line itself is never repeated. A line over 1 MiB (1048576 bytes) is discarded unread and answered the same way. A blank line is counted and not answered.',
       'The gate is default-deny. An operation that declares no effects is not gated; one that declares effects runs only when --allow names it, as <module-id>:<operation-id>, with entries separated by commas. The list is fixed at the start, and an entry that names no operation declaring effects refuses the start. The three core operations declare no effects, so without --collab-config --allow has nothing to name.',
       '--collab-config <absolute-file> binds one more module, agenttool.collab: tasks, claims, reports and an event page in one AgentTool Collab journal on this device, through a backend process that its `open` operation starts. The file is a regular file of at most 16384 bytes, valid UTF-8, one JSON object with no repeated key, and it names every path; `explain agenttool.collab` lists its keys. Which bundle may run is not the caller\'s to state: the pin in agent-first/0.1/agenttool.lock.json names it by sha256, and `open` compares the file with the pin before anything is copied or started. Binding starts nothing and writes nothing. Every operation of the module declares effects, so each runs only when --allow names it.',
-      'A bound module shows more. Its row in session_start has `at_end`: the writes its end makes without asking the gate. For agenttool.collab these are the release of each claim the binding still holds and the end of its native session, and only when the backend is still running and no call has an outcome that is unknown or still pending. `inspect` of the module adds `look`, what the binding holds in memory (the step open reached, whether the backend process was running when last asked, calls whose outcome is unknown, claims, the last page read), and `bound_to`: the paths and the actor from the config, and the sha256 of the config file. A write whose outcome is not known is never sent again, and the binding then sends no more writes; status, task-get and inspect stay available while the backend runs.',
+      'A bound module shows more. Its row in session_start has `at_end`: the writes its end makes without asking the gate. For agenttool.collab these are the release of each claim the binding still holds and the end of its native session, and only when the backend is still running and no call has an outcome that is unknown or still pending. `inspect` of the module adds `look`, what the binding holds in memory (the step open reached, whether the backend process was running when last asked, calls whose outcome is unknown, claims, the last page read), and `bound_to`: the paths and the actor from the config, and the sha256 of the config file.',
+      'What agenttool.collab answers when the backend refuses: DECLINED, with the effect not_applied, only for the codes the operation\'s card lists. Which codes those are was read in the text of the pinned bundle, place by place, and never observed; `explain agenttool.collab` shows the places under backend_refusals and backend_reading. Any other failed write is OPERATION_FAILED with an unknown effect. A write whose outcome is not known is never sent again, and the binding then sends no more writes; status, task-get and inspect stay available while the backend runs.',
       'A call has a deadline: 10 seconds, unless the request sets deadline_ms (1 to 30000) or a bound module states another default for the operation. At the deadline the call is answered DEADLINE_EXCEEDED: it had started, and whether it changed anything is not known. The deadline ends the wait; it does not stop the handler, which runs on. `inspect` lists such calls under `late` with how each settled (pending, returned, declined, failed), and no late result is kept. The deadline is a timer in the same process: a handler that keeps the process busy without yielding is answered only when it lets go.',
       'Inside a session a problem is terminal, or its next_actions are requests for the same session ({request, needs, why}) and never a command line. `needs: ["id"]` means the sender adds an id.',
       'Without the Xenia build, a call to xenia.surface or xenia.work is answered BUILD_REQUIRED before anything starts; session_start shows `build` for each module.',
@@ -398,6 +399,19 @@ const cardAction=(error,ctx)=>ctx.moduleIds?.includes(error.module)?
   {argv:['explain',error.module],why:'Read the operation\'s card: what to send, an example, and the schema the input is held to.'}:
   {argv:['catalog'],why:'List the registered modules, each operation with its card.'};
 
+// What a problem's detail keeps of a refusal's meaning, which is the card's own text and can be 512 characters long:
+// its whole sentences, as many as fit in 200 characters, and never half of one. When the first sentence alone does
+// not fit, its first 199 characters and a mark. Whenever something is left out the detail says where the whole is;
+// the meaning itself is always on the same output, as error.refusal.meaning. A full stop inside a name
+// (agenttool.lock.json) is not the end of a sentence: only one that is followed by a space is.
+function declinedWords(meaning){
+  if(typeof meaning!=='string'||!meaning)return 'The operation declined before any change.';
+  const lead='The operation declined before any change: ';
+  if(meaning.length<=200)return `${lead}${meaning.replace(/\.$/,'')}.`;
+  const ends=[...meaning.slice(0,200).matchAll(/[.!?](?= )/g)].map(match=>match.index+1);
+  const kept=ends.length?meaning.slice(0,ends.at(-1)):`${meaning.slice(0,199)}…`;
+  return `${lead}${kept} The whole meaning is in error.refusal.meaning.`;
+}
 const REFUSALS={
   write_conflict:{text:'The handoff file changed since the hash you gave, so it was not replaced. Read the current hash, then repeat with it as --expect.',
     next:(e,c)=>contextAction(c,'status','Read the current handoff hash.')},
@@ -541,7 +555,7 @@ const TABLE={
   DECLINED:(e,c)=>{
     const r=e.refusal??{},known=REFUSALS[r.code];
     const prior=e.effect_outcome==='unknown';
-    const base=known?(typeof known.text==='function'?known.text(e,c):known.text):`The operation declined before any change${r.meaning?`: ${String(r.meaning).slice(0,200)}`:''}.`;
+    const base=known?(typeof known.text==='function'?known.text(e,c):known.text):declinedWords(r.meaning);
     const lead=prior?'Earlier operations in this command had already returned, so the overall effect is unknown; the refusal itself applied no change. ':'';
     const extra=typeof r.detail==='string'&&r.detail?` Reported: ${r.detail.slice(0,200)}`:'';
     const out={detail:lead+base+extra,retryable:Boolean(known?.retryable)};
@@ -608,9 +622,7 @@ const SESSION_TABLE={
   DECLINED:(e,c)=>{
     const r=e.refusal??{};
     const extra=typeof r.detail==='string'&&r.detail?` Reported: ${r.detail.slice(0,200)}`:'';
-    // The meaning is the card's own sentence; its closing full stop is not written twice.
-    const meaning=r.meaning?`: ${String(r.meaning).slice(0,200).replace(/\.$/,'')}`:'';
-    return {detail:`The operation declined before any change${meaning}.${extra}`,
+    return {detail:`${declinedWords(r.meaning)}${extra}`,
       next:[askCard(e,c,'Read the operation\'s card and the refusals it declares.')]};
   },
   BUILD_REQUIRED:()=>({detail:'This operation needs the compiled Xenia library and its development dependencies, which are not present. Nothing was started, and no request in this session supplies them. Outside the session, from the Xenia checkout: `npm ci --ignore-scripts`, then `npm run build`.',terminal:true}),

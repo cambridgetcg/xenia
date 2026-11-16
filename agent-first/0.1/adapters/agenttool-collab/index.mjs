@@ -114,6 +114,13 @@ const OPERATIONS=Object.freeze({
 const sorted=list=>[...list].sort();
 const sameList=(a,b)=>a.length===b.length&&a.every((item,index)=>item===b[index]);
 const words=(value,max)=>typeof value==='string'&&value.length>0&&value.length<=max;
+// A refusal of the backend's is on the card only together with the places it was read at in the pinned bundle
+// (card.backend_reading says how). One place: the line that raises the code, and where that is relative to the
+// journal change. Here the shape is checked, so that a code cannot be listed without its places; whether the places
+// are right is the reading's to answer for, and nothing in this file can check it. There is no stage for a place
+// after a commit: a code with such a place is not listed.
+const SITE_STAGES=Object.freeze(['no_transaction','before_transaction','in_transaction_before_write','in_transaction_after_write']);
+const isSite=site=>record(site)&&Object.keys(site).length===2&&Number.isSafeInteger(site.line)&&site.line>=1&&SITE_STAGES.includes(site.stage);
 // The module definition the runtime registers: the card without its card-only parts (`does`, a refusal's `sites`),
 // with the adapter's own refusals worded from the card's table and each operation's handler attached.
 function definitionFrom(card,handlers){
@@ -132,11 +139,14 @@ function definitionFrom(card,handlers){
       if(!record(entry)||!words(entry.meaning,512)||!words(entry.next,512))throw unusable();
       refusals.push({code,meaning:entry.meaning,effect:'not_applied',next:entry.next});
     }
-    // A refusal of the backend's: listed per operation, with a meaning of its own. Its code is never one of the adapter's.
+    // A refusal of the backend's: listed per operation, with a meaning of its own and the places it was read at.
+    // Its code is never one of the adapter's. Only code, meaning and next go on to the runtime.
     const seen=new Set(spec.own);
     for(const entry of op.backend_refusals){
-      if(!record(entry)||typeof entry.code!=='string'||!/^[a-z][a-z0-9_]*$/.test(entry.code)||entry.code.length>64||seen.has(entry.code)||
-        !words(entry.meaning,512)||(entry.next!==undefined&&!words(entry.next,512)))throw unusable();
+      if(!record(entry)||Object.keys(entry).some(key=>!['code','meaning','next','sites'].includes(key))||
+        typeof entry.code!=='string'||!/^[a-z][a-z0-9_]*$/.test(entry.code)||entry.code.length>64||seen.has(entry.code)||
+        !words(entry.meaning,512)||(entry.next!==undefined&&!words(entry.next,512))||
+        !Array.isArray(entry.sites)||entry.sites.length<1||entry.sites.length>16||!entry.sites.every(isSite))throw unusable();
       seen.add(entry.code);
       refusals.push({code:entry.code,meaning:entry.meaning,effect:'not_applied',...(entry.next===undefined?{}:{next:entry.next})});
     }

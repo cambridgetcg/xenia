@@ -168,6 +168,30 @@ test('declined results name the refusal, not_applied, and a next action specific
   assert.match(later.detail,/unknown/i);
 });
 
+test('a declined result keeps whole sentences of a long meaning, never half of one, and says where the rest is',()=>{
+  const first='The backend answered version_conflict: the task\'s version is not the expected_version that was sent.';
+  const second='Read in the pinned bundle, not observed: every place this call can raise the code comes before the journal change is committed.';
+  const long=`${first} ${second} Undoing what the call had begun is left to the Bun program, which is not pinned.`;
+  assert.ok(first.length<200&&`${first} ${second}`.length>200&&long.length<=512);
+  const decline=(meaning,ctx)=>buildProblem(synthetic('DECLINED',{operation_started:true,effect_outcome:'not_applied',module:'agenttool.collab',operation:'task-claim',
+    refusal:{code:'a_code_the_door_has_no_words_for',meaning}}),ctx);
+  for(const ctx of [{session:true,moduleIds:['agenttool.collab'],state:'active'},{argv:['invoke','x','y']}]){
+    const at=ctx.session?'in a session':'at the command line';
+    // Short: the whole meaning, as before, with one full stop.
+    assert.equal(decline('Nothing was sent.',ctx).detail,'The operation declined before any change: Nothing was sent.',at);
+    // Long: the sentences that fit in 200 characters, whole, and a pointer to the rest.
+    const {detail}=decline(long,ctx);
+    assert.equal(detail,`The operation declined before any change: ${first} The whole meaning is in error.refusal.meaning.`,at);
+    assert.equal(detail.includes('comes before the'),false,`${at}: no half sentence`);
+    // A name with dots in it is not taken for the end of a sentence.
+    const dotted=`${'The file agenttool.lock.json names it by collab.bundle_sha256, and a longer first clause follows here so that the end of this sentence falls past the limit of two hundred characters, which is where it would be cut'}. Second.`;
+    const cut=decline(dotted,ctx).detail;
+    assert.ok(cut.startsWith('The operation declined before any change: The file agenttool.lock.json names it by collab.bundle_sha256'),at);
+    assert.match(cut,/… The whole meaning is in error\.refusal\.meaning\.$/,`${at}: a first sentence that does not fit is cut and marked`);
+    assert.ok(cut.length<330,at);
+  }
+});
+
 test('a missing build is BUILD_REQUIRED with the exact prepare commands and nothing started',()=>{
   const base=fs.mkdtempSync(path.join(fs.realpathSync(tmpdir()),'xenia-build-required-'));
   try{

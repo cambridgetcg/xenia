@@ -70,12 +70,15 @@ export const adapterRows=()=>ADAPTER_META.map(adapterRow);
 // operation are codes; the table beside the module words each code once.
 function describeCard(meta){
   const {card}=meta;
+  // The document is long, so what a caller has to supply and know first comes first: the config keys, the pin, the
+  // limits and what the end writes. The nine cards follow.
   return {bound:false,requires:meta.requires,bound_by:meta.bound_by,
+    config:structuredClone(card.config),pin:card.pin,limits:structuredClone(card.limits),at_end:structuredClone(card.at_end),
     module:{id:meta.id,version:meta.version,contract:meta.contract,title:meta.title,description:meta.description,source:meta.source,
       operations:Object.entries(card.operations).map(([id,op])=>({id,...structuredClone(op)}))},
-    config:structuredClone(card.config),pin:card.pin,limits:structuredClone(card.limits),at_end:structuredClone(card.at_end),
-    refusals_note:card.refusals_note,refusals:structuredClone(card.refusals),card_file:meta.card_file,origin:card.origin,license:card.license,
-    interpretation:'This is the adapter\'s card, read as data: nothing was imported, bound, started or activated. State and revision exist only once a session binds the module; from then on the runtime holds each input to the schema on the operation\'s card. `does` and every meaning are the adapter author\'s statements, which nothing here checks.',
+    refusals_note:card.refusals_note,refusals:structuredClone(card.refusals),
+    ...(card.backend_reading===undefined?{}:{backend_reading:structuredClone(card.backend_reading)}),card_file:meta.card_file,origin:card.origin,license:card.license,
+    interpretation:'This is the adapter\'s card, read as data: nothing was imported, bound, started or activated. State and revision exist only once a session binds the module; from then on the runtime holds each input to the schema on the operation\'s card. `does`, every meaning and every place under `sites` are the adapter author\'s statements, which nothing here checks: no command reads the backend\'s bundle.',
     not_established:[...(Array.isArray(card.not_established)?card.not_established:[]),'that a session has bound this module','that what the card says the backend does is what a given backend does']};
 }
 export function describeAdapter(id){

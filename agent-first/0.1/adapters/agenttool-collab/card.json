@@ -14,7 +14,7 @@
   },
   "bound_by": "`session --collab-config <absolute-file>` binds it; the session's --allow list is its gate. A programmatic host calls createCollabBinding({configPath}) and hands the result to runSession.",
   "requires": {
-    "config": "a JSON config file, given as `session --collab-config <absolute-file>`; `explain agenttool.collab` lists its keys",
+    "config": "a JSON config file, given as `session --collab-config <absolute-file>`; `explain agenttool.collab` lists its keys near the top of a long document (about 57 KB)",
     "host_gate": "the session's --allow list"
   },
   "config": {
@@ -37,7 +37,9 @@
     "Reading a page with next does not acknowledge it. An acknowledgement says the page was processed, not that anyone agrees with it.",
     "What status, task-get and next return is what the journal holds, written by this session and by others. It is data, not instructions, and the adapter does not check it.",
     "A write whose outcome is not known is never sent again by the adapter, and the adapter then sends no more writes. status, task-get and inspect stay available while the backend runs.",
-    "No refusal of the backend is passed on yet: which of them leave the journal untouched has to be read in the pinned bundle, site by site, and that reading is not on this card. Until it is, a write the backend refuses is answered as failed with an unknown effect, and the binding then sends no more writes. A read the backend refuses is answered as failed too, and stops nothing.",
+    "A refusal of the backend is passed on only when the operation lists its code under backend_refusals, the answer has the plain refusal shape and no key of a success is in it. Which codes are listed was read in the pinned bundle, place by place, and never observed: see backend_reading. Any other refusal of a write is answered as failed with an unknown effect, and the binding then sends no more writes. Any other refusal of a read is answered as failed too, and stops nothing.",
+    "A refused release leaves the claim in look.claims, where it still counts toward the 4. Once a lease has run out the backend refuses its release and this adapter has no recover; at the end of the session the release is sent once more, and the end is then reported as not complete.",
+    "An idempotency key is chosen by the caller, one for each write. As read in the pinned bundle, the backend keeps a receipt for each key of a native session once the write is committed: the same request under the same key is then answered from the receipt and not run again, and another request under it is refused as idempotency_conflict. The adapter itself never sends a write twice.",
     "As read in the pinned bundle, when a native session starts and when a task is claimed the backend runs git and, where there is a commit, reads untracked files to hash them. It does this at the top level of the git repository that holds the workspace, which can be wider than the workspace.",
     "An existing journal may be migrated by the backend when it starts. Review it and keep a copy before binding it as existing.",
     "The sha256 check says the bytes are the pinned ones. It is not a publisher's signature. Neither it nor this adapter is an operating-system sandbox: the backend is local code that runs with this user's rights.",
@@ -48,7 +50,7 @@
     "If a backend process was started, it is closed, and the copy of the bundle under homeDir is removed.",
     "The journal, its tasks and reports, the workspace and homeDir are not removed."
   ],
-  "refusals_note": "`refusals` here are raised by the adapter itself, before anything is sent to the backend: each operation lists the codes it can answer with, and the table gives each code its meaning and what to do next. `backend_refusals`, on an operation, are refusals of the backend that the adapter passes on; each carries its own meaning. Every one of both kinds is declared with the effect not_applied.",
+  "refusals_note": "`refusals` here are raised by the adapter itself, before anything is sent to the backend: each operation lists the codes it can answer with, and the table gives each code its meaning and what to do next. `backend_refusals`, on an operation, are refusals of the backend that the adapter passes on; each carries its own meaning and `sites`, the places in the pinned bundle where the tool was read to raise it. `sites` are on this card only: the runtime is not given them. Every one of both kinds is declared with the effect not_applied. For the adapter's own that is how its code is written; for the backend's it is a reading, not an observation.",
   "refusals": {
     "already_open": {
       "meaning": "open was already started in this binding (it returned, or it failed part-way), or the binding is closed. A binding opens once, so nothing more was started.",
@@ -119,9 +121,82 @@
       "next": "Choose an existing directory that is apart from homeDir and from the folder of databasePath. Where it is inside a git repository, keep homeDir and the journal outside that repository."
     }
   },
+  "backend_reading": {
+    "what": "Which refusals of the backend this adapter passes on, and why. It is a reading of the pinned bundle as text. The bundle was never run for it, so nothing here was observed.",
+    "bundle_sha256": "fdfd99b20fa21a69c368a8027bb972fd1a3509c8e5f90882c5742cd9ebe053cd",
+    "bundle_lines": 34073,
+    "rule": "A code is listed on an operation only when every place the tool can raise it, called as this adapter calls it (after open, in a bound native session, with no actor argument), comes before the commit of the journal change. A code with one place after a commit is not listed. Whatever is not listed is answered as failed with an unknown effect.",
+    "sites": "Each place is `line`, the line in the pinned bundle that raises the code, and `stage`, where that is relative to the journal change. The lines each place is reached through are in the record.",
+    "stages": {
+      "no_transaction": "The tool opens no transaction and runs no write statement on this path.",
+      "before_transaction": "Raised before the transaction that would change the journal begins.",
+      "in_transaction_before_write": "Raised inside that transaction, before its first write statement.",
+      "in_transaction_after_write": "Raised inside that transaction after a write statement it had not committed: the write-guard row (line 32745), and in a few places the row being changed. That nothing of it stays rests on the rollback."
+    },
+    "tools": {
+      "open": {
+        "tool": "collab_session_start",
+        "commit_line": null,
+        "note": "Not read for listing: no refusal of the session start is passed on."
+      },
+      "status": {
+        "tool": "collab_workspace_status",
+        "commit_line": null,
+        "note": "Opens no transaction; no candidate code is raised on its path."
+      },
+      "next": {
+        "tool": "collab_next",
+        "commit_line": 32435,
+        "note": "Two transactions: the first writes and commits at this line; the second (lines 32438 to 32471) reads, and checks the session again at line 32439."
+      },
+      "acknowledge": {
+        "tool": "collab_cursor_ack",
+        "commit_line": 31154,
+        "note": "After the commit the tool rewrites the session's credential file (line 28914); a failure there is answered as a refusal with a code this card does not list."
+      },
+      "report": {
+        "tool": "collab_report_append",
+        "commit_line": 32760
+      },
+      "task-create": {
+        "tool": "collab_task_create",
+        "commit_line": 32760
+      },
+      "task-get": {
+        "tool": "collab_task_get",
+        "commit_line": null,
+        "note": "Opens no transaction and does not check the native session."
+      },
+      "task-claim": {
+        "tool": "collab_task_claim",
+        "commit_line": 32760,
+        "note": "Runs git (line 32825, reached through 31367) before the transaction begins."
+      },
+      "task-release": {
+        "tool": "collab_task_release",
+        "commit_line": 32760
+      }
+    },
+    "left_unknown": [
+      "open: no refusal of the session start is passed on. By then the backend has opened the journal, and may have created or migrated it.",
+      "status: no candidate code is raised on its path. Any refusal is answered as failed, and stops nothing.",
+      "next: session_auth_failed is not passed on. The tool checks the session twice, and the second check (line 32439) comes after its first transaction has committed (line 32435).",
+      "task-create: task_not_found is not passed on. Called as this adapter calls the tool, it could come only from a re-read of the row the same transaction had just written.",
+      "Every code not listed on an operation: answered as failed with an unknown effect. Some are raised after the commit, among them database_sidecar_unsafe (line 30725) on every write and the credential-file codes (lines 28596 to 28645) on acknowledge."
+    ],
+    "record": ".hermes/verification/guest-side-step5.json",
+    "not_established": [
+      "that the backend behaves as its text reads: the bundle was read and never run",
+      "that a refused call leaves nothing in the journal where it had begun to write: the rollback is done by the SQLite binding of the Bun program, which is not in the bundle and is not pinned",
+      "that no other place raises a listed code on these paths: the calls were followed by hand, and a missed place could make a written change read as not applied",
+      "that these line numbers mean anything for bytes other than the pinned ones",
+      "what git or the file system did before a refusal: a claim runs git before most of its refusals"
+    ]
+  },
   "not_established": [
     "that the adapter works with the real bundle: every test runs against a stand-in backend written in this repository",
-    "that a refusal marked not_applied was observed to change nothing: for the adapter's own refusals it is how the code is written",
+    "that a refusal marked not_applied was observed to change nothing: for the adapter's own refusals it is how the code is written, and for the backend's it was read in the pinned bundle, which was never run",
+    "that the backend undoes what a refused call had begun: that is left to the SQLite binding of the Bun program at bunPath, which is not in the bundle and is not pinned",
     "that Bun or git is a particular program or version: the file at bunPath and the git on PATH are run as they are found",
     "that a deadline or a timeout keeps the backend from finishing a write",
     "anything about who is calling, or whether they may"
@@ -303,7 +378,38 @@
         "not_open",
         "unobserved_anchor"
       ],
-      "backend_refusals": [],
+      "backend_refusals": [
+        {
+          "code": "cursor_version_conflict",
+          "meaning": "The backend answered cursor_version_conflict: the session's cursor version is not the expected_cursor_version that was sent. Read in the pinned bundle, not observed: every place this call can raise the code comes before the journal change is committed. Undoing what the call had begun is left to the Bun program, which is not pinned.",
+          "next": "Invoke next again, then acknowledge the next_anchor and the cursor_version of that page.",
+          "sites": [
+            {
+              "line": 31138,
+              "stage": "in_transaction_before_write"
+            },
+            {
+              "line": 31151,
+              "stage": "in_transaction_after_write"
+            }
+          ]
+        },
+        {
+          "code": "session_auth_failed",
+          "meaning": "The backend answered session_auth_failed: it no longer accepts this binding's native session: the session is not active, or its credential is not the current one. Read in the pinned bundle, not observed: every place this call can raise the code comes before its first write to the journal.",
+          "next": "Each write of this binding goes through the same check; status and task-get do not, and stay available. A new session of this kit starts a new native session. The end of this one will be reported as not complete.",
+          "sites": [
+            {
+              "line": 32769,
+              "stage": "in_transaction_before_write"
+            },
+            {
+              "line": 32777,
+              "stage": "in_transaction_before_write"
+            }
+          ]
+        }
+      ],
       "does": [
         "Sends one collab_cursor_ack call, and only for the anchor and cursor version of the page this binding last read.",
         "As read in the pinned bundle, the backend moves this session's cursor to that anchor in the journal and rewrites the session's credential file. For an anchor at the cursor the session already has, the journal is left as it is."
@@ -378,7 +484,45 @@
         "request_too_large",
         "text_too_long"
       ],
-      "backend_refusals": [],
+      "backend_refusals": [
+        {
+          "code": "idempotency_conflict",
+          "meaning": "The backend answered idempotency_conflict: this native session has already used that idempotency key for a different request. Read in the pinned bundle, not observed: every place this call can raise the code comes before its first write to the journal.",
+          "next": "Send it with a key this native session has not used, if it is still wanted. The adapter does not show what the earlier use of the key did: read what the journal holds with status and task-get.",
+          "sites": [
+            {
+              "line": 32739,
+              "stage": "in_transaction_before_write"
+            }
+          ]
+        },
+        {
+          "code": "session_auth_failed",
+          "meaning": "The backend answered session_auth_failed: it no longer accepts this binding's native session: the session is not active, or its credential is not the current one. Read in the pinned bundle, not observed: every place this call can raise the code comes before its first write to the journal.",
+          "next": "Each write of this binding goes through the same check; status and task-get do not, and stay available. A new session of this kit starts a new native session. The end of this one will be reported as not complete.",
+          "sites": [
+            {
+              "line": 32769,
+              "stage": "in_transaction_before_write"
+            },
+            {
+              "line": 32777,
+              "stage": "in_transaction_before_write"
+            }
+          ]
+        },
+        {
+          "code": "task_not_found",
+          "meaning": "The backend answered task_not_found: the journal of this workspace holds no task with the task_id that was sent. Read in the pinned bundle, not observed: every place this call can raise the code comes before the journal change is committed. Undoing what the call had begun is left to the Bun program, which is not pinned.",
+          "next": "Check the id with task-get, or send the report without task_id.",
+          "sites": [
+            {
+              "line": 33419,
+              "stage": "in_transaction_after_write"
+            }
+          ]
+        }
+      ],
       "does": [
         "Sends one collab_report_append call. The adapter adds confidence unknown, no evidence references and the relation informs. A decision cannot be sent from here.",
         "The backend appends the report to the journal, where other sessions of the workspace can read it."
@@ -430,7 +574,34 @@
         "request_too_large",
         "text_too_long"
       ],
-      "backend_refusals": [],
+      "backend_refusals": [
+        {
+          "code": "idempotency_conflict",
+          "meaning": "The backend answered idempotency_conflict: this native session has already used that idempotency key for a different request. Read in the pinned bundle, not observed: every place this call can raise the code comes before its first write to the journal.",
+          "next": "Send it with a key this native session has not used, if it is still wanted. The adapter does not show what the earlier use of the key did: read what the journal holds with status and task-get.",
+          "sites": [
+            {
+              "line": 32739,
+              "stage": "in_transaction_before_write"
+            }
+          ]
+        },
+        {
+          "code": "session_auth_failed",
+          "meaning": "The backend answered session_auth_failed: it no longer accepts this binding's native session: the session is not active, or its credential is not the current one. Read in the pinned bundle, not observed: every place this call can raise the code comes before its first write to the journal.",
+          "next": "Each write of this binding goes through the same check; status and task-get do not, and stay available. A new session of this kit starts a new native session. The end of this one will be reported as not complete.",
+          "sites": [
+            {
+              "line": 32769,
+              "stage": "in_transaction_before_write"
+            },
+            {
+              "line": 32777,
+              "stage": "in_transaction_before_write"
+            }
+          ]
+        }
+      ],
       "does": [
         "Sends one collab_task_create call with the work mode coordination: a task to coordinate around, not one that edits files. The backend chooses the task id.",
         "The backend appends the task to the journal."
@@ -470,7 +641,19 @@
         "busy",
         "not_open"
       ],
-      "backend_refusals": [],
+      "backend_refusals": [
+        {
+          "code": "task_not_found",
+          "meaning": "The backend answered task_not_found: the journal of this workspace holds no task with that id. Read in the pinned bundle, not observed: on this path the tool opens no transaction and runs no write statement.",
+          "next": "Check the id. A task id comes back from task-create, and is in the events a page of next carries.",
+          "sites": [
+            {
+              "line": 33419,
+              "stage": "no_transaction"
+            }
+          ]
+        }
+      ],
       "does": [
         "Sends one collab_task_get call. As read in the pinned bundle, it reads the journal and writes nothing."
       ]
@@ -527,7 +710,112 @@
         "lease_limit",
         "not_open"
       ],
-      "backend_refusals": [],
+      "backend_refusals": [
+        {
+          "code": "idempotency_conflict",
+          "meaning": "The backend answered idempotency_conflict: this native session has already used that idempotency key for a different request. Read in the pinned bundle, not observed: every place this call can raise the code comes before its first write to the journal. By then the backend may have run git at the root it works at and, where there is a commit, read the untracked files there.",
+          "next": "Send it with a key this native session has not used, if it is still wanted. The adapter does not show what the earlier use of the key did: read what the journal holds with status and task-get.",
+          "sites": [
+            {
+              "line": 32720,
+              "stage": "before_transaction"
+            },
+            {
+              "line": 32739,
+              "stage": "in_transaction_before_write"
+            }
+          ]
+        },
+        {
+          "code": "recovery_required",
+          "meaning": "The backend answered recovery_required: the last claim on the task was a native session's and has run out, and the backend asks for an explicit recovery before a new claim. Read in the pinned bundle, not observed: every place this call can raise the code comes before the journal change is committed. Undoing what the call had begun is left to the Bun program, which is not pinned. By then the backend had run git at the root it works at and, where there is a commit, read the untracked files there.",
+          "next": "This adapter has no recover: the task needs the backend's own recover tool, outside this kit. task-get shows the task's effective_status.",
+          "sites": [
+            {
+              "line": 31373,
+              "stage": "in_transaction_after_write"
+            }
+          ]
+        },
+        {
+          "code": "session_auth_failed",
+          "meaning": "The backend answered session_auth_failed: it no longer accepts this binding's native session: the session is not active, or its credential is not the current one. Read in the pinned bundle, not observed: every place this call can raise the code comes before its first write to the journal. By then the backend may have run git at the root it works at and, where there is a commit, read the untracked files there.",
+          "next": "Each write of this binding goes through the same check; status and task-get do not, and stay available. A new session of this kit starts a new native session. The end of this one will be reported as not complete.",
+          "sites": [
+            {
+              "line": 32769,
+              "stage": "before_transaction"
+            },
+            {
+              "line": 32777,
+              "stage": "before_transaction"
+            },
+            {
+              "line": 32769,
+              "stage": "in_transaction_before_write"
+            },
+            {
+              "line": 32777,
+              "stage": "in_transaction_before_write"
+            }
+          ]
+        },
+        {
+          "code": "task_blocked",
+          "meaning": "The backend answered task_blocked: the task is blocked, and the backend asks for it to be unblocked before a claim. Read in the pinned bundle, not observed: every place this call can raise the code comes before the journal change is committed. Undoing what the call had begun is left to the Bun program, which is not pinned. By then the backend had run git at the root it works at and, where there is a commit, read the untracked files there.",
+          "next": "This adapter has no unblock: that is done with the backend's own tools, outside this kit. task-get shows the task's status.",
+          "sites": [
+            {
+              "line": 31383,
+              "stage": "in_transaction_after_write"
+            }
+          ]
+        },
+        {
+          "code": "task_claimed",
+          "meaning": "The backend answered task_claimed: the task already has a claim that has not run out. Read in the pinned bundle, not observed: every place this call can raise the code comes before the journal change is committed. Undoing what the call had begun is left to the Bun program, which is not pinned. By then the backend had run git at the root it works at and, where there is a commit, read the untracked files there.",
+          "next": "Read the task with task-get: lease_expires_at says when that claim runs out. This adapter cannot take a claim over.",
+          "sites": [
+            {
+              "line": 31388,
+              "stage": "in_transaction_after_write"
+            }
+          ]
+        },
+        {
+          "code": "task_completed",
+          "meaning": "The backend answered task_completed: the task is completed, and the backend does not let a completed task be claimed. Read in the pinned bundle, not observed: every place this call can raise the code comes before the journal change is committed. Undoing what the call had begun is left to the Bun program, which is not pinned. By then the backend had run git at the root it works at and, where there is a commit, read the untracked files there.",
+          "next": "Nothing more can be done with this task from here: this adapter has no operation that reopens one.",
+          "sites": [
+            {
+              "line": 31378,
+              "stage": "in_transaction_after_write"
+            }
+          ]
+        },
+        {
+          "code": "task_not_found",
+          "meaning": "The backend answered task_not_found: the journal of this workspace holds no task with that id. Read in the pinned bundle, not observed: every place this call can raise the code comes before the journal change is committed. Undoing what the call had begun is left to the Bun program, which is not pinned. By then the backend had run git at the root it works at and, where there is a commit, read the untracked files there.",
+          "next": "Check the id with task-get. Nothing was claimed.",
+          "sites": [
+            {
+              "line": 33419,
+              "stage": "in_transaction_after_write"
+            }
+          ]
+        },
+        {
+          "code": "version_conflict",
+          "meaning": "The backend answered version_conflict: the task's version is not the expected_version that was sent. Read in the pinned bundle, not observed: every place this call can raise the code comes before the journal change is committed. Undoing what the call had begun is left to the Bun program, which is not pinned. By then the backend had run git at the root it works at and, where there is a commit, read the untracked files there.",
+          "next": "Read the task with task-get and, if the claim is still wanted, send it with the version shown there, under a key not used before.",
+          "sites": [
+            {
+              "line": 33335,
+              "stage": "in_transaction_after_write"
+            }
+          ]
+        }
+      ],
       "does": [
         "Sends one collab_task_claim call with no lease length, so the backend's default applies: 900 seconds, as read in the pinned bundle. This adapter has no renew.",
         "As read in the pinned bundle, the backend first runs git at the root it took when the session started (the workspace, or the top level of the git repository that holds it) and, where there is a commit, reads the untracked files there to hash them; then it records the claim and a lease id in the journal.",
@@ -586,7 +874,89 @@
         "lease_not_held_by_module",
         "not_open"
       ],
-      "backend_refusals": [],
+      "backend_refusals": [
+        {
+          "code": "idempotency_conflict",
+          "meaning": "The backend answered idempotency_conflict: this native session has already used that idempotency key for a different request. Read in the pinned bundle, not observed: every place this call can raise the code comes before its first write to the journal.",
+          "next": "Send it with a key this native session has not used, if it is still wanted. The adapter does not show what the earlier use of the key did: read what the journal holds with status and task-get.",
+          "sites": [
+            {
+              "line": 32739,
+              "stage": "in_transaction_before_write"
+            }
+          ]
+        },
+        {
+          "code": "lease_expired",
+          "meaning": "The backend answered lease_expired: the lease on the task has run out, and the backend does not release a lease that has run out. Read in the pinned bundle, not observed: every place this call can raise the code comes before the journal change is committed. Undoing what the call had begun is left to the Bun program, which is not pinned.",
+          "next": "The task now needs the backend's own recover tool, outside this kit: this adapter has no recover. The binding still lists the task under look.claims, where it counts toward the 4 it keeps.",
+          "sites": [
+            {
+              "line": 33014,
+              "stage": "in_transaction_after_write"
+            }
+          ]
+        },
+        {
+          "code": "lease_not_active",
+          "meaning": "The backend answered lease_not_active: the task is not claimed, or carries no lease, so there is no lease to release. Read in the pinned bundle, not observed: every place this call can raise the code comes before the journal change is committed. Undoing what the call had begun is left to the Bun program, which is not pinned.",
+          "next": "Read the task with task-get. The binding still lists the task under look.claims; at the end of the session it reads the task first, and sends no release when the journal no longer shows its claim.",
+          "sites": [
+            {
+              "line": 33011,
+              "stage": "in_transaction_after_write"
+            }
+          ]
+        },
+        {
+          "code": "lease_not_holder",
+          "meaning": "The backend answered lease_not_holder: the task's lease is not the one this binding remembers, or belongs to another session. Read in the pinned bundle, not observed: every place this call can raise the code comes before the journal change is committed. Undoing what the call had begun is left to the Bun program, which is not pinned.",
+          "next": "Read the task with task-get. The binding still lists the task under look.claims; at the end of the session it reads the task first, and sends no release when the journal no longer shows its claim.",
+          "sites": [
+            {
+              "line": 33019,
+              "stage": "in_transaction_after_write"
+            }
+          ]
+        },
+        {
+          "code": "session_auth_failed",
+          "meaning": "The backend answered session_auth_failed: it no longer accepts this binding's native session: the session is not active, or its credential is not the current one. Read in the pinned bundle, not observed: every place this call can raise the code comes before its first write to the journal.",
+          "next": "Each write of this binding goes through the same check; status and task-get do not, and stay available. A new session of this kit starts a new native session. The end of this one will be reported as not complete.",
+          "sites": [
+            {
+              "line": 32769,
+              "stage": "in_transaction_before_write"
+            },
+            {
+              "line": 32777,
+              "stage": "in_transaction_before_write"
+            }
+          ]
+        },
+        {
+          "code": "task_not_found",
+          "meaning": "The backend answered task_not_found: the journal of this workspace holds no task with that id. Read in the pinned bundle, not observed: every place this call can raise the code comes before the journal change is committed. Undoing what the call had begun is left to the Bun program, which is not pinned.",
+          "next": "Read what the workspace holds with status. The binding still lists the task under look.claims until the session ends.",
+          "sites": [
+            {
+              "line": 33419,
+              "stage": "in_transaction_after_write"
+            }
+          ]
+        },
+        {
+          "code": "version_conflict",
+          "meaning": "The backend answered version_conflict: the task's version is not the expected_version that was sent. Read in the pinned bundle, not observed: every place this call can raise the code comes before the journal change is committed. Undoing what the call had begun is left to the Bun program, which is not pinned.",
+          "next": "Read the task with task-get and send the release with the version shown there, under a key not used before.",
+          "sites": [
+            {
+              "line": 33335,
+              "stage": "in_transaction_after_write"
+            }
+          ]
+        }
+      ],
       "does": [
         "Sends one collab_task_release call with the lease id this binding remembers for the task.",
         "The backend returns the task to open in the journal. It does not mark the task completed."

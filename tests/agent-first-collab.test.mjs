@@ -159,12 +159,16 @@ test('the card is data under CC BY-SA that says where it came from, and the runt
   for(const op of described.operations){
     assert.equal(op.input_checked_by,'runtime',op.id);
     assert.deepEqual(op.input.schema,card.operations[op.id].input.schema,op.id);
-    assert.deepEqual(op.refusals.map(r=>r.code),[...card.operations[op.id].refusals].sort(),op.id);
+    const own=card.operations[op.id].refusals,theirs=card.operations[op.id].backend_refusals;
+    assert.deepEqual(op.refusals.map(r=>r.code),[...own,...theirs.map(entry=>entry.code)].sort(),op.id);
     for(const refusal of op.refusals){
-      assert.deepEqual(refusal,{code:refusal.code,meaning:card.refusals[refusal.code].meaning,effect:'not_applied',next:card.refusals[refusal.code].next},op.id);
+      // The adapter's own are worded in the card's table; the backend's carry their own words. Neither carries the
+      // places a refusal was read at: `sites` stay on the card.
+      const worded=own.includes(refusal.code)?card.refusals[refusal.code]:theirs.find(entry=>entry.code===refusal.code);
+      assert.deepEqual(refusal,{code:refusal.code,meaning:worded.meaning,effect:'not_applied',next:worded.next},`${op.id} ${refusal.code}`);
     }
     // What the runtime holds is the card without its card-only parts.
-    assert.equal(op.does,undefined);assert.equal(op.backend_refusals,undefined);
+    assert.equal(op.does,undefined);assert.equal(op.backend_refusals,undefined);assert.equal(JSON.stringify(op).includes('"sites"'),false,op.id);
   }
   assert.deepEqual(fs.readdirSync(dirs.homeDir),[],'binding and registering wrote nothing');
   assert.equal(fs.existsSync(dirs.databasePath),false);
@@ -179,7 +183,7 @@ test('every card schema is also a strict JSON Schema, and Ajv agrees about each 
   }
 });
 
-test('each operation declares the refusals the adapter itself raises, and the card lists no backend refusal yet',()=>{
+test('each operation declares the refusals the adapter itself raises',()=>{
   const base=['backend_not_running','busy','not_open'];
   const expected={
     open:['already_open','bun_unavailable','bundle_unavailable','busy','home_dir_unavailable','journal_exists','journal_missing','pin_mismatch','workspace_unavailable'],
@@ -191,12 +195,109 @@ test('each operation declares the refusals the adapter itself raises, and the ca
     'task-claim':[...base,'earlier_outcome_unknown','lease_limit'].sort(),
     'task-release':[...base,'earlier_outcome_unknown','lease_not_held_by_module'].sort(),
   };
+  for(const id of OPS)assert.deepEqual([...card.operations[id].refusals].sort(),expected[id],id);
+});
+
+// Which of the backend's own refusals the card passes on, for each operation. This is the outcome of a reading of the
+// pinned bundle, site by site (the table is in .hermes/verification/guest-side-step5.json). The bundle is not in
+// this repository and no test reads it: what is held here is that the card, the record and the adapter agree.
+const LISTED=Object.freeze({
+  open:[],status:[],next:[],
+  acknowledge:['cursor_version_conflict','session_auth_failed'],
+  report:['idempotency_conflict','session_auth_failed','task_not_found'],
+  'task-create':['idempotency_conflict','session_auth_failed'],
+  'task-get':['task_not_found'],
+  'task-claim':['idempotency_conflict','recovery_required','session_auth_failed','task_blocked','task_claimed','task_completed','task_not_found','version_conflict'],
+  'task-release':['idempotency_conflict','lease_expired','lease_not_active','lease_not_holder','session_auth_failed','task_not_found','version_conflict'],
+});
+const CANDIDATES=['cursor_version_conflict','idempotency_conflict','lease_expired','lease_not_active','lease_not_holder','recovery_required','session_auth_failed',
+  'task_blocked','task_claimed','task_completed','task_not_found','version_conflict'];
+const STAGES=['before_transaction','in_transaction_after_write','in_transaction_before_write','no_transaction'];
+const TOOL_OF={open:'collab_session_start',status:'collab_workspace_status',next:'collab_next',acknowledge:'collab_cursor_ack',report:'collab_report_append',
+  'task-create':'collab_task_create','task-get':'collab_task_get','task-claim':'collab_task_claim','task-release':'collab_task_release'};
+const recordFile=new URL('../.hermes/verification/guest-side-step5.json',import.meta.url);
+
+test('the card lists a refusal of the backend only with the places it was read at, and says the reading was not an observation',()=>{
+  const reading=card.backend_reading;
+  assert.equal(reading.bundle_sha256,lock.collab.bundle_sha256,'the reading names the pinned bytes');
+  assert.ok(Number.isSafeInteger(reading.bundle_lines)&&reading.bundle_lines>30000);
+  assert.deepEqual(Object.keys(reading.stages).sort(),STAGES);
+  assert.match(reading.what,/never run/);
+  assert.ok(reading.not_established.some(line=>/rollback|rolls back|undo/i.test(line)&&/Bun/.test(line)),'the rollback is the Bun program\'s, and is named as not established');
+  assert.equal(reading.record,'.hermes/verification/guest-side-step5.json');
   for(const id of OPS){
-    assert.deepEqual([...card.operations[id].refusals].sort(),expected[id],id);
-    // Which of the backend's own refusals may be passed on as "nothing was written" is a reading of the pinned
-    // bundle that has not been done for this card yet. Until it is, the list is empty and every one stays unknown.
-    assert.deepEqual(card.operations[id].backend_refusals,[],id);
+    const op=card.operations[id];
+    assert.deepEqual(op.backend_refusals.map(entry=>entry.code),LISTED[id],`${id}: the codes, in order`);
+    assert.equal(reading.tools[id].tool,TOOL_OF[id],id);
+    for(const entry of op.backend_refusals){
+      const at=`${id} ${entry.code}`;
+      assert.deepEqual(Object.keys(entry).sort(),['code','meaning','next','sites'],at);
+      assert.ok(CANDIDATES.includes(entry.code),at);
+      assert.equal(op.refusals.includes(entry.code),false,`${at}: not one of the adapter's own codes`);
+      assert.ok(entry.meaning.length<=512&&entry.next.length<=512,`${at}: ${entry.meaning.length} and ${entry.next.length} characters`);
+      assert.ok(entry.meaning.startsWith(`The backend answered ${entry.code}: `),at);
+      // What a problem's detail keeps of a meaning is its first 200 characters: the code and what it means are in them.
+      assert.ok(entry.meaning.indexOf('. ')>0&&entry.meaning.indexOf('. ')<200,`${at}: the first sentence fits in 200 characters`);
+      assert.match(entry.meaning,/[Rr]ead in the pinned bundle, not observed/,at);
+      assert.doesNotMatch(entry.meaning,/guarantee|certain|always|never fails|safe\b/i,at);
+      if(id==='task-claim')assert.match(entry.meaning,/git/,`${at}: says the backend ran git, or may have`);
+      else assert.doesNotMatch(entry.meaning,/\bgit\b/,at);
+      assert.ok(Array.isArray(entry.sites)&&entry.sites.length>=1&&entry.sites.length<=16,at);
+      for(const site of entry.sites){
+        assert.deepEqual(Object.keys(site).sort(),['line','stage'],at);
+        assert.ok(Number.isSafeInteger(site.line)&&site.line>=1&&site.line<=reading.bundle_lines,`${at}: line ${site.line}`);
+        assert.ok(STAGES.includes(site.stage),`${at}: ${site.stage}`);
+        // Every place is before the commit the card names for the tool. A tool that opens no transaction has no commit line.
+        const commit=reading.tools[id].commit_line;
+        if(site.stage==='no_transaction')assert.equal(commit,null,at);
+        else assert.ok(Number.isSafeInteger(commit),at);
+      }
+      assert.equal(new Set(entry.sites.map(site=>JSON.stringify(site))).size,entry.sites.length,`${at}: no place twice`);
+    }
   }
+  // A read opens no transaction; a write is refused inside or before one.
+  assert.deepEqual(card.operations['task-get'].backend_refusals[0].sites.map(site=>site.stage),['no_transaction']);
+  for(const id of WRITES)for(const entry of card.operations[id].backend_refusals)assert.ok(entry.sites.every(site=>site.stage!=='no_transaction'),`${id} ${entry.code}`);
+  // What is left unknown is said on the card too, for the three operations that pass nothing on.
+  for(const id of ['open','status','next'])assert.ok(reading.left_unknown.some(line=>line.startsWith(`${id}: `)),id);
+  assert.ok(reading.left_unknown.some(line=>line.startsWith('next: ')&&/session_auth_failed/.test(line)&&/after/.test(line)));
+  assert.doesNotMatch(JSON.stringify(card),/\/Users\/|\/private\/|\/home\//,'no local path on the card');
+});
+
+test('the record of the reading and the card agree, row by row',()=>{
+  const record=JSON.parse(fs.readFileSync(recordFile,'utf8'));
+  const reading=record.refusal_reading;
+  assert.equal(reading.bundle.sha256,lock.collab.bundle_sha256);
+  assert.equal(reading.bundle.lines,card.backend_reading.bundle_lines);
+  assert.match(reading.method,/never run/);
+  const rows=reading.table;
+  const key=row=>`${row.operation} ${row.code}`;
+  assert.equal(new Set(rows.map(key)).size,rows.length,'one row for each operation and code');
+  for(const row of rows){
+    assert.equal(row.tool,TOOL_OF[row.operation],key(row));
+    assert.ok(CANDIDATES.includes(row.code),key(row));
+    assert.equal(typeof row.listed,'boolean',key(row));
+    const onCard=card.operations[row.operation].backend_refusals.find(entry=>entry.code===row.code);
+    if(row.listed){
+      assert.ok(onCard,`${key(row)}: listed in the record, so on the card`);
+      // The record keeps every way a place is reached; the card keeps each raising line once for each stage.
+      for(const site of row.sites){
+        assert.deepEqual(Object.keys(site).sort(),['line','stage','through'],key(row));
+        assert.ok(Array.isArray(site.through)&&site.through.length>=1&&site.through.every(line=>Number.isSafeInteger(line)&&line>=1&&line<=reading.bundle.lines),key(row));
+      }
+      const pairs=list=>[...new Set(list.map(site=>`${site.line} ${site.stage}`))].sort();
+      assert.deepEqual(pairs(row.sites),pairs(onCard.sites),`${key(row)}: the same places`);
+      assert.equal(row.commit_line,card.backend_reading.tools[row.operation].commit_line,`${key(row)}: the same commit line`);
+    }else{
+      assert.equal(onCard,undefined,`${key(row)}: not listed in the record, so not on the card`);
+      assert.ok(typeof row.why_not==='string'&&row.why_not.length>20,key(row));
+    }
+  }
+  // Every refusal on the card has its row, and every candidate code has at least one row.
+  for(const id of OPS)for(const entry of card.operations[id].backend_refusals)assert.ok(rows.some(row=>row.operation===id&&row.code===entry.code&&row.listed),`${id} ${entry.code}`);
+  for(const code of CANDIDATES)assert.ok(rows.some(row=>row.code===code),code);
+  assert.ok(rows.some(row=>row.operation==='next'&&row.code==='session_auth_failed'&&row.listed===false));
+  assert.ok(Array.isArray(reading.stays_unknown)&&reading.stays_unknown.length>=4);
 });
 
 test('a card that lists a refusal the adapter does not raise, or leaves one out, is refused when it is bound',()=>{
@@ -210,8 +311,24 @@ test('a card that lists a refusal the adapter does not raise, or leaves one out,
   refused('a refusal status does not raise',chosen=>chosen.operations.status.refusals.push('lease_limit'));
   refused('a refusal status raises, left out',chosen=>{chosen.operations.status.refusals=chosen.operations.status.refusals.filter(code=>code!=='busy');});
   refused('a code with no words in the table',chosen=>{delete chosen.refusals.busy;});
-  refused('a backend refusal under one of the adapter\'s own codes',chosen=>chosen.operations.status.backend_refusals.push({code:'busy',meaning:'A second meaning for the same code.',next:'None.'}));
-  refused('a backend refusal with no meaning',chosen=>chosen.operations.status.backend_refusals.push({code:'task_not_found'}));
+  const sites=[{line:1,stage:'no_transaction'}];
+  const usable={code:'workspace_gone',meaning:'A meaning for a test.',next:'None.',sites};
+  refused('a backend refusal under one of the adapter\'s own codes',chosen=>chosen.operations.status.backend_refusals.push({...usable,code:'busy'}));
+  refused('a backend refusal with no meaning',chosen=>chosen.operations.status.backend_refusals.push({code:'workspace_gone',sites}));
+  // A refusal of the backend is listed with the places it was read at, or not at all.
+  refused('a backend refusal with no sites',chosen=>chosen.operations.status.backend_refusals.push({code:'workspace_gone',meaning:usable.meaning,next:usable.next}));
+  refused('a backend refusal with an empty list of sites',chosen=>chosen.operations.status.backend_refusals.push({...usable,sites:[]}));
+  refused('a site with no line',chosen=>chosen.operations.status.backend_refusals.push({...usable,sites:[{stage:'no_transaction'}]}));
+  // A place after a commit has no stage word: a code with such a place cannot be put on the card.
+  refused('a site after a commit',chosen=>chosen.operations.status.backend_refusals.push({...usable,sites:[{line:1,stage:'after_commit'}]}));
+  refused('a site with a key that is not read',chosen=>chosen.operations.status.backend_refusals.push({...usable,sites:[{line:1,stage:'no_transaction',note:'x'}]}));
+  refused('a backend refusal with a key that is not read',chosen=>chosen.operations.status.backend_refusals.push({...usable,effect:'applied'}));
+  refused('the same backend code twice on one operation',chosen=>chosen.operations['task-get'].backend_refusals.push({...usable,code:'task_not_found'}));
+  {
+    const chosen=structuredClone(card);
+    chosen.operations.status.backend_refusals.push(usable);
+    assert.equal(bind(chosen).module.operations.status.refusals.some(entry=>entry.code==='workspace_gone'&&entry.sites===undefined),true,'a usable one binds, and its sites are not handed to the runtime');
+  }
   refused('an operation the adapter does not have',chosen=>{chosen.operations['task-complete']=structuredClone(chosen.operations['task-get']);});
   assert.equal(bind(structuredClone(card)).module.id,COLLAB_ID,'the card as shipped binds');
 });
@@ -736,20 +853,25 @@ test('under the card\'s own limits the largest request frame stays under the tra
 
 // ---------------------------------------------------------------- what the backend refuses
 
+// A card for a test: the shipped card with no refusal of the backend on it, then the ones the test names.
 function cardWith(additions){
   const chosen=structuredClone(card);
+  for(const op of Object.values(chosen.operations))op.backend_refusals=[];
   for(const [operation,codes] of Object.entries(additions))for(const code of codes){
-    chosen.operations[operation].backend_refusals.push({code,meaning:`TEST CARD: the backend refused with ${code} before changing anything.`,next:'Read the current state.'});
+    chosen.operations[operation].backend_refusals.push({code,meaning:`TEST CARD: the backend refused with ${code} before changing anything.`,next:'Read the current state.',
+      sites:[{line:1,stage:'in_transaction_before_write'}]});
   }
   return chosen;
 }
 
-test('with the card as it is, a refusal by the backend is unknown for a write and latches writes; reads go on',async t=>{
+test('a refusal by the backend that the card does not list is unknown for a write and latches writes; reads go on',async t=>{
   const {dirs,call,binding}=await opened(t);
   const task=await call('task-create',{idempotency_key:KEY(),title:'Contested'});
   const calls=callsOf(dirs).length;
-  // The stand-in refuses a stale version cleanly, with its own text. No code of the backend is on the card yet.
-  await unknown(call('task-claim',{task_id:task.id,idempotency_key:KEY(),expected_version:9}),'version_conflict');
+  // A plain refusal with a code the shipped card does not list for task-claim: one of the backend's that was not read for listing.
+  setControl(dirs,{on:{collab_task_claim:{refuse:{error:'path_scope_conflict'}}}});
+  await unknown(call('task-claim',{task_id:task.id,idempotency_key:KEY(),expected_version:1}),'path_scope_conflict');
+  clearControl(dirs);
   assert.equal(callsOf(dirs).length,calls+1,'sent once, not sent again');
   const look=binding.look();
   assert.equal(look.writes_latched,true);assert.equal(look.transport,'running');
@@ -824,9 +946,92 @@ test('a listed code is not passed on when the answer is not a plain refusal',asy
   assert.equal(binding.look().writes_latched,false);
 });
 
+test('each refusal the shipped card lists comes back declined from the stand-in, in the card\'s words, with the stand-in\'s journal as it was',async t=>{
+  // What this shows: what the adapter does when a backend answers these codes the way the stand-in does, which leaves
+  // its journal file untouched on a refusal. It does not show that the real backend leaves its journal untouched.
+  const a=await opened(t);
+  const done=new Set();
+  const edit=(dirs,change)=>{const journal=journalOf(dirs);change(journal);fs.writeFileSync(dirs.databasePath,JSON.stringify(journal));};
+  async function refusedBy(r,operation,input,code){
+    const at=`${operation} ${code}`;
+    const before=fs.readFileSync(r.dirs.databasePath),sent=callsOf(r.dirs).length;
+    const error=await declined(r.call(operation,input),code,at);
+    const entry=card.operations[operation].backend_refusals.find(item=>item.code===code);
+    assert.ok(entry,`${at}: on the shipped card`);
+    assert.deepEqual(error.refusal,{code,meaning:entry.meaning,next:entry.next},at);
+    assert.equal(callsOf(r.dirs).length,sent+1,`${at}: sent once`);
+    assert.ok(fs.readFileSync(r.dirs.databasePath).equals(before),`${at}: the stand-in's journal file is byte for byte as it was`);
+    const look=r.binding.look();
+    assert.equal(look.writes_latched,false,at);assert.deepEqual(look.unknown_calls,[],at);assert.equal(look.transport,'running',at);
+    assert.deepEqual(look.last_call,{operation,outcome:'declined'},at);
+    done.add(at);
+  }
+  await refusedBy(a,'task-get',{task_id:'task_absent'},'task_not_found');
+  const task=await a.call('task-create',{idempotency_key:'used-key-1',title:'Contested'});
+  await refusedBy(a,'task-create',{idempotency_key:'used-key-1',title:'Another title under the same key'},'idempotency_conflict');
+  await a.call('report',{idempotency_key:'used-key-2',kind:'observation',body:'first'});
+  await refusedBy(a,'report',{idempotency_key:'used-key-2',kind:'observation',body:'second'},'idempotency_conflict');
+  await refusedBy(a,'report',{idempotency_key:KEY(),kind:'observation',body:'about a task that is not there',task_id:'task_absent'},'task_not_found');
+  await refusedBy(a,'task-claim',{task_id:'task_absent',idempotency_key:KEY(),expected_version:1},'task_not_found');
+  await refusedBy(a,'task-claim',{task_id:task.id,idempotency_key:KEY(),expected_version:9},'version_conflict');
+  await refusedBy(a,'task-claim',{task_id:task.id,idempotency_key:'used-key-1',expected_version:1},'idempotency_conflict');
+  // Another hand changes the journal: the task is completed, then blocked, then open again.
+  edit(a.dirs,journal=>{journal.tasks[task.id].status='completed';});
+  await refusedBy(a,'task-claim',{task_id:task.id,idempotency_key:KEY(),expected_version:1},'task_completed');
+  edit(a.dirs,journal=>{journal.tasks[task.id].status='blocked';});
+  await refusedBy(a,'task-claim',{task_id:task.id,idempotency_key:KEY(),expected_version:1},'task_blocked');
+  edit(a.dirs,journal=>{journal.tasks[task.id].status='open';});
+  const claimed=await a.call('task-claim',{task_id:task.id,idempotency_key:KEY(),expected_version:1});
+  assert.deepEqual(a.binding.look().claims,[task.id]);
+  // A second binding on the same journal meets the first one's claim, live and then run out.
+  const b=rig(t,{dirs:a.dirs,config:{journal:'existing',actor:'xenia-second-actor'}});
+  await b.call('open');
+  await refusedBy(b,'task-claim',{task_id:task.id,idempotency_key:KEY(),expected_version:claimed.version},'task_claimed');
+  setControl(a.dirs,{clock_ms:3600*1000});
+  await refusedBy(b,'task-claim',{task_id:task.id,idempotency_key:KEY(),expected_version:claimed.version},'recovery_required');
+  await refusedBy(a,'task-release',{task_id:task.id,idempotency_key:KEY(),expected_version:claimed.version},'lease_expired');
+  clearControl(a.dirs);
+  assert.deepEqual(b.binding.look().claims,[],'a refused claim is not remembered');
+  await refusedBy(a,'task-release',{task_id:task.id,idempotency_key:KEY(),expected_version:9},'version_conflict');
+  await refusedBy(a,'task-release',{task_id:task.id,idempotency_key:'used-key-1',expected_version:claimed.version},'idempotency_conflict');
+  edit(a.dirs,journal=>{journal.tasks[task.id].lease_id='lease_of_someone_else';});
+  await refusedBy(a,'task-release',{task_id:task.id,idempotency_key:KEY(),expected_version:claimed.version},'lease_not_holder');
+  edit(a.dirs,journal=>{Object.assign(journal.tasks[task.id],{status:'open',assignee:null,assignee_session_id:null,lease_id:null,lease_expires_at:null});});
+  await refusedBy(a,'task-release',{task_id:task.id,idempotency_key:KEY(),expected_version:claimed.version},'lease_not_active');
+  edit(a.dirs,journal=>{delete journal.tasks[task.id];});
+  await refusedBy(a,'task-release',{task_id:task.id,idempotency_key:KEY(),expected_version:claimed.version},'task_not_found');
+  // A refused release leaves what the binding remembers as it was: the claim is still listed.
+  assert.deepEqual(a.binding.look().claims,[task.id]);
+  // The cursor: the session's cursor version moves under a page the binding has read.
+  const page=await a.call('next');
+  assert.ok(page.events.next_anchor.sequence>0,'the page holds events, so the acknowledgement would move the cursor');
+  edit(a.dirs,journal=>{journal.sessions[a.session.session_id].cursor_version+=1;});
+  const ack={anchor:page.events.next_anchor,expected_cursor_version:page.cursor_version};
+  await refusedBy(a,'acknowledge',ack,'cursor_version_conflict');
+  // The native session stops being accepted: its generation moves on, as after a resume elsewhere.
+  edit(a.dirs,journal=>{journal.sessions[a.session.session_id].generation+=1;});
+  await refusedBy(a,'acknowledge',ack,'session_auth_failed');
+  await refusedBy(a,'report',{idempotency_key:KEY(),kind:'observation',body:'b'},'session_auth_failed');
+  await refusedBy(a,'task-create',{idempotency_key:KEY(),title:'t'},'session_auth_failed');
+  await refusedBy(a,'task-claim',{task_id:'task_x',idempotency_key:KEY(),expected_version:1},'session_auth_failed');
+  await refusedBy(a,'task-release',{task_id:task.id,idempotency_key:KEY(),expected_version:1},'session_auth_failed');
+  // Every pair the card lists was met here, and no other.
+  assert.deepEqual([...done].sort(),Object.entries(LISTED).flatMap(([operation,codes])=>codes.map(code=>`${operation} ${code}`)).sort());
+  // The same answer on `next` is not passed on: in the pinned bundle one of the places that raise it for that tool
+  // comes after a commit. It is unknown, and the binding then sends no more writes. Reads go on.
+  const sent=callsOf(a.dirs).length;
+  await unknown(a.call('next'),'session_auth_failed on next');
+  assert.equal(callsOf(a.dirs).length,sent+1);
+  assert.deepEqual(a.binding.look().unknown_calls,[{operation:'next',why:'backend_refusal_not_on_card'}]);
+  await declined(a.call('report',{idempotency_key:KEY(),kind:'observation',body:'b'}),'earlier_outcome_unknown');
+  assert.equal((await a.call('status')).counts.open>=0,true);
+});
+
 test('a read that fails does not latch writes while the backend still answers',async t=>{
   const {dirs,call,binding}=await opened(t);
-  await unknown(call('task-get',{task_id:'task_absent'}),'task_not_found on a read');
+  // A refusal of a read with a code the card does not list for it.
+  setControl(dirs,{on:{collab_task_get:{refuse:{error:'workspace_not_found'}}}});
+  await unknown(call('task-get',{task_id:'task_absent'}),'an unlisted refusal of a read');
   setControl(dirs,{on:{collab_workspace_status:'rpc_error'}});
   await unknown(call('status'),'a JSON-RPC error on a read');
   clearControl(dirs);
@@ -1108,7 +1313,8 @@ test('the door lists the bound module, what its end writes without the gate, and
   assert.ok(s.binding.deadlines.open>10000&&s.binding.deadlines.open<=30000,'open talks to the backend three times, so it states a longer deadline');
   assert.deepEqual(Object.keys(s.binding.deadlines),['open']);
   const claim=await s.ask({method:'inspect',module:COLLAB_ID,operation:'task-claim'});
-  assert.deepEqual(claim.result.operation.refusals.map(r=>r.code),['backend_not_running','busy','earlier_outcome_unknown','lease_limit','not_open']);
+  // The adapter's own five, and the backend's that the card lists for a claim, in one list sorted by code.
+  assert.deepEqual(claim.result.operation.refusals.map(r=>r.code),[...['backend_not_running','busy','earlier_outcome_unknown','lease_limit','not_open'],...LISTED['task-claim']].sort());
   assert.equal(claim.result.deadline_ms.default,10000);
   const {done,last}=await s.end();
   assert.equal(done.exit_code,0);assert.deepEqual(last.cleanup,{complete:true,did:[`closed ${COLLAB_ID} to new calls`],did_not:[],left_behind:[]});
@@ -1137,8 +1343,20 @@ test('at the door the gate decides, a whole exchange runs, and the end releases,
   const no=await s.invoke('task-release',{task_id:'task_never_claimed',idempotency_key:KEY(),expected_version:1});
   assert.equal(no.error.code,'DECLINED');assert.equal(no.error.refusal.code,'lease_not_held_by_module');
   assert.deepEqual(checkRequest(no.problem.next_actions[0].request,no.problem.next_actions[0].needs).ok,true);
+  // A refusal of the backend that the card lists: one line, declined, with the card's words and what that does not establish.
+  const stale=await s.invoke('task-claim',{task_id:task.id,idempotency_key:KEY(),expected_version:9});
+  const listed=card.operations['task-claim'].backend_refusals.find(entry=>entry.code==='version_conflict');
+  assert.equal(stale.ok,false);assert.equal(stale.error.code,'DECLINED');assert.equal(stale.error.effect_outcome,'not_applied');
+  assert.deepEqual(stale.error.refusal,{code:'version_conflict',meaning:listed.meaning,next:listed.next});
+  assert.ok(stale.not_established.some(line=>/not_applied is the module’s own declaration/.test(line)),JSON.stringify(stale.not_established));
+  assert.deepEqual(checkRequest(stale.problem.next_actions[0].request,stale.problem.next_actions[0].needs).ok,true);
+  assert.equal(JSON.stringify(stale).includes(PLANTED),false);
+  // The card a session shows for the operation has the refusal and not the places it was read at; `explain` has those.
+  const shown=(await s.ask({method:'inspect',module:COLLAB_ID,operation:'task-claim'})).result.operation;
+  assert.ok(shown.refusals.some(entry=>entry.code==='version_conflict'&&entry.meaning===listed.meaning));
+  assert.equal(JSON.stringify(shown).includes('"sites"'),false);
   const look=(await s.ask({method:'inspect',module:COLLAB_ID})).result.look;
-  assert.deepEqual(look.claims,[task.id]);assert.equal(look.step,'open');
+  assert.deepEqual(look.claims,[task.id]);assert.equal(look.step,'open');assert.equal(look.writes_latched,false,'a declared refusal latches nothing');
   const {done,last}=await s.end();
   assert.equal(done.exit_code,0,JSON.stringify(last.cleanup));
   assert.equal(last.cleanup.complete,true);
@@ -1274,7 +1492,11 @@ test('the adapter is listed as not bound by arrive, catalog and explain, and a s
   const claim=explained.module.operations.find(op=>op.id==='task-claim');
   assert.deepEqual(claim.input.schema,card.operations['task-claim'].input.schema);
   assert.deepEqual(claim.does,card.operations['task-claim'].does);
-  assert.deepEqual(claim.refusals,card.operations['task-claim'].refusals);assert.deepEqual(claim.backend_refusals,[]);
+  assert.deepEqual(claim.refusals,card.operations['task-claim'].refusals);
+  // The backend's refusals are shown with the places each was read at, and with the reading they come from.
+  assert.deepEqual(claim.backend_refusals,card.operations['task-claim'].backend_refusals);
+  assert.ok(claim.backend_refusals.length>=1&&claim.backend_refusals.every(entry=>entry.sites.length>=1));
+  assert.deepEqual(explained.backend_reading,card.backend_reading);
   assert.deepEqual(explained.refusals,card.refusals,'each code is worded once, in one table');
   assert.equal(explained.module.operations.length,9);
   assert.equal(explained.card_file,'agent-first/0.1/adapters/agenttool-collab/card.json');
