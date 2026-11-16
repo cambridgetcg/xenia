@@ -47,8 +47,9 @@ test('arrival constructs a native manifest response with no invented assurance c
   const { runStudy } = await motifs();
   assert.equal(typeof runStudy, 'function', 'motifs must have an executable study, not only labels');
   const study = await runStudy('arrival');
-  assert.equal(study.kind, 'motif-study');
-  assert.equal(study.motif.id, 'arrival');
+  assert.equal(study.kind, 'study-run');
+  assert.equal(study.study_card.id, 'arrival');
+  assert.equal(study.motif, undefined, 'a study prints its own card as study_card');
   assert.equal(study.basis, 'native-helper-execution-with-synthetic-inputs');
   assert.equal(study.output.status, 200);
   assert.match(study.output.content_type, /^application\/json/);
@@ -110,7 +111,9 @@ test('the journey passes real local values between motifs and ends without exter
   globalThis.fetch = () => { fetchCalls++; throw new Error('network forbidden in this study'); };
   try {
     const journey = await composeJourney();
-    assert.equal(journey.kind, 'motif-journey');
+    assert.equal(journey.kind, 'study-journey');
+    assert.deepEqual(journey.steps.map(step => step.study), ['recovery', 'arrival', 'representation', 'recovery', 'representation', 'ending']);
+    assert.ok(journey.steps.every(step => !('motif' in step)), 'each step names its study as study');
     assert.equal(journey.basis, 'native-helper-execution-with-synthetic-inputs');
     assert.deepEqual(journey.steps.map(step => step.id), ['wrong-door', 'arrival', 'unsupported-shape', 'recovered-json', 'alternate-html', 'clear-ending']);
     assert.deepEqual(journey.steps.map(step => step.output.status), [404, 200, 406, 200, 200, 410]);
@@ -142,26 +145,26 @@ function cliRun(file, args, extra = {}) {
 
 test('one existing CLI exposes motif metadata, standalone studies and the composed journey', () => {
   const cli = fileURLToPath(new URL('../agent-first/0.1/cli.mjs', import.meta.url));
-  const broadMap = cliRun(cli, ['motifs']);
-  const {next, ...mapOnly} = broadMap.value;
-  assert.ok(Array.isArray(next), 'the door adds a next list to the map');
-  assert.deepEqual(mapOnly, JSON.parse(readFileSync(new URL('../agent-first/0.1/motifs.json', import.meta.url), 'utf8')));
+  // The door prints an index of the map; tests/agent-first-motifs.test.mjs holds it.
+  const index = cliRun(cli, ['motifs']);
+  assert.equal(index.value.kind, 'motif-index');
+  assert.ok(Array.isArray(index.value.next), 'the index ends with a next list');
   const listed = cliRun(cli, ['motifs', 'study']);
   assert.equal(listed.status, 0);
-  assert.equal(listed.value.kind, 'motif-study-catalog');
+  assert.equal(listed.value.kind, 'study-list');
   assert.equal(listed.value.studies.length, 4);
-  assert.equal(cliRun(cli, ['motifs', 'study', 'show', 'recovery']).value.motif.id, 'recovery');
+  assert.equal(cliRun(cli, ['motifs', 'study', 'show', 'recovery']).value.study_card.id, 'recovery');
   assert.equal(cliRun(cli, ['motifs', 'study', 'run', 'ending']).value.output.body.terminal, true);
   assert.equal(cliRun(cli, ['motifs', 'study', 'journey']).value.steps.length, 6);
   assert.ok(cliRun(cli, ['help']).value.commands.some(command => command.startsWith('motifs study')));
-  assert.equal(cliRun(cli, ['motifs', 'study', '--help']).value.kind, 'motif-help');
+  assert.equal(cliRun(cli, ['motifs', 'study', '--help']).value.kind, 'study-help');
   const unknown = cliRun(cli, ['motifs', 'study', 'run', 'private-untrusted-value']);
   assert.equal(unknown.status, 2);
   assert.equal(unknown.value.error.code, 'STUDY_NOT_FOUND');
   assert.equal(unknown.stdout.includes('private-untrusted-value'), false);
   const invalid = cliRun(cli, ['motifs', 'study', 'journey', 'extra']);
   assert.equal(invalid.status, 2);
-  assert.equal(invalid.value.error.code, 'MOTIF_INVALID_ARGUMENTS');
+  assert.equal(invalid.value.error.code, 'STUDY_INVALID_ARGUMENTS');
   assert.equal(cliRun(cli, ['catalog']).value.modules.length, 3);
 });
 
@@ -181,7 +184,7 @@ test('metadata stands alone without a build or provider, and removing studies le
     const listed = cliRun(cli, ['motifs', 'study'], options);
     assert.equal(listed.status, 0);
     assert.equal(listed.value.studies.length, 4);
-    assert.equal(cliRun(cli, ['motifs', 'study', 'show', 'ending'], options).value.motif.id, 'ending');
+    assert.equal(cliRun(cli, ['motifs', 'study', 'show', 'ending'], options).value.study_card.id, 'ending');
     assert.equal(existsSync(absentHome), false);
     assert.deepEqual(readdirSync(folder).sort(), before);
     const missingBuild = cliRun(cli, ['motifs', 'study', 'run', 'ending'], options);
@@ -201,3 +204,17 @@ test('metadata stands alone without a build or provider, and removing studies le
 
 
 
+
+test('a study names itself as a study: its kinds and codes are study words, not motif words', () => {
+  // The map's entry ids and the study ids are two lists (arrival is in both); a study's output names the study.
+  const text = readFileSync(moduleUrl, 'utf8');
+  // The journey's connections have kinds of their own (dataflow, comparison, contrast); they are left out here.
+  const connections = ['comparison', 'contrast', 'dataflow'];
+  const kinds = [...text.matchAll(/kind: '([a-z-]+)'/g)].map(match => match[1]).filter(kind => !connections.includes(kind));
+  assert.deepEqual([...new Set(kinds)].sort(), ['studies-for-motif', 'study-card', 'study-help', 'study-journey', 'study-list', 'study-run']);
+  const codes = [...new Set([...text.matchAll(/problem\('([A-Z_]+)'/g)].map(match => match[1]))].sort();
+  assert.deepEqual(codes, ['BUILD_REQUIRED', 'STUDY_INVALID_ARGUMENTS', 'STUDY_NATIVE_CONTRACT_CHANGED', 'STUDY_NOT_FOUND', 'STUDY_UNAVAILABLE']);
+  const cli = readFileSync(new URL('../agent-first/0.1/cli.mjs', import.meta.url), 'utf8');
+  assert.equal(/MOTIF_(INVALID_ARGUMENTS|NATIVE_CONTRACT_CHANGED|STUDY_FAILED|STUDY_UNAVAILABLE)/.test(cli), false, 'the CLI uses the study codes');
+  assert.match(cli, /'STUDY_FAILED'/);
+});

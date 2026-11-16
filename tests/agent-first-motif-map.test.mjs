@@ -632,13 +632,15 @@ test('the cross-index relates each dimension, duty and limit once with a check o
   assert.match(map.cross_index.meaning,/not that the duty is met/);
 });
 
-test('motifs <id> answers for every entry, and its not_established lists each limit the entry has, from continuity\'s faces too',()=>{
+// The entry is printed whole, so each limit it has, continuity's face limits too, is on the same output; not_established
+// is drawn from the map's own list and does not repeat them. tests/agent-first-motifs.test.mjs holds the rest of the card.
+test('motifs <id> answers for every entry with the entry exactly as in the file, its limits in it',()=>{
   for(const entry of map.motifs){
     const result=spawnSync(process.execPath,[cli,'motifs',entry.id],{encoding:'utf8',timeout:15000,env:{PATH:''}});
     assert.equal(result.status,0,`${entry.id}: ${result.stdout}${result.stderr}`);
     const body=JSON.parse(result.stdout);
     assert.deepEqual(body.motif,entry,'the entry exactly as in the file');
-    assert.ok(body.not_established.every(item=>typeof item==='string'),entry.id);
-    for(const limit of limitsOf(entry))assert.ok(body.not_established.includes(limit),`${entry.id}: ${limit.slice(0,40)}`);
+    for(const limit of limitsOf(entry))assert.ok(JSON.stringify(body.motif).includes(JSON.stringify(limit)),`${entry.id}: ${limit.slice(0,40)}`);
+    assert.ok(body.not_established.every(item=>map.not_established.includes(item)),entry.id);
   }
 });

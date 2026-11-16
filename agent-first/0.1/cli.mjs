@@ -130,9 +130,9 @@ export async function main(args){
       const sub=rest.slice(1);
       return envelope(await studyCommand(sub.length>1&&sub.some(isHelp)?['help']:sub));
     }catch(error){
-      const known=['STUDY_NOT_FOUND','MOTIF_INVALID_ARGUMENTS','BUILD_REQUIRED','MOTIF_NATIVE_CONTRACT_CHANGED','MOTIF_STUDY_UNAVAILABLE'];
-      const code=known.includes(error?.code)?error.code:'MOTIF_STUDY_FAILED';
-      const failure=new ModuleError(code,['MOTIF_NATIVE_CONTRACT_CHANGED','MOTIF_STUDY_FAILED'].includes(code));
+      const known=['STUDY_NOT_FOUND','STUDY_INVALID_ARGUMENTS','BUILD_REQUIRED','STUDY_NATIVE_CONTRACT_CHANGED','STUDY_UNAVAILABLE'];
+      const code=known.includes(error?.code)?error.code:'STUDY_FAILED';
+      const failure=new ModuleError(code,['STUDY_NATIVE_CONTRACT_CHANGED','STUDY_FAILED'].includes(code));
       if(code==='STUDY_NOT_FOUND'&&Array.isArray(error.valid))failure.valid=[...error.valid];
       throw failure;
     }
@@ -151,18 +151,15 @@ export async function main(args){
       network:NETWORK_NOTE,cards:CARD_NOTE,limits:MODULE_INPUT_LIMITS,notes:['No automatic installs, services, host hooks, accounts, publication or model calls.','Runtime state is in-process; the caller owns persistence.','Trusted module code is not an OS sandbox.'],
       not_established:['that any listed command will succeed here','that this list is every capability of the host']});
   }
-  if(command==='motifs'&&!rest.length)return {...JSON.parse(fs.readFileSync(new URL('./motifs.json',import.meta.url),'utf8')),next:[
-    {argv:['motifs','standing'],why:'Read one motif card.'},
-    {argv:['motifs','study','list'],why:'List the small studies that examine a motif.'},
-    {argv:['motifs','study','journey'],why:'Follow the six motifs in order through their studies. Needs the Xenia build.'},
-    {argv:['arrive'],why:'Read the one-page orientation to this door.'}]};
-  if(command==='motifs'&&rest.length===1&&!rest[0].startsWith('-')){
-    const {motifs}=JSON.parse(fs.readFileSync(new URL('./motifs.json',import.meta.url),'utf8'));
-    const card=motifs.find(item=>item.id===rest[0]);
-    if(!card)throw Object.assign(new ModuleError('MOTIF_NOT_FOUND'),{valid:motifs.map(item=>item.id)});
-    // Continuity keeps its limits in its two faces, and the crossing has none.
-    const limits=[card.limit,...Object.values(card.faces??{}).map(face=>face.limit)].filter(limit=>typeof limit==='string');
-    return envelope({kind:'motif-card',motif:card,not_established:['that this card describes a running service',...limits]});
+  if(command==='motifs'&&(!rest.length||(rest.length===1&&!rest[0].startsWith('-')))){
+    // Loaded only for this command, so the other commands work without the map helpers.
+    const {motifIndex,motifCard,earlierName}=await import('./motif-map.mjs');
+    const map=JSON.parse(fs.readFileSync(new URL('./motifs.json',import.meta.url),'utf8'));
+    if(!rest.length)return motifIndex(map);
+    const card=motifCard(map,rest[0]);
+    // An earlier name or a study id is answered with the map's own words; the word given is not kept.
+    if(!card)throw Object.assign(new ModuleError('MOTIF_NOT_FOUND'),{valid:map.motifs.map(item=>item.id),...earlierName(map,rest[0])});
+    return card;
   }
   if(command==='starter-smoke')return starterSmoke(rest);
   if(command==='door'){
