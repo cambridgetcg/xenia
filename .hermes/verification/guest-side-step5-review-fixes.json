@@ -24,14 +24,14 @@
   "findings": {
     "correctness-safety C1": "fixed. An output that stops taking lines closes admission (ended_by output_error): nothing more is read or started, the end still runs, exit 1. Tests: in memory, an output failing on its third write, five effect-declaring calls behind it, one started; and a child process whose reader goes away, with an allowed local-write operation that wrote nothing.",
     "correctness-safety C2": "fixed. The Collab config and open compare homeDir, the workspace, the repository top and the journal folder as folders (device and inode, with identity and lineage from provider.mjs) as well as by spelling. Tests: another case of the same folder, and the same folder through /System/Volumes/Data, at config time and at open.",
-    "correctness-safety C3": "fixed. A homeDir that cannot be created, with nothing made, is the refusal home_dir_unavailable, and open can be asked again; an open that began to write and failed is never run again, whatever step it reached. The partial case (mkdir made a folder and then failed) is in the code and has no test.",
+    "correctness-safety C3": "fixed. A homeDir that cannot be created, with nothing made, is the refusal home_dir_unavailable, and open can be asked again; an open that began to write and failed is never run again, whatever step it reached. The partial case (mkdir made a folder and then failed) is tested since the final check (see final_check_fixes): it is an unknown outcome, and the end is not complete.",
     "correctness-safety C4": "fixed. Once close() has begun, every operation is declined before anything is sent.",
     "correctness-safety C5": "fixed, with arriving-agent cold-1.",
     "correctness-safety C6": "fixed. The input is paused at 256 lines or 4 MiB of lines read and not started; limits.read_ahead says so. Memory was not measured.",
     "arriving-agent cold-1": "fixed. A declined result's detail leads with 'The operation declined, and its module declares that nothing was applied:'.",
     "arriving-agent cold-2": "fixed. The signal handlers are installed before the first line is written. Test: twelve runs, a signal sent as soon as line 1 is read.",
     "arriving-agent cold-3": "fixed. The detail says which fields of the line are repeated; the README says id, method, and module or operation ids in error.module and error.operation.",
-    "arriving-agent cold-4": "fixed. POLICY_BLOCKED is terminal in a session; resume of a registered module suggests activate; not_open on agenttool.collab suggests invoking open; a terminal problem names a new session instead of a next action in not_established.",
+    "arriving-agent cold-4": "fixed. POLICY_BLOCKED is terminal in a session; resume of a registered module suggests activate; not_open on agenttool.collab suggests invoking open, with the empty input open's card takes (since the final check); a terminal problem names a new session instead of a next action in not_established.",
     "arriving-agent cold-5": "fixed by wording, not by waiting: DEADLINE_EXCEEDED and the README say that a session ending while the call runs can leave a bound module's end writes unsent. close() still does not wait for a pending call; a test pins that.",
     "arriving-agent cold-6": "fixed. explain agenttool.collab carries lineage_note (path and what it says, with the word superseded); LINEAGE.md's fork row names the dropped motif files and the one effect fewer, and a test checks both against git where git has the commit.",
     "arriving-agent cold-7": "partly fixed. inspect of the session carries request_fields and one example per method; the card's config has an example object. help session was not split.",
@@ -52,6 +52,34 @@
     "tests/agent-first-door.test.mjs: the network sentence word for word.",
     "tests/agent-first-schema.test.mjs: the slow-pattern check moved into a child process."
   ],
+  "final_check_fixes": {
+    "note": "An independent final check of 178d0f0 and 10dfb6f returned two major and two minor findings. The two majors were reproduced from its probes and fixed, test first, by the session that directs this work; the tests named below were seen failing before the fix.",
+    "findings": {
+      "F1": "fixed. An open that made folders on the way to homeDir and then failed was recorded as unknown, yet the end reported a complete cleanup and the session exited 0. The end now reports open as stopped before home_ready with an unknown outcome, names the folders it may have made as not removed, and is not complete, so the session exits 1. Tests: an open whose homeDir has a 300-character last name, below two missing folders (the folders are made, the last step fails), through the binding and through the session door.",
+      "F2": "fixed. The request suggested after a not_open refusal left out the input, and open's card requires an empty object, so following it with only an id added was refused as INVALID_INPUT. It now carries input {}. The test sends the suggested request as given, with only an id added, and sees the binding open.",
+      "F3": "kept as MPL-2.0, by the directing session's call: card.json is a modification of the other lineage's module.json, which was MPL-2.0 under that lineage's own map, and LICENSES.md makes configuration MPL-2.0 by default. The agreed design had said CC BY-SA. The owner may choose otherwise; nothing else depends on it.",
+      "F4": "fixed here. The sha256 map in guest-side-step5.json, and its byte counts, describe the tree at 2c2b49b, not this one. The map below is of every file changed since 2c2b49b, as they stand in the commit that carries this file."
+    },
+    "sha256_since_2c2b49b": {
+      "agent-first/0.1/LINEAGE.md": "288b0515b61b669967090081ce291edd5e8fe8996c4fd1eb275e0391db38a4d0",
+      "agent-first/0.1/README.md": "9cebca9422a9f61cb606e184868db36e53f6d11209834969146f18e95ad78afd",
+      "agent-first/0.1/adapter-catalog.mjs": "198dcdeae5fa0944f12a5ba02de25e5c4cc9a3c6993b60456657955d7709eb02",
+      "agent-first/0.1/adapters/agenttool-collab/README.md": "3456876368014ed610652ee396496a82873abba1afc397d87aad77cdb2b2678e",
+      "agent-first/0.1/adapters/agenttool-collab/card.json": "faacf5188280fe0a9b3687400122b07985cbe75e7f2d15ee03b1bf9c28a686c0",
+      "agent-first/0.1/adapters/agenttool-collab/index.mjs": "a29278960be8e1b638764ea2a892df428678914359660c796174fec3dba39558",
+      "agent-first/0.1/modules.mjs": "97722cf7981059f038e4f86e6c5d5647272246aa118e48cec87497b2086c5450",
+      "agent-first/0.1/motifs.json": "cc31a67e98b7a8c3fc5375361d60a2e21ff27a9ce762a2ee36bd7b00b65144da",
+      "agent-first/0.1/problems.mjs": "24bc959b78550e52d350e873efd10a2fe43f599c5c73446938f9214bc1dede69",
+      "agent-first/0.1/provider.mjs": "8f55d681cf3dec230d11ed845f26b8a9dedc9ce4aa8511a4003340dd6d1dc765",
+      "agent-first/0.1/session.mjs": "5e11a1913eef663c3e3bdecdd8ba4fdd7a5866f03ad395cbf77f451f41cfdf51",
+      "tests/agent-first-collab.test.mjs": "e28ba24896c80efa23ada19da0ec29fc20a7cec4fcd70fc873f71b20cdfc5414",
+      "tests/agent-first-door.test.mjs": "e94f42ac40d57e4a65be32b0e6fcae3a85d4f75b2bd35113d8900e89fb84c6d1",
+      "tests/agent-first-one-door.test.mjs": "9cd49121b0b0576f7005022c2c65355d128d7fbd7a41b4b51bbc6adefd92a9dd",
+      "tests/agent-first-problems.test.mjs": "27601ae08b6caadf7a3a4aabf66b7b5b107a76265a6d0c903e5c89ad2079e32b",
+      "tests/agent-first-schema.test.mjs": "7fa6dde9b3593ff6698542430b916bc879291aa90b5417816876b9470eec6781",
+      "tests/agent-first-session.test.mjs": "aebf7e99918c4128c9e4505264e42f38af83ce0494cff92844858629f6e04cd9"
+    }
+  },
   "not_established": [
     "that the adapter works with the real bundle: every Collab test runs the stand-in",
     "that every second spelling of a folder is caught: two kinds were tested on one volume; a path whose existing part cannot be looked at is judged by its names",

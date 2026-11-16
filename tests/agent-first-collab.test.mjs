@@ -1744,15 +1744,54 @@ test('explain names the lineage note, gives a config to copy, and qualifies what
   for(const line of card.at_end.filter(line=>/credential file/.test(line)))assert.match(line,/the backend says|as read in the pinned bundle/,line);
 });
 
+test('an open that made folders on the way to homeDir and then failed is an unknown outcome, and the end does not call itself complete',async t=>{
+  // Parents that are missing are made first; the last name is too long for the file system, so the last step fails after them.
+  const dirs=place({home:false});
+  const made=[path.join(dirs.root,'made1'),path.join(dirs.root,'made1','made2')];
+  const homeDir=path.join(made[1],'x'.repeat(300));
+  const {call,binding}=rig(t,{dirs,config:{homeDir},connect:()=>assert.fail('nothing may be started when homeDir could not be made')});
+  await unknown(call('open'),'an open that stopped after making folders');
+  assert.deepEqual(made.map(folder=>fs.existsSync(folder)),[true,true],'the folders open made are still there');
+  const look=binding.look();
+  assert.equal(look.step,'not_opened');assert.equal(look.open_failed_before,'home_ready');assert.equal(look.writes_latched,true);
+  // open is not run a second time once it may have written.
+  await declined(call('open'),'already_open','a second open after one that may have written');
+  const report=await binding.close();
+  assert.equal(report.complete,false,JSON.stringify(report));
+  assert.ok(report.did_not.some(line=>/stopped before the step home_ready/.test(line)&&/not known/.test(line)),JSON.stringify(report.did_not));
+  assert.ok(report.left_behind.some(line=>/on the way to homeDir/.test(line)&&/not removed/.test(line)),JSON.stringify(report.left_behind));
+  for(const line of [...report.did,...report.did_not,...report.left_behind])assert.equal(line.includes(dirs.root),false,'no path in a line of the report');
+});
+
+test('at the door, a session over such an open ends with exit 1 and says what is left',async t=>{
+  const dirs=place({home:false});
+  const homeDir=path.join(dirs.root,'made1','made2','x'.repeat(300));
+  const s=boundSession(t,{dirs,config:{homeDir}});
+  await s.next();
+  await s.ask({method:'activate',module:COLLAB_ID});
+  const failed=await s.invoke('open');
+  assert.equal(failed.error?.code,'OPERATION_FAILED',JSON.stringify(failed).slice(0,300));
+  const {last}=await s.end();
+  assert.equal(last.kind,'session_end');
+  assert.equal(last.exit_code,1,JSON.stringify(last).slice(0,600));
+  assert.equal(last.cleanup.complete,false);
+  assert.ok(last.cleanup.left_behind.some(line=>/on the way to homeDir/.test(line)),JSON.stringify(last.cleanup).slice(0,600));
+});
+
 test('at the door, an operation declined because open has not returned offers open as the next request',async t=>{
   const s=boundSession(t);
   await s.next();
   await s.ask({method:'activate',module:COLLAB_ID});
   const early=await s.invoke('status');
   assert.equal(early.error.refusal.code,'not_open');
-  assert.deepEqual(early.problem.next_actions[0],{request:{method:'invoke',module:COLLAB_ID,operation:'open'},needs:['id'],why:early.problem.next_actions[0].why});
+  assert.deepEqual(early.problem.next_actions[0],{request:{method:'invoke',module:COLLAB_ID,operation:'open',input:{}},needs:['id'],why:early.problem.next_actions[0].why});
   assert.match(early.problem.next_actions[0].why,/allow list/);
   assert.deepEqual(checkRequest(early.problem.next_actions[0].request,['id']).ok,true);
+  // Sent as given, with only an id added, it is not refused for its input: open is allowed here, so it opens.
+  const followed=await s.ask(early.problem.next_actions[0].request);
+  assert.equal(followed.error?.code,undefined,JSON.stringify(followed).slice(0,300));
+  assert.equal(followed.ok,true);
+  assert.equal(s.binding.look().step,'open');
   await s.end();
 });
 

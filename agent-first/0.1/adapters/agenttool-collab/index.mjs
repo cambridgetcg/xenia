@@ -639,7 +639,8 @@ export function bindCollab({config:given,configSha256,pin:givenPin,card=loadColl
     const did=[],didNot=[],left=[];
     state.closing=true;
     const pending=state.inFlight;
-    if(state.step==='not_opened'&&!pending)return Object.freeze({complete:true,did,did_not:didNot,left_behind:left});
+    // Nothing was written only when open never began to write: an open that stopped partway is reported below.
+    if(state.step==='not_opened'&&!pending&&state.openFailedBefore===undefined)return Object.freeze({complete:true,did,did_not:didNot,left_behind:left});
     const until=Date.now()+L.close_budget_ms;
     if(state.step==='open'&&!pending&&state.unknownCount===0&&state.transport==='running'){
       // Nothing is unknown and nothing is pending: release what this binding claimed, then end its native session.
@@ -705,6 +706,7 @@ export function bindCollab({config:given,configSha256,pin:givenPin,card=loadColl
     for(const taskId of state.claims.keys())left.push(`task ${taskId}: a claim this binding made is not known to have been released`);
     left.push(STEPS.indexOf(state.step)>=STEPS.indexOf('spawned')||endpoint?
       'the journal at databasePath, and anything else the backend wrote beside it, in homeDir or in the workspace: not surveyed':
+      state.openFailedBefore==='home_ready'?'folders open may have made on the way to homeDir before it failed: not removed':
       'homeDir, if open created it: not removed');
     state.step='closed';
     return Object.freeze({complete:didNot.length===0,did,did_not:didNot,left_behind:left});

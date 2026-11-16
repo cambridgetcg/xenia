@@ -628,7 +628,8 @@ const SESSION_TABLE={
     const extra=typeof r.detail==='string'&&r.detail?` Reported: ${r.detail.slice(0,200)}`:'';
     // The Collab binding opens once, with its own operation: before it has, that is the step that moves a caller on.
     const first=r.code==='not_open'&&e.module===SESSION_BOUND&&inSession(e,c)&&e.operation!=='open'?
-      [ask({method:'invoke',module:SESSION_BOUND,operation:'open'},'Open the binding first. open declares effects, so it runs only if the allow list names it.')]:[];
+      // open's card takes an empty object, so the request carries it: sent with only an id added, it is a request the card accepts.
+      [ask({method:'invoke',module:SESSION_BOUND,operation:'open',input:{}},'Open the binding first. open declares effects, so it runs only if the allow list names it.')]:[];
     return {detail:`${declinedWords(r.meaning)}${extra}`,
       next:[...first,askCard(e,c,'Read the operation\'s card and the refusals it declares.')]};
   },
