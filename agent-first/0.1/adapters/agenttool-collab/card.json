@@ -1,8 +1,8 @@
 {
   "schema": "xenia.agent-first.adapter-card/0.1-development",
   "status": "repository-only development",
-  "license": "CC-BY-SA-4.0",
-  "origin": "Ported from modules/0.1/adapters/agenttool-collab/module.json of this project's other lineage, kept at origin/hermes/agent-first-modules (beed37a); the fork at origin/hermes/agent-first-modules-compose (4119d4d) holds the same card with one effect fewer. Carried over: the eight operations, their input schemas and the limits. Changed here: operation ids take this kit's form, effects are declared for each operation, open is an operation of its own, each schema is tightened to the backend's input rules as read in the pinned bundle, each operation says what comes back and what it refuses, and the bundle's digest moved from the caller's config to the kit's lock.",
+  "license": "MPL-2.0",
+  "origin": "Ported from modules/0.1/adapters/agenttool-collab/module.json of this project's other lineage, kept at origin/hermes/agent-first-modules (beed37a); the fork at origin/hermes/agent-first-modules-compose (4119d4d) holds the same card with one effect fewer. Carried over: the eight operations, their input schemas and the limits. Changed here: operation ids take this kit's form, effects are declared for each operation, open is an operation of its own, each schema is tightened to the backend's input rules as read in the pinned bundle, each operation says what comes back and what it refuses, and the bundle's digest moved from the caller's config to the kit's lock. Licence: module.json was runtime configuration under that lineage's licence map, so MPL-2.0; this card is a modification of it, is read by index.mjs to build the module, and stays MPL-2.0.",
   "module": {
     "id": "agenttool.collab",
     "version": "0.1.0-dev.0",
@@ -23,8 +23,8 @@
       "bundlePath": "The file that holds the pinned bundle bytes. It is read, and never changed or run from there.",
       "bunPath": "A Bun executable. Its version is not pinned or checked.",
       "databasePath": "The journal file.",
-      "homeDir": "A private folder that becomes the backend's HOME and working directory, and holds the copy of the bundle while a session runs. Created if missing. Not the user's home, and not a folder that holds it.",
-      "workspace": "An existing directory, apart from homeDir and from the folder of databasePath: none of them is the other, inside it or around it. Where the workspace is inside a git repository the backend works at that repository's top level, so the same holds for the nearest folder, at the workspace or above it, that holds an entry named .git.",
+      "homeDir": "A private folder that becomes the backend's HOME and working directory, and holds the copy of the bundle while a session runs. Created if missing. Not the user's home, and not a folder that holds it, compared as folders (device and inode) as well as by spelling, so another case or a second path to the same folder is refused.",
+      "workspace": "An existing directory, apart from homeDir and from the folder of databasePath: none of them is the other, inside it or around it, compared as folders as well as by spelling. Where the workspace is inside a git repository the backend works at that repository's top level, so the same holds for the nearest folder, at the workspace or above it, that holds an entry named .git.",
       "actor": "A display label for the native session: 1 to 200 characters, no control character, no space at either end. It is not an identity.",
       "journal": "`new`: nothing may be at databasePath yet. `existing`: a regular file must be there.",
       "timeoutMs": "Optional, 100 to 9000, default 8000: how long one request to the backend may take."
@@ -53,7 +53,7 @@
   "refusals_note": "`refusals` here are raised by the adapter itself, before anything is sent to the backend: each operation lists the codes it can answer with, and the table gives each code its meaning and what to do next. `backend_refusals`, on an operation, are refusals of the backend that the adapter passes on; each carries its own meaning and `sites`, the places in the pinned bundle where the tool was read to raise it. `sites` are on this card only: the runtime is not given them. Every one of both kinds is declared with the effect not_applied. For the adapter's own that is how its code is written; for the backend's it is a reading, not an observation.",
   "refusals": {
     "already_open": {
-      "meaning": "open was already started in this binding (it returned, or it failed part-way), or the binding is closed. A binding opens once, so nothing more was started.",
+      "meaning": "open was already started in this binding (it returned, or it failed part-way), or the binding's end has begun. A binding opens once, so nothing more was started.",
       "next": "inspect the module: look.step says how far open got. A new session starts a new binding."
     },
     "backend_not_running": {
@@ -77,7 +77,7 @@
       "next": "Read what the journal holds with status and task-get, and what the binding holds with inspect. Do not repeat the earlier write from memory. Writing again needs a new session."
     },
     "home_dir_unavailable": {
-      "meaning": "Something that is not a directory is at homeDir, or it is a symbolic link. Nothing was copied, started or written.",
+      "meaning": "Something that is not a directory is at homeDir, or it is a symbolic link, or it is missing and could not be created; in that last case the first missing folder was looked at after the attempt and was not there. Nothing was copied, started or written.",
       "next": "Choose a homeDir that is a plain directory, or a path where nothing is yet."
     },
     "journal_exists": {
@@ -97,7 +97,7 @@
       "next": "inspect the module: look.claims lists the tasks this binding has claimed."
     },
     "not_open": {
-      "meaning": "open has not returned in this binding: it was not called, it declined, it failed part-way, or the binding is closed. Nothing was sent.",
+      "meaning": "open has not returned in this binding (it was not called, it declined, or it failed part-way), or the binding's end has begun. Nothing was sent.",
       "next": "Invoke open first. inspect of the module shows look.step."
     },
     "pin_mismatch": {
@@ -117,7 +117,7 @@
       "next": "Invoke next, then acknowledge the next_anchor and the cursor_version of that page."
     },
     "workspace_unavailable": {
-      "meaning": "The workspace is not an existing directory, or it is a symbolic link, or by its real path it is not apart from homeDir or from the journal's folder; or a folder above it holds an entry named .git, and that folder is not apart from them. Nothing was copied, started or written.",
+      "meaning": "The workspace is not an existing directory, or it is a symbolic link, or it is not apart from homeDir or from the journal's folder, compared by spelling, by real path and as folders (device and inode); or a folder above it holds an entry named .git, and that folder is not apart from them. Nothing was copied, started or written.",
       "next": "Choose an existing directory that is apart from homeDir and from the folder of databasePath. Where it is inside a git repository, keep homeDir and the journal outside that repository."
     }
   },
@@ -234,13 +234,13 @@
       "backend_refusals": [],
       "does": [
         "Reads the file at bundlePath and compares its sha256 with the kit's pin; checks bunPath, homeDir, the workspace and the journal against the config. Up to here nothing is written, and each thing found wrong is a declared refusal.",
-        "Creates homeDir if it is missing, and in it one new private folder holding a read-only copy of the checked bytes.",
+        "Creates homeDir if it is missing, and in it one new private folder holding a read-only copy of the checked bytes. A homeDir that cannot be created, where nothing was made, is the refusal home_dir_unavailable.",
         "Starts that copy with the program at bunPath: no shell, working directory homeDir, and four environment variables: PATH as this process has it, HOME set to homeDir, AGENTOOL_COLLAB_DB set to databasePath, GIT_OPTIONAL_LOCKS set to 0.",
         "As read in the pinned bundle, the backend opens the journal when it starts: it creates the file and its folder when they are missing, and may migrate an older journal.",
         "Sends initialize and tools/list, and compares the server's name and version with the pin and the input bounds each tool states with this card.",
         "Starts one native session for the configured actor in the workspace. As read in the pinned bundle, the backend runs git for this: where the workspace is inside a git repository it takes that repository's top level as the root it works at, and where there is a commit it reads the untracked files there to hash them.",
         "As read in the pinned bundle, the backend then appends to the journal and writes a credential file in the folder collab-sessions beside the journal. The credential is not returned.",
-        "A failure after the first write is answered as failed with an unknown effect. A backend that was started is stopped, the step reached stays in look, and open is not run a second time."
+        "A failure after the first write is answered as failed with an unknown effect. A backend that was started is stopped, the step reached stays in look, and open is not run a second time, whatever step it reached."
       ]
     },
     "status": {

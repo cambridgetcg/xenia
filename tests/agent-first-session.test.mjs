@@ -1289,6 +1289,114 @@ test('a reader that goes away does not crash the session: it ends, silent on std
   assert.equal(signal,null);assert.equal(code,1);assert.equal(stderr,'');
 });
 
+// ---------------------------------------------------------------- review fixes
+// An output that fails after it has taken `taken` lines: each later write is refused with an error.
+async function failingOutput(taken){
+  const {Writable}=await import('node:stream');
+  const lines=[];
+  const output=new Writable({write(chunk,encoding,done){
+    if(lines.length>=taken){done(new Error('PLANTED_OUTPUT_GONE'));return;}
+    lines.push(chunk.toString('utf8'));done();
+  }});
+  return {output,lines};
+}
+
+test('an output that stops taking lines closes admission: no request is started after a write fails, and the end still runs',{timeout:20000},async()=>{
+  const calls=[];
+  const closes=[];
+  const {output,lines}=await failingOutput(2);
+  const input=new PassThrough();
+  const session=runSession({modules:[fixture({calls})],bindings:[{module:bound(),close:()=>{closes.push('closed');return {complete:true,did:[],did_not:[],left_behind:[]};}}],
+    allow:[`${M}:put`],input,output});
+  // Line 1 is session_start and line 2 the answer to activate; the answer to the first put is the write that fails.
+  const requests=[activate,...[1,2,3,4,5].map(n=>({id:`p${n}`,method:'invoke',module:M,operation:'put',input:{title:`T${n}`}}))];
+  input.write(requests.map(request=>`${JSON.stringify(request)}\n`).join(''));
+  const done=await session.done;
+  assert.deepEqual(calls,[['put',{title:'T1'}]],'only the call whose answer failed had started; none was started after it');
+  assert.equal(lines.length,2);
+  assert.equal(done.exit_code,1);
+  assert.equal(done.end.ended_by,'output_error');assert.equal(done.end.exit_reason,'output_not_accepted');
+  assert.deepEqual(done.end.modules.map(row=>row.state),['retired','retired'],'the end still retired every module');
+  assert.deepEqual(closes,['closed'],'and closed the binding once');
+  assert.ok(done.end.not_established.some(line=>/output/.test(line)&&/read/.test(line)),JSON.stringify(done.end.not_established));
+  input.end();
+});
+
+// A child that runs one operation declaring local-write, allowed, which appends to a file.
+const writerScript=path.join(work,'fixture-session-writer.mjs');
+fs.writeFileSync(writerScript,`import fs from 'node:fs';
+import {runSessionProcess} from ${JSON.stringify(new URL('session.mjs',kit).href)};
+const [marker]=process.argv.slice(2);
+const modules=[{id:'child.writer',version:'1.0.0',contract:'child.writer/1',title:'Child writer',motif:'bounded-work',description:'One operation that writes.',
+  operations:{mark:{description:'Appends one line to a file.',effects:['local-write'],run:input=>{fs.appendFileSync(marker,String(input)+'\\n');return {marked:input};}}}}];
+const result=await runSessionProcess({modules,allow:['child.writer:mark']});
+process.exit(result.exit_code);
+`);
+
+test('a reader that goes away: an operation that declares effects is not started after the output fails',{timeout:30000},async()=>{
+  const marker=path.join(work,`writer-${markers+=1}.txt`);
+  const s=start(process.execPath,[writerScript,marker]);
+  s.child.stdin.on('error',()=>{});
+  await s.until(1);
+  s.child.stdout.destroy();
+  await sleep(100);
+  s.write([{id:'1',method:'activate',module:'child.writer'}]);
+  for(let n=1;n<=5;n+=1){await sleep(60);if(s.child.exitCode===null)s.write([{id:`w${n}`,method:'invoke',module:'child.writer',operation:'mark',input:n}]);}
+  if(s.child.exitCode===null)s.child.stdin.end();
+  // finish() also holds stderr to silence.
+  const {code,signal}=await s.finish();
+  assert.equal(signal,null);assert.equal(code,1);
+  assert.equal(fs.existsSync(marker),false,`nothing was written by the operation: ${fs.existsSync(marker)?fs.readFileSync(marker,'utf8'):''}`);
+});
+
+test('read-ahead is bounded in bytes as well as lines: a few large lines behind a call in flight pause the input',{timeout:20000},async()=>{
+  assert.equal(SESSION_LIMITS.read_ahead_lines,256);assert.equal(SESSION_LIMITS.read_ahead_bytes,4*1024*1024);
+  const gates={g:deferred()};
+  const s=open({modules:[fixture({gates})]});
+  const start=await s.next();
+  assert.deepEqual(start.limits.read_ahead,{lines:256,bytes:4194304});
+  await s.ask(activate);
+  s.send({id:'w',method:'invoke',module:M,operation:'wait',input:{gate:'g',then:'return'}});
+  await tick();
+  // Lines of about 1 MiB each, which the session answers INVALID_REQUEST: they hold a key no form names.
+  const big=n=>JSON.stringify({id:`b${n}`,method:'inspect',pad:'x'.repeat(1024*1024-64)});
+  for(let n=1;n<=6;n+=1){s.send(big(n));await tick(2);}
+  await tick(5);
+  assert.equal(s.input.isPaused(),true,'the input is paused once the lines held reach the byte bound');
+  gates.g.resolve();
+  assertOk(await s.next());
+  for(let n=1;n<=6;n+=1){const line=await s.next();assertRefused(line,'INVALID_REQUEST',`b${n}`);assert.equal(line.id,`b${n}`);}
+  const {last}=await s.end();
+  assert.deepEqual(last.lines,{read:8,answered:8,blank:0});
+});
+
+test('a deadline fires at its time: not before it, and not long after',{timeout:20000},async()=>{
+  const s=open({modules:[fixture()],endMs:100});await s.next();
+  await s.ask(activate);
+  const before=Date.now();
+  const r=await s.ask({id:'h',method:'invoke',module:M,operation:'hang',deadline_ms:400});
+  const took=Date.now()-before;
+  assertRefused(r,'DEADLINE_EXCEEDED');
+  assert.ok(took>=395,`answered after ${took} ms, before its deadline`);
+  assert.ok(took<1000,`answered after ${took} ms, well past its deadline of 400`);
+  await s.end();
+});
+
+test('at the door: a signal sent as soon as the first line is read still ends the session with session_end',{timeout:60000},async()=>{
+  for(const signal of ['SIGTERM','SIGINT','SIGHUP']){
+    for(let run=0;run<4;run+=1){
+      const s=start(process.execPath,[cli,'session']);
+      s.child.stdin.on('error',()=>{});
+      await s.until(1);
+      s.child.kill(signal);
+      const {code,signal:killedBy}=await s.finish();
+      assert.equal(killedBy,null,`${signal}, run ${run}: the process ended by itself`);assert.equal(code,0,`${signal}, run ${run}`);
+      assert.deepEqual(s.lines.map(line=>line.kind),['session_start','session_end'],`${signal}, run ${run}`);
+      assert.equal(s.lines[1].ended_by,'signal');assert.equal(s.lines[1].signal,signal);
+    }
+  }
+});
+
 test('every line any session printed in this file was one compact JSON object',()=>{
   assert.ok(linesSeen>200,`lines seen: ${linesSeen}`);
 });

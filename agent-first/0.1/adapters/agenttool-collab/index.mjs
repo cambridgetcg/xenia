@@ -34,6 +34,10 @@
 // - The workspace check also looks above the workspace for a `.git` entry,
 //   because the backend works at the top level of the repository that holds
 //   the workspace (read in the pinned bundle; see repositoryTop below).
+// - The path guards compare folders by device and inode as well as by
+//   spelling, with identity and lineage from ../../provider.mjs.
+// - Once close() has begun, every operation is declined before anything is
+//   sent; an open that began to write and failed is never run again.
 //
 // Not established by anything in this file: that it works with the real
 // bundle (the tests run a stand-in written in this repository), that Bun or
@@ -45,6 +49,7 @@ import {devNull,homedir} from 'node:os';
 import {ModuleError,Decline} from '../../runtime.mjs';
 import {compileSchema} from '../../schema.mjs';
 import {readBoundedBytes,parseStrictJson} from '../../input-file.mjs';
+import {identity,lineage} from '../../provider.mjs';
 import {spawnStdioEndpoint,EndpointError} from './stdio.mjs';
 
 export const COLLAB_ID='agenttool.collab';
@@ -183,9 +188,38 @@ function settled(target){
   }
 }
 const plainAbsolute=target=>path.isAbsolute(target)&&path.resolve(target)===target&&!/[\x00-\x1f\x7f]/.test(target);
-// Is `inner` the folder `outer`, or somewhere inside it? By spelling; callers pass real paths where that matters.
+// Is `inner` the folder `outer`, or somewhere inside it? By spelling only.
 const holds=(outer,inner)=>inner===outer||inner.startsWith(outer.endsWith(path.sep)?outer:outer+path.sep);
-const apart=(a,b)=>!holds(a,b)&&!holds(b,a);
+// By folder. Two spellings can reach one folder (another case on a volume that ignores case, a firmlink, a second
+// mount), so the folders are compared by device and inode as well, with the two functions the context commands use
+// for the same question (identity and lineage, in ../../provider.mjs). A path is taken as the deepest part of it that
+// exists, followed through links to a folder with an identity, and the names below it that do not exist yet; those
+// names are compared without regard to case or Unicode form, which can refuse two paths that a volume telling case
+// apart would keep apart, and never accepts two that it would not.
+const identityOf=target=>{try{return identity(target);}catch{return undefined;}};
+function located(target){
+  for(let current=target,rest=[];;){
+    const id=identityOf(current);
+    if(id!==undefined)return {real:realOf(current)??current,id,rest};
+    const up=path.dirname(current);
+    if(up===current)return {real:current,id:undefined,rest};
+    rest.unshift(path.basename(current));
+    current=up;
+  }
+}
+const fold=name=>name.normalize('NFC').toLowerCase();
+function contains(outer,inner){
+  const o=located(outer),i=located(inner);
+  if(o.id===undefined||i.id===undefined)return false;
+  // outer exists: inner is in it when outer is the existing part of inner or a folder above it. A folder above it
+  // that cannot be looked at is taken as a reason to keep them together, not apart.
+  if(!o.rest.length){try{return lineage(i.real).has(o.id);}catch{return true;}}
+  // outer does not exist yet: inner can be in it only below the same existing folder, through the same names.
+  return i.id===o.id&&i.rest.length>=o.rest.length&&o.rest.every((name,index)=>fold(name)===fold(i.rest[index]));
+}
+// Either test finds it: by the spellings given, by their real paths, or by folder.
+const nested=(outer,inner)=>holds(outer,inner)||holds(settled(outer),settled(inner))||contains(outer,inner);
+const apart=(a,b)=>!nested(a,b)&&!nested(b,a);
 function userHomes(){
   const homes=new Set();
   let fromSystem;
@@ -198,7 +232,7 @@ function userHomes(){
   return [...homes];
 }
 // homeDir becomes the backend's HOME. It must not be the user's own home, or a folder that holds it.
-const isUserHome=dir=>[dir,settled(dir)].some(candidate=>userHomes().some(home=>holds(candidate,home)));
+const isUserHome=dir=>userHomes().some(home=>nested(dir,home));
 
 // Returns the config, frozen, with the default filled in; or throws INVALID_INPUT with a `reason`, and with
 // `pointer` naming the key at fault. Nothing the config held is repeated. It reads paths and writes nothing.
@@ -386,6 +420,12 @@ export function bindCollab({config:given,configSha256,pin:givenPin,card=loadColl
 
   // ---- open ----
   const lstatOf=target=>{try{return fs.lstatSync(target);}catch{return undefined;}};
+  // The first folder of a path that is not there: the one a mkdir of the whole path would make first.
+  function firstMissing(target){
+    let missing=target;
+    for(let current=path.dirname(target);current!==missing&&!lstatOf(current);current=path.dirname(current))missing=current;
+    return missing;
+  }
   // Read in the pinned bundle (inspectRepository): the backend asks git for the top level of the repository that
   // holds the workspace and, when there is one, works there and not in the workspace. So the folder to keep apart
   // from homeDir and the journal is that one. Git is not run here: the nearest folder, at the workspace or above
@@ -417,16 +457,26 @@ export function bindCollab({config:given,configSha256,pin:givenPin,card=loadColl
     const realWorkspace=realOf(workspace);
     if(!place||!place.isDirectory()||place.isSymbolicLink()||realWorkspace===undefined)throw new Decline('workspace_unavailable');
     for(const folder of new Set([realWorkspace,repositoryTop(realWorkspace)])){
-      if(!apart(folder,settled(homeDir))||!apart(folder,settled(path.dirname(databasePath))))throw new Decline('workspace_unavailable');
+      if(!apart(folder,homeDir)||!apart(folder,path.dirname(databasePath)))throw new Decline('workspace_unavailable');
     }
     const there=lstatOf(databasePath);
     if(journal==='new'&&there)throw new Decline('journal_exists');
     if(journal==='existing'&&!(there&&there.isFile()))throw new Decline('journal_missing');
+    // homeDir is made when it is missing. A first attempt that fails and leaves nothing behind is still a refusal: the
+    // first folder that was missing is looked at again afterwards, and it is still not there.
+    if(!home){
+      const missing=firstMissing(homeDir);
+      try{fs.mkdirSync(homeDir,{recursive:true,mode:0o700});}
+      catch{
+        if(!lstatOf(missing))throw new Decline('home_dir_unavailable');
+        state.openFailedBefore='home_ready';state.unknownCount+=1;state.unknown.push({operation:'open',why:'could_not_write'});
+        throw new CollabFailure('could_not_write',true);
+      }
+    }
     // From here on something is written. A failure is no longer a refusal: the step reached is kept, and open is not run again.
     let before='home_ready';
     const reach=step=>{state.step=step;before=STEPS[STEPS.indexOf(step)+1];};
     try{
-      fs.mkdirSync(homeDir,{recursive:true,mode:0o700});
       reach('home_ready');
       // Run these checked bytes, not a second reading of bundlePath: a private folder, one read-only file.
       copyDir=fs.mkdtempSync(path.join(homeDir,'xenia-collab-bundle-'));
@@ -546,9 +596,11 @@ export function bindCollab({config:given,configSha256,pin:givenPin,card=loadColl
     try{
       if(state.inFlight)throw new Decline('busy');
       if(id==='open'){
-        if(state.step!=='not_opened'||state.closing)throw new Decline('already_open');
+        // An open that began to write and failed is not run again, whatever step it reached.
+        if(state.step!=='not_opened'||state.openFailedBefore!==undefined||state.closing)throw new Decline('already_open');
       }else{
-        if(state.step!=='open')throw new Decline('not_open');
+        // Once close() has begun, nothing more is sent: the end is the only thing that talks to the backend then.
+        if(state.step!=='open'||state.closing)throw new Decline('not_open');
         if(write&&state.unknownCount>0)throw new Decline('earlier_outcome_unknown');
         if(state.transport!=='running')throw new Decline('backend_not_running');
       }

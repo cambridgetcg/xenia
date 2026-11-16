@@ -8,6 +8,7 @@
 // which keyword is named for a value of the wrong type on one kind of string
 // node, and a required name that is the empty string.
 import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import test from 'node:test';
 import Ajv2020 from 'ajv/dist/2020.js';
@@ -218,9 +219,20 @@ test('the compiled checker keeps its own copy: editing the schema or a miss afte
 });
 
 test('a pattern is tried only on text that passed maxLength, and holds no state between calls',()=>{
+  // The over-long string meets a pattern that takes exponential time. If the length check let it through, the pattern
+  // would hold the thread for minutes, so it is tried in a child process with a hard time limit: a regression then
+  // fails this test instead of stalling the file.
+  const program=`import {compileSchema} from ${JSON.stringify(new URL('../agent-first/0.1/schema.mjs',import.meta.url).href)};
+const {check}=compileSchema({type:'string',pattern:'^(?:a+)+$',maxLength:8});
+const started=Date.now();
+const miss=check('a'.repeat(200000)+'!');
+process.stdout.write(JSON.stringify({miss,ms:Date.now()-started}));`;
+  const child=spawnSync(process.execPath,['--input-type=module','-e',program],{encoding:'utf8',timeout:10000,killSignal:'SIGKILL'});
+  assert.equal(child.signal,null,'the check finished within 10 seconds: the pattern was not tried on the over-long string');
+  assert.equal(child.status,0,child.stderr);
+  const {miss,ms}=JSON.parse(child.stdout);
+  assert.deepEqual(miss,{pointer:'',keyword:'maxLength',expected:8});
+  assert.ok(ms<1000,`an over-long string is refused by its length, before the pattern is tried (${ms} ms)`);
   const {check}=compileSchema({type:'string',pattern:'^(?:a+)+$',maxLength:8});
-  const started=Date.now();
-  assert.deepEqual(check('a'.repeat(200000)+'!'),{pointer:'',keyword:'maxLength',expected:8});
-  assert.ok(Date.now()-started<1000,'an over-long string is refused by its length, before the pattern is tried');
   for(let i=0;i<3;i++){assert.equal(check('aaa'),undefined);assert.equal(check('aab').keyword,'pattern');}
 });

@@ -129,10 +129,12 @@ async function opened(t,options){
 
 // ---------------------------------------------------------------- the card
 
-test('the card is data under CC BY-SA that says where it came from, and the runtime accepts the module built from it',t=>{
-  assert.equal(card.license,'CC-BY-SA-4.0');
+test('the card is MPL-2.0 like the file it was ported from, says where it came from, and the runtime accepts the module built from it',t=>{
+  // module.json was runtime configuration under the other lineage's map, so MPL-2.0; the card is a modification of it, and the runtime enforces its schemas.
+  assert.equal(card.license,'MPL-2.0');
   assert.match(card.origin,/modules\/0\.1\/adapters\/agenttool-collab\/module\.json/);
   assert.match(card.origin,/beed37a/);
+  assert.match(card.origin,/MPL-2\.0/,'the origin says what licence the ported file was under');
   assert.equal(card.module.id,'agenttool.collab');assert.equal(COLLAB_ID,'agenttool.collab');
   const motifIds=JSON.parse(fs.readFileSync(new URL('motifs.json',kit),'utf8')).motifs.map(motif=>motif.id);
   assert.ok(motifIds.includes(card.module.motif),`the card names a motif that is in the map: ${card.module.motif}`);
@@ -531,9 +533,7 @@ test('each thing open declares is refused before any write, and open can then be
   const more={
     bundle_unavailable:[dirs=>{fs.rmSync(dirs.bundlePath);fs.mkdirSync(dirs.bundlePath);},dirs=>{fs.renameSync(dirs.bundlePath,`${dirs.bundlePath}.real`);fs.symlinkSync(`${dirs.bundlePath}.real`,dirs.bundlePath);}],
     bun_unavailable:[()=>({bunPath:scratch}),dirs=>{const file=path.join(dirs.root,'not-executable');fs.writeFileSync(file,'x',{mode:0o600});return {bunPath:file};}],
-    workspace_unavailable:[dirs=>{fs.rmSync(dirs.workspace,{recursive:true});fs.writeFileSync(dirs.workspace,'a file');},
-      // By its name the workspace is apart from homeDir; by its real path it is inside it.
-      dirs=>{fs.rmSync(dirs.workspace,{recursive:true});fs.mkdirSync(path.join(dirs.homeDir,'inner'));fs.symlinkSync(path.join(dirs.homeDir,'inner'),dirs.workspace);}],
+    workspace_unavailable:[dirs=>{fs.rmSync(dirs.workspace,{recursive:true});fs.writeFileSync(dirs.workspace,'a file');}],
     journal_missing:[dirs=>{fs.mkdirSync(dirs.databasePath,{recursive:true});return {journal:'existing'};}],
     journal_exists:[dirs=>{fs.mkdirSync(path.dirname(dirs.databasePath));fs.symlinkSync(path.join(dirs.root,'nowhere'),dirs.databasePath);}],
   };
@@ -542,6 +542,32 @@ test('each thing open declares is refused before any write, and open can then be
     const {call}=rig(t,{dirs,config:arrange(dirs)??{},connect:()=>assert.fail(`${code} ${index}: nothing may be started`)});
     await declined(call('open'),code,`${code} ${index}`);
     assert.deepEqual(copiesOf(dirs),[],`${code} ${index}`);
+  }
+  // By its name the workspace is apart from homeDir; by its real path it is inside it. The link is made after the
+  // binding, so that open's own check is the one that meets it: the config check meets it too (see the next test).
+  {
+    const dirs=place();
+    const {call}=rig(t,{dirs,connect:()=>assert.fail('a linked workspace: nothing may be started')});
+    fs.rmSync(dirs.workspace,{recursive:true});fs.mkdirSync(path.join(dirs.homeDir,'inner'));fs.symlinkSync(path.join(dirs.homeDir,'inner'),dirs.workspace);
+    await declined(call('open'),'workspace_unavailable','a workspace linked into homeDir');
+    assert.deepEqual(copiesOf(dirs),[]);
+  }
+  // A homeDir that cannot be created is refused as unavailable, with nothing created, and open can then be asked again.
+  if(process.getuid?.()!==0){
+    const dirs=place({home:false});
+    const parent=path.join(dirs.root,'locked');
+    fs.mkdirSync(parent,{mode:0o500});
+    const homeDir=path.join(parent,'home');
+    const {call,binding}=rig(t,{dirs,config:{homeDir},connect:transport([])});
+    try{
+      const error=await declined(call('open'),'home_dir_unavailable','a homeDir that cannot be created');
+      assert.match(error.refusal.meaning,/could not be created/);
+      assert.deepEqual(fs.readdirSync(parent),[],'nothing was created');
+      assert.equal(binding.look().step,'not_opened');assert.equal(binding.look().open_failed_before,undefined);
+      assert.equal(binding.look().writes_latched,false);
+    }finally{fs.chmodSync(parent,0o700);}
+    await call('open');
+    assert.equal(binding.look().step,'open');
   }
   // After a declared refusal the same binding can open once the cause is gone.
   const dirs=place();
@@ -580,6 +606,70 @@ test('where the workspace is inside a git repository, that repository\'s top fol
   await near.call('open');
   assert.equal(near.binding.look().step,'open');
 });
+
+// Two spellings of one folder. On a volume that ignores case, the same folder in another case; on macOS, a folder
+// of the data volume reached through /System/Volumes/Data. Each test is left out where its second spelling is not there.
+const sameFolder=(a,b)=>{try{const x=fs.statSync(a),y=fs.statSync(b);return x.dev===y.dev&&x.ino===y.ino;}catch{return false;}};
+const caseless=(()=>{
+  const probe=path.join(scratch,'Case-Probe');
+  fs.mkdirSync(probe);
+  try{return sameFolder(probe,path.join(scratch,'case-probe'));}finally{fs.rmSync(probe,{recursive:true,force:true});}
+})();
+const shout=target=>path.join(path.dirname(target),path.basename(target).toUpperCase());
+const secondPath=target=>{const other=path.join('/System/Volumes/Data',target);return other!==target&&sameFolder(other,target)?other:undefined;};
+async function withHome(home,act){
+  const saved=process.env.HOME;
+  process.env.HOME=home;
+  try{return await act();}finally{if(saved===undefined)delete process.env.HOME;else process.env.HOME=saved;}
+}
+function refusedConfig(value,reason,label){
+  let error;
+  try{checkCollabConfig(value);}catch(caught){error=caught;}
+  assert.ok(error,`${label}: expected a refusal`);
+  assert.equal(error.code,'INVALID_INPUT',label);assert.equal(error.reason,reason,label);
+}
+for(const [kind,other,skip] of [['another case',shout,caseless?false:'this volume tells case apart'],
+  ['a second path',target=>secondPath(target),secondPath(scratch)?false:'no second path to the temporary folder was found']]){
+  test(`the config compares folders, not spellings: ${kind} to the same folder is refused`,{skip},async()=>{
+    const dirs=place();
+    const good=configOf(dirs);
+    // As the user's home: a folder made here, set as HOME for the length of the check.
+    const home=path.join(dirs.root,'user-home');
+    fs.mkdirSync(home);
+    assert.ok(sameFolder(other(home),home));
+    await withHome(home,()=>{
+      refusedConfig({...good,homeDir:other(home)},'collab_config_home_is_user_home',`${kind}: the user home`);
+      refusedConfig({...good,homeDir:other(dirs.root)},'collab_config_home_is_user_home',`${kind}: a folder that holds the user home`);
+      checkCollabConfig(good);
+    });
+    refusedConfig({...good,workspace:path.join(other(dirs.homeDir),'inner')},'collab_config_workspace_not_apart',`${kind}: the workspace inside homeDir`);
+    refusedConfig({...good,homeDir:path.join(other(dirs.workspace),'home')},'collab_config_workspace_not_apart',`${kind}: homeDir inside the workspace`);
+    refusedConfig({...good,databasePath:path.join(other(dirs.workspace),'state','journal.json')},'collab_config_workspace_not_apart',`${kind}: the journal's folder inside the workspace`);
+    const journalRoot=path.join(dirs.root,'journal-root');
+    fs.mkdirSync(journalRoot);
+    refusedConfig({...good,databasePath:path.join(journalRoot,'state','journal.json'),workspace:other(journalRoot)},'collab_config_workspace_not_apart',`${kind}: the workspace around the journal's folder`);
+    // A link is followed: a workspace linked into homeDir is not apart from it.
+    const linked=path.join(dirs.root,'linked-work');
+    fs.mkdirSync(path.join(dirs.homeDir,'inner'));fs.symlinkSync(path.join(dirs.homeDir,'inner'),linked);
+    refusedConfig({...good,workspace:linked},'collab_config_workspace_not_apart',`${kind}: a workspace linked into homeDir`);
+  });
+  test(`at open the guards compare folders too: ${kind} to homeDir is met`,{skip},async t=>{
+    const nothing=()=>assert.fail('nothing may be started');
+    // The repository around the workspace holds homeDir, which the config names by its other spelling. The journal is
+    // kept outside that repository, so that homeDir is the one thing the repository holds.
+    const dirs=place(),away=place();
+    fs.mkdirSync(path.join(dirs.root,'.git'));
+    const before=fs.readdirSync(dirs.root).sort();
+    const r=rig(t,{dirs,config:{homeDir:path.join(other(dirs.root),'home'),databasePath:away.databasePath},connect:nothing});
+    await declined(r.call('open'),'workspace_unavailable',`${kind}: a repository around homeDir`);
+    assert.deepEqual(fs.readdirSync(dirs.root).sort(),before);
+    // homeDir becomes the user's home after the binding was made: open looks again, by folder.
+    const late=place();
+    const bound=rig(t,{dirs:late,config:{homeDir:other(late.homeDir)},connect:nothing});
+    await withHome(late.homeDir,()=>declined(bound.call('open'),'home_dir_unavailable',`${kind}: homeDir is now the user home`));
+    assert.deepEqual(copiesOf(late),[]);
+  });
+}
 
 test('an existing journal is opened only when the config says existing, and a second session joins the same workspace',async t=>{
   const first=await opened(t);
@@ -1194,6 +1284,20 @@ test('with a call still pending close writes nothing, stops the process, and doe
   assert.deepEqual(copiesOf(dirs),[]);
 });
 
+test('once close() has begun, every call is declined before anything is sent, and the end goes on as it would',async t=>{
+  const {dirs,call,binding}=await opened(t);
+  const closing=binding.close();
+  const sent=callsOf(dirs).length;
+  await declined(call('task-create',{idempotency_key:KEY(),title:'made while closing'}),'not_open','a write while closing');
+  await declined(call('status'),'not_open','a read while closing');
+  await declined(call('open'),'already_open','open while closing');
+  const report=await closing;
+  assert.equal(report.complete,true,JSON.stringify(report));
+  assert.deepEqual(Object.keys(journalOf(dirs).tasks),[],'no task was made');
+  assert.ok(callsOf(dirs).length>=sent);
+  assert.equal(callsOf(dirs).slice(sent).some(line=>/collab_task_create|collab_workspace_status/.test(line)),false,'neither call reached the backend');
+});
+
 test('a release the backend refuses at the end stops the end there: the session is not ended and the task is named',async t=>{
   const {dirs,call,binding,session}=await opened(t);
   const tasks=[];
@@ -1365,6 +1469,20 @@ test('at the door the gate decides, a whole exchange runs, and the end releases,
   assert.ok(last.cleanup.left_behind.some(line=>line.startsWith(`${COLLAB_ID}: `)&&/journal/.test(line)));
   assert.equal(journalOf(s.dirs).tasks[task.id].status,'open');
   assert.deepEqual(copiesOf(s.dirs),[]);
+});
+
+test('at the door, a backend refusal is worded as the module\'s declaration, not as something observed',async t=>{
+  const s=boundSession(t);
+  await s.next();
+  await s.ask({method:'activate',module:COLLAB_ID});
+  await s.invoke('open');
+  const task=(await s.invoke('task-create',{idempotency_key:KEY(),title:'Stale'})).result;
+  const refused=await s.invoke('task-claim',{task_id:task.id,idempotency_key:KEY(),expected_version:task.version+5});
+  assert.equal(refused.error.code,'DECLINED');assert.equal(refused.error.refusal.code,'version_conflict');
+  assert.equal(refused.problem.detail.includes('before any change'),false,refused.problem.detail);
+  assert.ok(refused.problem.detail.startsWith('The operation declined, and its module declares that nothing was applied: '),refused.problem.detail);
+  assert.ok(refused.not_established.some(line=>/not_applied is the module’s own declaration/.test(line)));
+  await s.end();
 });
 
 test('timeout order one: the request timeout comes before the session deadline, and the call is answered as failed, effect unknown',async t=>{

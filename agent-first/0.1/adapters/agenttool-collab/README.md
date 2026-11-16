@@ -5,7 +5,7 @@
 
 | File | What it is |
 |---|---|
-| [card.json](card.json) | The module's card, as data (CC BY-SA 4.0): each operation's input schema, example, what comes back, refusals and a `does` list; the config keys; the limits; what the end writes; and `backend_reading`, how the backend's refusals were read. The adapter builds its module from this file, and `catalog` and `explain` read the same file. |
+| [card.json](card.json) | The module's card, as data (MPL-2.0, like the `module.json` it was ported from): each operation's input schema, example, what comes back, refusals and a `does` list; the config keys; the limits; what the end writes; and `backend_reading`, how the backend's refusals were read. The adapter builds its module from this file, and `catalog` and `explain` read the same file. |
 | [index.mjs](index.mjs) | The adapter (MPL-2.0): the config check, `open`, the eight other operations, what the binding remembers, and the end. |
 | [stdio.mjs](stdio.mjs) | The bounded JSON-RPC port the adapter speaks through (MPL-2.0). |
 
@@ -29,8 +29,8 @@ One JSON object in a regular file of at most 16384 bytes, read strictly (valid U
 | `bundlePath` | The file that holds the pinned bundle bytes. It is read, and never changed or run from there. |
 | `bunPath` | A Bun executable. Its version is not pinned or checked. |
 | `databasePath` | The journal file. |
-| `homeDir` | A private folder that becomes the backend's `HOME` and working directory, and holds the copy of the bundle while a session runs. Created if missing. Not the user's home, and not a folder that holds it. |
-| `workspace` | An existing directory, apart from `homeDir` and from the folder of `databasePath`: none is the other, inside it or around it. |
+| `homeDir` | A private folder that becomes the backend's `HOME` and working directory, and holds the copy of the bundle while a session runs. Created if missing; when it cannot be created and nothing was made, `open` declines `home_dir_unavailable`. Not the user's home, and not a folder that holds it, compared as folders as well as by spelling. |
+| `workspace` | An existing directory, apart from `homeDir` and from the folder of `databasePath`: none is the other, inside it or around it. Folders are compared by device and inode as well as by spelling, so another case or a second path to the same folder is not apart from it. |
 | `actor` | A display label for the native session: 1 to 200 characters, no control character, no space at either end. It is not an identity. |
 | `journal` | `new`: nothing may be at `databasePath` yet. `existing`: a regular file must be there. |
 | `timeoutMs` | Optional, 100 to 9000, default 8000: how long one request to the backend may take. |
@@ -42,12 +42,12 @@ Every path is absolute and in its plain form, at most 512 characters; the five p
 ## What `open` does
 
 1. It reads the file at `bundlePath` and compares its sha256 with the pin; it checks `bunPath`, `homeDir`, the workspace and the journal against the config. Up to here nothing is written, and each thing found wrong is a declared refusal: `pin_mismatch`, `bundle_unavailable`, `bun_unavailable`, `home_dir_unavailable`, `workspace_unavailable`, `journal_exists`, `journal_missing`. After one of these `open` can be asked again.
-2. It creates `homeDir` if it is missing and, in it, one new private folder holding a read-only copy of the checked bytes. The copy is what runs, not a second reading of `bundlePath`.
+2. It creates `homeDir` if it is missing and, in it, one new private folder holding a read-only copy of the checked bytes. The copy is what runs, not a second reading of `bundlePath`. When `homeDir` cannot be created, the first folder that was missing is looked at again: still not there, it is the refusal `home_dir_unavailable`, and `open` can be asked again; there, it is a failure like those below.
 3. It starts the copy with the program at `bunPath`: no shell, working directory `homeDir`, and four environment variables: `PATH` as this process has it, `HOME` set to `homeDir`, `AGENTOOL_COLLAB_DB` set to `databasePath`, `GIT_OPTIONAL_LOCKS` set to `0`.
 4. It sends `initialize` and `tools/list`, compares the server's name, version and protocol with the pin, and compares the input bounds each tool states with the card. A backend that states narrower bounds than the card is not used.
 5. It starts one native session for the configured actor.
 
-From step 2 on, a failure is not a refusal: it is answered `OPERATION_FAILED` with an unknown effect, a backend that was started is stopped, the step reached is kept for `inspect`, and `open` is not run a second time in that binding.
+From step 2 on, with that one exception, a failure is not a refusal: it is answered `OPERATION_FAILED` with an unknown effect, a backend that was started is stopped, the step reached is kept for `inspect`, and `open` is not run a second time in that binding, whatever step it reached. Once the binding's end has begun, every operation is declined before anything is sent: `open` as `already_open`, the others as `not_open`.
 
 **The workspace and git.** Read in the pinned bundle, not observed: when a native session starts and when a task is claimed, the backend runs git. Where the workspace is inside a git repository it takes that repository's top level as the root it works at, and where there is a commit it reads the untracked files there to hash them. So `open` also refuses, as `workspace_unavailable`, when the nearest folder at the workspace or above it that holds an entry named `.git` is not apart from `homeDir` and the journal's folder. The adapter looks at names; it does not run git, so it can name a folder git itself would not use.
 
@@ -121,10 +121,10 @@ The module's row in `session_start` carries `at_end`, so a caller reads it befor
 
 ## Where it came from
 
-The adapter, the card and the port come from this project's other lineage: `modules/0.1/adapters/agenttool-collab/` at `origin/hermes/agent-first-modules` (beed37a), with the same adapter and port bytes at `origin/hermes/agent-first-modules-compose` (4119d4d). Same project, same licence map. What else that lineage held, and what was not carried over, is in [LINEAGE.md](../../LINEAGE.md).
+The adapter, the card and the port come from this project's other lineage: `modules/0.1/adapters/agenttool-collab/` at `origin/hermes/agent-first-modules` (beed37a), with the same adapter and port bytes at `origin/hermes/agent-first-modules-compose` (4119d4d). Same project. Under that lineage's licence map code, tests and runtime configuration were MPL-2.0, and so was `module.json`; the ported files here keep MPL-2.0, `card.json` with them. What else that lineage held, and what was not carried over, is in [LINEAGE.md](../../LINEAGE.md).
 
 - [stdio.mjs](stdio.mjs) is that lineage's file, unchanged below its header comment, and [tests/agent-first-collab-stdio.test.mjs](../../../../tests/agent-first-collab-stdio.test.mjs) is its test file with only the import path changed.
 - [index.mjs](index.mjs) is a port of `adapter.mjs`. Carried over: the digest check before use; the private read-only copy of the checked bytes; the Bun flags and the short environment; the `initialize` and `tools/list` handshake; the task view; the rule that only an observed anchor is acknowledged; the remembered leases; release-then-end at the end. Changed: it runs on the kit runtime; its input checks are the schemas on the card; the digest and the server version come from the kit's lock and not from the caller; the refusal handling above; the copy of the bundle is removed at the end.
-- [card.json](card.json) is a port of `module.json`: the eight operations, their schemas and limits, with `open` made an operation of its own and each operation given effects, what comes back and what it refuses.
+- [card.json](card.json) is a port of `module.json`: the eight operations, their schemas and limits, with `open` made an operation of its own and each operation given effects, what comes back and what it refuses. It is MPL-2.0, as `module.json` was; its prose (meanings, `does`, `backend_reading`) is under the same licence as the rest of the file.
 
 Tests: [tests/agent-first-collab.test.mjs](../../../../tests/agent-first-collab.test.mjs) and [tests/agent-first-collab-stdio.test.mjs](../../../../tests/agent-first-collab-stdio.test.mjs).

@@ -55,6 +55,8 @@ import {REQUEST_METHODS,REQUEST_REASONS,REQUEST_SCHEMAS,SESSION_FLAGS,USAGE_CODE
 
 export const SESSION_LIMITS=Object.freeze({
   request_line_bytes:1024*1024,   // a longer line is discarded unread
+  read_ahead_lines:256,           // lines read and not yet started: at this many the input is paused
+  read_ahead_bytes:4*1024*1024,   // the bytes of those lines: at this many the input is paused too
   session_start_bytes:8192,       // the first line, newline included; a session that cannot fit it does not start
   module_inspect_bytes:8192,      // the answer to `inspect` of one module, newline included
   look_bytes:2048,                // what a binding's look() may add to that answer
@@ -68,8 +70,9 @@ export const SESSION_LIMITS=Object.freeze({
 const L=SESSION_LIMITS;
 const SCHEMA='xenia.agent-first/0.1-development';
 const SIGNALS=Object.freeze(['SIGINT','SIGTERM','SIGHUP']);
-// Lines read ahead of the one being answered. Past the first number the input is paused; it is resumed below the second.
-const QUEUE_HIGH=256,QUEUE_LOW=32;
+// Lines read ahead of the one being answered. At read_ahead_lines lines, or read_ahead_bytes bytes, of them the input
+// is paused; it is resumed when fewer than these two are held.
+const QUEUE_LOW=32,BYTES_LOW=1024*1024;
 // While ending, an output that takes no line for this long after the limits have run out is given up on.
 const OUTPUT_GRACE_MS=2000;
 const NAME='[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*';
@@ -98,7 +101,7 @@ const REQUEST_FIELDS=Object.freeze({
   deadline_ms:'A whole number of milliseconds from 1 to 30000: how long to wait for this call\'s answer.',
 });
 const RESPONSES='One line for each request line that is not blank, in input order: {id, line, ok, method, receipt, state}, then {outcome, result} or {error, problem}, then not_established. `line` counts input lines from 1; `state` is the named module\'s state afterwards, or null. A problem is terminal, or its next_actions are requests for this session: {request, needs, why}, where needs names what the sender adds.';
-const END='The session ends when its input ends, after the lines already read are answered. SIGINT, SIGTERM or SIGHUP ends it too: the call in flight is answered, lines read but not started are answered SESSION_ENDING, and nothing more is read. Then every module is retired, each binding is closed once, and the last line, session_end, says what was and was not cleaned up. The exit is 0 only when that was complete.';
+const END='The session ends when its input ends, after the lines already read are answered. SIGINT, SIGTERM or SIGHUP ends it too: the call in flight is answered, lines read but not started are answered SESSION_ENDING, and nothing more is read. An output that stops taking lines ends it at once, and nothing more is started. Then every module is retired, each binding is closed once, and the last line, session_end, says what was and was not cleaned up. The exit is 0 only when that was complete.';
 const RESULT_LIMIT='A returned value is held to the input limits. One beyond them, or one that is not JSON data, is not put on the line: the response still says returned, with result {included: false, reason}.';
 const START_NOT_ESTABLISHED=Object.freeze([
   'that an operation listed here will be admitted, or will succeed',
@@ -155,9 +158,17 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
   if(typeof input?.on!=='function'||typeof output?.write!=='function')throw new TypeError('runSession needs an input stream and an output stream');
   let settle;
   const done=new Promise(resolve=>{settle=resolve;});
-  // An output that fails (a reader that went away) must not become an uncaught error: the session ends quietly, with exit 1.
+  // open, closing (admission closed while a call was in flight), finishing, ended. `live` once the session has started:
+  // before that, and in a session that did not start, a failing output has nothing to close.
+  let phase='open',live=false;
+  // An output that fails (a reader that went away) must not become an uncaught error. Nothing more can be answered,
+  // so nothing more is started: admission closes as it does for a signal, the end runs, and the exit is 1.
   let outputOpen=true,waiting;
-  output.on('error',()=>{outputOpen=false;waiting?.(false);});
+  const outputLost=()=>{
+    outputOpen=false;waiting?.(false);
+    if(live&&phase==='open')close('output_error');
+  };
+  output.on('error',outputLost);
   input.on('error',()=>{});
 
   const allowed=new Set();
@@ -169,7 +180,7 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
     return stated&&Object.hasOwn(stated,operation)?stated[operation]:L.deadline_default_ms;
   };
   const limitsView=()=>({request_line_bytes:L.request_line_bytes,input:{...MODULE_INPUT_LIMITS},result:RESULT_LIMIT,
-    deadline_ms:{default:L.deadline_default_ms,cap:L.deadline_cap_ms},end_ms:endMs,
+    read_ahead:{lines:L.read_ahead_lines,bytes:L.read_ahead_bytes},deadline_ms:{default:L.deadline_default_ms,cap:L.deadline_cap_ms},end_ms:endMs,
     session_start_bytes:L.session_start_bytes,module_inspect_bytes:L.module_inspect_bytes,one_request_at_a_time:true});
   const moduleView=described=>({kind:'module',
     module:{id:described.id,version:described.version,contract:described.contract,title:described.title,motif:described.motif,description:described.description,
@@ -259,8 +270,8 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
     let text;
     try{text=`${JSON.stringify(body)}\n`;}catch{return resolve(false);}
     waiting=resolve;
-    try{output.write(text,error=>{if(error)outputOpen=false;resolve(!error);});}
-    catch{outputOpen=false;resolve(false);}
+    try{output.write(text,error=>{if(error)outputLost();resolve(!error);});}
+    catch{outputLost();resolve(false);}
   });
   async function answer({line,id,method,receipt},state,body){
     if(await write({id,line,ok:body.error===undefined,method,receipt,state,...body}))counts.answered+=1;
@@ -368,15 +379,15 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
   const METHODS={inspect,activate:lifecycle,invoke,pause:lifecycle,resume:lifecycle,retire:lifecycle};
 
   // ---- lines in ----
-  let phase='open';   // open, closing (a signal came while a call was in flight), finishing, ended
   let closing,inputFailed=false,inputEnded=false,paused=false,pumping=false,guard;
   // Lines read and not yet started. Taken from the front by moving an index, so that many short lines cost no more each than a few.
   const queue=[];
-  let front=0;
+  let front=0,queuedBytes=0;
   const queued=()=>queue.length-front;
   function take(){
     const entry=queue[front];
     queue[front]=undefined;front+=1;
+    queuedBytes-=entry.bytes?.length??0;
     if(front>=1024&&front*2>=queue.length){queue.splice(0,front);front=0;}
     return entry;
   }
@@ -384,6 +395,7 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
   function endLine(){
     counts.read+=1;
     queue.push(over?{line:counts.read,discarded:skipped}:{line:counts.read,bytes:parts.length===1?parts[0]:Buffer.concat(parts,held)});
+    if(!over)queuedBytes+=held;
     parts=[];held=0;over=false;skipped=0;
   }
   // Split on the newline byte. A line is kept only while it fits; past the limit its bytes are counted and dropped.
@@ -400,7 +412,7 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
       endLine();
       offset=newline+1;
     }
-    if(!paused&&queued()>=QUEUE_HIGH){paused=true;input.pause();}
+    if(!paused&&(queued()>=L.read_ahead_lines||queuedBytes>=L.read_ahead_bytes)){paused=true;input.pause();}
     pump();
   }
   function onEnd(){
@@ -451,15 +463,17 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
     pumping=true;
     while(queued()&&phase==='open'){
       await handle(take());
-      if(paused&&queued()<QUEUE_LOW&&phase==='open'&&!inputEnded){paused=false;input.resume();}
+      if(paused&&queued()<QUEUE_LOW&&queuedBytes<BYTES_LOW&&phase==='open'&&!inputEnded){paused=false;input.resume();}
     }
     pumping=false;
     if(phase==='closing'||(inputEnded&&!queued()))finish();
   }
-  // From outside: a signal, or a host that ends the session. Admission closes now; the call in flight is answered first.
+  // From outside: a signal, or a host that ends the session; from inside, an output that stopped taking lines.
+  // Admission closes now; the call in flight is answered first, when the output still takes lines.
   function close(name){
     if(phase!=='open')return;
-    closing=SIGNALS.includes(name)?{ended_by:'signal',signal:name}:name==='uncaught_error'?{ended_by:'uncaught_error'}:{ended_by:'closed_by_host'};
+    closing=SIGNALS.includes(name)?{ended_by:'signal',signal:name}:name==='uncaught_error'?{ended_by:'uncaught_error'}:
+      name==='output_error'?{ended_by:'output_error'}:{ended_by:'closed_by_host'};
     phase='closing';
     stopReading();
     // The call in flight is answered by its deadline at the latest. An output that still has not taken that answer a moment later is given up on.
@@ -521,6 +535,7 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
         ...(ending.ended_by==='signal'?['that every line written to this session was read: reading stopped at the signal']:
           ending.ended_by==='closed_by_host'?['that every line written to this session was read: reading stopped when the host closed the session']:
           ending.ended_by==='input_error'?['that every line written to this session was read: the input failed']:
+          ending.ended_by==='output_error'?['that every line written to this session was read: reading stopped when the output stopped taking lines, and lines read by then were not run']:
           faulted?['what the error changed or left behind: it was thrown outside any call, nothing about it is recorded here, and reading stopped when it came']:[])]};
     const written=await write(body);
     clearTimeout(guard);
@@ -531,6 +546,7 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
   }
 
   // The first line, then the input.
+  live=true;
   write(start).then(()=>{
     if(phase!=='open')return;
     input.on('data',onData);input.on('end',onEnd);input.on('error',onInputError);
@@ -543,7 +559,11 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
 // The session on this process: its standard input and output, and its signals. Resolves to what `done` resolves to.
 // It does not end the process; the caller does, so that a handler still running cannot keep it open.
 export async function runSessionProcess({modules,bindings,allow,endMs}={}){
-  const session=runSession({modules,bindings,allow,endMs,input:process.stdin,output:process.stdout});
+  // The handlers are in place before the first line is written, so a signal sent as soon as it is read is a signal
+  // this session answers, not one that ends the process by its default action. One that comes before the session
+  // exists is kept and given to it once it does.
+  let session,early;
+  const toSession=name=>{if(session)session.close(name);else early??=name;};
   // An error thrown outside any call (from a handler's timer, or a rejection nobody handles) would end the process at
   // once, with a stack on stderr and nothing closed. Here it ends the session instead: the usual end runs, the last
   // line says uncaught_error, and the exit is 1. A second one, or an end that then takes too long, ends the process.
@@ -552,11 +572,13 @@ export async function runSessionProcess({modules,bindings,allow,endMs}={}){
     faults+=1;
     if(faults>1)process.exit(1);
     setTimeout(()=>process.exit(1),L.deadline_cap_ms+L.end_ms+2*OUTPUT_GRACE_MS).unref();
-    session.close('uncaught_error');
+    toSession('uncaught_error');
   };
-  const handlers=[...SIGNALS.map(name=>[name,()=>session.close(name)]),['uncaughtException',onFault]];
+  const handlers=[...SIGNALS.map(name=>[name,()=>toSession(name)]),['uncaughtException',onFault]];
   for(const [name,handler] of handlers)process.on(name,handler);
   try{
+    session=runSession({modules,bindings,allow,endMs,input:process.stdin,output:process.stdout});
+    if(early)session.close(early);
     const result=await session.done;
     // An error that came once the end had begun is not in session_end; the exit still says so.
     return faults?{...result,exit_code:1}:result;

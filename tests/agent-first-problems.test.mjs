@@ -178,15 +178,17 @@ test('a declined result keeps whole sentences of a long meaning, never half of o
   for(const ctx of [{session:true,moduleIds:['agenttool.collab'],state:'active'},{argv:['invoke','x','y']}]){
     const at=ctx.session?'in a session':'at the command line';
     // Short: the whole meaning, as before, with one full stop.
-    assert.equal(decline('Nothing was sent.',ctx).detail,'The operation declined before any change: Nothing was sent.',at);
+    assert.equal(decline('Nothing was sent.',ctx).detail,'The operation declined, and its module declares that nothing was applied: Nothing was sent.',at);
+    // The lead states a declaration, not an observation: no part of it says that nothing changed.
+    assert.equal(decline(long,ctx).detail.includes('before any change'),false,at);
     // Long: the sentences that fit in 200 characters, whole, and a pointer to the rest.
     const {detail}=decline(long,ctx);
-    assert.equal(detail,`The operation declined before any change: ${first} The whole meaning is in error.refusal.meaning.`,at);
+    assert.equal(detail,`The operation declined, and its module declares that nothing was applied: ${first} The whole meaning is in error.refusal.meaning.`,at);
     assert.equal(detail.includes('comes before the'),false,`${at}: no half sentence`);
     // A name with dots in it is not taken for the end of a sentence.
     const dotted=`${'The file agenttool.lock.json names it by collab.bundle_sha256, and a longer first clause follows here so that the end of this sentence falls past the limit of two hundred characters, which is where it would be cut'}. Second.`;
     const cut=decline(dotted,ctx).detail;
-    assert.ok(cut.startsWith('The operation declined before any change: The file agenttool.lock.json names it by collab.bundle_sha256'),at);
+    assert.ok(cut.startsWith('The operation declined, and its module declares that nothing was applied: The file agenttool.lock.json names it by collab.bundle_sha256'),at);
     assert.match(cut,/… The whole meaning is in error\.refusal\.meaning\.$/,`${at}: a first sentence that does not fit is cut and marked`);
     assert.ok(cut.length<330,at);
   }

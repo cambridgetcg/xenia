@@ -32,8 +32,8 @@ export const INPUT_REASONS=Object.freeze({
   does_not_match_card:'The input is JSON data, but it does not match the schema on the operation\'s card.',
   collab_config_does_not_match:'The Collab config is JSON, but it is not the config form: one object with the keys bundlePath, bunPath, databasePath, homeDir, workspace, actor and journal, optionally timeoutMs, and no others.',
   collab_config_path_not_absolute:'A path in the Collab config is not an absolute path in its plain form: no `.` or `..` part, no doubled or trailing separator, no control character.',
-  collab_config_home_is_user_home:'homeDir in the Collab config is this user\'s home directory, or a folder that holds it. It becomes the backend\'s HOME, so it has to be a folder of its own.',
-  collab_config_workspace_not_apart:'The workspace in the Collab config is not apart from homeDir and from the folder of databasePath: one of them is the other, inside it or around it.',
+  collab_config_home_is_user_home:'homeDir in the Collab config is this user\'s home directory, or a folder that holds it, compared as folders (device and inode) as well as by spelling. It becomes the backend\'s HOME, so it has to be a folder of its own.',
+  collab_config_workspace_not_apart:'The workspace in the Collab config is not apart from homeDir and from the folder of databasePath: one of them is the other, inside it or around it, compared as folders (device and inode) as well as by spelling.',
   collab_config_too_long:'The paths and the actor in the Collab config are too long together: written as JSON, what a session shows of a binding must fit in 2560 bytes.',
 });
 // The keys a Collab config has. A refusal names one of these and nothing the config held.
@@ -222,7 +222,7 @@ export const COMMANDS={
       'A call has a deadline: 10 seconds, unless the request sets deadline_ms (1 to 30000) or a bound module states another default for the operation. At the deadline the call is answered DEADLINE_EXCEEDED: it had started, and whether it changed anything is not known. The deadline ends the wait; it does not stop the handler, which runs on. `inspect` lists such calls under `late` with how each settled (pending, returned, declined, failed), and no late result is kept. The deadline is a timer in the same process: a handler that keeps the process busy without yielding is answered only when it lets go.',
       'Inside a session a problem is terminal, or its next_actions are requests for the same session ({request, needs, why}) and never a command line. `needs: ["id"]` means the sender adds an id.',
       'Without the Xenia build, a call to xenia.surface or xenia.work is answered BUILD_REQUIRED before anything starts; session_start shows `build` for each module.',
-      'The session ends when its input ends: the lines already read are answered first. SIGINT, SIGTERM or SIGHUP ends it too: the call in flight is answered, lines read but not started are answered SESSION_ENDING, and nothing more is read. Then every module is retired, each binding is closed once, and calls still running are waited for, within 15 seconds in all. session_end gives each module\'s state, the calls still running, and cleanup {complete, did, did_not, left_behind}. An error thrown outside any call ends the session the same way, with ended_by uncaught_error and exit 1.',
+      'The session ends when its input ends: the lines already read are answered first. SIGINT, SIGTERM or SIGHUP ends it too: the call in flight is answered, lines read but not started are answered SESSION_ENDING, and nothing more is read. An output that stops taking lines ends it at once, and nothing more is started. Then every module is retired, each binding is closed once, and calls still running are waited for, within 15 seconds in all. session_end gives each module\'s state, the calls still running, and cleanup {complete, did, did_not, left_behind}. An error thrown outside any call ends the session the same way, with ended_by uncaught_error and exit 1.',
       'The exit is 0 only when that end was complete; 1 when it was not, when the output stopped taking lines, when a module could not be registered, or when the file --collab-config names could not be used; 2 when the command line was not understood, an --allow entry could not be used, or --collab-config was not an absolute path. A request that failed does not change the exit: its own line says how it went.']},
   context:{usage:'context <init|status|render> --package <reviewed-package-dir> --dir <notes-dir>',
     also:['context handoff --package <reviewed-package-dir> --dir <notes-dir> --input <chosen-file> --expect <current-sha256>'],
@@ -404,9 +404,11 @@ const cardAction=(error,ctx)=>ctx.moduleIds?.includes(error.module)?
 // not fit, its first 199 characters and a mark. Whenever something is left out the detail says where the whole is;
 // the meaning itself is always on the same output, as error.refusal.meaning. A full stop inside a name
 // (agenttool.lock.json) is not the end of a sentence: only one that is followed by a space is.
+// The lead is a declaration, not an observation: that nothing was applied is what the module declares (effect
+// not_applied), and the runtime did not observe it.
 function declinedWords(meaning){
-  if(typeof meaning!=='string'||!meaning)return 'The operation declined before any change.';
-  const lead='The operation declined before any change: ';
+  if(typeof meaning!=='string'||!meaning)return 'The operation declined, and its module declares that nothing was applied.';
+  const lead='The operation declined, and its module declares that nothing was applied: ';
   if(meaning.length<=200)return `${lead}${meaning.replace(/\.$/,'')}.`;
   const ends=[...meaning.slice(0,200).matchAll(/[.!?](?= )/g)].map(match=>match.index+1);
   const kept=ends.length?meaning.slice(0,ends.at(-1)):`${meaning.slice(0,199)}…`;
