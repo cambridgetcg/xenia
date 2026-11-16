@@ -8,7 +8,7 @@ export const READ_ONLY=[
   {argv:['motifs'],what:'Read the motif map: six questions the pieces keep answerable.'},
   {argv:['motifs','study','list'],what:'List the small studies that examine a motif.'},
   {argv:['catalog'],what:'List the core modules and the adapters, with their declared effects.'},
-  {argv:['explain','xenia.surface'],what:'Describe one module: each operation\'s card (what to send, an example, what comes back, who checks the input) and its refusals.'},
+  {argv:['explain','xenia.surface'],what:'Describe one module: each operation\'s card (what to send, an example, what comes back, who checks the input) and its refusals. An adapter id works in place of the module id.'},
   {argv:['invoke','xenia.surface','manifest'],needs:['--input <file>'],what:'Run one effect-free core operation once on a JSON file you supply; prints a receipt. The `explain` output shows an input example.'},
   {argv:['session'],what:'Answer requests sent as JSON lines on standard input; the first line printed says what is accepted. Activates nothing by itself; as listed, no operation that declares effects runs. Ends when its input ends.'},
   {argv:['demo'],what:'Run the local reference tools and a synthetic lifecycle. Needs the Xenia build; contacts nothing.'},
@@ -22,7 +22,7 @@ export const SENDS=[
   {argv:['door','check'],needs:['--origin <origin>','--max-requests <1..66>','--total-timeout-ms <100..120000>'],
     what:'Sends GET requests to the one origin within a request budget and a time limit the caller sets, and reports what it was served. `door plan` shows the bounds, and their one exception, first.'},
 ];
-export function buildArrival({lock,core,adapters,networkNote,report}){
+export function buildArrival({lock,core,adapters,notListed=[],networkNote,report}){
   const pin=lock?{name:lock.name,version:lock.version,source:lock.source,archive_sha256:lock.archive_sha256}:null;
   return {
     schema:'xenia.agent-first/0.1-development',kind:'arrival',reply_expected:false,
@@ -32,8 +32,10 @@ export function buildArrival({lock,core,adapters,networkNote,report}){
     network:{note:networkNote,sends:SENDS.map(item=>({...item,argv:[...item.argv],needs:[...item.needs]}))},
     here:{
       core_modules:core.map(({id,title,effects})=>({id,title,effects})),
-      adapters:adapters.map(item=>({id:item.id,bound:false,title:item.title,requires:item.requires,effects:item.effects,explain:['explain',item.id],
+      adapters:adapters.map(item=>({id:item.id,bound:false,title:item.title,requires:item.requires,effects:item.effects,
         ...(item.id==='agenttool.local-context'&&pin?{pin,wants:'--package must be a directory holding exactly this reviewed release; the CLI checks it against the pin and never downloads it.'}:{})})),
+      // An adapter whose card could not be read has no row; it is named here, so the list above is not read as the whole.
+      ...(notListed.length?{adapters_not_listed:notListed.map(item=>({...item}))}:{}),
     },
     not_established:['that anything listed here is available or working in your environment','anything about you, your task or your permissions','that a package matching the pin is trustworthy beyond byte equality'],
     how_to_stop:'Nothing is running and nothing was started or changed by reading this. There is nothing to undo.',

@@ -124,7 +124,7 @@ test('the floor holds after every refusal and error code the runtime can emit',a
 });
 
 const cliCommands=[['arrive'],['help'],['help','invoke'],['motifs'],['motifs','standing'],['catalog'],['explain','xenia.surface'],['explain','agenttool.local-context'],
-  ['help','feedback'],['feedback','new'],['help','session']];
+  ['explain','agenttool.collab'],['help','feedback'],['feedback','new'],['help','session']];
 
 test('at the door, reading commands succeed with no provider, no build and no identity',()=>{
   // A copy of the kit alone: no dist/, no node_modules, no provider package.

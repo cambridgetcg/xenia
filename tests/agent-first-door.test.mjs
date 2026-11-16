@@ -659,7 +659,7 @@ test('with fetch, sockets and name lookups made to fail, every other command sti
 });
 
 test('the one sentence about the network is the same in arrive, help, catalog, the README and the motif map',()=>{
-  assert.equal(NETWORK_NOTE,'`door check` is the only command in which this kit\'s own code sends requests; provider code run by `context` and `starter-smoke` is not observed by this kit.');
+  assert.equal(NETWORK_NOTE,'`door check` is the only command in which this kit\'s own code sends requests; provider code run by `context` and `starter-smoke`, and the backend process `session --collab-config` can start, are not observed by this kit.');
   const arrive=runCli(['arrive']).value;
   assert.equal(arrive.network.note,NETWORK_NOTE);
   assert.equal(runCli(['help']).value.network,NETWORK_NOTE);

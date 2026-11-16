@@ -13,7 +13,7 @@ function run(...args){
   assert.equal(r.error,undefined);assert.equal(r.stderr,'');
   return {status:r.status,stdout:r.stdout,value:JSON.parse(r.stdout)};
 }
-const ADAPTERS=['agenttool.local-context','agenttool.skills-inspector','agenttool.telescope-surface'];
+const ADAPTERS=['agenttool.collab','agenttool.local-context','agenttool.skills-inspector','agenttool.telescope-surface'];
 
 test('arrive is one bounded, inert document that expects no reply',()=>{
   const r=run('arrive');assert.equal(r.status,0,r.stdout);
@@ -90,7 +90,7 @@ test('arrive, catalog and explain load no provider or adapter code',()=>{
   const code=`
     const {main}=await import(${JSON.stringify(new URL('../agent-first/0.1/cli.mjs',import.meta.url).href)});
     await main(['arrive']);await main(['catalog']);
-    for(const id of ['agenttool.local-context','agenttool.skills-inspector','agenttool.telescope-surface'])await main(['explain',id]);
+    for(const id of ['agenttool.local-context','agenttool.skills-inspector','agenttool.telescope-surface','agenttool.collab'])await main(['explain',id]);
     console.log('ok');
   `;
   // Loader-level check: a hooks file records every module URL that is resolved.
@@ -103,7 +103,7 @@ test('arrive, catalog and explain load no provider or adapter code',()=>{
     const r=spawnSync(process.execPath,['--import',dir+'/reg.mjs',dir+'/run.mjs'],{cwd:dir,encoding:'utf8',timeout:20000,env:{PATH:process.env.PATH}});
     assert.equal(r.status,0,r.stderr+r.stdout);
     const seen=fs.readFileSync(dir+'/seen.txt','utf8');
-    assert.equal(/adapters\/(local-starter|skills-inspector|telescope)/.test(seen),false,'no adapter code imported');
+    assert.equal(/adapters\/(local-starter|skills-inspector|telescope|agenttool-collab)/.test(seen),false,'no adapter code imported');
     assert.equal(/agenttool-local-starter|provider\.mjs|dist\/core/.test(seen),false,'no provider imported');
   }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });

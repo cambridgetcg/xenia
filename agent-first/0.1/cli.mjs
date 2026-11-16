@@ -6,7 +6,7 @@ import {pathToFileURL} from 'node:url';
 import {createModuleRuntime,ModuleError,MODULE_INPUT_LIMITS} from './runtime.mjs';
 import {createXeniaModules} from './modules.mjs';
 import {commandFailure,errorProjection,failureNotEstablished,finishProvider} from './command-state.mjs';
-import {adapterRows,describeAdapter,ADAPTER_IDS} from './adapter-catalog.mjs';
+import {adapterRows,describeAdapter,ADAPTER_IDS,ADAPTERS_NOT_LISTED} from './adapter-catalog.mjs';
 import {buildArrival} from './arrive.mjs';
 import {runInvoke} from './invoke.mjs';
 import {CARD_NOTE,COMMANDS,EXIT_CODES,NETWORK_NOTE,REPORT_ROUTE,USAGE_CODES,buildProblem,exitOf,usageHelp,wasWritten} from './problems.mjs';
@@ -108,7 +108,7 @@ async function starterSmoke(args){
 }
 
 const isHelp=arg=>arg==='-h'||arg==='--help';
-const GENERAL_HELP=['arrive','help [command]','motifs [motif-id]','motifs study [list|show <study-id|motif-id>|run <study-id>|journey]','catalog','explain <module-id>','invoke <module-id> <operation-id> --input <file>','session [--allow <module:operation,...>]','demo [--full]',
+const GENERAL_HELP=['arrive','help [command]','motifs [motif-id]','motifs study [list|show <study-id|motif-id>|run <study-id>|journey]','catalog','explain <module-id>','invoke <module-id> <operation-id> --input <file>','session [--allow <module:operation,...>] [--collab-config <absolute-file>]','demo [--full]',
   'door plan --origin <origin> [--allow-local-target]',
   'door check --origin <origin> --max-requests <1..66> --total-timeout-ms <100..120000> [--allow-local-target] [--full]',
   'door rights --input <file> [--as-of <rfc3339>] [--origin <origin>] [--full]',
@@ -187,12 +187,12 @@ export async function main(args){
   if(command==='arrive'&&!rest.length){
     const lock=JSON.parse(fs.readFileSync(new URL('./agenttool.lock.json',import.meta.url),'utf8')).local_starter;
     const core=runtime.catalog().map(({id,title,operations})=>({id,title,effects:[...new Set(operations.flatMap(op=>op.effects))]}));
-    return buildArrival({lock,core,adapters:adapterRows(),networkNote:NETWORK_NOTE,report:REPORT_ROUTE});
+    return buildArrival({lock,core,adapters:adapterRows(),notListed:ADAPTERS_NOT_LISTED,networkNote:NETWORK_NOTE,report:REPORT_ROUTE});
   }
-  if(command==='catalog'&&!rest.length)return envelope({modules:runtime.catalog(),adapters:adapterRows(),
+  if(command==='catalog'&&!rest.length)return envelope({modules:runtime.catalog(),adapters:adapterRows(),...(ADAPTERS_NOT_LISTED.length?{adapters_not_listed:ADAPTERS_NOT_LISTED}:{}),
     runtime:{scope:'this process only',note:'state, revision and in_flight describe a runtime this command just created; they are not live shared state. Every module here starts as registered, revision 1, nothing in flight.',
       not_established:['the state of any runtime in another process or host']},
-    adapters_note:'Adapters are present in this checkout but not bound: no provider was imported and none is registered here. Each lists what must be supplied.',
+    adapters_note:'Adapters are present in this checkout but not bound: no provider was imported and none is registered here. Each lists what must be supplied, and `bound_by` says which command, if any, binds it.',
     cards:CARD_NOTE,network:NETWORK_NOTE,limits:MODULE_INPUT_LIMITS});
   if(command==='explain'&&rest.length===1){
     const adapter=describeAdapter(rest[0]);

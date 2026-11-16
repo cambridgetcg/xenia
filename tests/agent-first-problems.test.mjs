@@ -27,7 +27,7 @@ const synthetic=(code,extra={})=>({code,operation_started:false,effect_outcome:'
 
 test('the problem table covers every code the sources can throw',()=>{
   const found=new Set();
-  const files=['cli.mjs','invoke.mjs','input-file.mjs','command-state.mjs','context.mjs','door.mjs','door-rights.mjs','feedback.mjs','modules.mjs','motif-studies.mjs','provider.mjs','runtime.mjs','session.mjs','adapters/local-starter.mjs'];
+  const files=['cli.mjs','invoke.mjs','input-file.mjs','command-state.mjs','context.mjs','door.mjs','door-rights.mjs','feedback.mjs','modules.mjs','motif-studies.mjs','provider.mjs','runtime.mjs','session.mjs','adapters/local-starter.mjs','adapters/agenttool-collab/index.mjs'];
   for(const file of files){
     const text=fs.readFileSync(new URL(file,dir),'utf8');
     for(const m of text.matchAll(/ModuleError\('([A-Z_]+)'/g))found.add(m[1]);
@@ -121,7 +121,7 @@ test('module and study not-found errors list the valid ids',()=>{
   const m=run(['explain','nope.module']);
   assert.equal(m.status,2);
   assert.equal(m.value.error.code,'MODULE_NOT_FOUND');
-  assert.deepEqual([...m.value.problem.valid].sort(),['agenttool.local-context','agenttool.skills-inspector','agenttool.telescope-surface','xenia.covenant','xenia.surface','xenia.work']);
+  assert.deepEqual([...m.value.problem.valid].sort(),['agenttool.collab','agenttool.local-context','agenttool.skills-inspector','agenttool.telescope-surface','xenia.covenant','xenia.surface','xenia.work']);
   const s=run(['motifs','study','run','private-untrusted-value']);
   assert.equal(s.status,2);assert.equal(s.value.error.code,'STUDY_NOT_FOUND');
   assert.deepEqual([...s.value.problem.valid].sort(),['arrival','ending','recovery','representation']);

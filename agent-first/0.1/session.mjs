@@ -19,7 +19,8 @@
 //   calls still running are waited for within one limit, and the last line
 //   says what was and was not cleaned up.
 //
-// A binding is {module, look, close, deadlines}, all but `module` optional:
+// A binding is {module, look, close, deadlines, at_end, bound_to}, all but
+// `module` optional:
 //   module     a module definition, registered like any other
 //   look()     returns, from memory only, what the binding holds; `inspect`
 //              of the module shows it when it is bounded JSON data of at most
@@ -29,6 +30,14 @@
 //              64 strings of at most 512 characters
 //   deadlines  {operation-id: milliseconds}, the default deadline for a call
 //              to that operation, from 1 to SESSION_LIMITS.deadline_cap_ms
+//   at_end     what close() may write without the gate being asked: at most
+//              SESSION_LIMITS.at_end_lines lines of 1 to 512 characters. The
+//              module's row in session_start repeats them, so a caller reads
+//              them before it sends anything. The session does not check that
+//              close() does only this.
+//   bound_to   what the binding was made with (paths, a label, a digest): a
+//              JSON object of at most SESSION_LIMITS.bound_to_bytes, copied
+//              once at the start; `inspect` of the module shows the copy
 // A session that did not start calls nothing on a binding.
 //
 // The framing (a bounded line buffer split on the newline byte, a stop on a
@@ -49,6 +58,8 @@ export const SESSION_LIMITS=Object.freeze({
   session_start_bytes:8192,       // the first line, newline included; a session that cannot fit it does not start
   module_inspect_bytes:8192,      // the answer to `inspect` of one module, newline included
   look_bytes:2048,                // what a binding's look() may add to that answer
+  bound_to_bytes:2560,            // what a binding's bound_to may add to it
+  at_end_lines:8,                 // the lines of a binding's at_end, each of 1 to 512 characters
   deadline_default_ms:10000,
   deadline_cap_ms:30000,
   end_ms:15000,                   // retiring, closing and waiting at the end, in all; a host may give less
@@ -64,12 +75,14 @@ const OUTPUT_GRACE_MS=2000;
 const NAME='[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*';
 const ALLOW_ENTRY=new RegExp(`^${NAME}:${NAME}$`,'u');
 const LATE=Symbol('late');
-const BINDING_KEYS=Object.freeze(['module','look','close','deadlines']);
+const BINDING_KEYS=Object.freeze(['module','look','close','deadlines','at_end','bound_to']);
 
 const WHAT='One process that reads requests as JSON lines on its input and answers each with one JSON line on its output, in input order, one request at a time. This is the first line. Starting activated nothing, called nothing and changed nothing.';
 const GATE_NOTE='`allowed` says what this session\'s gate will do with an operation, and grants nothing. An operation that declares no effects is not gated. One that declares effects runs only when the allow list names it. The list was set when the session started, and no request changes it.';
+// Added to the gate note only when a module of the session states an `at_end`.
+const AT_END_NOTE=' `at_end` on a module is what its binding says it may write when the session ends. The gate is not asked for those writes, and the session does not check them.';
 const CHANGES=Object.freeze({
-  inspect:'Nothing. With no module: this session (module states, the allow list, calls still running past their deadline, the request forms). With a module: its description, state and operations and, for a bound module, what its binding holds in memory. With a module and an operation: that operation\'s card.',
+  inspect:'Nothing. With no module: this session (module states, the allow list, calls still running past their deadline, the request forms). With a module: its description, state and operations and, for a bound module, what its binding holds in memory and what it was bound to. With a module and an operation: that operation\'s card.',
   activate:'A registered or paused module becomes active and takes calls.',
   invoke:'Runs one operation of an active module, once. What it changes is what the operation declares as effects, which this session does not observe. One that declares effects runs only if the allow list names it.',
   pause:'The module stops taking new calls until it is resumed. A call already running goes on.',
@@ -174,9 +187,19 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
         (binding.look!==undefined&&typeof binding.look!=='function')||(binding.close!==undefined&&typeof binding.close!=='function'))throw unusable('binding_not_usable');
       const stated=binding.deadlines??{};
       if(!plain(stated)||Object.values(stated).some(ms=>!Number.isInteger(ms)||ms<1||ms>L.deadline_cap_ms))throw unusable('binding_not_usable');
+      // at_end and bound_to are read once, here, as plain data: what the first line and `inspect` show is this copy.
+      let atEnd,boundTo;
+      if(binding.at_end!==undefined){
+        if(!words(binding.at_end)||binding.at_end.length>L.at_end_lines)throw unusable('binding_not_usable');
+        atEnd=Object.freeze([...binding.at_end]);
+      }
+      if(binding.bound_to!==undefined){
+        try{boundTo=snapshotInput(binding.bound_to);}catch{throw unusable('binding_not_usable');}
+        if(!plain(boundTo)||sizeOf(boundTo)>L.bound_to_bytes)throw unusable('binding_not_usable');
+      }
       const described=runtime.register(binding.module);
       if(Object.keys(stated).some(name=>!described.operations.some(op=>op.id===name)))throw unusable('binding_not_usable');
-      bound.set(described.id,{look:binding.look,close:binding.close,deadlines:{...stated},owner:binding});
+      bound.set(described.id,{look:binding.look,close:binding.close,deadlines:{...stated},atEnd,boundTo,owner:binding});
     }
     const catalog=runtime.catalog();
     if(!catalog.length)throw unusable('session_has_no_module');
@@ -192,7 +215,10 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
       const longest={id:'x'.repeat(128),line:Number.MAX_SAFE_INTEGER,ok:true,method:'inspect',
         receipt:{module:identity(described),request_line:{bytes:L.request_line_bytes,sha256:'0'.repeat(64)}},state:'registered',outcome:'returned',
         result:{...moduleView({...described,in_flight:Number.MAX_SAFE_INTEGER,state:'registered'})},not_established:NOT_ESTABLISHED.inspect};
-      if(sizeOf(longest)+1+(bound.has(described.id)?L.look_bytes+8:0)>L.module_inspect_bytes)throw unusable('module_view_over_limit');
+      // A bound module's line also holds `look` (at most look_bytes) and `bound_to` (its size is known here), each with its key.
+      const binding=bound.get(described.id);
+      const more=binding?L.look_bytes+8+(binding.boundTo===undefined?0:sizeOf(binding.boundTo)+12):0;
+      if(sizeOf(longest)+1+more>L.module_inspect_bytes)throw unusable('module_view_over_limit');
     }
     start=startLine(catalog);
     if(sizeOf(start)+1>L.session_start_bytes)throw unusable('session_start_over_limit');
@@ -217,8 +243,9 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
     };
     return {schema:SCHEMA,kind:'session_start',what:WHAT,
       modules:catalog.map(described=>({id:described.id,version:described.version,state:described.state,build:buildOf(described.id),bound:bound.has(described.id),
-        operations:described.operations.map(op=>({id:op.id,effects:op.effects,allowed:allowedOf(described.id,op)}))})),
-      gate:{default:'deny',allow:[...allowed].sort(),fixed:true,note:GATE_NOTE},
+        operations:described.operations.map(op=>({id:op.id,effects:op.effects,allowed:allowedOf(described.id,op)})),
+        ...(bound.get(described.id)?.atEnd?{at_end:[...bound.get(described.id).atEnd]}:{})})),
+      gate:{default:'deny',allow:[...allowed].sort(),fixed:true,note:GATE_NOTE+([...bound.values()].some(binding=>binding.atEnd)?AT_END_NOTE:'')},
       requests:Object.fromEntries(REQUEST_METHODS.map(method=>[method,{fields:fieldsOf(method),example:examples[method],changes:CHANGES[method]}])),
       request_fields:{...REQUEST_FIELDS},no_request_for:['register','upgrade'],responses:RESPONSES,limits:limitsView(),end:END,
       not_established:[...START_NOT_ESTABLISHED]};
@@ -280,7 +307,8 @@ export function runSession({modules=[],bindings=[],allow=[],input,output,endMs=L
     request.receipt={module:identity(described),...request.receipt};
     if(operation===undefined){
       const binding=bound.get(id);
-      return accept(request,described.state,{...moduleView(described),...(typeof binding?.look==='function'?{look:lookOf(binding)}:{})},NOT_ESTABLISHED.inspect);
+      return accept(request,described.state,{...moduleView(described),...(typeof binding?.look==='function'?{look:lookOf(binding)}:{}),
+        ...(binding?.boundTo===undefined?{}:{bound_to:structuredClone(binding.boundTo)})},NOT_ESTABLISHED.inspect);
     }
     const op=described.operations.find(item=>item.id===operation);
     if(!op)return refuse(request,noSuchOperation(described,operation),described.state);
@@ -535,17 +563,28 @@ export async function runSessionProcess({modules,bindings,allow,endMs}={}){
   }finally{for(const [name,handler] of handlers)process.off(name,handler);}
 }
 
-// `session [--allow <module:operation,...>]`: the three core modules, on this process. It writes its own lines and
-// never throws: a command line it does not understand is one session_not_started line too.
+// `session [--allow <module:operation,...>] [--collab-config <absolute-file>]`: the three core modules on this
+// process and, when --collab-config is given, the Collab adapter bound from that file. It writes its own lines and
+// never throws: a command line it does not understand, or a config file it cannot use, is one session_not_started
+// line too.
 export async function runSessionCommand(args){
-  let result;
   const flags=parseFlags(args,SESSION_FLAGS);
-  if(!flags){
-    process.stdout.on('error',()=>{});
-    result=await refuseStart(process.stdout,new ModuleError('INVALID_ARGUMENTS'));
-  }else{
-    const list=flags.values['--allow'];
-    result=await runSessionProcess({modules:createXeniaModules(),allow:list===undefined?[]:list.split(',')});
+  const refuse=error=>{process.stdout.on('error',()=>{});return refuseStart(process.stdout,error);};
+  let result;
+  if(!flags)result=await refuse(new ModuleError('INVALID_ARGUMENTS'));
+  else{
+    const list=flags.values['--allow'],configPath=flags.values['--collab-config'];
+    const bindings=[];
+    let failure;
+    if(configPath!==undefined){
+      // Loaded only when the flag is given: a session without it imports no adapter code, and nothing that can start a
+      // process. Binding reads the config file, the card and the pin; it starts nothing and writes nothing.
+      try{
+        const {createCollabBinding}=await import('./adapters/agenttool-collab/index.mjs');
+        bindings.push(createCollabBinding({configPath}));
+      }catch(error){failure=error instanceof ModuleError?error:new ModuleError('CLI_FAILED');}
+    }
+    result=failure?await refuse(failure):await runSessionProcess({modules:createXeniaModules(),bindings,allow:list===undefined?[]:list.split(',')});
   }
   return asWritten(withExit({kind:'session',started:result.started,exit_code:result.exit_code},result.exit_code));
 }

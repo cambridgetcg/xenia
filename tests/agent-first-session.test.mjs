@@ -1001,7 +1001,7 @@ test('at the door: a start failure is one compact line, kind session_not_started
 });
 
 test('help, arrive and the README describe session; arrive stays under its limit',()=>{
-  const usage='session [--allow <module:operation,...>]';
+  const usage='session [--allow <module:operation,...>] [--collab-config <absolute-file>]';
   const pretty=args=>{const r=spawnSync(process.execPath,[cli,...args],{cwd:tmpdir(),encoding:'utf8',timeout:15000,env:{PATH:process.env.PATH}});assert.equal(r.stderr,'');return {status:r.status,stdout:r.stdout,value:JSON.parse(r.stdout)};};
   const general=pretty(['help']).value;
   assert.ok(general.commands.includes(usage));

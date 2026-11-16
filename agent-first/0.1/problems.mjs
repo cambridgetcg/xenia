@@ -13,14 +13,16 @@
 import {compileSchema} from './schema.mjs';
 
 // Which rule an unusable input file broke; input-file.mjs sets the `reason` key.
-// The last one is about the value and not the file: the runtime sets it when
-// an input does not match the schema on an operation's card.
+// does_not_match_card is about the value and not the file: the runtime sets
+// it when an input does not match the schema on an operation's card. The
+// collab_config_ reasons are about the config file `session --collab-config`
+// names; the Collab adapter sets them, with `pointer` naming the key at fault.
 export const INPUT_REASONS=Object.freeze({
   missing:'The input file is missing (no file at that path).',
   not_regular_file:'The input path is not a regular file (a directory or special file).',
   symbolic_link:'The input path is a symbolic link; this reader never follows links.',
   unreadable:'The input file could not be read.',
-  too_large:'The input file is over its size limit (1 MiB for invoke and for feedback check, 16 KiB for a handoff, 2,000,000 bytes for door rights).',
+  too_large:'The input file is over its size limit (1 MiB for invoke and for feedback check, 16 KiB for a handoff, 2,000,000 bytes for door rights, 16384 bytes for a Collab config).',
   not_utf8:'The input file is not valid UTF-8.',
   byte_order_mark:'The input file starts with a byte-order mark; remove it.',
   not_json:'The input file is not exactly one JSON value.',
@@ -28,14 +30,22 @@ export const INPUT_REASONS=Object.freeze({
   beyond_limits:'The input is nested or large beyond the input limits (32 levels deep, 65536 values, 1 MiB).',
   not_an_adoption_record:'The input file is JSON, but it does not say it is a Covenant adoption record: it is not an object whose schema_version begins with xenia.covenant.adoption/.',
   does_not_match_card:'The input is JSON data, but it does not match the schema on the operation\'s card.',
+  collab_config_does_not_match:'The Collab config is JSON, but it is not the config form: one object with the keys bundlePath, bunPath, databasePath, homeDir, workspace, actor and journal, optionally timeoutMs, and no others.',
+  collab_config_path_not_absolute:'A path in the Collab config is not an absolute path in its plain form: no `.` or `..` part, no doubled or trailing separator, no control character.',
+  collab_config_home_is_user_home:'homeDir in the Collab config is this user\'s home directory, or a folder that holds it. It becomes the backend\'s HOME, so it has to be a folder of its own.',
+  collab_config_workspace_not_apart:'The workspace in the Collab config is not apart from homeDir and from the folder of databasePath: one of them is the other, inside it or around it.',
+  collab_config_too_long:'The paths and the actor in the Collab config are too long together: written as JSON, what a session shows of a binding must fit in 2560 bytes.',
 });
+// The keys a Collab config has. A refusal names one of these and nothing the config held.
+const COLLAB_CONFIG_KEYS=Object.freeze(['bundlePath','bunPath','databasePath','homeDir','workspace','actor','journal','timeoutMs']);
 
 // Why a module definition was refused for its card; the runtime sets the `reason` key.
 export const MODULE_REASONS=Object.freeze({
   input_schema_not_usable:'An operation\'s input schema is not usable: it is not bounded JSON data, or it holds something this kit\'s checker does not read. When the checker refused it, error.schema_refusal says why and where in the schema.',
   input_example_does_not_match_schema:'An operation\'s input example does not match its own input schema; error.pointer, error.keyword and error.expected say where.',
-  binding_not_usable:'A binding handed to a session is not usable. It is {module, look, close, deadlines} and nothing else: look and close are functions when given, and deadlines gives a whole number of milliseconds from 1 to 30000 for operations the module has.',
-  module_view_over_limit:'A module is too large for the session to describe in one inspect line of 8192 bytes: its title, description, contract, source, version or operation descriptions are too long.',
+  binding_not_usable:'A binding handed to a session is not usable. It is {module, look, close, deadlines, at_end, bound_to} and nothing else: look and close are functions when given; deadlines gives a whole number of milliseconds from 1 to 30000 for operations the module has; at_end is at most 8 lines of 1 to 512 characters; bound_to is a JSON object of at most 2560 bytes.',
+  collab_card_not_usable:'The Collab adapter\'s card or pin does not match the adapter\'s code: card.json and index.mjs in agent-first/0.1/adapters/agenttool-collab, or the `collab` entry of agent-first/0.1/agenttool.lock.json. The module was not made.',
+  module_view_over_limit:'A module is too large for the session to describe in one inspect line of 8192 bytes: its title, description, contract, source, version or operation descriptions are too long, or what its binding says it is bound to is.',
   session_start_over_limit:'The modules of this session cannot be listed within the 8192 bytes of its first line.',
   session_has_no_module:'A session needs at least one module.',
 });
@@ -51,6 +61,7 @@ export const ARGUMENT_REASONS=Object.freeze({
   allow_entry_not_readable:'Each --allow entry must be <module-id>:<operation-id>, in the lower-case form module and operation ids have, with entries separated by commas.',
   allow_names_no_effect_declaring_operation:'An --allow entry names no operation in this session that declares effects. Only such an operation is gated, so only such an operation can be named.',
   end_ms_out_of_range:'The end limit a host gives a session must be a whole number of milliseconds from 1 to 15000.',
+  collab_config_not_absolute:'--collab-config must be the absolute path of the config file; a relative path would be read from whatever directory the command runs from.',
 });
 
 // Why a line sent to a session was not run; the session sets the `reason` key.
@@ -98,7 +109,7 @@ export const TARGET_REASONS=Object.freeze({
 });
 
 // One sentence, used word for word in arrive, help, catalog, the README and motifs.json.
-export const NETWORK_NOTE='`door check` is the only command in which this kit\'s own code sends requests; provider code run by `context` and `starter-smoke` is not observed by this kit.';
+export const NETWORK_NOTE='`door check` is the only command in which this kit\'s own code sends requests; provider code run by `context` and `starter-smoke`, and the backend process `session --collab-config` can start, are not observed by this kit.';
 
 // What an operation's card is and who checks an input. Used word for word in
 // catalog, explain, help and the README.
@@ -135,8 +146,8 @@ export const FEEDBACK_FLAGS=Object.freeze({
   check:{required:['--input']},
 });
 
-// The one flag `session` takes; checkArgv and session.mjs both read this.
-export const SESSION_FLAGS=Object.freeze({optional:['--allow']});
+// The flags `session` takes; checkArgv and session.mjs both read this.
+export const SESSION_FLAGS=Object.freeze({optional:['--allow','--collab-config']});
 
 // The request forms of a session: one closed schema per method, in the small
 // reading of JSON Schema that schema.mjs checks. `input` is not in the invoke
@@ -198,18 +209,20 @@ export const COMMANDS={
     summary:'Register, activate, invoke once and retire a core module in this process, with your JSON file as input; prints a receipt. Only operations that declare no effects run here.',probe:['help','invoke'],
     rules:['The input file must be a regular file, not a symbolic link, at most 1 MiB.','It must be valid UTF-8 with no byte-order mark, exactly one JSON value, with no repeated object key.','Nesting is limited to 32 levels and 65536 values.','`explain <module-id>` shows an input example for each module; a path in example_ref is relative to the repository root.',
       'When an operation\'s card carries a schema, the runtime holds the input to it before anything runs. A miss is INVALID_INPUT with reason does_not_match_card, a JSON pointer to the place in the input, the schema keyword that missed and what the card expected; nothing from the input is repeated. The three core operations carry no schema: their native functions check the input. The Surface and Covenant functions answer an input they do not accept with DECLINED invalid_input, and the Work checker returns a report with valid false.']},
-  session:{usage:'session [--allow <module:operation,...>]',
-    summary:'Open one process that reads requests as JSON lines on standard input and answers each with one JSON line: inspect, activate, invoke, pause, resume and retire, on the modules this kit registers. Nothing is activated at the start.',probe:['help','session'],
+  session:{usage:'session [--allow <module:operation,...>] [--collab-config <absolute-file>]',
+    summary:'Open one process that reads requests as JSON lines on standard input and answers each with one JSON line: inspect, activate, invoke, pause, resume and retire, on the modules this kit registers and, with --collab-config, on the Collab adapter. Nothing is activated at the start.',probe:['help','session'],
     rules:['Every line this command prints is one compact JSON object, and stderr is silent. The first line is session_start (at most 8192 bytes): the modules and their states, each operation with its declared effects and whether the gate will let it run, one request form per method with an example, the limits, and what the line does not establish. The last line is session_end. A session that could not start prints one line, session_not_started, with error and problem, and reads nothing. `session --help` is answered as `help session`, which is a help document and not a session line.',
       'A request is one line: {id, method, module, operation, input, deadline_ms}. id is a string of 1 to 128 of A-Z a-z 0-9 . _ : - and is repeated on the response. The methods are inspect, activate, invoke, pause, resume (from paused only) and retire; each has one closed form, and a field the form does not name is refused. `input` is any JSON value: the operation\'s card says what, and the runtime or the handler checks it. No request registers or upgrades a module.',
       'Requests are run one at a time, in input order. Each line that is not blank gets one response: {id, line, ok, method, receipt, state}, then {outcome: "returned", result} or {error, problem}, then not_established. `line` counts input lines from 1. The receipt names the module (id, version, contract, revision), the operation, its declared effects, the deadline, and the bytes and sha256 of the request line. A returned value that is not JSON data, or is beyond the input limits, is still `returned`, with result {included: false, reason}.',
       'A line that is not a usable request is answered INVALID_REQUEST with a reason, or with a pointer, a keyword and what the form expects there; the line itself is never repeated. A line over 1 MiB (1048576 bytes) is discarded unread and answered the same way. A blank line is counted and not answered.',
-      'The gate is default-deny. An operation that declares no effects is not gated; one that declares effects runs only when --allow names it, as <module-id>:<operation-id>, with entries separated by commas. The list is fixed at the start, and an entry that names no operation declaring effects refuses the start. The three core operations declare no effects, so in this session --allow has nothing to name yet.',
+      'The gate is default-deny. An operation that declares no effects is not gated; one that declares effects runs only when --allow names it, as <module-id>:<operation-id>, with entries separated by commas. The list is fixed at the start, and an entry that names no operation declaring effects refuses the start. The three core operations declare no effects, so without --collab-config --allow has nothing to name.',
+      '--collab-config <absolute-file> binds one more module, agenttool.collab: tasks, claims, reports and an event page in one AgentTool Collab journal on this device, through a backend process that its `open` operation starts. The file is a regular file of at most 16384 bytes, valid UTF-8, one JSON object with no repeated key, and it names every path; `explain agenttool.collab` lists its keys. Which bundle may run is not the caller\'s to state: the pin in agent-first/0.1/agenttool.lock.json names it by sha256, and `open` compares the file with the pin before anything is copied or started. Binding starts nothing and writes nothing. Every operation of the module declares effects, so each runs only when --allow names it.',
+      'A bound module shows more. Its row in session_start has `at_end`: the writes its end makes without asking the gate. For agenttool.collab these are the release of each claim the binding still holds and the end of its native session, and only when the backend is still running and no call has an outcome that is unknown or still pending. `inspect` of the module adds `look`, what the binding holds in memory (the step open reached, whether the backend process was running when last asked, calls whose outcome is unknown, claims, the last page read), and `bound_to`: the paths and the actor from the config, and the sha256 of the config file. A write whose outcome is not known is never sent again, and the binding then sends no more writes; status, task-get and inspect stay available while the backend runs.',
       'A call has a deadline: 10 seconds, unless the request sets deadline_ms (1 to 30000) or a bound module states another default for the operation. At the deadline the call is answered DEADLINE_EXCEEDED: it had started, and whether it changed anything is not known. The deadline ends the wait; it does not stop the handler, which runs on. `inspect` lists such calls under `late` with how each settled (pending, returned, declined, failed), and no late result is kept. The deadline is a timer in the same process: a handler that keeps the process busy without yielding is answered only when it lets go.',
       'Inside a session a problem is terminal, or its next_actions are requests for the same session ({request, needs, why}) and never a command line. `needs: ["id"]` means the sender adds an id.',
       'Without the Xenia build, a call to xenia.surface or xenia.work is answered BUILD_REQUIRED before anything starts; session_start shows `build` for each module.',
       'The session ends when its input ends: the lines already read are answered first. SIGINT, SIGTERM or SIGHUP ends it too: the call in flight is answered, lines read but not started are answered SESSION_ENDING, and nothing more is read. Then every module is retired, each binding is closed once, and calls still running are waited for, within 15 seconds in all. session_end gives each module\'s state, the calls still running, and cleanup {complete, did, did_not, left_behind}. An error thrown outside any call ends the session the same way, with ended_by uncaught_error and exit 1.',
-      'The exit is 0 only when that end was complete; 1 when it was not, when the output stopped taking lines, or when a module could not be registered; 2 when the command line was not understood or an --allow entry could not be used. A request that failed does not change the exit: its own line says how it went.']},
+      'The exit is 0 only when that end was complete; 1 when it was not, when the output stopped taking lines, when a module could not be registered, or when the file --collab-config names could not be used; 2 when the command line was not understood, an --allow entry could not be used, or --collab-config was not an absolute path. A request that failed does not change the exit: its own line says how it went.']},
   context:{usage:'context <init|status|render> --package <reviewed-package-dir> --dir <notes-dir>',
     also:['context handoff --package <reviewed-package-dir> --dir <notes-dir> --input <chosen-file> --expect <current-sha256>'],
     summary:'Run one explicit command on chosen local notes.',probe:['help','context'],
@@ -375,6 +388,9 @@ const helpContext={argv:['help','context'],why:'Read the usage of the context co
 const helpFeedback={argv:['help','feedback'],why:'Read the usage of the feedback command and its input rules.'};
 const printBlank={argv:['feedback','new'],why:'Print the blank entry instead; that writes nothing.'};
 const helpSession={argv:['help','session'],why:'Read how a session works and what its lines mean.'};
+// The one adapter the `session` command can bind (with --collab-config). A refusal about it points there.
+const SESSION_BOUND='agenttool.collab';
+const explainCollab={argv:['explain',SESSION_BOUND],why:'Read the keys of the config file, and what each operation of the module does and refuses.'};
 const moduleAction=(error,ctx)=>ctx.moduleIds?.includes(error.module)?
   {argv:['explain',error.module],why:'Read what this module declares it does and refuses.'}:
   {argv:['catalog'],why:'List the registered modules and their states.'};
@@ -481,6 +497,12 @@ const TABLE={
         next:[cardAction(e,c)]};
     }
     const why=INPUT_REASONS[e.reason];
+    if((c.argv??[])[0]==='session'){
+      // The file --collab-config names. A key is named only when it is one the config form has; nothing the file held is repeated.
+      const key=typeof e.pointer==='string'&&COLLAB_CONFIG_KEYS.includes(e.pointer.slice(1))?e.pointer.slice(1):undefined;
+      const where=e.reason==='collab_config_does_not_match'?` ${key?`The miss is at the key ${key}`:'The miss is at the top of the config'}${typeof e.keyword==='string'?`, keyword ${e.keyword.slice(0,40)}`:''}; error.expected is what the form allows there.`:key?` The key is ${key}.`:'';
+      return {detail:`${why??'The config file is not usable.'}${where} This is about the file --collab-config names. No session was started, and nothing was copied, started or written.`,next:[helpSession,explainCollab]};
+    }
     if((c.argv??[])[0]==='door')return {detail:`${why??'The input file is not usable.'}${e.reason==='not_an_adoption_record'&&e.holds==='record_in_receipt_result'?
       ' This file is a receipt printed by `invoke`, and its `result` says it is an adoption record: save that `result` to a file of its own and give that file.':''} Nothing was checked. The input rules are in help door.`,
       next:[{argv:['help','door'],why:'Read the usage of the door command and its input rules.'}]};
@@ -497,11 +519,14 @@ const TABLE={
     next:[helpContext]}),
   HOST_GATE_REQUIRED:(e,c)=>{
     const effects=Array.isArray(e.effects)&&e.effects.length?` (${e.effects.join(', ')})`:'';
-    const dedicated=e.module==='agenttool.local-context';
-    return {detail:`This operation declares effects${effects}. The invoke command has no host gate to consult, so it never runs an operation that has effects. Nothing was run.${dedicated?' The dedicated command for this module is `context`, which takes an explicit reviewed package and notes directory.':' A host that supplies its own gate can run it programmatically.'}`,
-      next:[...(dedicated?[helpContext]:[]),moduleAction(e,c)]};
+    const dedicated=e.module==='agenttool.local-context',door=e.module===SESSION_BOUND;
+    return {detail:`This operation declares effects${effects}. The invoke command has no host gate to consult, so it never runs an operation that has effects. Nothing was run.${dedicated?' The dedicated command for this module is `context`, which takes an explicit reviewed package and notes directory.':
+      door?' The `session` command has a gate, and binds this module when it is given --collab-config <absolute-file>.':' A host that supplies its own gate can run it programmatically.'}`,
+      next:[...(dedicated?[helpContext]:[]),...(door?[helpSession]:[]),moduleAction(e,c)]};
   },
-  MODULE_NOT_BOUND:(e,c)=>({detail:'This module is described by the catalog but is not bound by this command line: it needs a provider that a programmatic host supplies. Nothing was run.',next:[moduleAction(e,c)]}),
+  MODULE_NOT_BOUND:(e,c)=>e.module===SESSION_BOUND?
+    {detail:'This module is described by the catalog but is not bound by this command line. The `session` command binds it when it is given --collab-config <absolute-file>. Nothing was run.',next:[helpSession,moduleAction(e,c)]}:
+    {detail:'This module is described by the catalog but is not bound by this command line: it needs a provider that a programmatic host supplies. Nothing was run.',next:[moduleAction(e,c)]},
   MODULE_EXISTS:retiredOrBusy('A module with that id is already registered. Nothing was changed.'),
   INVALID_MODULE:(e,c)=>({detail:`${typeof e.reason==='string'&&Object.hasOwn(MODULE_REASONS,e.reason)?MODULE_REASONS[e.reason]:'The module definition is not valid.'} ${(c.argv??[])[0]==='session'?'No session was started.':'Nothing was registered.'}`,
     next:[...((c.argv??[])[0]==='session'?[helpSession]:[]),catalogAction]}),
