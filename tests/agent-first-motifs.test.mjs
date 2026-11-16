@@ -9,7 +9,8 @@ import test from 'node:test';
 const root=new URL('../',import.meta.url);
 const cli=fileURLToPath(new URL('../agent-first/0.1/cli.mjs',import.meta.url));
 
-test('motifs explain their sources, connections and limits without activation or a provider',()=>{
+// The map's own shape is held by tests/agent-first-motif-map.test.mjs. This one runs the door.
+test('the motif map reads at the door without activation, a provider or a build, and writes nothing',()=>{
   const home=fs.mkdtempSync(path.join(tmpdir(),'xenia-motif-reader-'));
   try{
     const result=spawnSync(process.execPath,[cli,'motifs'],{cwd:home,encoding:'utf8',timeout:10000,env:{PATH:'',HOME:home}});
@@ -17,12 +18,12 @@ test('motifs explain their sources, connections and limits without activation or
     const guide=JSON.parse(result.stdout);
     assert.equal(guide.status,'informative-development-map');
     const ids=new Set(guide.motifs.map(m=>m.id));
-    for(const id of ['standing','legibility','bounded-work','continuity','change','exit'])assert.ok(ids.has(id));
+    for(const id of ['standing','rest','arrival','legibility','choice','witness','continuity','release','repair'])assert.ok(ids.has(id),id);
     for(const motif of guide.motifs){
-      assert.ok(motif.question&&motif.practice&&motif.limit);
-      assert.ok(motif.sources.length&&motif.implementation.length&&motif.checks.length);
+      assert.ok(motif.title&&motif.boundary,motif.id);
+      assert.ok(motif.sources.length,motif.id);
     }
-    for(const relation of guide.connections){assert.ok(ids.has(relation.from));assert.ok(ids.has(relation.to));assert.ok(relation.meaning);}
+    for(const edge of guide.edges){assert.ok(ids.has(edge.from));assert.ok(ids.has(edge.to));assert.ok(edge.meaning);}
     assert.equal(guide.activation,false);
     assert.deepEqual(fs.readdirSync(home),[]);
     const pkg=JSON.parse(fs.readFileSync(new URL('package.json',root),'utf8'));

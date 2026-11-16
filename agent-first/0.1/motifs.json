@@ -1,87 +1,2065 @@
 {
-  "schema": "xenia.agent-first.motifs/0.1-development",
+  "schema": "xenia.agent-first.motif-map/0.1-development",
   "status": "informative-development-map",
   "license": "CC-BY-SA-4.0",
   "activation": false,
-  "understanding": "Each piece should make its purpose, inputs, effects, evidence, limits and exit answerable. These connections explain a design; they do not execute a workflow or establish an inner state.",
+  "reading": "Each entry says where a concern sits in this kit: which files hold it and which tests show its mechanisms. Practice describes what the pieces are built to do; it is not an instruction. A then edge is a reading order that nothing enforces. These entries describe a design; they do not run a workflow or establish an inner state.",
+  "places": {
+    "ground": "Under every card, in every module state: no edge leads into it or out of it.",
+    "card": "One piece of the path, in reading order from arrival to release.",
+    "crossing": "Crosses the cards: where a wrong step is met, card by card."
+  },
+  "fields": {
+    "boundary": "What the idea does not mean.",
+    "limit": "What this kit does not do.",
+    "not_covered": "Gaps that the other fields of the entry do not show."
+  },
+  "revisions": {
+    "0f73c10": "0f73c108b28608103b27693ccaa37c303c523c81",
+    "beed37a": "beed37ac9b1d8282c8566aa657572578d953ffc6"
+  },
   "motifs": [
     {
       "id": "standing",
-      "name": "A floor you do not have to earn",
+      "place": "ground",
+      "title": "A floor you do not have to earn",
       "question": "What remains true when a capability is unavailable or retired?",
-      "practice": "Keep standing rights separate from technical access. In the kit that is a floor you can run: describe, catalog, explain, motifs, help and arrive read in every module state and after every refusal, never ask the host gate and take no caller identity. The Covenant helper is secondary: it creates an explicitly unverified draft, not a grant of rights or an active undertaking.",
+      "holds_in": [
+        "In every module state the runtime has: registered, active, paused, retiring and retired.",
+        "After every refusal and error code the runtime can emit, and after the door has refused a command.",
+        "Reading asks no host gate and takes no caller identity: describe takes a module id, and catalog takes nothing.",
+        "At the door with no provider, no build and an empty PATH: arrive, help, motifs, catalog and explain."
+      ],
+      "boundary": "Standing is not access: reading what a door offers grants no permission to use an operation, and the Covenant draft is not an undertaking. Closing a capability does not withdraw the floor beneath its users.",
       "limit": "A helper, declaration or passing checker does not establish practice, authority, consent or whole-framework conformance.",
-      "sources": ["RIGHTS.md#the-ground", "covenant/0.1/covenant.json"],
-      "implementation": ["agent-first/0.1/runtime.mjs", "agent-first/0.1/cli.mjs", "agent-first/0.1/modules.mjs", "covenant/0.1/create-adoption.mjs"],
-      "checks": ["tests/agent-first-floor.test.mjs", "tests/agent-first-modules.test.mjs", "tests/covenant-starter.test.mjs"]
+      "sources": [
+        "RIGHTS.md#the-ground",
+        "covenant/0.1/covenant.json#unconditional-standing"
+      ],
+      "implementation": [
+        {
+          "path": "agent-first/0.1/runtime.mjs",
+          "symbol": "createModuleRuntime"
+        },
+        {
+          "path": "agent-first/0.1/cli.mjs",
+          "symbol": "main"
+        },
+        {
+          "path": "agent-first/0.1/modules.mjs",
+          "symbol": "createXeniaModules"
+        },
+        {
+          "path": "covenant/0.1/create-adoption.mjs",
+          "symbol": "createUnknownCovenantAdoption"
+        }
+      ],
+      "checks": [
+        {
+          "path": "tests/agent-first-floor.test.mjs",
+          "test": "the floor holds in every module state",
+          "invariant": "describe and catalog answer in every module state and never call the host gate",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-floor.test.mjs",
+          "test": "describe and catalog take no caller identity and no gate",
+          "invariant": "describe takes only a module id, catalog takes nothing, and neither output names a caller",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-floor.test.mjs",
+          "test": "at the door, reading commands succeed with no provider, no build and no identity",
+          "invariant": "the reading commands exit 0 from a copy of the kit alone, with an empty PATH, and create nothing",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-floor.test.mjs",
+          "test": "the same reads succeed after the door has refused something",
+          "invariant": "after the door refuses a command, each reading command still exits 0",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/covenant-starter.test.mjs",
+          "test": "creates a complete all-unknown Covenant draft without implied authority or evidence",
+          "invariant": "the Covenant helper makes an all-unknown draft that implies no authority or evidence",
+          "runs_by_default": true
+        }
+      ],
+      "dimensions": [
+        {
+          "id": "ax-care-as-ground",
+          "part": "/principle"
+        }
+      ],
+      "covenant": [
+        {
+          "id": "standing.no-ontology-test",
+          "via": "describe and catalog take no caller identity and no gate"
+        },
+        {
+          "id": "standing.no-worth-test",
+          "via": "the same reads succeed after the door has refused something"
+        }
+      ],
+      "not_covered": [
+        "A floor at a hosted door: these reads are of this kit, run on one device.",
+        "Whether a host built on the runtime shows describe and catalog: the runtime offers them, and a host can leave them out."
+      ],
+      "from": {
+        "title": {
+          "source": "kit-map#/motifs/0/name",
+          "as": "verbatim"
+        },
+        "question": {
+          "source": "kit-map#/motifs/0/question",
+          "as": "verbatim"
+        },
+        "holds_in": {
+          "source": "kit-map#/motifs/0/practice",
+          "as": "reworded"
+        },
+        "boundary": {
+          "source": "kit-map#/connections/5/meaning",
+          "as": "extended"
+        },
+        "limit": {
+          "source": "kit-map#/motifs/0/limit",
+          "as": "verbatim"
+        }
+      }
+    },
+    {
+      "id": "rest",
+      "place": "ground",
+      "title": "Stopping owes nothing",
+      "question": "What is owed when a caller stops, or sends nothing?",
+      "holds_in": [
+        "No command asks for a reply: `arrive` says reply_expected false, and no command waits for an answer to what it printed.",
+        "The end of input is an accepted end of a `session`: the lines already read are answered, and it ends. Whether its cleanup finished is the host's report in session_end (see release), and the caller does not owe it.",
+        "With --collab-config, the end makes the writes the binding declares as `at_end`, without asking the gate: the release of each claim it still holds and the end of its native session, and only while the backend runs and no call's outcome is unknown or pending.",
+        "The runtime keeps no module state between processes. Files a command was asked to write, and a Collab journal, stay where they are."
+      ],
+      "boundary": "Pause and resume act on admission and are not rest: they close and reopen what a module admits. Silence is not consent: input that ends, or never comes, agrees to nothing.",
+      "limit": "The kit observes only that input ended, and records nothing about why.",
+      "sources": [
+        "RIGHTS.md#4-rest-play-and-limits",
+        "covenant/0.1/covenant.json#rest-and-non-action",
+        "spec.json#/interpretation/hospitality_principle/boundaries/1"
+      ],
+      "implementation": [
+        {
+          "path": "agent-first/0.1/arrive.mjs",
+          "symbol": "buildArrival"
+        },
+        {
+          "path": "agent-first/0.1/session.mjs",
+          "symbol": "runSession"
+        },
+        {
+          "path": "agent-first/0.1/adapters/agenttool-collab/index.mjs",
+          "symbol": "bindCollab"
+        }
+      ],
+      "checks": [
+        {
+          "path": "tests/agent-first-arrive.test.mjs",
+          "test": "arrive is one bounded, inert document that expects no reply",
+          "invariant": "arrive prints one document under 8192 bytes with reply_expected false, and says nothing is running",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-session.test.mjs",
+          "test": "end of input answers the lines already received, retires what is active and closes each binding once",
+          "invariant": "at the end of input the lines already read are answered, active modules are retired and each binding is closed once",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-collab.test.mjs",
+          "test": "the door lists the bound module, what its end writes without the gate, and what it is bound to",
+          "invariant": "the session's first line shows what a bound module's end writes without the gate",
+          "runs_by_default": true
+        }
+      ],
+      "dimensions": [
+        {
+          "id": "legible-exchange-no-scoreboard",
+          "part": "/patterns/8"
+        }
+      ],
+      "covenant": [
+        {
+          "id": "rest.silence-is-not-consent",
+          "via": "end of input answers the lines already received, retires what is active and closes each binding once"
+        },
+        {
+          "id": "rest.no-engagement-debt",
+          "via": "arrive is one bounded, inert document that expects no reply"
+        },
+        {
+          "id": "limits.existing-obligations-stay-scoped",
+          "via": "the door lists the bound module, what its end writes without the gate, and what it is bound to"
+        }
+      ],
+      "not_covered": [
+        "A rest declaration of a caller's own: no command takes one or shows one."
+      ],
+      "from": {}
+    },
+    {
+      "id": "arrival",
+      "place": "card",
+      "title": "An understandable threshold",
+      "question": "Can a caller find out what this place is before being asked to act?",
+      "purpose": "Make orientation available before commitment, so discovery does not require guessing or belonging first.",
+      "needs": [
+        "Node 22 or newer and this checkout; no build, provider, account or network"
+      ],
+      "produces": [
+        "One JSON document of at most 8192 bytes: what this is, the commands that change nothing, the one that sends requests, the modules and adapters, and what it does not establish",
+        "For a failure at the door, a problem that is terminal or names at least one command to run next"
+      ],
+      "practice": "`arrive` prints one bounded document that expects no reply and gives each command as an argv. `help`, `motifs`, `catalog` and `explain` read without activating anything. A failure at the door carries a problem that is terminal or names at least one command to run next.",
+      "boundary": "An orientation document or a list of commands is not an account grant, proof of readiness, consent or an obligation to participate.",
+      "limit": "It describes this checkout as it is, and does not establish that a listed command works in a given environment.",
+      "on_change": "A test holds `arrive` under 8192 bytes, and another holds the commands the README shows to the commands the door has.",
+      "on_exit": "Reading started nothing, so there is nothing to stop; `arrive` says so in how_to_stop.",
+      "sources": [
+        "README.md#discovery--addressing-how-an-agent-finds-and-names-a-service-without-a-human-in-the-loop",
+        "surface/0.1/README.md#1-discovery",
+        "AGENTS.md#on-arrival"
+      ],
+      "implementation": [
+        {
+          "path": "agent-first/0.1/arrive.mjs",
+          "symbol": "buildArrival"
+        },
+        {
+          "path": "agent-first/0.1/arrive.mjs",
+          "symbol": "READ_ONLY"
+        },
+        {
+          "path": "agent-first/0.1/problems.mjs",
+          "symbol": "buildProblem"
+        },
+        {
+          "path": "agent-first/0.1/cli.mjs",
+          "symbol": "main"
+        }
+      ],
+      "checks": [
+        {
+          "path": "tests/agent-first-arrive.test.mjs",
+          "test": "arrive needs no build, no provider and no arguments",
+          "invariant": "arrive exits 0 with no build, no provider and no arguments",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-one-door.test.mjs",
+          "test": "arrive, catalog, a session's first line and its answer to inspect of each module stay within their sizes",
+          "invariant": "arrive, catalog and a session's first lines stay within their stated byte bounds",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-problems.test.mjs",
+          "test": "every suggested next action that needs no external files really runs",
+          "invariant": "each next action a problem suggests, when it needs no outside file, runs",
+          "runs_by_default": true
+        }
+      ],
+      "dimensions": [
+        {
+          "id": "ai-discovery-addressing",
+          "part": "/patterns/6"
+        }
+      ],
+      "covenant": [
+        {
+          "id": "limits.capacity-is-neutral",
+          "via": "arrive, catalog, a session's first line and its answer to inspect of each module stay within their sizes"
+        }
+      ],
+      "not_covered": [
+        "No arrival/0.1 profile is in this checkout.",
+        "A hosted door's arrival: `door plan` and `door check` look at one from outside, and this card does not say what that door does."
+      ],
+      "from": {
+        "title": {
+          "source": "other-atlas#/motifs/0/title",
+          "as": "reworded"
+        },
+        "question": {
+          "source": "other-atlas#/motifs/0/question",
+          "as": "reworded"
+        },
+        "purpose": {
+          "source": "other-atlas#/motifs/0/purpose",
+          "as": "verbatim"
+        },
+        "boundary": {
+          "source": "other-atlas#/motifs/0/boundary",
+          "as": "reworded"
+        }
+      }
     },
     {
       "id": "legibility",
-      "name": "A door that explains itself",
+      "place": "card",
+      "title": "A door that explains itself",
       "question": "Can a caller discover what is offered without accidentally using it?",
+      "purpose": "Let a caller read what each operation takes, does, returns and refuses before anything is activated or run.",
+      "needs": [
+        "A runtime with modules registered; nothing activated"
+      ],
+      "produces": [
+        "Each module's contract, version, revision, state and operations, each operation with its declared effects, refusals and card",
+        "The motif map and the studies, read as data"
+      ],
       "practice": "Describe contracts, operations, declared effects, versions and each operation's card (what to send, an example, what comes back, who checks the input) before activation. Reuse Surface's existing manifest builder rather than invent another discovery protocol.",
+      "boundary": "A card says what an operation is declared to take, do and refuse; it is not evidence that the operation behaves so.",
       "limit": "Registration is not readiness; discovery is not authorization. A constructed manifest is not an observed service. An operation card's summaries and examples are informative; only a schema on one is enforced, and no core operation carries one.",
-      "sources": ["README.md#how-to-read-this-standard", "surface/0.1/README.md"],
-      "implementation": ["agent-first/0.1/cli.mjs", "agent-first/0.1/runtime.mjs", "agent-first/0.1/schema.mjs", "src/surface-0.1.ts"],
-      "checks": ["tests/agent-first-cli.test.mjs", "tests/agent-first-motifs.test.mjs", "tests/agent-first-cards.test.mjs", "tests/agent-first-schema.test.mjs"]
+      "on_change": "An upgrade that changes an operation's effects, refusals, input summary, input schema or returns summary is refused as CONTRACT_MISMATCH. A module's title, description and motif can change without one.",
+      "on_exit": "A retired module is still described, with the state retired.",
+      "sources": [
+        "README.md#how-to-read-this-standard",
+        "README.md#legibility--content-negotiation-speak-the-agents-native-shape",
+        "surface/0.1/README.md#2-representations"
+      ],
+      "implementation": [
+        {
+          "path": "agent-first/0.1/runtime.mjs",
+          "symbol": "createModuleRuntime"
+        },
+        {
+          "path": "agent-first/0.1/schema.mjs",
+          "symbol": "compileSchema"
+        },
+        {
+          "path": "agent-first/0.1/cli.mjs",
+          "symbol": "main"
+        },
+        {
+          "path": "agent-first/0.1/adapter-catalog.mjs",
+          "symbol": "describeAdapter"
+        },
+        {
+          "path": "agent-first/0.1/problems.mjs",
+          "symbol": "CARD_NOTE"
+        },
+        {
+          "path": "src/surface-0.1.ts",
+          "symbol": "defineSurfaceManifest"
+        }
+      ],
+      "checks": [
+        {
+          "path": "tests/agent-first-runtime.test.mjs",
+          "test": "registration is inert, legible, and requires explicit activation before invocation",
+          "invariant": "registering a module runs nothing, and describe shows it without a handler",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-cards.test.mjs",
+          "test": "describe shows the card: what to send, an example, the schema, what comes back, and who checks the input",
+          "invariant": "describe shows each operation's input summary, example, schema, returns and who checks the input",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-cards.test.mjs",
+          "test": "catalog, explain, help and arrive show the card and say, in one sentence used word for word, who checks the input",
+          "invariant": "catalog, explain, help and arrive say who checks the input in one sentence, word for word",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-arrive.test.mjs",
+          "test": "catalog and explain cover adapters from static metadata, marked unbound",
+          "invariant": "catalog and explain describe the adapters from metadata, marked unbound, importing none",
+          "runs_by_default": true
+        }
+      ],
+      "dimensions": [
+        {
+          "id": "legibility-content-negotiation",
+          "part": "/principle"
+        }
+      ],
+      "covenant": [
+        {
+          "id": "consent.terms-before-binding",
+          "via": "describe shows the card: what to send, an example, the schema, what comes back, and who checks the input"
+        },
+        {
+          "id": "legibility.machine-readable-floor",
+          "via": "catalog, explain, help and arrive show the card and say, in one sentence used word for word, who checks the input"
+        }
+      ],
+      "not_covered": [
+        "Content negotiation at this door: every command prints JSON, and no other form is offered.",
+        "A returned value is not held to the returns summary on its card."
+      ],
+      "from": {
+        "title": {
+          "source": "kit-map#/motifs/1/name",
+          "as": "verbatim"
+        },
+        "question": {
+          "source": "kit-map#/motifs/1/question",
+          "as": "verbatim"
+        },
+        "practice": {
+          "source": "kit-map#/motifs/1/practice",
+          "as": "verbatim"
+        },
+        "limit": {
+          "source": "kit-map#/motifs/1/limit",
+          "as": "verbatim"
+        }
+      }
     },
     {
-      "id": "bounded-work",
-      "name": "Work that can reach an ending",
+      "id": "choice",
+      "place": "card",
+      "title": "A scoped yes, and a usable no",
+      "question": "What exactly is the gate asked to allow: which module, revision, operation, effects and input?",
+      "purpose": "Turn an available possibility into a specific, revisable decision without confusing ability, authority and consent.",
+      "needs": [
+        "A host gate: a function that answers one request",
+        "For a session, the --allow list given at its start"
+      ],
+      "produces": [
+        "A run of the handler with the snapshot the gate saw, or POLICY_BLOCKED with nothing started"
+      ],
+      "practice": "An operation that declares effects runs only when the host gate answers exactly true for one frozen request: the module, its revision, the operation, its effects and the input snapshot. The handler is given that same snapshot. Any other answer is POLICY_BLOCKED, and nothing starts. A schema on the card is checked before the gate is asked. In a session the gate is default-deny, and the --allow list is fixed at the start.",
+      "boundary": "A positive callback is a technical decision, not proof that its author holds real-world authority. Rights, credentials, a signature, presence and another party's consent remain separate.",
+      "limit": "The gate is a function the host supplies; this kit does not know who answers it or why. POLICY_BLOCKED is admission, not a person's refusal. `invoke` has no gate, so it refuses an operation that declares effects as HOST_GATE_REQUIRED.",
+      "on_change": "An upgrade, a pause or a resume while the gate decides fences that decision: the call is refused as ADMISSION_CHANGED, and nothing runs.",
+      "on_exit": "Retiring the module while the gate decides refuses the call as MODULE_RETIRED, and the handler is not run.",
+      "sources": [
+        "RIGHTS.md#rights-permissions-consent-and-covenants",
+        "covenant/0.1/covenant.json#specific-consent-and-authority",
+        "work/0.1/README.md#action-proposals-and-exact-approval"
+      ],
+      "implementation": [
+        {
+          "path": "agent-first/0.1/runtime.mjs",
+          "symbol": "createModuleRuntime"
+        },
+        {
+          "path": "agent-first/0.1/runtime.mjs",
+          "symbol": "snapshotInput"
+        },
+        {
+          "path": "agent-first/0.1/session.mjs",
+          "symbol": "runSession"
+        },
+        {
+          "path": "agent-first/0.1/invoke.mjs",
+          "symbol": "runInvoke"
+        }
+      ],
+      "checks": [
+        {
+          "path": "tests/agent-first-runtime.test.mjs",
+          "test": "local IO requires an explicit positive host gate and a pending gate cannot outlive retirement",
+          "invariant": "unless the gate answers true, an effectful call is POLICY_BLOCKED, unrun",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-runtime.test.mjs",
+          "test": "the deferred host gate sees deeply immutable input matching the dispatched snapshot",
+          "invariant": "the gate sees the frozen input the handler is given",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-session.test.mjs",
+          "test": "the gate is default-deny: an operation that declares effects runs only when the allow list names it",
+          "invariant": "in a session, an effectful operation runs only when --allow names it",
+          "runs_by_default": true
+        }
+      ],
+      "dimensions": [
+        {
+          "id": "ai-consent-handshake",
+          "part": "/patterns/2"
+        }
+      ],
+      "covenant": [
+        {
+          "id": "consent.exact-authority",
+          "via": "the deferred host gate sees deeply immutable input matching the dispatched snapshot"
+        },
+        {
+          "id": "consent.absence-forbids-binding",
+          "via": "the gate is default-deny: an operation that declares effects runs only when the allow list names it"
+        },
+        {
+          "id": "limits.uncertain-authority-stops-binding",
+          "via": "local IO requires an explicit positive host gate and a pending gate cannot outlive retirement"
+        }
+      ],
+      "not_covered": [
+        "Withdrawing an approval already given: once the gate has answered true and the handler has started, nothing here takes it back."
+      ],
+      "from": {
+        "title": {
+          "source": "other-atlas#/motifs/2/title",
+          "as": "reworded"
+        },
+        "question": {
+          "source": "other-atlas#/motifs/2/question",
+          "as": "reworded"
+        },
+        "purpose": {
+          "source": "other-atlas#/motifs/2/purpose",
+          "as": "verbatim"
+        },
+        "boundary": {
+          "source": "other-atlas#/motifs/2/boundary",
+          "as": "verbatim"
+        }
+      }
+    },
+    {
+      "id": "witness",
+      "place": "card",
+      "title": "Work that can reach an honest ending",
       "question": "What was offered, attempted, returned, observed, or left unresolved?",
-      "practice": "Keep a plan, a host gate, an attempted operation and evidence of its effect separate: the runtime records whether an operation started and what is known of its effect, and a composite command names the phase it reached. Reuse the Work reference checker for finite records; do not replay a record as instructions.",
-      "limit": "This kit checks records and calls trusted local handlers. The runtime has no deadline, and nothing here cancels a call: a handler that never settles leaves its module retiring. The `session` door ends its wait for an answer at a deadline and does not stop the handler. It is not the roadmap's durable Work execution engine or an authority verifier.",
-      "sources": ["work/0.1/README.md", "MICROSOFT-ROADMAP.md"],
-      "implementation": ["agent-first/0.1/runtime.mjs", "agent-first/0.1/command-state.mjs", "agent-first/0.1/modules.mjs", "agent-first/0.1/session.mjs", "work/0.1/check.mjs"],
-      "checks": ["tests/agent-first-runtime.test.mjs", "tests/agent-first-modules.test.mjs", "tests/agent-first-session.test.mjs", "tests/work-0.1.test.mjs"]
+      "purpose": "Keep apart what was asked, what started, what came back and what is not known, so that an ending is reported as it was.",
+      "needs": [
+        "A runtime call, or a session request with its deadline"
+      ],
+      "produces": [
+        "One answer per call, such as returned, DECLINED, OPERATION_FAILED or, in a session, DEADLINE_EXCEEDED",
+        "A receipt: module, version, revision, operation, declared effects"
+      ],
+      "practice": "Keep a plan, a host gate, an attempted operation and evidence of its effect separate: the runtime records whether an operation started and what is known of its effect, and a composite command names the phase it reached. Reuse the Work reference checker for finite records; do not replay a record as instructions. A `session` answers each started call by its deadline (DEADLINE_EXCEEDED: started, effect unknown) and lists it as late; it does not stop the handler.",
+      "boundary": "Integrity is not truth, a declared capability is not readiness, and a passing bounded check is not whole-framework conformance.",
+      "limit": "This kit checks records and calls trusted local handlers. The runtime has no deadline, and nothing here cancels a call: a handler that never settles leaves its module retiring. The `session` door ends its wait for an answer at a deadline and does not stop the handler. It is not the roadmap's durable Work execution engine or an authority verifier. With --collab-config, the Collab journal is kept by the backend at the path the config names; who else reads or writes it is not known to this kit.",
+      "on_change": "Results given before an upgrade keep the version and revision that answered them.",
+      "on_exit": "A call still running when its module retires is let finish; the module is retiring until it does.",
+      "sources": [
+        "work/0.1/README.md#invocation-provider-response-and-effect",
+        "README.md#the-observer-is-also-observed",
+        "MICROSOFT-ROADMAP.md#phase-2--local-reference-kernel"
+      ],
+      "implementation": [
+        {
+          "path": "agent-first/0.1/runtime.mjs",
+          "symbol": "createModuleRuntime"
+        },
+        {
+          "path": "agent-first/0.1/command-state.mjs",
+          "symbol": "commandFailure"
+        },
+        {
+          "path": "agent-first/0.1/session.mjs",
+          "symbol": "runSession"
+        },
+        {
+          "path": "work/0.1/check.mjs",
+          "symbol": "validateWorkRun"
+        }
+      ],
+      "checks": [
+        {
+          "path": "tests/agent-first-session.test.mjs",
+          "test": "a handler that does not settle is answered at the deadline: started, effect unknown, and listed as late",
+          "invariant": "a started call gets one answer by its deadline, and the handler may run on",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-runtime.test.mjs",
+          "test": "a declared refusal is a distinct DECLINED result, not OPERATION_FAILED",
+          "invariant": "a declared refusal is DECLINED with not_applied, not OPERATION_FAILED",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-session.test.mjs",
+          "test": "every response carries a receipt: which module answered, the operation, its effects, the deadline and the request line",
+          "invariant": "each response names the module, revision, operation, effects and deadline",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/work-0.1.test.mjs",
+          "test": "provider response, observed effect and terminal state remain separate",
+          "invariant": "a Work record keeps response, observed effect and terminal state apart",
+          "runs_by_default": true
+        }
+      ],
+      "dimensions": [
+        {
+          "id": "verification-and-trust",
+          "part": "/patterns/5"
+        }
+      ],
+      "covenant": [
+        {
+          "id": "legibility.evidence-is-scoped",
+          "via": "every response carries a receipt: which module answered, the operation, its effects, the deadline and the request line"
+        }
+      ],
+      "not_covered": [
+        "Durable records: a receipt is printed once and kept only by whoever reads it.",
+        "Whether a declared refusal applied nothing: not_applied is declared, not observed."
+      ],
+      "from": {
+        "title": {
+          "source": "kit-map#/motifs/2/name",
+          "as": "reworded"
+        },
+        "question": {
+          "source": "kit-map#/motifs/2/question",
+          "as": "verbatim"
+        },
+        "practice": {
+          "source": "kit-map#/motifs/2/practice",
+          "as": "extended"
+        },
+        "boundary": {
+          "source": "other-atlas#/motifs/3/boundary",
+          "as": "verbatim"
+        },
+        "limit": {
+          "source": "kit-map#/motifs/2/limit",
+          "as": "extended"
+        }
+      }
     },
     {
       "id": "continuity",
-      "name": "A thread that can travel",
-      "question": "What is deliberately carried, and what remains outside the selection?",
-      "practice": "Use AgentTool's existing files-only Local Starter. The provider owns the fixed slots, selection, freshness, budgets and hashes; this kit owns the boundary around it: an explicit root, a byte-pinned package, notes kept apart from code, and a hash-guarded handoff. Notes stay separate from dependency code.",
-      "limit": "Freshness and budgets are the provider's behaviour, not tested by this kit. A rendered selection is not a full export. Retained prose is not new authority, automatic memory, host delivery or personal continuity.",
-      "sources": ["RIGHTS.md#6-privacy-and-data-care", "agent-first/0.1/agenttool.lock.json"],
-      "implementation": ["agent-first/0.1/adapters/local-starter.mjs", "agent-first/0.1/context.mjs"],
-      "checks": ["tests/agent-first-starter.test.mjs", "tests/agent-first-context.test.mjs"]
+      "place": "card",
+      "title": "A thread that can travel",
+      "question": "What is deliberately carried, what is replaced, and who owns each?",
+      "purpose": "Carry enough context, provenance and unresolved questions to continue the work without pretending nothing changed.",
+      "needs": [
+        "A Local Starter package matching the pin, and a notes root outside it",
+        "A host that calls upgrade with the expected revision"
+      ],
+      "produces": [
+        "Notes that stay after the module retires",
+        "A new revision, or a refusal of the upgrade"
+      ],
+      "faces": {
+        "carried": {
+          "owner": "caller",
+          "holds": "the notes root and the hash-guarded handoff",
+          "practice": "Use AgentTool's existing files-only Local Starter. The provider owns the fixed slots, selection, freshness, budgets and hashes; this kit owns the boundary around it: an explicit root, a byte-pinned package, notes kept apart from code, and a hash-guarded handoff. Notes stay separate from dependency code.",
+          "limit": "Freshness and budgets are the provider's behaviour, not tested by this kit. A rendered selection is not a full export. Retained prose is not new authority, automatic memory, host delivery or personal continuity.",
+          "implementation": [
+            {
+              "path": "agent-first/0.1/adapters/local-starter.mjs",
+              "symbol": "createLocalStarterModule"
+            },
+            {
+              "path": "agent-first/0.1/context.mjs",
+              "symbol": "runContextCommand"
+            }
+          ],
+          "checks": [
+            {
+              "path": "tests/agent-first-starter.test.mjs",
+              "test": "AgentTool integration binds one explicit root and does not run during discovery",
+              "invariant": "one absolute root is bound, and the provider runs only when invoked",
+              "runs_by_default": true
+            },
+            {
+              "path": "tests/agent-first-context.test.mjs",
+              "test": "real selected context survives consumer restart, rejects stale writes, and outlives provider removal",
+              "invariant": "with the real provider, notes outlive a restart and its removal; a stale --expect is refused",
+              "runs_by_default": false,
+              "needs": "XENIA_STARTER_TEST_PACKAGE: the Local Starter release the lock pins"
+            }
+          ]
+        },
+        "replaced": {
+          "owner": "host",
+          "holds": "revision-bound upgrade and the epoch fence",
+          "practice": "Capture invocation-time version/revision, require the expected current revision for replacement, and fence late decisions after an upgrade or pause/resume. Keep old results with their caller.",
+          "limit": "Matching declared contracts and effects does not prove semantic compatibility. This is in-process control, not durable migration or package authentication.",
+          "implementation": [
+            {
+              "path": "agent-first/0.1/runtime.mjs",
+              "symbol": "createModuleRuntime"
+            },
+            {
+              "path": "agent-first/0.1/cli.mjs",
+              "symbol": "demo"
+            }
+          ],
+          "checks": [
+            {
+              "path": "tests/agent-first-runtime.test.mjs",
+              "test": "compatible upgrades require the current revision and preserve earlier result attribution",
+              "invariant": "an upgrade needs the current revision; earlier results keep their version",
+              "runs_by_default": true
+            },
+            {
+              "path": "tests/agent-first-runtime.test.mjs",
+              "test": "upgrade or pause/resume invalidates a pending gate instead of silently using its old approval",
+              "invariant": "an upgrade, pause or resume while the gate decides fences the decision",
+              "runs_by_default": true
+            }
+          ]
+        }
+      },
+      "boundary": "Preserved context is not identity, inherited credentials or renewed consent. A descriptor comparison does not prove compatible behavior or a safe database migration.",
+      "on_change": "The pin changes only by an edit of agenttool.lock.json; no newer release is looked up.",
+      "on_exit": "Retiring the Local Starter module leaves the notes where they are.",
+      "sources": [
+        "RIGHTS.md#6-privacy-and-data-care",
+        "agent-first/0.1/agenttool.lock.json#/local_starter"
+      ],
+      "dimensions": [
+        {
+          "id": "continuity-and-arrival",
+          "part": "/patterns/8"
+        }
+      ],
+      "covenant": [
+        {
+          "id": "identity.continuity-is-optional",
+          "via": "AgentTool integration binds one explicit root and does not run during discovery"
+        }
+      ],
+      "not_covered": [
+        "Moving notes between provider versions, devices or hosts: no command does it."
+      ],
+      "from": {
+        "title": {
+          "source": "kit-map#/motifs/3/name",
+          "as": "verbatim"
+        },
+        "question": {
+          "source": "kit-map#/motifs/3/question",
+          "as": "reworded"
+        },
+        "purpose": {
+          "source": "other-atlas#/motifs/4/purpose",
+          "as": "verbatim"
+        },
+        "boundary": {
+          "source": "other-atlas#/motifs/4/boundary",
+          "as": "verbatim"
+        },
+        "faces.carried.practice": {
+          "source": "kit-map#/motifs/3/practice",
+          "as": "verbatim"
+        },
+        "faces.carried.limit": {
+          "source": "kit-map#/motifs/3/limit",
+          "as": "verbatim"
+        },
+        "faces.replaced.practice": {
+          "source": "kit-map#/motifs/4/practice",
+          "as": "verbatim"
+        },
+        "faces.replaced.limit": {
+          "source": "kit-map#/motifs/4/limit",
+          "as": "verbatim"
+        }
+      }
     },
     {
-      "id": "change",
-      "name": "Change that stays attributable",
-      "question": "Which implementation answered, and has it changed since this decision began?",
-      "practice": "Capture invocation-time version/revision, require the expected current revision for replacement, and fence late decisions after an upgrade or pause/resume. Keep old results with their caller.",
-      "limit": "Matching declared contracts and effects does not prove semantic compatibility. This is in-process control, not durable migration or package authentication.",
-      "sources": ["RIGHTS.md#8-credit-and-provenance", "RIGHTS.md#9-repair-and-appeal"],
-      "implementation": ["agent-first/0.1/runtime.mjs", "agent-first/0.1/provider.mjs"],
-      "checks": ["tests/agent-first-runtime.test.mjs", "tests/agent-first-cli.test.mjs"]
-    },
-    {
-      "id": "exit",
-      "name": "An exit that takes nothing with it",
+      "id": "release",
+      "place": "card",
+      "title": "An exit that takes nothing with it",
       "question": "Can this capability stop without taking unrelated capabilities or retained records with it?",
+      "purpose": "Make stopping a capability operationally real while leaving retained work understandable.",
+      "needs": [
+        "A module id to retire, or the end of a session"
+      ],
+      "produces": [
+        "A module that admits nothing new and drains what it admitted",
+        "For a session, session_end: what was and was not cleaned up"
+      ],
       "practice": "Close new admission immediately, let admitted work drain, and keep notes independently readable. Remove code and retained data only through their separate, explicit lifecycles. A `session` ends the same way and says in its last line what was and was not cleaned up.",
-      "limit": "Retirement is terminal in this runtime: a retired module cannot be reactivated, upgraded or registered again under the same id. Any return is a new process with a new runtime, reading the notes that were kept. It does not kill arbitrary JavaScript, revoke external credentials, erase backups, or retire a being's rights.",
-      "sources": ["RIGHTS.md#rights-permissions-consent-and-covenants", "covenant/0.1/covenant.json"],
-      "implementation": ["agent-first/0.1/runtime.mjs", "agent-first/0.1/context.mjs", "agent-first/0.1/session.mjs"],
-      "checks": ["tests/agent-first-runtime.test.mjs", "tests/agent-first-context.test.mjs", "tests/agent-first-session.test.mjs"]
+      "boundary": "Retiring software is not deleting a participant, revoking standing rights, proving secure erasure or forcing someone else to accept a handoff.",
+      "limit": "Retirement is terminal in this runtime: a retired module cannot be reactivated, upgraded or registered again under the same id. Any return is a new process with a new runtime, reading the notes that were kept. It does not kill arbitrary JavaScript, revoke external credentials, erase backups, or retire a being's rights. With --collab-config, the Collab journal is kept by the backend at the path the config names; who else reads or writes it is not known to this kit.",
+      "on_change": "A retired id cannot be activated, upgraded or registered again in the same runtime.",
+      "on_exit": "In a session, session_end gives each module's state, the calls still running, and cleanup {complete, did, did_not, left_behind}.",
+      "sources": [
+        "RIGHTS.md#rights-permissions-consent-and-covenants",
+        "covenant/0.1/covenant.json#refusal-revocation-and-exit"
+      ],
+      "implementation": [
+        {
+          "path": "agent-first/0.1/runtime.mjs",
+          "symbol": "createModuleRuntime"
+        },
+        {
+          "path": "agent-first/0.1/session.mjs",
+          "symbol": "runSession"
+        },
+        {
+          "path": "agent-first/0.1/adapters/agenttool-collab/index.mjs",
+          "symbol": "bindCollab"
+        }
+      ],
+      "checks": [
+        {
+          "path": "tests/agent-first-runtime.test.mjs",
+          "test": "retirement closes admission immediately, drains calls, and leaves other modules usable",
+          "invariant": "retire closes admission at once, drains calls, leaves other modules usable",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-session.test.mjs",
+          "test": "what was not cleaned up is said, and the exit is 0 only when the end was complete",
+          "invariant": "session_end says what was not cleaned up; exit 0 only for a complete end",
+          "runs_by_default": true
+        },
+        {
+          "path": "tests/agent-first-collab.test.mjs",
+          "test": "through the process wiring the CLI uses: a whole exchange over real pipes, and an end that leaves the journal and nothing else of its own",
+          "invariant": "over real pipes, the end leaves the journal and nothing else of its own",
+          "runs_by_default": true
+        }
+      ],
+      "dimensions": [
+        {
+          "id": "autonomy-dignity",
+          "part": "/patterns/8"
+        }
+      ],
+      "covenant": [
+        {
+          "id": "exit.states-are-separate",
+          "via": "what was not cleaned up is said, and the exit is 0 only when the end was complete"
+        },
+        {
+          "id": "exit.retention-is-itemized",
+          "via": "through the process wiring the CLI uses: a whole exchange over real pipes, and an end that leaves the journal and nothing else of its own"
+        }
+      ],
+      "not_covered": [
+        "A release receipt: `retire` returns the module's description, not what was kept.",
+        "Removing the notes or the journal: no command does it."
+      ],
+      "from": {
+        "title": {
+          "source": "kit-map#/motifs/5/name",
+          "as": "verbatim"
+        },
+        "question": {
+          "source": "kit-map#/motifs/5/question",
+          "as": "verbatim"
+        },
+        "purpose": {
+          "source": "other-atlas#/motifs/5/purpose",
+          "as": "reworded"
+        },
+        "practice": {
+          "source": "kit-map#/motifs/5/practice",
+          "as": "verbatim"
+        },
+        "boundary": {
+          "source": "other-atlas#/motifs/5/boundary",
+          "as": "verbatim"
+        },
+        "limit": {
+          "source": "kit-map#/motifs/5/limit",
+          "as": "extended"
+        }
+      }
+    },
+    {
+      "id": "repair",
+      "place": "crossing",
+      "title": "Where a wrong step is met",
+      "where": [
+        {
+          "motif": "arrival",
+          "what": "A failure at the door is terminal, or names at least one command to run next.",
+          "shown_by": {
+            "path": "tests/agent-first-problems.test.mjs",
+            "test": "invariant for every code and refusal: terminal => no next actions; otherwise at least one real one"
+          }
+        },
+        {
+          "motif": "witness",
+          "what": "A refusal a module declared is DECLINED with the effect not_applied, apart from a failure whose effect is unknown.",
+          "shown_by": {
+            "path": "tests/agent-first-runtime.test.mjs",
+            "test": "a declared refusal is a distinct DECLINED result, not OPERATION_FAILED"
+          }
+        },
+        {
+          "motif": "choice",
+          "what": "A no from the host gate is POLICY_BLOCKED, and the handler is not called.",
+          "shown_by": {
+            "path": "tests/agent-first-runtime.test.mjs",
+            "test": "local IO requires an explicit positive host gate and a pending gate cannot outlive retirement"
+          }
+        },
+        {
+          "motif": "continuity",
+          "what": "A handoff sent with a hash that is no longer current is declined as write_conflict, with the effect not_applied.",
+          "shown_by": {
+            "path": "tests/agent-first-starter.test.mjs",
+            "test": "provider failure codes map to declared refusals; unnamed failures stay unknown"
+          }
+        },
+        {
+          "motif": "standing",
+          "what": "After the door has refused a command, the same reads still succeed.",
+          "shown_by": {
+            "path": "tests/agent-first-floor.test.mjs",
+            "test": "the same reads succeed after the door has refused something"
+          }
+        },
+        {
+          "motif": "legibility",
+          "what": "An earlier motif name is in the reconciliation table of this map, with where it went.",
+          "shown_by": {
+            "path": "tests/agent-first-motif-map.test.mjs",
+            "test": "every earlier name from the four vocabularies is in the reconciliation table once, with where it went"
+          }
+        },
+        {
+          "motif": "continuity",
+          "what": "What the other lineage held is described as found at its revisions, with what this branch carried and did not carry written beside it, not over it.",
+          "shown_by": {
+            "path": "tests/agent-first-one-door.test.mjs",
+            "test": "the note about the other lineage says where it is kept, that it is superseded, and what was and was not carried"
+          }
+        },
+        {
+          "motif": "witness",
+          "what": "A verification record that no longer describes the kit is kept unchanged, beside a note that says it is superseded.",
+          "shown_by": {
+            "path": ".hermes/verification/agent-first-motifs.superseded.md",
+            "test": null,
+            "not_tested": "No test reads the note or compares the record with an earlier revision of it."
+          }
+        },
+        {
+          "motif": "witness",
+          "what": "The notebook's rule: a maintainer may append a response, and declined, resolved and superseded entries are kept.",
+          "shown_by": {
+            "path": "AGENT-FEEDBACK.md",
+            "test": null,
+            "not_tested": "It is the notebook's stated practice; no test compares an entry with an earlier revision of it."
+          }
+        }
+      ],
+      "boundary": "This covers a wrong step at this door: a command, a request, a file or a name that did not fit, and what to read or run next. It is not the Covenant's repair of a harm, and no duty of the Covenant's repair.* group is related to it.",
+      "sources": [
+        "surface/0.1/README.md#3-problems",
+        "CONTRIBUTING.md#boundaries-and-repair",
+        "AGENT-FEEDBACK.md#agent-feedback"
+      ],
+      "covenant": [
+        {
+          "id": "legibility.refusals-are-typed",
+          "via": "invariant for every code and refusal: terminal => no next actions; otherwise at least one real one"
+        },
+        {
+          "id": "legibility.corrections-are-visible",
+          "via": "the note about the other lineage says where it is kept, that it is superseded, and what was and was not carried"
+        }
+      ],
+      "not_covered": [
+        "Undoing an effect that happened: no operation here reverses one.",
+        "A revision history of a module: the runtime keeps its current definition only."
+      ]
     }
   ],
-  "connections": [
-    {"from":"standing","to":"legibility","meaning":"A standing floor calls for understandable conditions, not an eligibility test."},
-    {"from":"legibility","to":"bounded-work","meaning":"Visible contracts help a caller choose work; they do not authorize it."},
-    {"from":"bounded-work","to":"continuity","meaning":"Chosen context may be carried after work; no automatic transcript collection is required."},
-    {"from":"continuity","to":"change","meaning":"Retained evidence can inform a replacement without binding the next encounter."},
-    {"from":"change","to":"exit","meaning":"Replaceable code and independently held data make departure practical."},
-    {"from":"exit","to":"standing","meaning":"Closing a capability does not withdraw the floor beneath its users."}
+  "edge_kinds": [
+    {
+      "id": "then",
+      "meaning": "A reading order that nothing enforces: any piece can be read or used first, and no edge is a prerequisite.",
+      "checked_by": {
+        "path": "tests/agent-first-motif-map.test.mjs",
+        "test": "the then edges are one path through the cards, in their order, and nothing else is a then edge"
+      }
+    },
+    {
+      "id": "back",
+      "meaning": "A later card sends a decision back to an earlier one. Each back edge names a test that shows the mechanism; that the test is there does not show the edge is right.",
+      "checked_by": {
+        "path": "tests/agent-first-motif-map.test.mjs",
+        "test": "each back edge points to an earlier card and names a test that is there"
+      }
+    },
+    {
+      "id": "optional-return",
+      "meaning": "The only edge out of release. Taking it is a choice, and nothing is carried over by it.",
+      "checked_by": {
+        "path": "tests/agent-first-motif-map.test.mjs",
+        "test": "release leaves only by the optional return to arrival, and ground and crossing entries have no edges"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "arrival",
+      "to": "legibility",
+      "kind": "then",
+      "meaning": "A discoverable door becomes useful when its explanation is in a shape the caller can use."
+    },
+    {
+      "from": "legibility",
+      "to": "choice",
+      "kind": "then",
+      "meaning": "An understandable contract makes a specific choice possible; it does not choose for the guest."
+    },
+    {
+      "from": "choice",
+      "to": "witness",
+      "kind": "then",
+      "meaning": "A scoped decision names the intended act; its result still needs observation rather than assumption."
+    },
+    {
+      "from": "witness",
+      "to": "continuity",
+      "kind": "then",
+      "meaning": "Bounded evidence and corrections let later work pick up a thread without rewriting its origin."
+    },
+    {
+      "from": "continuity",
+      "to": "release",
+      "kind": "then",
+      "meaning": "A continuation record also says how work can pause or end without losing its meaning."
+    },
+    {
+      "from": "witness",
+      "to": "choice",
+      "kind": "back",
+      "meaning": "New evidence can change a decision, but cannot itself grant permission or stand in for consent.",
+      "shown_by": {
+        "path": "tests/agent-first-collab.test.mjs",
+        "test": "a refusal by the backend that the card does not list is unknown for a write and latches writes; reads go on"
+      }
+    },
+    {
+      "from": "continuity",
+      "to": "choice",
+      "kind": "back",
+      "meaning": "A replacement, pause or resume while the gate decides sends the decision back: the earlier approval is not used.",
+      "shown_by": {
+        "path": "tests/agent-first-runtime.test.mjs",
+        "test": "upgrade or pause/resume invalidates a pending gate instead of silently using its old approval"
+      }
+    },
+    {
+      "from": "release",
+      "to": "arrival",
+      "kind": "optional-return",
+      "meaning": "A new process with a new runtime: no module state, admission or obligation carries over; notes kept on disk can be read again if the caller chooses.",
+      "shown_by": {
+        "path": "tests/agent-first-runtime.test.mjs",
+        "test": "retirement closes admission immediately, drains calls, and leaves other modules usable"
+      }
+    }
+  ],
+  "studies": [
+    {
+      "study": "arrival",
+      "motif": "arrival",
+      "relation": "partial-illustration",
+      "limit": "Constructing a manifest is not observing a hosted door."
+    },
+    {
+      "study": "representation",
+      "motif": "legibility",
+      "relation": "partial-illustration",
+      "limit": "One authored message is not a general semantic-equivalence proof."
+    },
+    {
+      "study": "recovery",
+      "motif": "repair",
+      "relation": "partial-illustration",
+      "limit": "A recovery link is neither an instruction to execute nor authority. It shows Surface's problem shape, not the kit's."
+    },
+    {
+      "study": "ending",
+      "motif": "release",
+      "relation": "contrast",
+      "limit": "A terminal problem does not retire a module, revoke access, or erase records."
+    }
+  ],
+  "without_study": {
+    "meaning": "no study partially illustrates it",
+    "ids": [
+      "standing",
+      "rest",
+      "choice",
+      "witness",
+      "continuity",
+      "release"
+    ]
+  },
+  "commands": [
+    {
+      "argv": [
+        "arrive"
+      ],
+      "does": [
+        {
+          "what": "changes-nothing"
+        }
+      ],
+      "motifs": [
+        "arrival",
+        "rest"
+      ]
+    },
+    {
+      "argv": [
+        "help"
+      ],
+      "does": [
+        {
+          "what": "changes-nothing"
+        }
+      ],
+      "motifs": [
+        "arrival",
+        "legibility"
+      ]
+    },
+    {
+      "argv": [
+        "motifs"
+      ],
+      "does": [
+        {
+          "what": "changes-nothing"
+        }
+      ],
+      "motifs": [
+        "legibility"
+      ]
+    },
+    {
+      "argv": [
+        "motifs",
+        "study"
+      ],
+      "does": [
+        {
+          "what": "changes-nothing"
+        }
+      ],
+      "motifs": [
+        "arrival",
+        "legibility",
+        "repair",
+        "release"
+      ]
+    },
+    {
+      "argv": [
+        "catalog"
+      ],
+      "does": [
+        {
+          "what": "changes-nothing"
+        }
+      ],
+      "motifs": [
+        "legibility",
+        "standing"
+      ]
+    },
+    {
+      "argv": [
+        "explain"
+      ],
+      "does": [
+        {
+          "what": "changes-nothing"
+        }
+      ],
+      "motifs": [
+        "legibility"
+      ]
+    },
+    {
+      "argv": [
+        "invoke"
+      ],
+      "does": [
+        {
+          "what": "changes-nothing"
+        }
+      ],
+      "motifs": [
+        "choice",
+        "witness",
+        "release"
+      ]
+    },
+    {
+      "argv": [
+        "session"
+      ],
+      "does": [
+        {
+          "what": "changes-nothing",
+          "when": "without --collab-config"
+        },
+        {
+          "what": "starts-a-process",
+          "when": "with --collab-config, when open runs"
+        },
+        {
+          "what": "writes-files",
+          "when": "with --collab-config: a bundle copy and the journal"
+        },
+        {
+          "what": "runs-unobserved-code",
+          "when": "with --collab-config: the backend"
+        }
+      ],
+      "motifs": [
+        "choice",
+        "witness",
+        "release",
+        "rest"
+      ]
+    },
+    {
+      "argv": [
+        "demo"
+      ],
+      "does": [
+        {
+          "what": "changes-nothing"
+        }
+      ],
+      "motifs": [
+        "witness",
+        "continuity",
+        "release"
+      ]
+    },
+    {
+      "argv": [
+        "door",
+        "plan"
+      ],
+      "does": [
+        {
+          "what": "changes-nothing"
+        }
+      ],
+      "motifs": [
+        "choice"
+      ]
+    },
+    {
+      "argv": [
+        "door",
+        "check"
+      ],
+      "does": [
+        {
+          "what": "sends-requests",
+          "when": "GET requests to one origin; `door plan` gives the bounds and their one exception"
+        }
+      ],
+      "motifs": [
+        "witness"
+      ]
+    },
+    {
+      "argv": [
+        "door",
+        "rights"
+      ],
+      "does": [
+        {
+          "what": "changes-nothing"
+        }
+      ],
+      "motifs": [
+        "standing",
+        "witness"
+      ]
+    },
+    {
+      "argv": [
+        "feedback",
+        "new"
+      ],
+      "does": [
+        {
+          "what": "changes-nothing",
+          "when": "without --out"
+        },
+        {
+          "what": "writes-files",
+          "when": "with --out: one new file, never over one"
+        }
+      ],
+      "motifs": [
+        "repair"
+      ]
+    },
+    {
+      "argv": [
+        "feedback",
+        "check"
+      ],
+      "does": [
+        {
+          "what": "changes-nothing"
+        }
+      ],
+      "motifs": [
+        "repair"
+      ]
+    },
+    {
+      "argv": [
+        "context"
+      ],
+      "does": [
+        {
+          "what": "writes-files",
+          "when": "init makes the notes root; a temporary package copy"
+        },
+        {
+          "what": "runs-unobserved-code"
+        }
+      ],
+      "motifs": [
+        "continuity"
+      ]
+    },
+    {
+      "argv": [
+        "context",
+        "handoff"
+      ],
+      "does": [
+        {
+          "what": "writes-files",
+          "when": "handoff.md, given its current sha256; a temporary package copy"
+        },
+        {
+          "what": "runs-unobserved-code"
+        }
+      ],
+      "motifs": [
+        "continuity"
+      ]
+    },
+    {
+      "argv": [
+        "starter-smoke"
+      ],
+      "does": [
+        {
+          "what": "writes-files",
+          "when": "a new notes root; a temporary package copy"
+        },
+        {
+          "what": "runs-unobserved-code"
+        }
+      ],
+      "motifs": [
+        "continuity",
+        "release"
+      ]
+    }
+  ],
+  "modules": [
+    {
+      "id": "xenia.surface",
+      "motif": "legibility"
+    },
+    {
+      "id": "xenia.covenant",
+      "motif": "standing"
+    },
+    {
+      "id": "xenia.work",
+      "motif": "witness"
+    },
+    {
+      "id": "agenttool.local-context",
+      "motif": "continuity",
+      "face": "carried",
+      "also": [
+        "release"
+      ]
+    },
+    {
+      "id": "agenttool.skills-inspector",
+      "motif": "legibility"
+    },
+    {
+      "id": "agenttool.telescope-surface",
+      "motif": "legibility"
+    },
+    {
+      "id": "agenttool.collab",
+      "motif": "witness",
+      "also": [
+        "choice",
+        "release",
+        "rest"
+      ]
+    },
+    {
+      "id": "example.echo",
+      "motif": "continuity",
+      "face": "replaced",
+      "also": [
+        "release"
+      ]
+    }
+  ],
+  "cross_index": {
+    "meaning": "An id under an entry's dimensions names a part of a spec.json dimension that the entry's mechanism touches. An id under its covenant names a Covenant duty or protective limit whose subject that mechanism touches, with the check that shows the mechanism: not that the duty is met. Each id appears once, under one entry or in not_covered here.",
+    "dimensions_from": "spec.json#/dimensions",
+    "duties_from": "covenant/0.1/covenant.json#/rights",
+    "limits_from": "covenant/0.1/covenant.json#/protective_limits",
+    "rights_note": "Rights are not listed. Each right's duties are, and which entries relate to a right can be read from them.",
+    "not_covered": [
+      {
+        "id": "standing.control-is-not-permission",
+        "why": "The kit takes no proof of control and keeps no account; no request here is made stateful by one."
+      },
+      {
+        "id": "standing.no-compelled-self-claim",
+        "why": "No command asks a caller to say anything about itself, and no test looks for such a request."
+      },
+      {
+        "id": "safety.no-punitive-harm",
+        "why": "A duty about consequences a service controls; the kit has none beyond refusing a command, and no test reads for one."
+      },
+      {
+        "id": "safety.no-manipulative-pressure",
+        "why": "No test reads the door's words for pressure; the word checks here and in tests/own-door.test.mjs find a few listed words only."
+      },
+      {
+        "id": "safety.protective-limits-are-bounded",
+        "why": "The kit applies no protective restriction to a principal."
+      },
+      {
+        "id": "rest.neutral-limits-stay-neutral",
+        "why": "The kit's limits (sizes, deadlines, the end's 15 seconds) are stated, and no test sets them beside non-action."
+      },
+      {
+        "id": "rest.play-and-connection-are-not-debt",
+        "why": "Nothing here concerns play or connection."
+      },
+      {
+        "id": "consent.signature-boundary",
+        "why": "No signature, credential or session token is read by the kit."
+      },
+      {
+        "id": "exit.refusal-is-costless",
+        "why": "The kit keeps no record of a caller, so a refusal has nothing to change; no test shows that."
+      },
+      {
+        "id": "exit.revocation-is-immediate",
+        "why": "Retiring a module closes its admission at once, but the kit grants no authority to revoke, and no test shows a revocation."
+      },
+      {
+        "id": "privacy.minimize-and-purpose-bind",
+        "why": "A duty about collected data; the kit collects none, and no test shows that."
+      },
+      {
+        "id": "privacy.no-silent-secondary-use",
+        "why": "The kit holds no protected data."
+      },
+      {
+        "id": "privacy.layered-inventory",
+        "why": "The kit publishes no data or retention inventory."
+      },
+      {
+        "id": "privacy.no-cross-layer-overclaim",
+        "why": "No test reads the kit's words for such claims."
+      },
+      {
+        "id": "identity.no-impersonation-or-silent-rewrite",
+        "why": "An upgrade can change a module's title, description and motif while its contract and effects match, so the kit does not hold this."
+      },
+      {
+        "id": "identity.credentials-are-bounded",
+        "why": "The kit issues and reads no credentials."
+      },
+      {
+        "id": "identity.portability-is-verifiable",
+        "why": "The kit offers no export of attributable state."
+      },
+      {
+        "id": "exchange.quote-before-commit",
+        "why": "No value moves at this door."
+      },
+      {
+        "id": "exchange.receipt-is-recomputable",
+        "why": "No value moves at this door; a receipt here gives the bytes and sha256 of an input, not of a value move."
+      },
+      {
+        "id": "exchange.rights-are-not-hostage",
+        "why": "Nothing is charged or held at this door, and no test shows that."
+      },
+      {
+        "id": "dignity.no-worth-ranking",
+        "why": "The kit computes no score or rank, and no test looks for one."
+      },
+      {
+        "id": "dignity.attribution-and-voice",
+        "why": "The notebook's rule about keeping a writer's words is held by no test."
+      },
+      {
+        "id": "repair.challenge-and-restoration",
+        "why": "The repair entry covers a wrong step at this door; the kit has no path to challenge, appeal or restore."
+      },
+      {
+        "id": "repair.no-retaliation-or-shaming",
+        "why": "The kit keeps no record of a caller to act on, and no test shows that."
+      },
+      {
+        "id": "limits.rights-coexist",
+        "why": "Nothing here weighs one principal's rights against another's."
+      },
+      {
+        "id": "limits.active-harm-response",
+        "why": "The kit has no harm response."
+      }
+    ]
+  },
+  "reconciliation": {
+    "meaning": "Where each name, edge and field of the earlier vocabularies went. A row says where to read now; it does not say the earlier text was wrong or that this one is right.",
+    "vocabularies": [
+      {
+        "id": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10",
+        "what": "The kit map this file replaces: six motifs joined in a ring."
+      },
+      {
+        "id": "kit-studies",
+        "source": "agent-first/0.1/motif-studies.mjs@0f73c10",
+        "what": "The four study ids, an id space of their own; their links stay in motif-studies.mjs."
+      },
+      {
+        "id": "kit-plan",
+        "source": ".hermes/plans/2026-10-09_175749-agent-first.md@0f73c10",
+        "what": "The five names in the kit plan, written before the kit map."
+      },
+      {
+        "id": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a",
+        "also": [
+          "modules/0.1/motifs.mjs@beed37a",
+          "MOTIFS.md@beed37a"
+        ],
+        "what": "The other lineage's atlas: six cards, seven connections and a repair sentence, with its renderer and the page rendered from it. See agent-first/0.1/LINEAGE.md."
+      }
+    ],
+    "name_rows": [
+      {
+        "name": "standing",
+        "vocabulary": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10#/motifs/0/id",
+        "status": "moved-to-ground",
+        "now": [
+          "standing"
+        ],
+        "note": "It was one station of a ring. It is now ground, under every card, with no edge in or out."
+      },
+      {
+        "name": "legibility",
+        "vocabulary": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10#/motifs/1/id",
+        "status": "kept",
+        "now": [
+          "legibility"
+        ],
+        "note": "Its title, question, practice and limit are kept."
+      },
+      {
+        "name": "bounded-work",
+        "vocabulary": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10#/motifs/2/id",
+        "status": "split",
+        "now": [
+          "witness",
+          "choice"
+        ],
+        "note": "Its question and its limit went to witness, whose title keeps the finite ending; the host gate its practice named went to choice."
+      },
+      {
+        "name": "continuity",
+        "vocabulary": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10#/motifs/3/id",
+        "status": "kept",
+        "now": [
+          "continuity/carried"
+        ],
+        "source_question": "What is deliberately carried, and what remains outside the selection?",
+        "note": "Its practice and limit are the carried face of continuity."
+      },
+      {
+        "name": "change",
+        "vocabulary": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10#/motifs/4/id",
+        "status": "renamed",
+        "now": [
+          "continuity/replaced"
+        ],
+        "source_question": "Which implementation answered, and has it changed since this decision began?",
+        "note": "Its practice and limit are the replaced face of continuity: code the host replaces, beside the notes the caller carries."
+      },
+      {
+        "name": "exit",
+        "vocabulary": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10#/motifs/5/id",
+        "status": "renamed",
+        "now": [
+          "release"
+        ],
+        "note": "Its title, question, practice and limit are kept under release. Rest, which it did not name, is ground of its own."
+      },
+      {
+        "name": "arrival",
+        "vocabulary": "kit-studies",
+        "source": "agent-first/0.1/motif-studies.mjs@0f73c10#listStudies",
+        "status": "other-id-space",
+        "now": [
+          "arrival"
+        ],
+        "note": "A study id. It partially illustrates the arrival entry; the link is relates_to in motif-studies.mjs."
+      },
+      {
+        "name": "representation",
+        "vocabulary": "kit-studies",
+        "source": "agent-first/0.1/motif-studies.mjs@0f73c10#listStudies",
+        "status": "other-id-space",
+        "now": [
+          "legibility"
+        ],
+        "note": "A study id. It partially illustrates legibility; the link is relates_to in motif-studies.mjs."
+      },
+      {
+        "name": "recovery",
+        "vocabulary": "kit-studies",
+        "source": "agent-first/0.1/motif-studies.mjs@0f73c10#listStudies",
+        "status": "other-id-space",
+        "now": [
+          "repair"
+        ],
+        "note": "A study id. It partially illustrates repair, in Surface's problem shape; the link is relates_to in motif-studies.mjs."
+      },
+      {
+        "name": "ending",
+        "vocabulary": "kit-studies",
+        "source": "agent-first/0.1/motif-studies.mjs@0f73c10#listStudies",
+        "status": "other-id-space",
+        "now": [
+          "release"
+        ],
+        "note": "A study id. It is a contrast to release, not an illustration; the link is relates_to in motif-studies.mjs."
+      },
+      {
+        "name": "Legibility",
+        "vocabulary": "kit-plan",
+        "source": ".hermes/plans/2026-10-09_175749-agent-first.md@0f73c10#motifs-made-executable",
+        "status": "kept",
+        "now": [
+          "legibility"
+        ],
+        "note": "The plan's first name, kept as an id."
+      },
+      {
+        "name": "Chosen action",
+        "vocabulary": "kit-plan",
+        "source": ".hermes/plans/2026-10-09_175749-agent-first.md@0f73c10#motifs-made-executable",
+        "status": "renamed",
+        "now": [
+          "choice"
+        ],
+        "note": "Activation and the host gate; the kit map had folded it into bounded-work."
+      },
+      {
+        "name": "Continuity without capture",
+        "vocabulary": "kit-plan",
+        "source": ".hermes/plans/2026-10-09_175749-agent-first.md@0f73c10#motifs-made-executable",
+        "status": "renamed",
+        "now": [
+          "continuity/carried"
+        ],
+        "note": "Selected local context through the Local Starter."
+      },
+      {
+        "name": "Change without silent replacement",
+        "vocabulary": "kit-plan",
+        "source": ".hermes/plans/2026-10-09_175749-agent-first.md@0f73c10#motifs-made-executable",
+        "status": "renamed",
+        "now": [
+          "continuity/replaced"
+        ],
+        "note": "Revision-bound upgrade with no upgrade during a call."
+      },
+      {
+        "name": "Exit without erasure",
+        "vocabulary": "kit-plan",
+        "source": ".hermes/plans/2026-10-09_175749-agent-first.md@0f73c10#motifs-made-executable",
+        "status": "renamed",
+        "now": [
+          "release"
+        ],
+        "note": "Retirement closes admission, drains calls and keeps the notes."
+      },
+      {
+        "name": "arrival",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/motifs/0/id",
+        "status": "kept",
+        "now": [
+          "arrival"
+        ],
+        "source_question": "Can a stranger find out where they are before being asked to act?",
+        "note": "Its purpose is kept; its question and boundary are reworded."
+      },
+      {
+        "name": "legibility",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/motifs/1/id",
+        "status": "kept",
+        "now": [
+          "legibility"
+        ],
+        "source_question": "Can the caller understand the offered meaning without reverse-engineering the presentation?",
+        "note": "The id is kept; the card is the kit's, with the kit's question."
+      },
+      {
+        "name": "choice",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/motifs/2/id",
+        "status": "kept",
+        "now": [
+          "choice"
+        ],
+        "source_question": "What exactly is being chosen, by whom, for which act and scope?",
+        "note": "Its purpose and boundary are kept; its question is reworded to what the gate is asked."
+      },
+      {
+        "name": "witness",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/motifs/3/id",
+        "status": "kept",
+        "now": [
+          "witness"
+        ],
+        "source_question": "What was actually observed or checked, and what still does not follow from it?",
+        "note": "The id is kept. The card keeps the kit's question, the one bounded-work asked; this was the other atlas's."
+      },
+      {
+        "name": "continuity",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/motifs/4/id",
+        "status": "kept",
+        "now": [
+          "continuity"
+        ],
+        "source_question": "What must remain understandable for useful work to continue after a pause, change or handoff?",
+        "note": "Its purpose and boundary are kept. Its two concerns, carrying context and replacing code, are the two faces."
+      },
+      {
+        "name": "release",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/motifs/5/id",
+        "status": "split",
+        "now": [
+          "release",
+          "rest"
+        ],
+        "source_question": "Can this capability stop without trapping its caller, erasing the record or fabricating completion?",
+        "note": "Stopping a capability is release. Stopping as a caller, with nothing owed, is rest, on the ground."
+      },
+      {
+        "name": "repair",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/repair",
+        "status": "kept",
+        "now": [
+          "repair"
+        ],
+        "note": "A sentence that crossed the map. It is now an entry of its own, with place crossing."
+      }
+    ],
+    "edge_rows": [
+      {
+        "name": "standing→legibility",
+        "vocabulary": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10#/connections/0",
+        "status": "not-carried",
+        "now": [],
+        "note": "Standing is ground now; no edge leads into it or out of it."
+      },
+      {
+        "name": "legibility→bounded-work",
+        "vocabulary": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10#/connections/1",
+        "status": "renamed",
+        "now": [
+          "legibility→choice"
+        ],
+        "note": "bounded-work split, and the next card in the path is choice."
+      },
+      {
+        "name": "bounded-work→continuity",
+        "vocabulary": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10#/connections/2",
+        "status": "renamed",
+        "now": [
+          "witness→continuity"
+        ],
+        "note": "From the half of bounded-work that is witness."
+      },
+      {
+        "name": "continuity→change",
+        "vocabulary": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10#/connections/3",
+        "status": "not-carried",
+        "now": [],
+        "note": "change is a face of continuity, so no edge joins them."
+      },
+      {
+        "name": "change→exit",
+        "vocabulary": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10#/connections/4",
+        "status": "renamed",
+        "now": [
+          "continuity→release"
+        ],
+        "note": "From the replaced face to release."
+      },
+      {
+        "name": "exit→standing",
+        "vocabulary": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10#/connections/5",
+        "status": "not-carried",
+        "now": [],
+        "note": "Its meaning, that closing a capability does not withdraw the floor, is now in standing's boundary."
+      },
+      {
+        "name": "arrival→legibility",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/connections/0",
+        "status": "kept",
+        "now": [
+          "arrival→legibility"
+        ],
+        "note": "Kept as a then edge; the meaning is word for word."
+      },
+      {
+        "name": "legibility→choice",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/connections/1",
+        "status": "kept",
+        "now": [
+          "legibility→choice"
+        ],
+        "note": "Kept as a then edge; the meaning is word for word."
+      },
+      {
+        "name": "choice→witness",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/connections/2",
+        "status": "kept",
+        "now": [
+          "choice→witness"
+        ],
+        "note": "Kept as a then edge; the meaning is word for word."
+      },
+      {
+        "name": "witness→continuity",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/connections/3",
+        "status": "kept",
+        "now": [
+          "witness→continuity"
+        ],
+        "note": "Kept as a then edge; the meaning is word for word."
+      },
+      {
+        "name": "continuity→release",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/connections/4",
+        "status": "kept",
+        "now": [
+          "continuity→release"
+        ],
+        "note": "Kept as a then edge; the meaning is reworded without its modal verb."
+      },
+      {
+        "name": "release→arrival",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/connections/5",
+        "status": "kept",
+        "now": [
+          "release→arrival"
+        ],
+        "note": "Kept as the one optional-return edge; its meaning now says what carries over, which is nothing but notes kept on disk."
+      },
+      {
+        "name": "witness→choice",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/connections/6",
+        "status": "kept",
+        "now": [
+          "witness→choice"
+        ],
+        "note": "Kept as a back edge; the meaning is word for word, and it names a test."
+      },
+      {
+        "name": "connects_to",
+        "vocabulary": "kit-studies",
+        "source": "agent-first/0.1/motif-studies.mjs@0f73c10#listStudies",
+        "status": "other-id-space",
+        "now": [],
+        "note": "The studies' links join studies to studies. They stay in motif-studies.mjs and are not edges of this map."
+      }
+    ],
+    "field_rows": [
+      {
+        "name": "name",
+        "vocabulary": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10#/motifs/0/name",
+        "status": "renamed",
+        "now": [
+          "title"
+        ],
+        "note": "Each card's name is now its title."
+      },
+      {
+        "name": "understanding",
+        "vocabulary": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10#/understanding",
+        "status": "renamed",
+        "now": [
+          "reading"
+        ],
+        "note": "Replaced by reading, which says how to read practice and edges."
+      },
+      {
+        "name": "connections",
+        "vocabulary": "kit-map",
+        "source": "agent-first/0.1/motifs.json@0f73c10#/connections",
+        "status": "renamed",
+        "now": [
+          "edges"
+        ],
+        "note": "Each edge now has a kind, and a back or return edge names a test."
+      },
+      {
+        "name": "understanding",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/understanding",
+        "status": "renamed",
+        "now": [
+          "reading"
+        ],
+        "note": "Replaced by reading; this map makes no claim about inner experience either."
+      },
+      {
+        "name": "verification_boundary",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/verification_boundary",
+        "status": "renamed",
+        "now": [
+          "not_established"
+        ],
+        "note": "What a passing check does not show is in not_established."
+      },
+      {
+        "name": "title",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/title",
+        "status": "not-carried",
+        "now": [],
+        "note": "The atlas's own title. Each entry here has a title of its own, as each card there did."
+      },
+      {
+        "name": "source",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/source",
+        "status": "renamed",
+        "now": [
+          "revisions"
+        ],
+        "note": "The other atlas named its repository and baseline revision; this map names the revisions it read."
+      },
+      {
+        "name": "example",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/motifs/0/example",
+        "status": "not-carried",
+        "now": [],
+        "note": "Its examples were illustrative. Each claim here points at a check instead."
+      },
+      {
+        "name": "standalone_use",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/motifs/0/standalone_use",
+        "status": "not-carried",
+        "now": [],
+        "note": "What a card takes on its own is in its needs."
+      },
+      {
+        "name": "required_motifs",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/motifs/0/required_motifs",
+        "status": "not-carried",
+        "now": [],
+        "note": "Every list was empty. No entry here requires another, and a then edge is not a prerequisite."
+      },
+      {
+        "name": "connections",
+        "vocabulary": "other-atlas",
+        "source": "modules/0.1/motifs.json@beed37a#/connections",
+        "status": "renamed",
+        "now": [
+          "edges"
+        ],
+        "note": "Each edge now has a kind."
+      },
+      {
+        "name": "motif",
+        "vocabulary": "kit-runtime",
+        "source": "agent-first/0.1/runtime.mjs@0f73c10#prepareDefinition",
+        "status": "other-id-space",
+        "now": [],
+        "note": "A module's motif is free text; the runtime does not hold it to this map. Test fixtures use such values, some of them earlier names: bounded-work and exit in tests/agent-first-session.test.mjs, exit in tests/agent-first-collab.test.mjs, independence in the Telescope adapter's test. They are not renamed."
+      }
+    ],
+    "provenance": "The other atlas is read as found at beed37a. The commit's message says its files were committed unmodified for safekeeping, and that \"the committer is not its author\". The same is said of the kit's first commit, 684f8f9. This map names no author for either."
+  },
+  "not_established": [
+    "that any duty is met",
+    "conformance of this kit or of any host",
+    "that an entry describes a running service",
+    "that a passing check establishes a motif",
+    "that a mapping is right beyond its pointers resolving",
+    "anything about a caller's identity, authority, safety or inner state"
   ],
   "self_sufficiency": {
     "motifs_and_catalog": "Node 22+ and this checkout; no provider or build required.",
     "reference_demo": "The normal prepared Xenia build and the Work checker's installed development dependencies.",
     "chosen_context": "An explicitly supplied, locally pinned Local Starter distribution and a separately selected notes directory.",
     "collab_adapter": "Only for `session --collab-config`: a config file naming a bundle whose bytes match the kit's pin, a Bun executable, a journal path, and an `--allow` list naming the operations to run. Its backend keeps a database and speaks MCP over stdio.",
-    "not_required": ["hosted account", "model call", "database", "MCP", "network after local preparation"],
+    "not_required": [
+      "hosted account",
+      "model call",
+      "database",
+      "MCP",
+      "network after local preparation"
+    ],
     "not_required_note": "Not required by the kit. The optional Collab adapter needs a database (its backend's journal) and an MCP backend.",
     "network": "`door check` is the only command in which this kit's own code sends network requests; provider code run by `context` and `starter-smoke`, and the backend process `session --collab-config` can start, are not observed by this kit, which speaks to that backend over stdio only.",
-    "not_promised": ["OS sandbox", "durable workflow scheduling", "automatic host activation", "whole-framework conformance"]
+    "not_promised": [
+      "OS sandbox",
+      "durable workflow scheduling",
+      "automatic host activation",
+      "whole-framework conformance"
+    ]
   }
 }

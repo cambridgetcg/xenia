@@ -8,9 +8,10 @@ npm run --silent xenia -- motifs study journey
 ```
 
 This is one small connection inside the existing CLI, not another framework or
-service. The broader `npm run --silent xenia -- motifs` map remains unchanged. These four
-studies make part of its **legibility** motif tangible and contrast a terminal
-response with its broader **exit** motif.
+service. The broader `npm run --silent xenia -- motifs` map remains unchanged by them. Three
+of these four studies partially illustrate its **arrival**, **legibility** and
+**repair** entries, and the fourth contrasts a terminal response with its
+**release** entry.
 
 ## Four questions
 

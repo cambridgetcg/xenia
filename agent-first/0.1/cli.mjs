@@ -34,7 +34,7 @@ async function demo(full){
   };
   // Synthetic implementation versions demonstrate the lifecycle; no Xenia
   // profile or published AgentTool package is claimed to have been upgraded.
-  const echo=(version,label)=>({id:'example.echo',version,contract:'example.echo/1',title:'Lifecycle fixture',motif:'change',description:'A synthetic local upgrade example.',
+  const echo=(version,label)=>({id:'example.echo',version,contract:'example.echo/1',title:'Lifecycle fixture',motif:'continuity',description:'A synthetic local upgrade example.',
     operations:{echo:{description:'Return chosen input with an implementation label.',effects:[],run:input=>({input,implementation:label})}}});
   lifecycle('register example.echo (synthetic)',runtime.register(echo('1.0.0','first')));
   lifecycle('activate example.echo',runtime.activate('example.echo'));
@@ -160,7 +160,9 @@ export async function main(args){
     const {motifs}=JSON.parse(fs.readFileSync(new URL('./motifs.json',import.meta.url),'utf8'));
     const card=motifs.find(item=>item.id===rest[0]);
     if(!card)throw Object.assign(new ModuleError('MOTIF_NOT_FOUND'),{valid:motifs.map(item=>item.id)});
-    return envelope({kind:'motif-card',motif:card,not_established:['that this card describes a running service',card.limit]});
+    // Continuity keeps its limits in its two faces, and the crossing has none.
+    const limits=[card.limit,...Object.values(card.faces??{}).map(face=>face.limit)].filter(limit=>typeof limit==='string');
+    return envelope({kind:'motif-card',motif:card,not_established:['that this card describes a running service',...limits]});
   }
   if(command==='starter-smoke')return starterSmoke(rest);
   if(command==='door'){

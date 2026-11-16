@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 const cards = [
   {
     id: 'arrival', title: 'An arrival can orient',
-    relates_to: [{ id: 'legibility', relation: 'partial-illustration', limit: 'Constructing a manifest is not observing a hosted door.' }],
+    relates_to: [{ id: 'arrival', relation: 'partial-illustration', limit: 'Constructing a manifest is not observing a hosted door.' }],
     question: 'What is here, and what remains unestablished?',
     mechanism: 'A native Surface manifest names resources, representations and coverage limits.',
     study: 'Construct a manifest and inspect its real Response value, without hosting it.',
@@ -33,7 +33,7 @@ const cards = [
   },
   {
     id: 'recovery', title: 'An error can orient',
-    relates_to: [{ id: 'legibility', relation: 'partial-illustration', limit: 'A recovery link is neither an instruction to execute nor authority.' }],
+    relates_to: [{ id: 'repair', relation: 'partial-illustration', limit: 'A recovery link is neither an instruction to execute nor authority. It shows Surface\'s problem shape, not the kit\'s.' }],
     question: 'What relevant next read can be offered without executing it?',
     mechanism: 'Native 404/406 problem constructors offer bounded GET guidance instead of a bare dead end.',
     study: 'Inspect actual problem objects and headers; retain suggestions as data.',
@@ -46,7 +46,7 @@ const cards = [
   },
   {
     id: 'ending', title: 'An ending can be complete',
-    relates_to: [{ id: 'exit', relation: 'contrast', limit: 'A terminal problem does not retire a module, revoke access, or erase records.' }],
+    relates_to: [{ id: 'release', relation: 'contrast', limit: 'A terminal problem does not retire a module, revoke access, or erase records.' }],
     question: 'Can this interaction stop without inventing another obligation?',
     mechanism: 'A native terminal problem has no next actions; this fixture also explicitly disables retry.',
     study: 'Construct a clearly labelled software-fixture ending, not a person’s refusal.',

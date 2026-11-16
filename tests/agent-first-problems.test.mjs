@@ -134,8 +134,12 @@ test('"motifs study show <motif-id>" answers with the related studies, or says n
   assert.equal(some.status,0);
   assert.equal(some.value.kind,'motif-studies');
   assert.equal(some.value.motif_id,'legibility');
-  assert.deepEqual(some.value.studies.map(s=>s.id).sort(),['arrival','recovery','representation']);
+  assert.deepEqual(some.value.studies.map(s=>s.id).sort(),['representation']);
   assert.ok(some.value.studies.every(s=>s.relation&&s.limit));
+  // An entry of the map that is not a study id: repair is illustrated by the recovery study.
+  const repair=run(['motifs','study','show','repair']);
+  assert.equal(repair.status,0);assert.equal(repair.value.kind,'motif-studies');
+  assert.deepEqual(repair.value.studies.map(s=>s.id),['recovery']);
   const none=run(['motifs','study','show','standing']);
   assert.equal(none.status,0);
   assert.deepEqual(none.value.studies,[]);assert.equal(none.value.none_exist_yet,true);
