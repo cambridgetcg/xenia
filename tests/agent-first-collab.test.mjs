@@ -1208,14 +1208,14 @@ test('an answer over the frame limit, or one that is not JSON, stops the backend
 
 test('a backend that does not answer is given up on at the request timeout, and the call is not sent again',async t=>{
   for(const rule of ['hang_before','hang_after']){
-    const {dirs,call,binding}=await opened(t,{config:{timeoutMs:300}});
+    const {dirs,call,binding}=await opened(t,{config:{timeoutMs:2000}});
     const calls=callsOf(dirs).length;
     setControl(dirs,{on:{collab_task_claim:rule,collab_task_create:undefined}});
     const task=await call('task-create',{idempotency_key:KEY(),title:'To claim'});
     const started=Date.now();
     await unknown(call('task-claim',{task_id:task.id,idempotency_key:KEY(),expected_version:1}),rule);
     const took=Date.now()-started;
-    assert.ok(took>=250&&took<3000,`${rule}: answered after ${took} ms`);
+    assert.ok(took>=1900&&took<8000,`${rule}: answered after ${took} ms`);
     clearControl(dirs);
     const look=binding.look();
     assert.equal(look.transport,'closed');assert.equal(look.transport_closed_by,'request_timeout');
@@ -1362,7 +1362,7 @@ test('a claim the journal no longer shows as this binding\'s is not released at 
 });
 
 test('close keeps to its own time limit when the backend stops answering at the end',async t=>{
-  const {dirs,call,binding}=await opened(t,{config:{timeoutMs:400}});
+  const {dirs,call,binding}=await opened(t,{config:{timeoutMs:2000}});
   const task=await call('task-create',{idempotency_key:KEY(),title:'Held'});
   await call('task-claim',{task_id:task.id,idempotency_key:KEY(),expected_version:1});
   setControl(dirs,{on:{collab_task_release:'hang_after'}});
@@ -1406,6 +1406,13 @@ function openSession(options){
   const invoke=(operation,value={},more={})=>ask({method:'invoke',module:COLLAB_ID,operation,input:value,...more});
   const end=async()=>{input.end();const done=await session.done;return {done,last:lines.at(-1).value};};
   return {session,next,ask,invoke,end,lines};
+}
+// open in a session, failing here, with the answer, when it did not open: a later assertion would otherwise fail
+// for a reason it does not name (a write declined because open's own outcome is unknown).
+async function openedIn(s){
+  const answer=await s.invoke('open');
+  assert.equal(answer.ok,true,`open did not open: ${JSON.stringify(answer).slice(0,400)}`);
+  return answer;
 }
 function boundSession(t,{allow=ALLOW_ALL,config:more={},card:chosenCard,control,dirs=place()}={}){
   if(control)setControl(dirs,control);
@@ -1503,7 +1510,7 @@ test('at the door, a backend refusal is worded as the module\'s declaration, not
   const s=boundSession(t);
   await s.next();
   await s.ask({method:'activate',module:COLLAB_ID});
-  await s.invoke('open');
+  await openedIn(s);
   const task=(await s.invoke('task-create',{idempotency_key:KEY(),title:'Stale'})).result;
   const refused=await s.invoke('task-claim',{task_id:task.id,idempotency_key:KEY(),expected_version:task.version+5});
   assert.equal(refused.error.code,'DECLINED');assert.equal(refused.error.refusal.code,'version_conflict');
@@ -1514,14 +1521,16 @@ test('at the door, a backend refusal is worded as the module\'s declaration, not
 });
 
 test('timeout order one: the request timeout comes before the session deadline, and the call is answered as failed, effect unknown',async t=>{
-  const s=boundSession(t,{config:{timeoutMs:300}});
+  // 2000 ms: long enough for the backend to start on a slow runner, still well before the 10 s session deadline.
+  const s=boundSession(t,{config:{timeoutMs:2000}});
   await s.next();
   await s.ask({method:'activate',module:COLLAB_ID});
-  await s.invoke('open');
+  await openedIn(s);
   setControl(s.dirs,{on:{collab_task_create:'hang_after'}});
   const started=Date.now();
   const answer=await s.invoke('task-create',{idempotency_key:KEY(),title:'Applied, never answered'});
-  assert.ok(Date.now()-started<5000);
+  const took=Date.now()-started;
+  assert.ok(took>=1900&&took<8000,`answered after ${took} ms`);
   assert.equal(answer.error.code,'OPERATION_FAILED');assert.equal(answer.error.effect_outcome,'unknown');assert.equal(answer.receipt.deadline_ms,10000);
   assert.equal(answer.problem.next_actions[0].request.method,'inspect');
   const inspected=await s.ask({method:'inspect',module:COLLAB_ID});
@@ -1552,7 +1561,7 @@ test('timeout order two: the session deadline comes first, the call runs on, and
   const s=boundSession(t,{config:{timeoutMs:5000}});
   await s.next();
   await s.ask({method:'activate',module:COLLAB_ID});
-  await s.invoke('open');
+  await openedIn(s);
   setControl(s.dirs,{on:{collab_task_create:{delay_ms:500}}});
   const answer=await s.invoke('task-create',{idempotency_key:KEY(),title:'Answered late'},{deadline_ms:100});
   assert.equal(answer.error.code,'DEADLINE_EXCEEDED');assert.equal(answer.error.effect_outcome,'unknown');
@@ -1571,10 +1580,10 @@ test('timeout order two: the session deadline comes first, the call runs on, and
   assert.equal((await s.end()).done.exit_code,0);
 
   // Late and never answered: the request timeout ends it after the deadline did.
-  const h=boundSession(t,{config:{timeoutMs:600}});
+  const h=boundSession(t,{config:{timeoutMs:2000}});
   await h.next();
   await h.ask({method:'activate',module:COLLAB_ID});
-  await h.invoke('open');
+  await openedIn(h);
   setControl(h.dirs,{on:{collab_task_create:'hang_before'}});
   const first=await h.invoke('task-create',{idempotency_key:KEY(),title:'Never answered'},{deadline_ms:100});
   assert.equal(first.error.code,'DEADLINE_EXCEEDED');
