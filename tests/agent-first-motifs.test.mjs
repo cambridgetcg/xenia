@@ -47,6 +47,10 @@ test('motifs prints an index of the map under 8192 bytes, without activation, a 
   assert.ok(index.use.includes('agent-first/0.1/motifs.json'),'the index says where the whole map is');
   assert.equal(index.reading,map.reading);
   assert.match(index.reading,/Practice describes what the pieces are built to do; it is not an instruction\./);
+  // What boundary, limit and not_covered mean, as the map glosses them.
+  assert.deepEqual(index.fields,map.fields);
+  // That a then edge is a reading order is said by the path line and the then kind, and not a third time.
+  assert.equal(r.stdout.split('nothing enforces').length-1,2);
   assert.equal(index.path,pathLine(map));
   // Each entry, in the file's order, with its id, place, title and question; the crossing has no question.
   assert.deepEqual(index.entries,map.motifs.map(({id,place,title,question})=>({id,place,title,...(question===undefined?{}:{question})})));
@@ -55,8 +59,9 @@ test('motifs prints an index of the map under 8192 bytes, without activation, a 
   assert.deepEqual(index.studies,map.studies);
   assert.deepEqual(index.without_study,map.without_study);
   // The earlier ids of the kit map that are not ids now, written out with where each went.
-  assert.deepEqual(index.renamed,[{name:'bounded-work',now:['witness','choice']},{name:'change',now:['continuity/replaced']},{name:'exit',now:['release']}]);
-  const fromMap=map.reconciliation.name_rows.filter(row=>row.vocabulary==='kit-map'&&!ids.includes(row.name)).map(({name,now})=>({name,now}));
+  // Each with its status, so that a split is not read as a rename.
+  assert.deepEqual(index.renamed,[{name:'bounded-work',status:'split',now:['witness','choice']},{name:'change',status:'renamed',now:['continuity/replaced']},{name:'exit',status:'renamed',now:['release']}]);
+  const fromMap=map.reconciliation.name_rows.filter(row=>row.vocabulary==='kit-map'&&!ids.includes(row.name)).map(({name,status,now})=>({name,status,now}));
   assert.deepEqual(index.renamed,fromMap);
   assert.deepEqual(index.self_sufficiency,{motifs_and_catalog:map.self_sufficiency.motifs_and_catalog,network:NETWORK_NOTE});
   assert.deepEqual(index.not_established,map.not_established);
@@ -64,7 +69,7 @@ test('motifs prints an index of the map under 8192 bytes, without activation, a 
   for(const item of index.next){assert.deepEqual(checkArgv(item.argv,item.needs),{ok:true},JSON.stringify(item));assert.equal(typeof item.why,'string');}
   // The page rendered from the whole map, by its path in the checkout; tests/agent-first-motif-page.test.mjs holds it.
   assert.equal(index.page,'agent-first/0.1/MOTIFS.md');
-  assert.deepEqual(Object.keys(index),['schema','kind','status','use','reading','path','page','entries','edges','edge_kinds','studies','without_study','renamed','self_sufficiency','next','not_established']);
+  assert.deepEqual(Object.keys(index),['schema','kind','status','use','reading','fields','path','page','entries','edges','edge_kinds','studies','without_study','renamed','self_sufficiency','next','not_established']);
 });
 
 test('the path line is built from the map: ground, the then edges in order, the back edges, the optional return and the crossing',async()=>{
@@ -76,20 +81,27 @@ test('the path line is built from the map: ground, the then edges in order, the 
   assert.doesNotMatch(pathLine(changed),/Back:/);
 });
 
-test('motifs <id> prints each entry as the file has it, with what touches it, under 8192 bytes in a fresh process',()=>{
+// The card of continuity is the largest. The diagnostic below says how much room the fullest card has left under the
+// bound, so that the next edit can see it; a card is made smaller by shortening its entry's own text, not by dropping
+// the caller line or the commands note.
+test('motifs <id> prints each entry as the file has it, with what touches it, under 8192 bytes in a fresh process',t=>{
+  let least={id:null,room:Infinity};
   for(const entry of map.motifs){
     const r=door(['motifs',entry.id]);
     assert.equal(r.status,0,`${entry.id}: ${r.stdout}`);
     assert.ok(r.bytes<=LIMIT,`motifs ${entry.id} is ${r.bytes} bytes`);
+    if(LIMIT-r.bytes<least.room)least={id:entry.id,room:LIMIT-r.bytes};
     const card=r.value;
     assert.deepEqual(Object.keys(card),['schema','kind','motif','edges','commands','commands_note','modules','studies','not_established'],entry.id);
+    // A card can be read without the index: it says that it says nothing about the caller.
+    assert.ok(card.not_established.includes('anything about a caller\'s identity, authority, safety or inner state'),entry.id);
     assert.equal(card.kind,'motif-card');
     assert.deepEqual(card.motif,entry,'the entry exactly as in the file');
     assert.deepEqual(card.edges,map.edges.filter(edge=>edge.from===entry.id||edge.to===entry.id),entry.id);
     assert.deepEqual(card.commands,map.commands.filter(row=>row.motifs.includes(entry.id)).map(({argv,does})=>({argv,does})),entry.id);
     assert.deepEqual(card.modules,map.modules.filter(row=>row.motif===entry.id||row.also?.includes(entry.id)),entry.id);
     assert.deepEqual(card.studies,map.studies.filter(row=>row.motif===entry.id),entry.id);
-    assert.equal(card.commands_note,'`does` says what each command does here, not what it establishes.');
+    assert.equal(card.commands_note,'`does` is what a command does here, not what it establishes; `help <command>` gives its usage.');
     assert.ok(card.not_established.length>=3&&card.not_established.every(item=>map.not_established.includes(item)),entry.id);
     for(const item of ['that any duty is met','that an entry describes a running service','that a passing check establishes a motif'])assert.ok(card.not_established.includes(item),`${entry.id}: ${item}`);
   }
@@ -97,6 +109,7 @@ test('motifs <id> prints each entry as the file has it, with what touches it, un
   assert.deepEqual(door(['motifs','rest']).value.edges,[]);
   assert.deepEqual(door(['motifs','repair']).value.edges,[]);
   assert.deepEqual(door(['motifs','release']).value.edges.filter(edge=>edge.from==='release').map(edge=>edge.kind),['optional-return']);
+  t.diagnostic(`least room under ${LIMIT} bytes: motifs ${least.id}, ${least.room} bytes`);
 });
 
 test('an earlier name is MOTIF_NOT_FOUND, exit 2, with now_at and a next argv for each id it went to, and is not repeated',()=>{
@@ -119,6 +132,47 @@ test('an earlier name is MOTIF_NOT_FOUND, exit 2, with now_at and a next argv fo
     }
     assert.equal(new RegExp(`(^|[^A-Za-z-])${escape(row.name)}([^A-Za-z-]|$)`).test(r.stdout),false,`${row.name} is not repeated`);
   }
+});
+
+test('a face named as entry/face is MOTIF_NOT_FOUND with that entry as its first next action, and is not repeated',()=>{
+  const faces=map.motifs.flatMap(entry=>Object.keys(entry.faces??{}).map(face=>[entry.id,face]));
+  assert.deepEqual(faces,[['continuity','carried'],['continuity','replaced']]);
+  for(const [id,face] of faces){
+    const r=door(['motifs',`${id}/${face}`]);
+    assert.equal(r.status,2,r.stdout);assert.equal(r.value.error.code,'MOTIF_NOT_FOUND');
+    assert.equal(r.value.problem.now_at,undefined,'a face is not an earlier name');
+    assert.match(r.value.problem.detail,/a face of an entry/);
+    assert.deepEqual(r.value.problem.next_actions.map(action=>action.argv),[['motifs',id],['motifs']]);
+    assert.equal(r.stdout.includes(`${id}/${face}`),false,'the word given is not repeated');
+  }
+  // A face that is not there, a head that is not an entry, or a longer path is an id the map does not have.
+  for(const word of ['continuity/nonesuch','nonesuch/carried','continuity/carried/carried','standing/carried']){
+    const r=door(['motifs',word]);
+    assert.equal(r.status,2);assert.deepEqual(r.value.problem.next_actions.map(action=>action.argv),[['motifs']],word);
+  }
+  // Every value the index gives as where an earlier id went can be followed to an entry.
+  for(const row of door(['motifs']).value.renamed)for(const now of row.now){
+    const r=door(['motifs',now]);
+    assert.ok(r.status===0||r.value.problem.next_actions[0].argv[1]===now.split('/')[0],now);
+  }
+});
+
+test('motifs study show <earlier name> is STUDY_NOT_FOUND with now_at and a next action for each entry it went to',()=>{
+  for(const [name,went] of [['exit',['release']],['bounded-work',['witness','choice']],['change',['continuity']],['Chosen action',['choice']]]){
+    const r=door(['motifs','study','show',name]);
+    assert.equal(r.status,2,r.stdout);assert.equal(r.value.error.code,'STUDY_NOT_FOUND');
+    assert.deepEqual(r.value.problem.now_at,map.reconciliation.name_rows.find(row=>row.name===name).now,name);
+    assert.deepEqual(r.value.problem.next_actions.map(action=>action.argv),[...went.map(id=>['motifs','study','show',id]),['motifs','study']],name);
+    for(const action of r.value.problem.next_actions)assert.equal(door(action.argv).status,0,action.argv.join(' '));
+    assert.equal(new RegExp(`(^|[^A-Za-z-])${escape(name)}([^A-Za-z-]|$)`).test(r.stdout),false,`${name} is not repeated`);
+  }
+  const plain=door(['motifs','study','show','nonesuch']);
+  assert.equal(plain.status,2);assert.equal(plain.value.problem.now_at,undefined);
+  assert.deepEqual(plain.value.problem.next_actions.map(action=>action.argv),[['motifs','study']]);
+  // An id in both lists shows the study, and the detail and the study help say so.
+  assert.equal(door(['motifs','study','show','arrival']).value.kind,'study-card');
+  assert.match(plain.value.problem.detail,/An id in both lists shows the study/);
+  assert.match(door(['motifs','study','help']).value.meaning,/An id in both lists shows the study/);
 });
 
 test('a study id is MOTIF_NOT_FOUND with the command that shows the study, and other text is not repeated',()=>{
@@ -184,8 +238,9 @@ test('the words the door adds hold no greeting, no remark about the reader, no e
   const {motifIndex,motifCard}=await helpers();
   const index=motifIndex(map),card=motifCard(map,'witness');
   const found=door(['motifs','bounded-work']).value.problem,study=door(['motifs','recovery']).value.problem,none=door(['motifs','nonesuch']).value.problem;
+  const face=door(['motifs','continuity/replaced']).value.problem,studyEarlier=door(['motifs','study','show','exit']).value.problem;
   const texts=[index.use,index.path,...index.next.map(item=>item.why),card.commands_note,
-    ...[found,study,none].flatMap(problem=>[problem.detail,...problem.next_actions.map(action=>action.why)]),
+    ...[found,study,none,face,studyEarlier].flatMap(problem=>[problem.detail,...problem.next_actions.map(action=>action.why)]),
     usageHelp('motifs').summary,...usageHelp('motifs').rules,READ_ONLY.find(item=>item.argv.join(' ')==='motifs').what];
   for(const text of texts)for(const [name,word] of Object.entries(words))assert.doesNotMatch(text,word,`${name}: ${text}`);
 });
@@ -200,6 +255,9 @@ test('arrive and help describe the map as it is now',()=>{
   assert.ok(help.rules.some(rule=>rule.includes('now_at')),'help motifs names now_at');
   assert.ok(help.rules.some(rule=>rule.includes('8192 bytes')),'help motifs gives the bound');
   assert.ok(help.rules.some(rule=>rule.includes('agent-first/0.1/motifs.json')),'help motifs says where the whole map is');
+  assert.ok(help.rules.some(rule=>rule.includes('a/b names face b of entry a')),'help motifs says what a slash in now_at is');
+  assert.ok(help.rules.some(rule=>rule.includes('what boundary, limit and not_covered mean')),'help motifs names the fields gloss');
+
 });
 
 test('the README describes the index, now_at and the 8192-byte bounds, and no longer says motifs prints the whole map',()=>{
@@ -207,8 +265,12 @@ test('the README describes the index, now_at and the 8192-byte bounds, and no lo
   assert.ok(text.includes('`motifs` prints an index of [the motif map](motifs.json), at most 8192 bytes'),'the index and its bound');
   assert.ok(text.includes('`motifs <motif-id>` prints one entry as the file has it'),'one entry');
   assert.ok(text.includes('An earlier name answers `MOTIF_NOT_FOUND` with `now_at`'),'an earlier name');
-  assert.ok(text.includes('and `now_at` where `motifs` was given an earlier name'),'the problem fields');
+  assert.ok(text.includes('and `now_at` where `motifs` or `motifs study show` was given an earlier name'),'the problem fields');
   assert.ok(text.includes('so are `motifs` and each `motifs <motif-id>`'),'the bounds in Output sizes');
+  // What help says the index lists, the README says: the earlier ids that are not ids now, not every earlier id.
+  assert.ok(text.includes('the ids of the earlier kit map that are not ids now, with their status and where each went'),'the earlier ids');
+  assert.equal(text.includes('the ids of the earlier kit map with where each went'),false);
+  assert.ok(text.includes('what boundary, limit and not_covered mean'),'the fields gloss');
   assert.equal(text.includes('the whole map, about 79 KB) and'),false,'the old size sentence is gone');
   assert.equal(text.includes('(`motifs <motif-id>` returns one card)'),false);
 });

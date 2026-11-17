@@ -202,9 +202,9 @@ export const COMMANDS={
   arrive:{usage:'arrive',summary:'Read one bounded orientation document. Expects no reply; activates nothing.',probe:['arrive']},
   help:{usage:'help [command]',summary:'Show this help, or the usage of one command. Words after the command name are not read: `help door plan` gives the usage of `door`, which covers each of its operations.',probe:['help']},
   motifs:{usage:'motifs [motif-id]',summary:'Read the motif index, or one entry with the edges, commands, modules and studies that touch it. Each is at most 8192 bytes.',probe:['motifs'],
-    rules:['The index gives each entry\'s id, place, title and question, the edges and their kinds, the studies, the path line, and the ids of the earlier kit map that are not ids now, with where each went. It is at most 8192 bytes. The whole map, every field, is the file agent-first/0.1/motifs.json.',
+    rules:['The index gives each entry\'s id, place, title and question, what boundary, limit and not_covered mean, the edges and their kinds, the studies, the path line, and the ids of the earlier kit map that are not ids now, with their status and where each went. It is at most 8192 bytes. The whole map, every field, is the file agent-first/0.1/motifs.json.',
       '`motifs <motif-id>` prints the entry exactly as the file has it, with the edges, commands, modules and studies that name it, in at most 8192 bytes.',
-      'An id that is not in the map is MOTIF_NOT_FOUND (exit 2), with valid. An earlier name also gets now_at, the ids it went to, and a next action for each; a study id gets the command that shows the study. Other text is not repeated.',
+      'An id that is not in the map is MOTIF_NOT_FOUND (exit 2), with valid. An earlier name also gets now_at, the ids it went to, and a next action for each; a study id gets the command that shows the study. In now_at, a/b names face b of entry a, and `motifs a/b` answers with `motifs a` as its first next action. Other text is not repeated.',
       '`motifs study` lists the small studies; `motifs study help` lists its forms.']},
   catalog:{usage:'catalog',summary:'List the registered modules, each operation with its card (what to send, what comes back, who checks the input), and the adapters. Activates nothing.',probe:['catalog']},
   explain:{usage:'explain <module-id>',summary:'Describe one module: each operation\'s card (what to send, an example, what comes back, who checks the input) and the refusals it declares.',probe:['explain','xenia.surface']},
@@ -444,6 +444,14 @@ const catalogAction={argv:['catalog'],why:'List the registered modules and their
 const retiredOrBusy=(text,retryable=false)=>(e,c)=>({detail:text,next:[moduleAction(e,c)],retryable});
 const pinWhere=m=>m?.file?`file ${m.file}${m.aspect?` (${m.aspect})`:''}`:m?.field?`field ${m.field}`:'an unrecorded point';
 
+// now_at, a study id and a face's entry come from the map, never from the word given; each is held to the form the map
+// gives ids (an entry id, or <entry id>/<face>). went: the entries now_at names, once each.
+const isMapId=value=>typeof value==='string'&&/^[a-z][a-z-]*$/.test(value);
+function nowAt(e){
+  const now=Array.isArray(e.now_at)?e.now_at.filter(item=>typeof item==='string'&&item.split('/').every(isMapId)):undefined;
+  return {now,went:[...new Set((now??[]).map(item=>item.split('/')[0]))]};
+}
+
 const TABLE={
   UNKNOWN_COMMAND:(e,c)=>{
     const word=c.word;
@@ -471,17 +479,21 @@ const TABLE={
   },
   STUDY_INVALID_ARGUMENTS:()=>({detail:'The motifs study arguments do not match its usage. Nothing was run.',
     next:[{argv:['motifs','study','help'],why:'Read the study commands.'}]}),
-  STUDY_NOT_FOUND:(e)=>({valid:e.valid,detail:`That is not a study id.${e.valid?` Valid study ids: ${e.valid.join(', ')}.`:''} A motif id works with "motifs study show <motif-id>", which lists the studies that relate to it. Nothing was run.`,
-    next:[{argv:['motifs','study'],why:'List the studies.'}]}),
+  STUDY_NOT_FOUND:(e)=>{
+    const {now,went}=nowAt(e);
+    const what=now?' It is an earlier motif name: now_at lists where to read now, which does not say the meaning stayed the same.':'';
+    return {valid:e.valid,...(now?{now_at:now}:{}),detail:`That is not a study id.${e.valid?` Valid study ids: ${e.valid.join(', ')}.`:''}${what} An entry id of the motif map works with "motifs study show <motif-id>", which lists the studies that relate to it. An id in both lists shows the study, and \`motifs <id>\` lists the studies of an entry. Nothing was run.`,
+      next:[...went.map(item=>({argv:['motifs','study','show',item],why:'List the studies that relate to the entry it went to.'})),{argv:['motifs','study'],why:'List the studies.'}]};
+  },
   MOTIF_NOT_FOUND:(e)=>{
-    // now_at and study come from the map, never from the word given; each is held to the form the map gives ids.
-    const id=value=>typeof value==='string'&&/^[a-z][a-z-]*$/.test(value);
-    const now=Array.isArray(e.now_at)?e.now_at.filter(item=>typeof item==='string'&&item.split('/').every(id)):undefined;
-    const went=[...new Set((now??[]).map(item=>item.split('/')[0]))];
-    const study=id(e.study)?e.study:undefined;
-    const what=now?' It is an earlier name: now_at lists where to read now, which does not say the meaning stayed the same.':study?' It is a study id: the first next action shows that study.':e.valid?` Valid motif ids: ${e.valid.join(', ')}.`:'';
+    const {now,went}=nowAt(e);
+    const study=isMapId(e.study)?e.study:undefined;
+    const face=isMapId(e.face_of)?e.face_of:undefined;
+    const what=now?' It is an earlier name: now_at lists where to read now, which does not say the meaning stayed the same.':study?' It is a study id: the first next action shows that study.':
+      face?' It names a face of an entry: the first next action prints that entry, which holds the face.':e.valid?` Valid motif ids: ${e.valid.join(', ')}.`:'';
     return {valid:e.valid,...(now?{now_at:now}:{}),detail:`That is not a motif id.${what} Nothing was run.`,
       next:[...went.map(item=>({argv:['motifs',item],why:'Read the entry it went to.'})),...(study?[{argv:['motifs','study','show',study],why:'Read the study card.'}]:[]),
+        ...(face?[{argv:['motifs',face],why:'Read the entry that holds this face.'}]:[]),
         {argv:['motifs'],why:'Read the motif index: every id in the map.'}]};
   },
   MODULE_NOT_FOUND:(e,c)=>({valid:c.moduleIds,detail:`That is not a registered module id.${c.moduleIds?` Valid module ids: ${c.moduleIds.join(', ')}.`:''} Nothing was activated.`,

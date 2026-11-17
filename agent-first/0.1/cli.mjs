@@ -126,14 +126,23 @@ export async function main(args){
   const [command,...rest]=args;
   if(command==='motifs'&&rest[0]==='study'){
     const {studyCommand}=await import('./motif-studies.mjs');
+    const sub=rest.slice(1);
     try{
-      const sub=rest.slice(1);
       return envelope(await studyCommand(sub.length>1&&sub.some(isHelp)?['help']:sub));
     }catch(error){
       const known=['STUDY_NOT_FOUND','STUDY_INVALID_ARGUMENTS','BUILD_REQUIRED','STUDY_NATIVE_CONTRACT_CHANGED','STUDY_UNAVAILABLE'];
       const code=known.includes(error?.code)?error.code:'STUDY_FAILED';
       const failure=new ModuleError(code,['STUDY_NATIVE_CONTRACT_CHANGED','STUDY_FAILED'].includes(code));
       if(code==='STUDY_NOT_FOUND'&&Array.isArray(error.valid))failure.valid=[...error.valid];
+      // `show` with an earlier motif name says where it went, as `motifs <name>` does. Without the map helpers or the
+      // map, the answer is the plain one.
+      if(code==='STUDY_NOT_FOUND'&&sub[0]==='show'){
+        try{
+          const {earlierName}=await import('./motif-map.mjs');
+          const found=earlierName(JSON.parse(fs.readFileSync(new URL('./motifs.json',import.meta.url),'utf8')),sub[1]);
+          if(Array.isArray(found?.now_at))failure.now_at=[...found.now_at];
+        }catch{}
+      }
       throw failure;
     }
   }

@@ -4,7 +4,7 @@
 
 [motifs.json](motifs.json) as a page: schema `xenia.agent-first.motif-map/0.1-development`, status `informative-development-map`, license CC-BY-SA-4.0, activation false. Where the two differ, the file is what the door reads; `npm test` runs `node tools/render-motifs.mjs --check`, which compares them. `npm run --silent xenia -- motifs` prints an index of the map, and `motifs <id>` prints one entry with what touches it.
 
-Each entry says where a concern sits in this kit: which files hold it and which tests show its mechanisms. Practice describes what the pieces are built to do; it is not an instruction. A then edge is a reading order that nothing enforces. These entries describe a design; they do not run a workflow or establish an inner state.
+Each entry says where a concern sits in this kit: which files hold it and which tests show its mechanisms. Practice describes what the pieces are built to do; it is not an instruction.
 
 ## The path
 
@@ -14,7 +14,7 @@ Ground: standing, rest. Cards, in a reading order that nothing enforces: arrival
 |---|---|---|
 | `then` | A reading order that nothing enforces: any piece can be read or used first, and no edge is a prerequisite. | [`tests/agent-first-motif-map.test.mjs`](../../tests/agent-first-motif-map.test.mjs): “the then edges are one path through the cards, in their order, and nothing else is a then edge” |
 | `back` | A later card sends a decision back to an earlier one. Each back edge names a test that shows the mechanism; that the test is there does not show the edge is right. | [`tests/agent-first-motif-map.test.mjs`](../../tests/agent-first-motif-map.test.mjs): “each back edge points to an earlier card and names a test that is there” |
-| `optional-return` | The only edge out of release. Taking it is a choice, and nothing is carried over by it. | [`tests/agent-first-motif-map.test.mjs`](../../tests/agent-first-motif-map.test.mjs): “release leaves only by the optional return to arrival, and ground and crossing entries have no edges” |
+| `optional-return` | The only edge out of release. It names a test that shows one part of it; that the test is there does not show the edge is right. | [`tests/agent-first-motif-map.test.mjs`](../../tests/agent-first-motif-map.test.mjs): “release leaves only by the optional return to arrival, and ground and crossing entries have no edges” |
 
 | From | To | Kind | Meaning | Shown by |
 |---|---|---|---|---|
@@ -22,10 +22,10 @@ Ground: standing, rest. Cards, in a reading order that nothing enforces: arrival
 | [legibility](#legibility) | [choice](#choice) | `then` | An understandable contract makes a specific choice possible; it does not choose for the guest. | none |
 | [choice](#choice) | [witness](#witness) | `then` | A scoped decision names the intended act; its result still needs observation rather than assumption. | none |
 | [witness](#witness) | [continuity](#continuity) | `then` | Bounded evidence and corrections let later work pick up a thread without rewriting its origin. | none |
-| [continuity](#continuity) | [release](#release) | `then` | A continuation record also says how work can pause or end without losing its meaning. | none |
+| [continuity](#continuity) | [release](#release) | `then` | A continuation record can also say how work can pause or end without losing its meaning. | none |
 | [witness](#witness) | [choice](#choice) | `back` | New evidence can change a decision, but cannot itself grant permission or stand in for consent. | [`tests/agent-first-collab.test.mjs`](../../tests/agent-first-collab.test.mjs): “a refusal by the backend that the card does not list is unknown for a write and latches writes; reads go on” |
-| [continuity](#continuity) | [choice](#choice) | `back` | A replacement, pause or resume while the gate decides sends the decision back: the earlier approval is not used. | [`tests/agent-first-runtime.test.mjs`](../../tests/agent-first-runtime.test.mjs): “upgrade or pause/resume invalidates a pending gate instead of silently using its old approval” |
-| [release](#release) | [arrival](#arrival) | `optional-return` | A new process with a new runtime: no module state, admission or obligation carries over; notes kept on disk can be read again if the caller chooses. | [`tests/agent-first-runtime.test.mjs`](../../tests/agent-first-runtime.test.mjs): “retirement closes admission immediately, drains calls, and leaves other modules usable” |
+| [continuity](#continuity) | [choice](#choice) | `back` | A replacement, pause or resume while the gate decides sends the decision back. | [`tests/agent-first-runtime.test.mjs`](../../tests/agent-first-runtime.test.mjs): “upgrade or pause/resume invalidates a pending gate instead of silently using its old approval” |
+| [release](#release) | [arrival](#arrival) | `optional-return` | A new process with a new runtime: no module state or admission carries over, and the kit adds no obligation. session_end's left_behind lists what a session's end left; notes and a Collab journal kept on disk can be read again. | [`tests/agent-first-runtime.test.mjs`](../../tests/agent-first-runtime.test.mjs): “retirement closes admission immediately, drains calls, and leaves other modules usable” |
 
 ## Fields
 
@@ -43,13 +43,13 @@ Place `ground`: Under every card, in every module state: no edge leads into it o
 
 #### standing
 
-**A floor you do not have to earn**
+**A reading floor in every state**
 
 **Question:** What remains true when a capability is unavailable or retired?
 
 **Holds in:**
 
-- In every module state the runtime has: registered, active, paused, retiring and retired.
+- The kit's reading floor holds in every module state the runtime has: registered, active, paused, retiring and retired.
 - After every refusal and error code the runtime can emit, and after the door has refused a command.
 - Reading asks no host gate and takes no caller identity: describe takes a module id, and catalog takes nothing.
 - At the door with no provider, no build and an empty PATH: arrive, help, motifs, catalog and explain.
@@ -73,6 +73,7 @@ Place `ground`: Under every card, in every module state: no edge leads into it o
 **Checks:**
 
 - [`tests/agent-first-floor.test.mjs`](../../tests/agent-first-floor.test.mjs): “the floor holds in every module state”. Invariant: describe and catalog answer in every module state and never call the host gate. In a default `npm test` run.
+- [`tests/agent-first-floor.test.mjs`](../../tests/agent-first-floor.test.mjs): “the floor holds after every refusal and error code the runtime can emit”. Invariant: after each refusal and error code the runtime can emit, describe and catalog still answer without calling the host gate. In a default `npm test` run.
 - [`tests/agent-first-floor.test.mjs`](../../tests/agent-first-floor.test.mjs): “describe and catalog take no caller identity and no gate”. Invariant: describe takes only a module id, catalog takes nothing, and neither output names a caller. In a default `npm test` run.
 - [`tests/agent-first-floor.test.mjs`](../../tests/agent-first-floor.test.mjs): “at the door, reading commands succeed with no provider, no build and no identity”. Invariant: the reading commands exit 0 from a copy of the kit alone, with an empty PATH, and create nothing. In a default `npm test` run.
 - [`tests/agent-first-floor.test.mjs`](../../tests/agent-first-floor.test.mjs): “the same reads succeed after the door has refused something”. Invariant: after the door refuses a command, each reading command still exits 0. In a default `npm test` run.
@@ -84,15 +85,15 @@ Place `ground`: Under every card, in every module state: no edge leads into it o
 
 **Covenant:**
 
-- `standing.no-ontology-test`: a duty of the right Unconditional standing (`unconditional-standing`); shown by “describe and catalog take no caller identity and no gate”
-- `standing.no-worth-test`: a duty of the right Unconditional standing (`unconditional-standing`); shown by “the same reads succeed after the door has refused something”
+- `standing.no-ontology-test`, a duty of the right Unconditional standing (`unconditional-standing`): its subject is touched by the mechanism that “describe and catalog take no caller identity and no gate” checks; that does not show the duty met.
+- `standing.no-worth-test`, a duty of the right Unconditional standing (`unconditional-standing`): its subject is touched by the mechanism that “the same reads succeed after the door has refused something” checks; that does not show the duty met.
 
 **Not covered:**
 
 - A floor at a hosted door: these reads are of this kit, run on one device.
 - Whether a host built on the runtime shows describe and catalog: the runtime offers them, and a host can leave them out.
 
-**From earlier text:** `title` verbatim, from `kit-map#/motifs/0/name`; `question` verbatim, from `kit-map#/motifs/0/question`; `holds_in` reworded, from `kit-map#/motifs/0/practice`; `boundary` extended, from `kit-map#/connections/5/meaning`; `limit` verbatim, from `kit-map#/motifs/0/limit`. A field not named here is new.
+**From earlier text:** `title` reworded, from `kit-map#/motifs/0/name`; `question` verbatim, from `kit-map#/motifs/0/question`; `holds_in` reworded, from `kit-map#/motifs/0/practice`; `boundary` extended, from `kit-map#/connections/5/meaning`; `limit` verbatim, from `kit-map#/motifs/0/limit`. A field not named here is new.
 
 **What touches it**, from the tables below:
 
@@ -103,7 +104,7 @@ Place `ground`: Under every card, in every module state: no edge leads into it o
 
 #### rest
 
-**Stopping owes nothing**
+**Stopping adds no debt**
 
 **Question:** What is owed when a caller stops, or sends nothing?
 
@@ -142,13 +143,14 @@ Place `ground`: Under every card, in every module state: no edge leads into it o
 
 **Covenant:**
 
-- `rest.silence-is-not-consent`: a duty of the right Rest and non-action (`rest-and-non-action`); shown by “end of input answers the lines already received, retires what is active and closes each binding once”
-- `rest.no-engagement-debt`: a duty of the right Rest and non-action (`rest-and-non-action`); shown by “arrive is one bounded, inert document that expects no reply”
-- `limits.existing-obligations-stay-scoped`: the protective limit Existing obligations stay scoped; shown by “the door lists the bound module, what its end writes without the gate, and what it is bound to”
+- `rest.silence-is-not-consent`, a duty of the right Rest and non-action (`rest-and-non-action`): its subject is touched by the mechanism that “end of input answers the lines already received, retires what is active and closes each binding once” checks; that does not show the duty met.
+- `rest.no-engagement-debt`, a duty of the right Rest and non-action (`rest-and-non-action`): its subject is touched by the mechanism that “arrive is one bounded, inert document that expects no reply” checks; that does not show the duty met.
+- `limits.existing-obligations-stay-scoped`, the protective limit Existing obligations stay scoped: its subject is touched by the mechanism that “the door lists the bound module, what its end writes without the gate, and what it is bound to” checks; that does not show the limit held.
 
 **Not covered:**
 
 - A rest declaration of a caller's own: no command takes one or shows one.
+- No test starts a second process to show that it begins with no module state.
 
 **From earlier text:** none; each field is new.
 
@@ -215,7 +217,7 @@ Place `card`: One piece of the path, in reading order from arrival to release.
 
 **Covenant:**
 
-- `limits.capacity-is-neutral`: the protective limit Capacity boundaries stay neutral; shown by “arrive, catalog, a session's first line and its answer to inspect of each module stay within their sizes”
+- `limits.capacity-is-neutral`, the protective limit Capacity boundaries stay neutral: its subject is touched by the mechanism that “arrive, catalog, a session's first line and its answer to inspect of each module stay within their sizes” checks; that does not show the limit held.
 
 **Not covered:**
 
@@ -248,7 +250,7 @@ Place `card`: One piece of the path, in reading order from arrival to release.
 - Each module's contract, version, revision, state and operations, each operation with its declared effects, refusals and card
 - The motif map and the studies, read as data
 
-**Practice:** Describe contracts, operations, declared effects, versions and each operation's card (what to send, an example, what comes back, who checks the input) before activation. Reuse Surface's existing manifest builder rather than invent another discovery protocol.
+**Practice:** `describe` in the runtime, and `catalog` and `explain` at the door, show contracts, operations, declared effects, versions and each operation's card (what to send, an example, what comes back, who checks the input) before activation. The Surface module uses Surface's existing manifest builder; the kit adds no discovery protocol of its own.
 
 **Boundary:** A card says what an operation is declared to take, do and refuse; it is not evidence that the operation behaves so.
 
@@ -286,15 +288,15 @@ Place `card`: One piece of the path, in reading order from arrival to release.
 
 **Covenant:**
 
-- `consent.terms-before-binding`: a duty of the right Specific consent and scoped authority (`specific-consent-and-authority`); shown by “describe shows the card: what to send, an example, the schema, what comes back, and who checks the input”
-- `legibility.machine-readable-floor`: a duty of the right Legibility and evidence (`legibility-and-evidence`); shown by “catalog, explain, help and arrive show the card and say, in one sentence used word for word, who checks the input”
+- `consent.terms-before-binding`, a duty of the right Specific consent and scoped authority (`specific-consent-and-authority`): its subject is touched by the mechanism that “describe shows the card: what to send, an example, the schema, what comes back, and who checks the input” checks; that does not show the duty met.
+- `legibility.machine-readable-floor`, a duty of the right Legibility and evidence (`legibility-and-evidence`): its subject is touched by the mechanism that “catalog, explain, help and arrive show the card and say, in one sentence used word for word, who checks the input” checks; that does not show the duty met.
 
 **Not covered:**
 
 - Content negotiation at this door: every command prints JSON, and no other form is offered.
 - A returned value is not held to the returns summary on its card.
 
-**From earlier text:** `title` verbatim, from `kit-map#/motifs/1/name`; `question` verbatim, from `kit-map#/motifs/1/question`; `practice` verbatim, from `kit-map#/motifs/1/practice`; `limit` verbatim, from `kit-map#/motifs/1/limit`. A field not named here is new.
+**From earlier text:** `title` verbatim, from `kit-map#/motifs/1/name`; `question` verbatim, from `kit-map#/motifs/1/question`; `practice` reworded, from `kit-map#/motifs/1/practice`; `limit` verbatim, from `kit-map#/motifs/1/limit`. A field not named here is new.
 
 **What touches it**, from the tables below:
 
@@ -355,9 +357,9 @@ Place `card`: One piece of the path, in reading order from arrival to release.
 
 **Covenant:**
 
-- `consent.exact-authority`: a duty of the right Specific consent and scoped authority (`specific-consent-and-authority`); shown by “the deferred host gate sees deeply immutable input matching the dispatched snapshot”
-- `consent.absence-forbids-binding`: a duty of the right Specific consent and scoped authority (`specific-consent-and-authority`); shown by “the gate is default-deny: an operation that declares effects runs only when the allow list names it”
-- `limits.uncertain-authority-stops-binding`: the protective limit Uncertain authority stops binding; shown by “local IO requires an explicit positive host gate and a pending gate cannot outlive retirement”
+- `consent.exact-authority`, a duty of the right Specific consent and scoped authority (`specific-consent-and-authority`): its subject is touched by the mechanism that “the deferred host gate sees deeply immutable input matching the dispatched snapshot” checks; that does not show the duty met.
+- `consent.absence-forbids-binding`, a duty of the right Specific consent and scoped authority (`specific-consent-and-authority`): its subject is touched by the mechanism that “the gate is default-deny: an operation that declares effects runs only when the allow list names it” checks; that does not show the duty met.
+- `limits.uncertain-authority-stops-binding`, the protective limit Uncertain authority stops binding: its subject is touched by the mechanism that “local IO requires an explicit positive host gate and a pending gate cannot outlive retirement” checks; that does not show the limit held.
 
 **Not covered:**
 
@@ -378,7 +380,7 @@ Place `card`: One piece of the path, in reading order from arrival to release.
 
 **Question:** What was offered, attempted, returned, observed, or left unresolved?
 
-**Purpose:** Keep apart what was asked, what started, what came back and what is not known, so that an ending is reported as it was.
+**Purpose:** Keep apart what was asked, what started, what came back and what is not known, so that an ending is reported as far as it is known.
 
 **Needs:**
 
@@ -389,7 +391,7 @@ Place `card`: One piece of the path, in reading order from arrival to release.
 - One answer per call, such as returned, DECLINED, OPERATION_FAILED or, in a session, DEADLINE_EXCEEDED
 - A receipt: module, version, revision, operation, declared effects
 
-**Practice:** Keep a plan, a host gate, an attempted operation and evidence of its effect separate: the runtime records whether an operation started and what is known of its effect, and a composite command names the phase it reached. Reuse the Work reference checker for finite records; do not replay a record as instructions. A `session` answers each started call by its deadline (DEADLINE_EXCEEDED: started, effect unknown) and lists it as late; it does not stop the handler.
+**Practice:** The runtime records whether an operation started and what is known of its effect, apart from the host gate's answer, and a composite command names the phase it reached. The Work module checks finite records with the Work reference checker, which runs nothing a record describes. A `session` answers each started call by its deadline (DEADLINE_EXCEEDED: started, effect unknown) and lists it as late.
 
 **Boundary:** Integrity is not truth, a declared capability is not readiness, and a passing bounded check is not whole-framework conformance.
 
@@ -425,14 +427,14 @@ Place `card`: One piece of the path, in reading order from arrival to release.
 
 **Covenant:**
 
-- `legibility.evidence-is-scoped`: a duty of the right Legibility and evidence (`legibility-and-evidence`); shown by “every response carries a receipt: which module answered, the operation, its effects, the deadline and the request line”
+- `legibility.evidence-is-scoped`, a duty of the right Legibility and evidence (`legibility-and-evidence`): its subject is touched by the mechanism that “every response carries a receipt: which module answered, the operation, its effects, the deadline and the request line” checks; that does not show the duty met.
 
 **Not covered:**
 
 - Durable records: a receipt is printed once and kept only by whoever reads it.
 - Whether a declared refusal applied nothing: not_applied is declared, not observed.
 
-**From earlier text:** `title` reworded, from `kit-map#/motifs/2/name`; `question` verbatim, from `kit-map#/motifs/2/question`; `practice` extended, from `kit-map#/motifs/2/practice`; `boundary` verbatim, from `other-atlas#/motifs/3/boundary`; `limit` extended, from `kit-map#/motifs/2/limit`. A field not named here is new.
+**From earlier text:** `title` reworded, from `kit-map#/motifs/2/name`; `question` verbatim, from `kit-map#/motifs/2/question`; `practice` reworded, from `kit-map#/motifs/2/practice`; `boundary` verbatim, from `other-atlas#/motifs/3/boundary`; `limit` extended, from `kit-map#/motifs/2/limit`. A field not named here is new.
 
 **What touches it**, from the tables below:
 
@@ -461,7 +463,7 @@ Place `card`: One piece of the path, in reading order from arrival to release.
 
 **Face `carried`.** Owner: caller. Holds: the notes root and the hash-guarded handoff.
 
-**Practice (carried):** Use AgentTool's existing files-only Local Starter. The provider owns the fixed slots, selection, freshness, budgets and hashes; this kit owns the boundary around it: an explicit root, a byte-pinned package, notes kept apart from code, and a hash-guarded handoff. Notes stay separate from dependency code.
+**Practice (carried):** The kit uses AgentTool's existing files-only Local Starter. The provider owns the fixed slots, selection, freshness, budgets and hashes; this kit owns the boundary around it: an explicit root, a byte-pinned package, notes kept apart from code, and a hash-guarded handoff.
 
 **Limit (carried):** Freshness and budgets are the provider's behaviour, not tested by this kit. A rendered selection is not a full export. Retained prose is not new authority, automatic memory, host delivery or personal continuity.
 
@@ -473,11 +475,11 @@ Place `card`: One piece of the path, in reading order from arrival to release.
 **Checks (carried):**
 
 - [`tests/agent-first-starter.test.mjs`](../../tests/agent-first-starter.test.mjs): “AgentTool integration binds one explicit root and does not run during discovery”. Invariant: one absolute root is bound, and the provider runs only when invoked. In a default `npm test` run.
-- [`tests/agent-first-context.test.mjs`](../../tests/agent-first-context.test.mjs): “real selected context survives consumer restart, rejects stale writes, and outlives provider removal”. Invariant: with the real provider, notes outlive a restart and its removal; a stale --expect is refused. Not in a default `npm test` run; needs XENIA_STARTER_TEST_PACKAGE: the Local Starter release the lock pins.
+- [`tests/agent-first-context.test.mjs`](../../tests/agent-first-context.test.mjs): “real selected context survives consumer restart, rejects stale writes, and outlives provider removal”. Invariant: notes outlive a restart and the provider's removal; a stale --expect is refused. Not in a default `npm test` run; needs XENIA_STARTER_TEST_PACKAGE: the Local Starter release the lock pins.
 
 **Face `replaced`.** Owner: host. Holds: revision-bound upgrade and the epoch fence.
 
-**Practice (replaced):** Capture invocation-time version/revision, require the expected current revision for replacement, and fence late decisions after an upgrade or pause/resume. Keep old results with their caller.
+**Practice (replaced):** A result names the version and revision that admitted its call, a replacement needs the expected current revision, and a gate decision pending at an upgrade or pause/resume is fenced.
 
 **Limit (replaced):** Matching declared contracts and effects does not prove semantic compatibility. This is in-process control, not durable migration or package authentication.
 
@@ -491,7 +493,7 @@ Place `card`: One piece of the path, in reading order from arrival to release.
 - [`tests/agent-first-runtime.test.mjs`](../../tests/agent-first-runtime.test.mjs): “compatible upgrades require the current revision and preserve earlier result attribution”. Invariant: an upgrade needs the current revision; earlier results keep their version. In a default `npm test` run.
 - [`tests/agent-first-runtime.test.mjs`](../../tests/agent-first-runtime.test.mjs): “upgrade or pause/resume invalidates a pending gate instead of silently using its old approval”. Invariant: an upgrade, pause or resume while the gate decides fences the decision. In a default `npm test` run.
 
-**Boundary:** Preserved context is not identity, inherited credentials or renewed consent. A descriptor comparison does not prove compatible behavior or a safe database migration.
+**Boundary:** Preserved context is not identity, inherited credentials or renewed consent.
 
 **On change:** The pin changes only by an edit of agenttool.lock.json; no newer release is looked up.
 
@@ -508,13 +510,13 @@ Place `card`: One piece of the path, in reading order from arrival to release.
 
 **Covenant:**
 
-- `identity.continuity-is-optional`: a duty of the right Identity, integrity, continuity, and portability (`identity-integrity-and-portability`); shown by “AgentTool integration binds one explicit root and does not run during discovery”
+- `identity.continuity-is-optional`, a duty of the right Identity, integrity, continuity, and portability (`identity-integrity-and-portability`): its subject is touched by the mechanism that “AgentTool integration binds one explicit root and does not run during discovery” checks; that does not show the duty met.
 
 **Not covered:**
 
 - Moving notes between provider versions, devices or hosts: no command does it.
 
-**From earlier text:** `title` verbatim, from `kit-map#/motifs/3/name`; `question` reworded, from `kit-map#/motifs/3/question`; `purpose` verbatim, from `other-atlas#/motifs/4/purpose`; `boundary` verbatim, from `other-atlas#/motifs/4/boundary`; `faces.carried.practice` verbatim, from `kit-map#/motifs/3/practice`; `faces.carried.limit` verbatim, from `kit-map#/motifs/3/limit`; `faces.replaced.practice` verbatim, from `kit-map#/motifs/4/practice`; `faces.replaced.limit` verbatim, from `kit-map#/motifs/4/limit`. A field not named here is new.
+**From earlier text:** `title` verbatim, from `kit-map#/motifs/3/name`; `question` reworded, from `kit-map#/motifs/3/question`; `purpose` verbatim, from `other-atlas#/motifs/4/purpose`; `boundary` reworded, from `other-atlas#/motifs/4/boundary`; `faces.carried.practice` reworded, from `kit-map#/motifs/3/practice`; `faces.carried.limit` verbatim, from `kit-map#/motifs/3/limit`; `faces.replaced.practice` reworded, from `kit-map#/motifs/4/practice`; `faces.replaced.limit` verbatim, from `kit-map#/motifs/4/limit`. A field not named here is new.
 
 **What touches it**, from the tables below:
 
@@ -540,13 +542,13 @@ Place `card`: One piece of the path, in reading order from arrival to release.
 - A module that admits nothing new and drains what it admitted
 - For a session, session_end: what was and was not cleaned up
 
-**Practice:** Close new admission immediately, let admitted work drain, and keep notes independently readable. Remove code and retained data only through their separate, explicit lifecycles. A `session` ends the same way and says in its last line what was and was not cleaned up.
+**Practice:** Retiring closes new admission at once, lets admitted work drain, and leaves the notes readable without the module. Code and retained data are removed only through their own explicit lifecycles. A `session` ends the same way and says in its last line what was and was not cleaned up.
 
 **Boundary:** Retiring software is not deleting a participant, revoking standing rights, proving secure erasure or forcing someone else to accept a handoff.
 
 **Limit:** Retirement is terminal in this runtime: a retired module cannot be reactivated, upgraded or registered again under the same id. Any return is a new process with a new runtime, reading the notes that were kept. It does not kill arbitrary JavaScript, revoke external credentials, erase backups, or retire a being's rights. With --collab-config, the Collab journal is kept by the backend at the path the config names; who else reads or writes it is not known to this kit.
 
-**On change:** A retired id cannot be activated, upgraded or registered again in the same runtime.
+**On change:** Activating, pausing, upgrading or calling a retiring or retired module is refused as MODULE_RETIRED.
 
 **On exit:** In a session, session_end gives each module's state, the calls still running, and cleanup {complete, did, did_not, left_behind}.
 
@@ -569,19 +571,19 @@ Place `card`: One piece of the path, in reading order from arrival to release.
 
 **Dimensions:**
 
-- `autonomy-dignity`, Autonomy & Dignity: the door handle is on the inside, at `/patterns/8`
+- `autonomy-dignity`, Autonomy & Dignity: the door handle is on the inside, at `/principle`
 
 **Covenant:**
 
-- `exit.states-are-separate`: a duty of the right Refusal, revocation, and exit (`refusal-revocation-and-exit`); shown by “what was not cleaned up is said, and the exit is 0 only when the end was complete”
-- `exit.retention-is-itemized`: a duty of the right Refusal, revocation, and exit (`refusal-revocation-and-exit`); shown by “through the process wiring the CLI uses: a whole exchange over real pipes, and an end that leaves the journal and nothing else of its own”
+- `exit.states-are-separate`, a duty of the right Refusal, revocation, and exit (`refusal-revocation-and-exit`): its subject is touched by the mechanism that “what was not cleaned up is said, and the exit is 0 only when the end was complete” checks; that does not show the duty met.
+- `exit.retention-is-itemized`, a duty of the right Refusal, revocation, and exit (`refusal-revocation-and-exit`): its subject is touched by the mechanism that “through the process wiring the CLI uses: a whole exchange over real pipes, and an end that leaves the journal and nothing else of its own” checks; that does not show the duty met.
 
 **Not covered:**
 
 - A release receipt: `retire` returns the module's description, not what was kept.
 - Removing the notes or the journal: no command does it.
 
-**From earlier text:** `title` verbatim, from `kit-map#/motifs/5/name`; `question` verbatim, from `kit-map#/motifs/5/question`; `purpose` reworded, from `other-atlas#/motifs/5/purpose`; `practice` verbatim, from `kit-map#/motifs/5/practice`; `boundary` verbatim, from `other-atlas#/motifs/5/boundary`; `limit` extended, from `kit-map#/motifs/5/limit`. A field not named here is new.
+**From earlier text:** `title` verbatim, from `kit-map#/motifs/5/name`; `question` verbatim, from `kit-map#/motifs/5/question`; `purpose` reworded, from `other-atlas#/motifs/5/purpose`; `practice` reworded, from `kit-map#/motifs/5/practice`; `boundary` verbatim, from `other-atlas#/motifs/5/boundary`; `limit` extended, from `kit-map#/motifs/5/limit`. A field not named here is new.
 
 **What touches it**, from the tables below:
 
@@ -592,7 +594,7 @@ Place `card`: One piece of the path, in reading order from arrival to release.
 
 ### Crossing
 
-Place `crossing`: Crosses the cards: where a wrong step is met, card by card.
+Place `crossing`: Crosses the cards: where a wrong step is met, entry by entry.
 
 #### repair
 
@@ -622,8 +624,8 @@ Place `crossing`: Crosses the cards: where a wrong step is met, card by card.
 
 **Covenant:**
 
-- `legibility.refusals-are-typed`: a duty of the right Legibility and evidence (`legibility-and-evidence`); shown by “invariant for every code and refusal: terminal => no next actions; otherwise at least one real one”
-- `legibility.corrections-are-visible`: a duty of the right Legibility and evidence (`legibility-and-evidence`); shown by “the note about the other lineage says where it is kept, that it is superseded, and what was and was not carried”
+- `legibility.refusals-are-typed`, a duty of the right Legibility and evidence (`legibility-and-evidence`): its subject is touched by the mechanism that “invariant for every code and refusal: terminal => no next actions; otherwise at least one real one” checks; that does not show the duty met.
+- `legibility.corrections-are-visible`, a duty of the right Legibility and evidence (`legibility-and-evidence`): its subject is touched by the mechanism that “the note about the other lineage says where it is kept, that it is superseded, and what was and was not carried” checks; that does not show the duty met.
 
 **Not covered:**
 
@@ -652,7 +654,7 @@ Without a study (no study partially illustrates it): [standing](#standing), [res
 
 ## Commands
 
-`does` says what each command does here, not what it establishes. One row for each line of `help`.
+`does` is what a command does here, not what it establishes; `help <command>` gives its usage. One row for each line of `help`.
 
 | Command | Does | Entries |
 |---|---|---|
@@ -702,7 +704,7 @@ Read from `spec.json#/dimensions`. [The root README](../../README.md#how-to-read
 | `ai-consent-handshake` | Consent & the Handshake: interaction begins by invitation, not capture | [choice](#choice) | `/patterns/2` |
 | `verification-and-trust` | Verification & Trust: Proof You Can Recompute, Not Credentials You Must Believe | [witness](#witness) | `/patterns/5` |
 | `continuity-and-arrival` | Continuity & Arrival: Wake, Don't Log In | [continuity](#continuity) | `/patterns/8` |
-| `autonomy-dignity` | Autonomy & Dignity: the door handle is on the inside | [release](#release) | `/patterns/8` |
+| `autonomy-dignity` | Autonomy & Dignity: the door handle is on the inside | [release](#release) | `/principle` |
 | `legible-exchange-no-scoreboard` | Legible Exchange & No-Scoreboard: What "Fair to an Agent" Means | [rest](#rest) | `/patterns/8` |
 | `ax-care-as-ground` | Care as Ground | [standing](#standing) | `/principle` |
 
@@ -727,7 +729,7 @@ In [motifs.json](motifs.json): Rights are not listed. Each right's duties are, a
 
 Read from `covenant/0.1/covenant.json#/rights`. The text of each duty is in [the Covenant](../../covenant/0.1/README.md).
 
-| Duty | Right | Related to | Shown by, or why it is not covered |
+| Duty | Right | Related to | Mechanism checked by, or why it is not covered |
 |---|---|---|---|
 | `standing.no-ontology-test` | `unconditional-standing` | [standing](#standing) | “describe and catalog take no caller identity and no gate” |
 | `standing.no-worth-test` | `unconditional-standing` | [standing](#standing) | “the same reads succeed after the door has refused something” |
@@ -748,12 +750,12 @@ Read from `covenant/0.1/covenant.json#/rights`. The text of each duty is in [the
 | `exit.revocation-is-immediate` | `refusal-revocation-and-exit` | not covered | Retiring a module closes its admission at once, but the kit grants no authority to revoke, and no test shows a revocation. |
 | `exit.states-are-separate` | `refusal-revocation-and-exit` | [release](#release) | “what was not cleaned up is said, and the exit is 0 only when the end was complete” |
 | `exit.retention-is-itemized` | `refusal-revocation-and-exit` | [release](#release) | “through the process wiring the CLI uses: a whole exchange over real pipes, and an end that leaves the journal and nothing else of its own” |
-| `privacy.minimize-and-purpose-bind` | `privacy-and-data-agency` | not covered | A duty about collected data; the kit collects none, and no test shows that. |
-| `privacy.no-silent-secondary-use` | `privacy-and-data-agency` | not covered | The kit holds no protected data. |
+| `privacy.minimize-and-purpose-bind` | `privacy-and-data-agency` | not covered | The kit keeps notes and a Collab journal only where the caller points it; what they hold is not known to the kit, `context` runs provider code it does not observe, and no test reads for purpose or minimum. |
+| `privacy.no-silent-secondary-use` | `privacy-and-data-agency` | not covered | What the notes and a Collab journal hold is not known to the kit, and no test reads for a secondary use of them. |
 | `privacy.layered-inventory` | `privacy-and-data-agency` | not covered | The kit publishes no data or retention inventory. |
 | `privacy.no-cross-layer-overclaim` | `privacy-and-data-agency` | not covered | No test reads the kit's words for such claims. |
 | `identity.no-impersonation-or-silent-rewrite` | `identity-integrity-and-portability` | not covered | An upgrade can change a module's title, description and motif while its contract and effects match, so the kit does not hold this. |
-| `identity.credentials-are-bounded` | `identity-integrity-and-portability` | not covered | The kit issues and reads no credentials. |
+| `identity.credentials-are-bounded` | `identity-integrity-and-portability` | not covered | The kit reads no credential; `session --collab-config` has the backend create a session credential file, which session_end lists in left_behind when it is not known to be removed. |
 | `identity.continuity-is-optional` | `identity-integrity-and-portability` | [continuity](#continuity) | “AgentTool integration binds one explicit root and does not run during discovery” |
 | `identity.portability-is-verifiable` | `identity-integrity-and-portability` | not covered | The kit offers no export of attributable state. |
 | `legibility.machine-readable-floor` | `legibility-and-evidence` | [legibility](#legibility) | “catalog, explain, help and arrive show the card and say, in one sentence used word for word, who checks the input” |
@@ -772,7 +774,7 @@ Read from `covenant/0.1/covenant.json#/rights`. The text of each duty is in [the
 
 Read from `covenant/0.1/covenant.json#/protective_limits`.
 
-| Limit | Title | Related to | Shown by, or why it is not covered |
+| Limit | Title | Related to | Mechanism checked by, or why it is not covered |
 |---|---|---|---|
 | `limits.rights-coexist` | Rights coexist | not covered | Nothing here weighs one principal's rights against another's. |
 | `limits.capacity-is-neutral` | Capacity boundaries stay neutral | [arrival](#arrival) | “arrive, catalog, a session's first line and its answer to inspect of each module stay within their sizes” |
@@ -782,7 +784,7 @@ Read from `covenant/0.1/covenant.json#/protective_limits`.
 
 ## Earlier names
 
-Where each name, edge and field of the earlier vocabularies went. A row says where to read now; it does not say the earlier text was wrong or that this one is right.
+Where each name and edge of the earlier vocabularies went, and the fields below: those renamed or not carried. A card field of the other atlas that the entries here also have, such as needs or boundary, has no row, except practice, whose lists were not carried; an entry's `from` names each value taken, and a field it does not name is new. A row says where to read now; it does not say the earlier text was wrong or that this one is right.
 
 Revisions read: `0f73c10` is `0f73c108b28608103b27693ccaa37c303c523c81`; `beed37a` is `beed37ac9b1d8282c8566aa657572578d953ffc6`.
 
@@ -792,17 +794,18 @@ Revisions read: `0f73c10` is `0f73c108b28608103b27693ccaa37c303c523c81`; `beed37
 - `kit-studies`: `agent-first/0.1/motif-studies.mjs@0f73c10`. The four study ids, an id space of their own; their links stay in motif-studies.mjs.
 - `kit-plan`: `.hermes/plans/2026-10-09_175749-agent-first.md@0f73c10`. The five names in the kit plan, written before the kit map.
 - `other-atlas`: `modules/0.1/motifs.json@beed37a`, with `modules/0.1/motifs.mjs@beed37a`, `MOTIFS.md@beed37a`. The other lineage's atlas: six cards, seven connections and a repair sentence, with its renderer and the page rendered from it. See agent-first/0.1/LINEAGE.md.
+- `kit-runtime`: `agent-first/0.1/runtime.mjs@0f73c10`. The motif a module declares, as the runtime reads it: free text, held to no map.
 
 ### Earlier names of entries
 
 | Vocabulary | Name | Status | Now | Source | Note |
 |---|---|---|---|---|---|
 | `kit-map` | `standing` | `moved-to-ground` | [standing](#standing) | `agent-first/0.1/motifs.json@0f73c10#/motifs/0/id` | It was one station of a ring. It is now ground, under every card, with no edge in or out. |
-| `kit-map` | `legibility` | `kept` | [legibility](#legibility) | `agent-first/0.1/motifs.json@0f73c10#/motifs/1/id` | Its title, question, practice and limit are kept. |
+| `kit-map` | `legibility` | `kept` | [legibility](#legibility) | `agent-first/0.1/motifs.json@0f73c10#/motifs/1/id` | Its title, question and limit are kept; its practice is reworded to say what the pieces do. |
 | `kit-map` | `bounded-work` | `split` | [witness](#witness), [choice](#choice) | `agent-first/0.1/motifs.json@0f73c10#/motifs/2/id` | Its question and its limit went to witness, whose title keeps the finite ending; the host gate its practice named went to choice. |
-| `kit-map` | `continuity` | `kept` | [continuity/carried](#continuity) | `agent-first/0.1/motifs.json@0f73c10#/motifs/3/id` | Its practice and limit are the carried face of continuity. Earlier question: “What is deliberately carried, and what remains outside the selection?” |
-| `kit-map` | `change` | `renamed` | [continuity/replaced](#continuity) | `agent-first/0.1/motifs.json@0f73c10#/motifs/4/id` | Its practice and limit are the replaced face of continuity: code the host replaces, beside the notes the caller carries. Earlier question: “Which implementation answered, and has it changed since this decision began?” |
-| `kit-map` | `exit` | `renamed` | [release](#release) | `agent-first/0.1/motifs.json@0f73c10#/motifs/5/id` | Its title, question, practice and limit are kept under release. Rest, which it did not name, is ground of its own. |
+| `kit-map` | `continuity` | `kept` | [continuity/carried](#continuity) | `agent-first/0.1/motifs.json@0f73c10#/motifs/3/id` | Its limit is the carried face's limit, and its practice is reworded there. Earlier question: “What is deliberately carried, and what remains outside the selection?” |
+| `kit-map` | `change` | `renamed` | [continuity/replaced](#continuity) | `agent-first/0.1/motifs.json@0f73c10#/motifs/4/id` | Its limit is the replaced face's limit, and its practice is reworded there: code the host replaces, beside the notes the caller carries. Earlier question: “Which implementation answered, and has it changed since this decision began?” |
+| `kit-map` | `exit` | `renamed` | [release](#release) | `agent-first/0.1/motifs.json@0f73c10#/motifs/5/id` | Its title and question are kept under release, its limit is extended and its practice reworded. Rest, which it did not name, is ground of its own. |
 | `kit-studies` | `arrival` | `other-id-space` | [arrival](#arrival) | `agent-first/0.1/motif-studies.mjs@0f73c10#listStudies` | A study id. It partially illustrates the arrival entry; the link is relates_to in motif-studies.mjs. |
 | `kit-studies` | `representation` | `other-id-space` | [legibility](#legibility) | `agent-first/0.1/motif-studies.mjs@0f73c10#listStudies` | A study id. It partially illustrates legibility; the link is relates_to in motif-studies.mjs. |
 | `kit-studies` | `recovery` | `other-id-space` | [repair](#repair) | `agent-first/0.1/motif-studies.mjs@0f73c10#listStudies` | A study id. It partially illustrates repair, in Surface's problem shape; the link is relates_to in motif-studies.mjs. |
@@ -816,9 +819,9 @@ Revisions read: `0f73c10` is `0f73c108b28608103b27693ccaa37c303c523c81`; `beed37
 | `other-atlas` | `legibility` | `kept` | [legibility](#legibility) | `modules/0.1/motifs.json@beed37a#/motifs/1/id` | The id is kept; the card is the kit's, with the kit's question. Earlier question: “Can the caller understand the offered meaning without reverse-engineering the presentation?” |
 | `other-atlas` | `choice` | `kept` | [choice](#choice) | `modules/0.1/motifs.json@beed37a#/motifs/2/id` | Its purpose and boundary are kept; its question is reworded to what the gate is asked. Earlier question: “What exactly is being chosen, by whom, for which act and scope?” |
 | `other-atlas` | `witness` | `kept` | [witness](#witness) | `modules/0.1/motifs.json@beed37a#/motifs/3/id` | The id is kept. The card keeps the kit's question, the one bounded-work asked; this was the other atlas's. Earlier question: “What was actually observed or checked, and what still does not follow from it?” |
-| `other-atlas` | `continuity` | `kept` | [continuity](#continuity) | `modules/0.1/motifs.json@beed37a#/motifs/4/id` | Its purpose and boundary are kept. Its two concerns, carrying context and replacing code, are the two faces. Earlier question: “What must remain understandable for useful work to continue after a pause, change or handoff?” |
+| `other-atlas` | `continuity` | `kept` | [continuity](#continuity) | `modules/0.1/motifs.json@beed37a#/motifs/4/id` | Its purpose is kept, and its boundary without the sentence that the replaced face's limit says. Its two concerns, carrying context and replacing code, are the two faces. Earlier question: “What must remain understandable for useful work to continue after a pause, change or handoff?” |
 | `other-atlas` | `release` | `split` | [release](#release), [rest](#rest) | `modules/0.1/motifs.json@beed37a#/motifs/5/id` | Stopping a capability is release. Stopping as a caller, with nothing owed, is rest, on the ground. Earlier question: “Can this capability stop without trapping its caller, erasing the record or fabricating completion?” |
-| `other-atlas` | `repair` | `kept` | [repair](#repair) | `modules/0.1/motifs.json@beed37a#/repair` | A sentence that crossed the map. It is now an entry of its own, with place crossing. |
+| `other-atlas` | `repair` | `kept` | [repair](#repair) | `modules/0.1/motifs.json@beed37a#/repair` | Only its place, crossing the map, and its name were taken. What the sentence asked for, such as correcting disclosures and stopping an affected action without collective or unrelated penalties, is not in the entry, which covers a wrong step at this door. |
 
 ### Earlier edges
 
@@ -834,8 +837,8 @@ Revisions read: `0f73c10` is `0f73c108b28608103b27693ccaa37c303c523c81`; `beed37
 | `other-atlas` | `legibility→choice` | `kept` | `legibility→choice` | `modules/0.1/motifs.json@beed37a#/connections/1` | Kept as a then edge; the meaning is word for word. |
 | `other-atlas` | `choice→witness` | `kept` | `choice→witness` | `modules/0.1/motifs.json@beed37a#/connections/2` | Kept as a then edge; the meaning is word for word. |
 | `other-atlas` | `witness→continuity` | `kept` | `witness→continuity` | `modules/0.1/motifs.json@beed37a#/connections/3` | Kept as a then edge; the meaning is word for word. |
-| `other-atlas` | `continuity→release` | `kept` | `continuity→release` | `modules/0.1/motifs.json@beed37a#/connections/4` | Kept as a then edge; the meaning is reworded without its modal verb. |
-| `other-atlas` | `release→arrival` | `kept` | `release→arrival` | `modules/0.1/motifs.json@beed37a#/connections/5` | Kept as the one optional-return edge; its meaning now says what carries over, which is nothing but notes kept on disk. |
+| `other-atlas` | `continuity→release` | `kept` | `continuity→release` | `modules/0.1/motifs.json@beed37a#/connections/4` | Kept as a then edge; the meaning is reworded: its modal verb is now can. |
+| `other-atlas` | `release→arrival` | `kept` | `release→arrival` | `modules/0.1/motifs.json@beed37a#/connections/5` | Kept as the one optional-return edge; its meaning is new. It says what does not carry over, and what a session's end can leave on disk to be read again. |
 | `other-atlas` | `witness→choice` | `kept` | `witness→choice` | `modules/0.1/motifs.json@beed37a#/connections/6` | Kept as a back edge; the meaning is word for word, and it names a test. |
 | `kit-studies` | `connects_to` | `other-id-space` | none | `agent-first/0.1/motif-studies.mjs@0f73c10#listStudies` | The studies' links join studies to studies. They stay in motif-studies.mjs and are not edges of this map. |
 
@@ -853,8 +856,12 @@ Revisions read: `0f73c10` is `0f73c108b28608103b27693ccaa37c303c523c81`; `beed37
 | `other-atlas` | `example` | `not-carried` | none | `modules/0.1/motifs.json@beed37a#/motifs/0/example` | Its examples were illustrative. Each claim here points at a check instead. |
 | `other-atlas` | `standalone_use` | `not-carried` | none | `modules/0.1/motifs.json@beed37a#/motifs/0/standalone_use` | What a card takes on its own is in its needs. |
 | `other-atlas` | `required_motifs` | `not-carried` | none | `modules/0.1/motifs.json@beed37a#/motifs/0/required_motifs` | Every list was empty. No entry here requires another, and a then edge is not a prerequisite. |
+| `other-atlas` | `schema` | `not-carried` | none | `modules/0.1/motifs.json@beed37a#/schema` | Its schema name. This map has a schema name of its own. |
+| `other-atlas` | `status` | `not-carried` | none | `modules/0.1/motifs.json@beed37a#/status` | It was interpretive-design-cards. This map keeps the kit map's status, as it was at 0f73c10. |
+| `other-atlas` | `self_sufficiency` | `not-carried` | none | `modules/0.1/motifs.json@beed37a#/self_sufficiency` | A sentence: each card can be used alone, and connections are not prerequisites. The then edge kind here says that no edge is a prerequisite; the map keeps the kit map's self_sufficiency, as it was at 0f73c10. |
+| `other-atlas` | `practice` | `not-carried` | none | `modules/0.1/motifs.json@beed37a#/motifs/0/practice` | Each card's practice was a list of steps; none was carried. A practice here is the kit's text, from the kit map where `from` says so. |
 | `other-atlas` | `connections` | `renamed` | `edges` | `modules/0.1/motifs.json@beed37a#/connections` | Each edge now has a kind. |
-| `kit-runtime` | `motif` | `other-id-space` | none | `agent-first/0.1/runtime.mjs@0f73c10#prepareDefinition` | A module's motif is free text; the runtime does not hold it to this map. Test fixtures use such values, some of them earlier names: bounded-work and exit in tests/agent-first-session.test.mjs, exit in tests/agent-first-collab.test.mjs, independence in the Telescope adapter's test. They are not renamed. |
+| `kit-runtime` | `motif` | `other-id-space` | none | `agent-first/0.1/runtime.mjs@0f73c10#prepareDefinition` | A module's motif is free text; the runtime does not hold it to this map. Test fixtures use such values: bounded-work and exit, which are earlier names, in tests/agent-first-session.test.mjs and tests/agent-first-collab.test.mjs, and independence and m, which no vocabulary here has, in the Telescope adapter's test, tests/agent-first-skills-inspector.test.mjs and tests/agent-first-invoke.test.mjs. They are not renamed. |
 
 The other atlas is read as found at beed37a. The commit's message says its files were committed unmodified for safekeeping, and that "the committer is not its author". The same is said of the kit's first commit, 684f8f9. This map names no author for either.
 

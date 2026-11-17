@@ -235,6 +235,21 @@ test('the note keeps its line about the motif atlas, with a dated line under it 
   for(const phrase of ['[MOTIFS.md](MOTIFS.md)','[motifs.json](motifs.json)','tools/render-motifs.mjs','tests/agent-first-motif-page.test.mjs','no file of it','reconciliation'])
     assert.ok(dated.includes(phrase),phrase);
   for(const id of ['arrival','choice','witness','release','repair'])assert.ok(dated.includes(id),id);
+  // The counts are read from the map: the field values its entries name in `from` with the other atlas as source, and
+  // the connection meanings its reconciliation says were kept word for word or reworded.
+  const map=JSON.parse(read('agent-first/0.1/motifs.json'));
+  const claims=map.motifs.flatMap(entry=>Object.values(entry.from??{})).filter(claim=>claim.source.startsWith('other-atlas#'));
+  const edges=map.reconciliation.edge_rows.filter(row=>row.vocabulary==='other-atlas');
+  const word=['no','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen'];
+  const of=(list,test)=>list.filter(test).length;
+  const verbatim=of(claims,claim=>claim.as==='verbatim'),reworded=of(claims,claim=>claim.as==='reworded');
+  assert.equal(verbatim+reworded,claims.length,'each value taken from the other atlas is verbatim or reworded');
+  const exact=of(edges,row=>/word for word/.test(row.note)),changed=of(edges,row=>/is reworded/.test(row.note));
+  const cap=text=>text[0].toUpperCase()+text.slice(1);
+  assert.ok(dated.includes(`${cap(word[claims.length])} field values were taken (${word[verbatim]} word for word, ${word[reworded]} reworded), each named in the \`from\` of its entry`),'the field values');
+  assert.ok(dated.includes(`and ${word[exact+changed]} connection meanings (${word[exact]} word for word, ${word[changed]} reworded), each in the reconciliation's edge_rows`),'the connection meanings');
+  // The repair sentence gave its place as the crossing, and the entry's name; not its text.
+  assert.ok(dated.includes('its repair sentence\'s place, as the crossing entry repair'));
 });
 
 test('every command the kit README shows is a command the door has',()=>{

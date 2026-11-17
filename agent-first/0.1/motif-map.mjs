@@ -9,11 +9,14 @@ export const PAGE_FILE='agent-first/0.1/MOTIFS.md';
 const SCHEMA='xenia.agent-first/0.1-development';
 // The vocabulary whose ids a reader of `.motifs[].id` may still hold.
 const KIT_MAP='kit-map';
-// What a card leaves open, taken from the map's own list: the four that are about the entry it prints.
-const CARD_NOT_ESTABLISHED=['that any duty is met','that an entry describes a running service','that a passing check establishes a motif','that a mapping is right beyond its pointers resolving'];
-// Not every command's output carries its own not_established (`explain` and `motifs study help` print none), so the
-// note says only what `does` is.
-const COMMANDS_NOTE='`does` says what each command does here, not what it establishes.';
+// What a card leaves open, taken from the map's own list: the four that are about the entry it prints, and the one
+// about the caller, since a card can be read without the index. Its practice says what the pieces do, so a card needs
+// no line of its own on how to read it.
+const CARD_NOT_ESTABLISHED=['that any duty is met','that an entry describes a running service','that a passing check establishes a motif','that a mapping is right beyond its pointers resolving',
+  'anything about a caller\'s identity, authority, safety or inner state'];
+// Not every command's output carries its own not_established (`catalog`, `explain`, `motifs study list` and
+// `motifs study help`, for example, print none), so the note says only what `does` is, and where the usage is.
+const COMMANDS_NOTE='`does` is what a command does here, not what it establishes; `help <command>` gives its usage.';
 const copy=value=>structuredClone(value);
 const idsOf=map=>map.motifs.map(entry=>entry.id);
 const entryOf=(map,id)=>map.motifs.find(entry=>entry.id===id);
@@ -34,16 +37,17 @@ export function pathLine(map){
   return parts.join(' ');
 }
 
-// The ids of the kit map that are not ids now, each with where it went.
+// The ids of the kit map that are not ids now, each with its status (a split is not a rename) and where it went.
 function renamed(map){
   const ids=idsOf(map);
-  return map.reconciliation.name_rows.filter(row=>row.vocabulary===KIT_MAP&&!ids.includes(row.name)).map(({name,now})=>({name,now:[...now]}));
+  return map.reconciliation.name_rows.filter(row=>row.vocabulary===KIT_MAP&&!ids.includes(row.name)).map(({name,status,now})=>({name,status,now:[...now]}));
 }
 
 export function motifIndex(map){
   return {schema:SCHEMA,kind:'motif-index',status:map.status,
-    use:`Optional; no command needs this map. \`motifs <id>\` prints one entry and what touches it. The whole map, every field, is ${MAP_FILE}.`,
+    use:`Optional; no command needs this map. The whole map is ${MAP_FILE}.`,
     reading:map.reading,
+    fields:copy(map.fields),
     path:pathLine(map),
     page:PAGE_FILE,
     entries:map.motifs.map(({id,place,title,question})=>({id,place,title,...(question===undefined?{}:{question})})),
@@ -55,8 +59,8 @@ export function motifIndex(map){
     self_sufficiency:{motifs_and_catalog:map.self_sufficiency.motifs_and_catalog,network:map.self_sufficiency.network},
     next:[
       {argv:['motifs','standing'],why:'Read one entry and what touches it.'},
-      {argv:['motifs','study','list'],why:'List the studies and the entries they relate to.'},
-      {argv:['motifs','study','journey'],why:'Run the four studies on synthetic input. Needs the Xenia build.'}],
+      {argv:['motifs','study','list'],why:'List the studies.'},
+      {argv:['motifs','study','journey'],why:'Run the studies on synthetic input; needs the Xenia build.'}],
     not_established:[...map.not_established]};
 }
 
@@ -75,13 +79,17 @@ export function motifCard(map,id){
 }
 
 // A word that is not an entry id: {now_at} when the reconciliation has it as an earlier name, {study} when it is a
-// study id, and undefined otherwise. Only the map's own words are returned, never the word given.
+// study id, {face_of} when it is <entry id>/<face> for a face that entry has, and undefined otherwise. Only the map's
+// own words are returned, never the word given.
 export function earlierName(map,word){
   if(typeof word!=='string'||idsOf(map).includes(word))return undefined;
   const study=map.studies.find(row=>row.study===word);
   if(study)return {study:study.study};
   const row=map.reconciliation.name_rows.find(item=>item.name===word);
-  return row?{now_at:[...row.now]}:undefined;
+  if(row)return {now_at:[...row.now]};
+  const [head,face,...more]=word.split('/');
+  const entry=more.length===0&&face!==undefined?entryOf(map,head):undefined;
+  return entry&&Object.hasOwn(entry.faces??{},face)?{face_of:entry.id}:undefined;
 }
 
 // The page, MOTIFS.md: every string of the map, in the order of the file, with the titles of the dimensions, rights and
@@ -145,7 +153,8 @@ function fieldLines(key,value,titles,where,face){
     only(item,['id','via'],`${where}.covenant`);
     const right=titles.duties.get(item.id),limit=titles.limits.get(item.id);
     const what=right?`a duty of the right ${right.title} (${code(right.id)})`:limit?`the protective limit ${limit.title}`:fail(`${where}: no duty or limit ${item.id} in the Covenant`);
-    return `${code(item.id)}: ${what}; shown by ${quote(item.via)}`;
+    // The relation is to the duty's subject; the test checks a mechanism, and does not show the duty met.
+    return `${code(item.id)}, ${what}: its subject is touched by the mechanism that ${quote(item.via)} checks; that does not show the ${right?'duty met':'limit held'}.`;
   }))];
   return fail(`no rendering for ${where}.${key}`);
 }
@@ -216,9 +225,9 @@ function crossIndexLines(map,{spec,covenant},titles){
     '### Covenant rights','',`In [motifs.json](motifs.json): ${index.rights_note} The rows below are read from the duties.`,'',
     ...table(['Right','Title','Entries, from its duties'],rights),
     '### Covenant duties','',`Read from ${code(index.duties_from)}. The text of each duty is in [the Covenant](${UP}covenant/0.1/README.md).`,'',
-    ...table(['Duty','Right','Related to','Shown by, or why it is not covered'],covenant.rights.flatMap(right=>right.requirements.map(duty=>[code(duty.id),code(right.id),...status(duty.id)]))),
+    ...table(['Duty','Right','Related to','Mechanism checked by, or why it is not covered'],covenant.rights.flatMap(right=>right.requirements.map(duty=>[code(duty.id),code(right.id),...status(duty.id)]))),
     '### Protective limits','',`Read from ${code(index.limits_from)}.`,'',
-    ...table(['Limit','Title','Related to','Shown by, or why it is not covered'],covenant.protective_limits.map(item=>[code(item.id),item.title,...status(item.id)]))];
+    ...table(['Limit','Title','Related to','Mechanism checked by, or why it is not covered'],covenant.protective_limits.map(item=>[code(item.id),item.title,...status(item.id)]))];
 }
 
 function earlierLines(map){

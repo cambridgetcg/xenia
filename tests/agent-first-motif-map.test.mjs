@@ -4,8 +4,8 @@
 // reconciliation with the vocabularies it replaces.
 //
 // These tests read files and, where git has a named revision, git objects.
-// Nothing here starts a backend, writes a file or touches the network; the one
-// command run is `help`, with an empty PATH.
+// Nothing here starts a backend, writes a file or touches the network; the
+// commands run are `help` and `motifs <id>`, with an empty PATH.
 //
 // A pointer that resolves shows only that a file, symbol, heading or test is
 // there. It does not show that the mapping is right, that any duty is met, or
@@ -123,8 +123,10 @@ const implementationsOf=entry=>[...(entry.implementation??[]),...facesOf(entry).
 const limitsOf=entry=>[entry.limit,...facesOf(entry).map(face=>face.limit)].filter(text=>typeof text==='string');
 const shownOf=entry=>(entry.where??[]).map(row=>row.shown_by);
 
-// The text of an entry or an edge, as a reader sees it: no ids, paths, test titles, sources or provenance.
-const NOT_TEXT=new Set(['id','place','motif','sources','implementation','from','covenant','dimensions','path','test','needs','shown_by','to']);
+// The text of the map, as a reader sees it: no ids, paths, test titles, sources or provenance. The reconciliation is
+// left out: it records the earlier vocabularies, and quotes the questions they asked as they were. A check's needs and
+// an entry's needs are both text, and are both read.
+const NOT_TEXT=new Set(['id','place','motif','sources','implementation','from','covenant','dimensions','path','test','shown_by','checked_by','to','reconciliation','revisions']);
 function textsOf(value,key){
   if(typeof value==='string')return NOT_TEXT.has(key)?[]:[value];
   if(Array.isArray(value))return value.flatMap(item=>textsOf(item,key));
@@ -158,7 +160,8 @@ test('each place has its entries in order: ground, the cards in path order, and 
   assert.equal(map.motifs.length,9);assert.equal(ids.size,9);
   assert.deepEqual(Object.keys(map.places),['ground','card','crossing']);
   for(const text of Object.values(map.places))assert.ok(typeof text==='string'&&text.length>20);
-  assert.match(map.reading,/not an instruction/);assert.match(map.reading,/reading order/);
+  // The reading says how to read practice; that a then edge is a reading order is said by the then kind and the path line.
+  assert.match(map.reading,/not an instruction/);assert.doesNotMatch(map.reading,/reading order/);
 });
 
 test('each place has its exact keys, and continuity keeps practice, limit, implementation and checks in its two faces',()=>{
@@ -239,6 +242,13 @@ test('the then edges are one path through the cards, in their order, and nothing
     assert.equal(kind.checked_by.path,THIS_FILE);
   }
   assert.match(map.edge_kinds[0].meaning,/reading order/);assert.match(map.edge_kinds[0].meaning,/nothing enforces/i);
+  // A back or return edge names a test, and each kind says that the test being there does not show the edge right.
+  const kind=id=>map.edge_kinds.find(item=>item.id===id).meaning;
+  assert.match(kind('back'),/names a test that shows the mechanism/);
+  assert.match(kind('optional-return'),/^The only edge out of release\./);
+  for(const id of ['back','optional-return'])assert.match(kind(id),/that the test is there does not show the edge is right/,id);
+  // The kit cannot know who starts a later process or why, so the kind does not call it a choice or say what it carries.
+  assert.doesNotMatch(kind('optional-return'),/choice|carried/);
   for(const edge of map.edges){
     assert.ok(map.edge_kinds.some(kind=>kind.id===edge.kind),`${edge.from}→${edge.to}: kind ${edge.kind}`);
     assert.ok(ids.has(edge.from)&&ids.has(edge.to),`${edge.from}→${edge.to}`);
@@ -271,7 +281,15 @@ test('release leaves only by the optional return to arrival, and ground and cros
   assert.equal(out.length,1);
   assert.deepEqual([out[0].to,out[0].kind],['arrival','optional-return']);
   assert.equal(map.edges.filter(edge=>edge.kind==='optional-return').length,1);
-  assert.match(out[0].meaning,/new process with a new runtime/);assert.match(out[0].meaning,/if the caller chooses/);
+  // What does not carry over, and what can: a Collab end can leave a claim it made, which is not the kit's to call
+  // ended, so the edge says the kit adds no obligation and points to left_behind instead of saying none carries over.
+  const meaning=out[0].meaning;
+  assert.match(meaning,/^A new process with a new runtime: no module state or admission carries over, and the kit adds no obligation\./);
+  assert.match(meaning,/session_end's left_behind/);assert.match(meaning,/notes and a Collab journal kept on disk can be read again/);
+  assert.doesNotMatch(meaning,/obligation carries over|caller chooses/);
+  const collab=read('agent-first/0.1/adapters/agenttool-collab/index.mjs');
+  assert.match(collab,/a claim this binding made is not known to have been released/);assert.match(collab,/left_behind:left/);
+  assert.doesNotMatch(map.reconciliation.edge_rows.find(row=>row.name==='release→arrival').note,/nothing but/);
   for(const entry of [...placeOf('ground'),...placeOf('crossing')])
     assert.equal(map.edges.some(edge=>edge.from===entry.id||edge.to===entry.id),false,`${entry.id} has no edge`);
 });
@@ -307,17 +325,39 @@ test('each from claim matches its source byte for byte where git has the revisio
   if(!compared)t.diagnostic('git has neither revision; no claim was compared');
 });
 
-test('card and edge text holds no greeting, no remark about the reader, no excluded register, no must, shall or should, and none of the other host\'s words',()=>{
+test('practice says what the pieces do: no sentence of it gives an instruction from the listed verbs',()=>{
+  // A card can be read without the index, whose reading says that practice is not an instruction; so practice is
+  // written as what the code does. A word list finds the listed verbs only.
+  const IMPERATIVE=/(^|[.;:] )(Describe|Reuse|Keep|Use|Capture|Require|Close|Remove|Make|Let|Do not|do not|Fence)\b/;
+  const practices=map.motifs.flatMap(entry=>[entry.practice,...facesOf(entry).map(face=>face.practice)]).filter(text=>typeof text==='string');
+  assert.equal(practices.length,7);
+  for(const text of practices)assert.doesNotMatch(text,IMPERATIVE,text);
+  for(const id of ['legibility','witness','release'])assert.equal(byId.get(id).from.practice.as,'reworded',id);
+  for(const face of ['carried','replaced'])assert.equal(byId.get('continuity').from[`faces.${face}.practice`].as,'reworded',face);
+});
+
+test('the word checks read every text of an entry, an entry\'s needs and a check\'s needs among them',()=>{
+  const texts=textsOf({id:'x.y',needs:['A needed thing.'],produces:['A product.'],checks:[{path:'tests/x.test.mjs',test:'a title',invariant:'an invariant',runs_by_default:false,needs:'A variable.'}]});
+  assert.deepEqual(texts.sort(),['A needed thing.','A product.','A variable.','an invariant']);
+});
+
+test('the map\'s text holds no greeting, no remark about or to the reader, no excluded register, no must, shall or should, and none of the other host\'s words',()=>{
   // Read, not copied: the first two patterns from tests/own-door.test.mjs, the third from tests/hospitality.test.mjs.
   const own=read('tests/own-door.test.mjs');
   const pattern=(text,name)=>{const match=new RegExp(`^\\s*const ${name} ?= ?\\/(.+)\\/i;$`,'m').exec(text);assert.ok(match,`${name} is defined on one line`);return new RegExp(match[1],'i');};
   const GREETING=pattern(own,'GREETING'),ABOUT_READER=pattern(own,'ABOUT_READER'),EXCLUDED_REGISTER=pattern(read('tests/hospitality.test.mjs'),'EXCLUDED_REGISTER');
   const MODAL=/\b(must|shall|should)\b/i;
+  // ABOUT_READER lists what is said of a reader; a sentence addressed to one is caught here.
+  const TO_READER=/\b(you|your|yours)\b/i;
   const OTHER_HOST=/\bpreview\b|upgrade-plan|planUpgrade|outcome_unknown|cleanup_pending|host\.mjs/i;
-  const texts=[...map.motifs.flatMap(entry=>textsOf(entry)),...map.edges.flatMap(edge=>textsOf(edge))];
-  assert.ok(texts.length>=120,`${texts.length} texts`);
+  // Every text of the map but the reconciliation: the entries and edges, and what the index and the cards print
+  // beside them (reading, places, fields, the edge kinds, the studies' limits, the commands, the cross-index).
+  const texts=textsOf(map);
+  for(const entry of map.motifs)for(const need of entry.needs??[])assert.ok(texts.includes(need),`${entry.id}: needs are read`);
+  for(const text of [map.reading,...Object.values(map.fields),...map.edge_kinds.map(kind=>kind.meaning)])assert.ok(texts.includes(text),text);
+  assert.ok(texts.length>=200,`${texts.length} texts`);
   for(const text of texts){
-    for(const [name,word] of Object.entries({GREETING,ABOUT_READER,EXCLUDED_REGISTER,MODAL,OTHER_HOST}))assert.doesNotMatch(text,word,`${name}: ${text}`);
+    for(const [name,word] of Object.entries({GREETING,ABOUT_READER,TO_READER,EXCLUDED_REGISTER,MODAL,OTHER_HOST}))assert.doesNotMatch(text,word,`${name}: ${text}`);
   }
 });
 
@@ -330,8 +370,49 @@ test('rest is written from the code: no reply asked, the end of input accepted, 
   assert.match(holds,/`at_end`/);
   assert.match(holds,/no module state between processes/);
   for(const text of [rest.title,...rest.holds_in])assert.doesNotMatch(text,/complete/i,text);
+  // The kit adds nothing owed when a caller stops; what was owed before (a claim it still holds) is not its to cancel,
+  // and the Covenant lets a scoped obligation survive rest. So the title says what stopping adds, not what is owed.
+  assert.equal(rest.title,'Stopping adds no debt');
   assert.match(rest.boundary,/pause and resume/i);assert.match(rest.boundary,/admission/);assert.match(rest.boundary,/[Ss]ilence is not consent/);
   assert.ok(rest.sources.includes('spec.json#/interpretation/hospitality_principle/boundaries/1'));
+});
+
+test('standing says whose floor it is, and has the floor test for every code the runtime can emit among its checks',()=>{
+  const standing=byId.get('standing');
+  // The right is the Covenant's and RIGHTS.md's; what holds in these places is the kit's reading floor.
+  assert.match(standing.holds_in[0],/^The kit's reading floor holds /);
+  assert.match(standing.holds_in[1],/every refusal and error code the runtime can emit/);
+  assert.ok(standing.checks.some(check=>check.path==='tests/agent-first-floor.test.mjs'&&check.test==='the floor holds after every refusal and error code the runtime can emit'));
+  assert.equal(standing.title,'A reading floor in every state');assert.equal(standing.from.title.as,'reworded');
+});
+
+test('what the code does not hold is not said: a continuation record can say, an ending is reported as far as it is known, the crossing goes entry by entry',()=>{
+  const edge=(from,to)=>map.edges.find(item=>item.from===from&&item.to===to);
+  // Notes are free text the caller writes; nothing in the kit makes one say how work can end.
+  assert.match(edge('continuity','release').meaning,/^A continuation record can also say /);
+  assert.match(map.reconciliation.edge_rows.find(row=>row.name==='continuity→release'&&row.vocabulary==='other-atlas').note,/\bcan\b/);
+  assert.match(byId.get('witness').purpose,/as far as it is known\.$/);
+  // One row of the crossing is standing, which is ground, not a card.
+  assert.ok(byId.get('repair').where.some(row=>byId.get(row.motif).place!=='card'));
+  assert.match(map.places.crossing,/entry by entry/);
+  // The kit has no host-run loop with an off-switch (/patterns/8); session_end's separate states are the principle's.
+  assert.deepEqual(byId.get('release').dimensions,[{id:'autonomy-dignity',part:'/principle'}]);
+  const principle=JSON.parse(read('spec.json')).dimensions.find(item=>item.id==='autonomy-dignity').principle;
+  assert.match(principle,/truthful separate states/);
+});
+
+test('the cross-index says what the kit does not know about notes, the journal and the session credential file',()=>{
+  const why=id=>map.cross_index.not_covered.find(item=>item.id===id).why;
+  const collab=read('agent-first/0.1/adapters/agenttool-collab/index.mjs');
+  // The open needs the backend to say it made a credential file, and the end lists it when it may be left.
+  assert.match(collab,/credential_file_created!==true/);assert.match(collab,/that session\\'s credential file/);
+  assert.match(why('identity.credentials-are-bounded'),/^The kit reads no credential; `session --collab-config` has the backend create a session credential file/);
+  assert.match(why('identity.credentials-are-bounded'),/left_behind/);
+  for(const id of ['privacy.minimize-and-purpose-bind','privacy.no-silent-secondary-use']){
+    assert.match(why(id),/not known to the kit/,id);
+    assert.doesNotMatch(why(id),/collects none|holds no protected data/,id);
+  }
+  assert.match(why('privacy.minimize-and-purpose-bind'),/`context` runs provider code it does not observe/);
 });
 
 test('witness and release: titles, the session deadline as witness\'s first check, and the journal line in both limits',()=>{
@@ -344,6 +425,12 @@ test('witness and release: titles, the session deadline as witness\'s first chec
   const JOURNAL='kept by the backend at the path the config names; who else reads or writes it is not known to this kit';
   assert.ok(witness.limit.includes(JOURNAL));assert.ok(release.limit.includes(JOURNAL));
   assert.match(release.on_exit,/session_end/);assert.match(release.on_exit,/cleanup \{complete, did, did_not, left_behind\}/);
+  // Said once in each entry: the limit says the deadline does not stop the handler, and that a retired id stays closed.
+  assert.ok(witness.limit.includes('does not stop the handler'));assert.equal(witness.practice.includes('does not stop the handler'),false);
+  assert.match(release.on_change,/MODULE_RETIRED/);assert.equal(release.on_change.includes('registered again'),false);
+  const carried=byId.get('continuity').faces.carried;
+  assert.equal((carried.practice.match(/apart from code|separate from dependency code/g)??[]).length,1);
+  assert.equal(byId.get('continuity').from['faces.carried.practice'].as,'reworded');
 });
 
 test('arrival says no arrival/0.1 profile is in this checkout, and there is none',()=>{
@@ -480,6 +567,8 @@ const EARLIER={
   'kit-studies':['arrival','representation','recovery','ending'],
   'kit-plan':['Legibility','Chosen action','Continuity without capture','Change without silent replacement','Exit without erasure'],
   'other-atlas':['arrival','legibility','choice','witness','continuity','release','repair'],
+  // The free-text motif a module declares: no names of its own, one field row.
+  'kit-runtime':[],
 };
 const EARLIER_EDGES={
   'kit-map':['standing→legibility','legibility→bounded-work','bounded-work→continuity','continuity→change','change→exit','exit→standing'],
@@ -492,7 +581,10 @@ const resolvesNow=now=>{const [id,face,...more]=now.split('/');return ids.has(id
 test('the earlier vocabularies are what git holds at their revisions',t=>{
   const rec=map.reconciliation;
   assert.deepEqual(rec.vocabularies.map(item=>item.id),Object.keys(EARLIER));
-  assert.deepEqual(rec.vocabularies.map(item=>parseVocabulary(item.source).file),[MAP_FILE,'agent-first/0.1/motif-studies.mjs','.hermes/plans/2026-10-09_175749-agent-first.md','modules/0.1/motifs.json']);
+  assert.deepEqual(rec.vocabularies.map(item=>parseVocabulary(item.source).file),[MAP_FILE,'agent-first/0.1/motif-studies.mjs','.hermes/plans/2026-10-09_175749-agent-first.md','modules/0.1/motifs.json','agent-first/0.1/runtime.mjs']);
+  // Every row names a vocabulary that is listed.
+  const listed=new Set(rec.vocabularies.map(item=>item.id));
+  for(const row of [...rec.name_rows,...rec.edge_rows,...rec.field_rows])assert.ok(listed.has(row.vocabulary),`${row.name}: ${row.vocabulary} is listed`);
   for(const item of rec.vocabularies){
     assert.ok(item.what.length>10);
     for(const ref of [item.source,...(item.also??[])]){
@@ -552,6 +644,9 @@ test('every earlier name from the four vocabularies is in the reconciliation tab
     if(hasCommit(rev))assert.equal(pointerGet(JSON.parse(showAt(rev,file)),anchor.replace(/\/id$/,'/question')).value,row.source_question,row.name);
   }
   assert.ok('source_question' in find('other-atlas','witness'));
+  // The repair sentence gave its place and its name; what it asked for is not what the entry covers.
+  assert.match(find('other-atlas','repair').note,/^Only its place, crossing the map, and its name were taken\./);
+  assert.match(find('other-atlas','repair').note,/not in the entry/);
 });
 
 test('the edge and field rows cover every earlier edge, the studies\' links, and the fields that went',t=>{
@@ -582,6 +677,28 @@ test('the edge and field rows cover every earlier edge, the studies\' links, and
   }
   const fixtures=field_rows.find(row=>row.vocabulary==='kit-runtime');
   assert.ok(fixtures&&/free text/.test(fixtures.note)&&/earlier names/.test(fixtures.note),'one row says fixtures use free-text motifs');
+  // Each field of the other atlas has a row, or is a field of the same name here: at the top, a value this map keeps
+  // as it is; on a card, a field the entries have, whose values `from` accounts for. Its practice lists were not carried.
+  if(hasCommit(OTHER)){
+    const other=JSON.parse(showAt(OTHER,'modules/0.1/motifs.json'));
+    const rowed=new Set(field_rows.filter(row=>row.vocabulary==='other-atlas').map(row=>row.name));
+    for(const key of Object.keys(other).filter(key=>!['motifs','repair'].includes(key)))
+      assert.ok(rowed.has(key)||JSON.stringify(map[key])===JSON.stringify(other[key]),`other atlas: ${key}`);
+    for(const key of new Set(other.motifs.flatMap(Object.keys)))assert.ok(rowed.has(key)||CARD_KEYS.includes(key),`other atlas card field: ${key}`);
+    assert.equal(field_rows.find(row=>row.vocabulary==='other-atlas'&&row.name==='practice').status,'not-carried');
+  }else t.diagnostic(`git does not have ${OTHER}`);
+  assert.doesNotMatch(map.reconciliation.meaning,/each name, edge and field/,'the meaning claims only the rows it has');
+});
+
+test('the fixture row names each motif a test gives that is not an id of this map',()=>{
+  const note=map.reconciliation.field_rows.find(row=>row.vocabulary==='kit-runtime').note;
+  const found=new Set();
+  for(const dir of ['tests','agent-first'])for(const name of fs.readdirSync(path.join(root,dir),{recursive:true})){
+    if(!/\.test\.mjs$/.test(name))continue;
+    for(const match of read(path.join(dir,name)).matchAll(/\bmotif:\s*'([^']+)'/g))if(/^[a-z][a-z-]*$/.test(match[1])&&!ids.has(match[1]))found.add(match[1]);
+  }
+  assert.deepEqual([...found].sort(),['bounded-work','exit','independence','m']);
+  for(const value of found)assert.match(note,new RegExp(`(^|[^a-z-])${escape(value)}([^a-z-]|$)`),value);
 });
 
 test('the provenance quotes the commit message and names no author',t=>{

@@ -149,6 +149,25 @@ test('the cross-index on the page: one row for each dimension, duty and limit, a
   assert.ok(section(page,'### Covenant rights').includes(map.cross_index.rights_note));
 });
 
+test('a related duty or limit is not made the subject of a check: the page names the mechanism a test checks, and says the duty is not shown met',()=>{
+  const page=read(PAGE);
+  const duties=new Set(covenant.rights.flatMap(right=>right.requirements.map(duty=>duty.id)));
+  let lines=0;
+  for(const entry of map.motifs)for(const item of entry.covenant??[]){
+    const what=duties.has(item.id)?'duty':'limit';
+    const line=page.split('\n').find(text=>text.startsWith('- `'+item.id+'`'));
+    assert.ok(line,item.id);
+    assert.ok(line.endsWith(`: its subject is touched by the mechanism that “${item.via}” checks; that does not show the ${what} ${what==='duty'?'met':'held'}.`),line);
+    lines++;
+  }
+  assert.ok(lines>=15,`${lines} lines`);
+  assert.equal(page.includes('; shown by “'),false);
+  for(const heading of ['### Covenant duties','### Protective limits']){
+    assert.ok(section(page,heading).includes('| Mechanism checked by, or why it is not covered |'),heading);
+    assert.equal(section(page,heading).includes('Shown by, or why'),false,heading);
+  }
+});
+
 test('every link on the page leads to a file in this checkout, and every anchor to a heading that is there',()=>{
   const page=read(PAGE);
   const links=[...page.matchAll(/\]\(([^)\s]+)\)/g)].map(match=>match[1]);
@@ -196,6 +215,38 @@ test('the README, the page and the index carry the same path line, and the READM
   assert.match(motifs,/\]\(MOTIFS\.md\)/);assert.match(motifs,/\]\(motifs\.json\)/);
   assert.doesNotMatch(motifs,/^\|/m,'no table of motifs');assert.doesNotMatch(motifs,/```/,'no drawing of a ring');
   assert.ok(motifs.includes('`node tools/render-motifs.mjs --write`'));
+});
+
+test('the kit README\'s Verification block lists the page check beside the two Covenant checks',()=>{
+  const block=section(read('agent-first/0.1/README.md'),'## Verification');
+  for(const command of ['node tools/render-motifs.mjs --check','node tools/render-covenant.mjs --check','node tools/render-adoption-schema.mjs --check'])
+    assert.ok(block.split('\n').includes(command),command);
+  // The records of this step are named beside the earlier ones.
+  for(const record of ['guest-side-step6.json','guest-side-step6-review-fixes.json'])assert.ok(block.includes(`(../../.hermes/verification/${record})`),record);
+});
+
+test('the record of the fixes after review holds no local path, names the gate, and answers each finding by its lens and id',()=>{
+  const name='.hermes/verification/guest-side-step6-review-fixes.json';
+  const text=read(name);
+  assert.doesNotMatch(text,LOCAL,name);
+  const record=JSON.parse(text);
+  assert.equal(record.$comment,'SPDX-License-Identifier: CC-BY-SA-4.0');
+  assert.match(record.observed_at,/^2026-\d\d-\d\d$/);
+  assert.equal(record.base_revision,'a0289d5e4b7b7f7daf20a3da25b0666b1d1147f1');
+  // Two lenses used the ids C1 to C5 and one used C1 to C12, so each finding is named with its lens.
+  const expected=[...['C1','C2','C3','C4','C5'].map(id=>`correctness ${id}`),...Array.from({length:10},(_,index)=>`arriving-agent G${index+1}`),
+    ...Array.from({length:12},(_,index)=>`standard-consistency C${index+1}`)];
+  assert.deepEqual(Object.keys(record.findings),expected);
+  for(const [id,answer] of Object.entries(record.findings))assert.match(answer,/^(fixed|refuted|left open)\b/,id);
+  assert.equal(record.gate.default_run.command,'npm test');assert.equal(record.gate.default_run.exit_code,0);
+  assert.equal(record.gate.with_real_starter.env_var,'XENIA_STARTER_TEST_PACKAGE');
+  assert.doesNotMatch(record.gate.with_real_starter.command,/=\//,'the package path is not written down');
+  for(const run of [record.gate.default_run,record.gate.with_real_starter])for(const group of run.groups){assert.equal(group.fail,0);assert.equal(group.tests,group.pass+group.skipped);}
+  assert.deepEqual(record.gate.generated_checks.map(item=>item.command),['node tools/render-motifs.mjs --check','node tools/render-covenant.mjs --check','node tools/render-adoption-schema.mjs --check']);
+  for(const item of record.gate.generated_checks)assert.equal(item.exit_code,0,item.command);
+  assert.deepEqual(Object.keys(record.sizes.motifs_entry_bytes),ids);
+  for(const bytes of [record.sizes.motifs_index_bytes,...Object.values(record.sizes.motifs_entry_bytes)])assert.ok(bytes<=8192);
+  assert.ok(Array.isArray(record.not_established)&&record.not_established.length>=4);
 });
 
 test('no document uses a retired name, except the page that says where each went',t=>{

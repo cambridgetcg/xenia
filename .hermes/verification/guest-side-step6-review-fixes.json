@@ -1,0 +1,117 @@
+{
+  "$comment": "SPDX-License-Identifier: CC-BY-SA-4.0",
+  "scope": "Fixes made after the review of guest-side step 6 (one motif map). Three lenses reported 27 findings: correctness C1 to C5, arriving-agent G1 to G10, and standard-consistency C1 to C12; two lenses used the same ids, so each finding is named here with its lens. Each was reproduced first. Every change below has a test that was seen failing before it, except where a finding says otherwise.",
+  "observed_at": "2026-11-17",
+  "base_revision": "a0289d5e4b7b7f7daf20a3da25b0666b1d1147f1",
+  "base_note": "The last commit of step 6 (atlas-page-and-record). The step's own record, guest-side-step6.json, is left as it was: it describes the tree of that commit, and its test compares it with that commit.",
+  "commits": [
+    {
+      "what": "the fixes, the regenerated page, the lineage and README lines, and this record",
+      "commit": "the commit that carries this file"
+    }
+  ],
+  "gate": {
+    "node": "v24.18.1",
+    "default_run": {
+      "command": "npm test",
+      "exit_code": 0,
+      "note": "Three test groups, in order: library (tests/*.test.mjs), surface, observe.",
+      "groups": [
+        {"tests": 623, "pass": 616, "fail": 0, "skipped": 7},
+        {"tests": 47, "pass": 47, "fail": 0, "skipped": 0},
+        {"tests": 10, "pass": 10, "fail": 0, "skipped": 0}
+      ]
+    },
+    "with_real_starter": {
+      "command": "XENIA_STARTER_TEST_PACKAGE=<reviewed-local-package> npm test",
+      "env_var": "XENIA_STARTER_TEST_PACKAGE",
+      "exit_code": 0,
+      "note": "The same gate with the opt-in variable set to a reviewed local copy of the Local Starter release the lock pins; its path is not written here. The one test still skipped needs XENIA_AGENTTOOL_SKILLS_MODULE, which was not set.",
+      "groups": [
+        {"tests": 623, "pass": 622, "fail": 0, "skipped": 1},
+        {"tests": 47, "pass": 47, "fail": 0, "skipped": 0},
+        {"tests": 10, "pass": 10, "fail": 0, "skipped": 0}
+      ]
+    },
+    "generated_checks": [
+      {"command": "node tools/render-motifs.mjs --check", "exit_code": 0},
+      {"command": "node tools/render-covenant.mjs --check", "exit_code": 0},
+      {"command": "node tools/render-adoption-schema.mjs --check", "exit_code": 0}
+    ]
+  },
+  "findings": {
+    "correctness C1": "fixed. The word check read no `needs`: the key was dropped at every depth. It now reads an entry's needs and a check's needs, and every text of the map but the reconciliation (reading, places, fields, the edge kinds, the studies' limits, the commands, the cross-index), with a check for you and your added. A test of the reader itself, that it returns both kinds of needs, was seen failing before the change. In a copy of the checkout without git, a must in choice.needs, the other host's words in witness.needs, a greeting in release.needs and a should in reading each made one test fail.",
+    "correctness C2": "fixed. The back and optional-return kinds are asserted by phrase, the optional-return kind now says that the test being there does not show the edge is right, and each clause of the return edge is asserted. In the same copy, 'Anything at all.' as either kind's meaning, and the return edge cut to its first clause, each made one test fail.",
+    "correctness C3": "fixed. The card test prints the room the fullest card has left as a diagnostic, and sizes below record it. The fixes also made room: continuity went from 8176 to 8107 bytes, 85 bytes under the bound, while gaining the caller line and the usage note.",
+    "correctness C4": "fixed. arrival, in both lists, still shows the study, as a test held before; the STUDY_NOT_FOUND detail and `motifs study help` now say that an id in both lists shows the study and that `motifs <id>` lists an entry's studies. `motifs <entry>/<face>`, for a face the map has, is MOTIF_NOT_FOUND whose first next action is `motifs <entry>`, and `help motifs` says that in now_at a/b is face b of entry a.",
+    "correctness C5": "fixed. The map test's header names `help` and `motifs <id>`. The commands-note comment names catalog, explain, motifs study list and motifs study help as examples of outputs without a not_established; each was run to confirm it. The README's Verification block lists node tools/render-motifs.mjs --check, held by a test.",
+    "arriving-agent G1": "fixed, by the second way the finding gives. The five practices that read as instructions (legibility, witness, both faces of continuity, release) now say what the code does, each with its `from` marked reworded, and a test holds every practice to a list of imperative verbs. Each card now lists the caller line in not_established. No reading line was added to the cards: at about 95 bytes on every card it did not fit continuity, and practice written as what the code does needs no frame.",
+    "arriving-agent G2": "fixed. Standing's title is 'A reading floor in every state', with from.title reworded, and the word check now looks for you and your. Rest's 'the caller does not owe it', which the design asked for, stays.",
+    "arriving-agent G3": "fixed. A card's commands_note ends: `help <command>` gives its usage.",
+    "arriving-agent G4": "fixed. Repeats were removed to make room: the sentence of continuity's boundary that its replaced face's limit says again, the repeated last sentence of the carried practice, and the last clause of the continuity back edge. Continuity has 85 bytes of room.",
+    "arriving-agent G5": "fixed. `motifs study show <earlier name>` is STUDY_NOT_FOUND with now_at and, for each entry it went to, a next action `motifs study show <entry>`. Without the map helpers or the map, the answer is the plain one.",
+    "arriving-agent G6": "fixed. 'the representation study can consume' and 'no other study runs first'. A test holds the study cards to no must, shall or should, and to no study id followed by the word motif.",
+    "arriving-agent G7": "fixed in part. Inside cards: witness's practice no longer says again that the deadline does not stop the handler; release's on_change now says that activating, pausing, upgrading or calling a retiring or retired module is MODULE_RETIRED, and no longer repeats its limit; the carried practice's repeated sentence is gone. In the index, 'nothing enforces' is now printed twice, by the path line and the then kind; the sentence was taken out of reading. The path line keeps it, because the README, the page and the index carry the same line. self_sufficiency.network stays: it is the network sentence, used word for word in arrive, help, catalog, the README and the map.",
+    "arriving-agent G8": "fixed. The index carries `fields`.",
+    "arriving-agent G9": "fixed. The optional-return kind says that the test it names does not show the edge is right, and rest's not_covered says that no test starts a second process to show it begins with no module state. No such test was written.",
+    "arriving-agent G10": "fixed in part. Each row of `renamed` carries its status, so bounded-work reads as split; `motifs <entry>/<face>` points to the entry; the README uses help's wording for what the index lists. Left open: the earlier display names (the 0f73c10 README table and kit-map titles, such as 'Bounded work') are not a vocabulary of the reconciliation, so they get no now_at.",
+    "standard-consistency C1": "fixed. The page reads '`<duty>`, a duty of the right X (`<right>`): its subject is touched by the mechanism that “<test>” checks; that does not show the duty met.', and for a limit 'that does not show the limit held.'; both tables head that column 'Mechanism checked by, or why it is not covered'.",
+    "standard-consistency C2": "fixed. The return edge now reads: no module state or admission carries over, and the kit adds no obligation; session_end's left_behind lists what a session's end left; notes and a Collab journal kept on disk can be read again. Its kind no longer calls it a choice or says nothing is carried, the reconciliation note no longer says 'nothing but notes', and rest's title is 'Stopping adds no debt'. A test reads the adapter for the claim it can leave unreleased.",
+    "standard-consistency C3": "fixed. The two privacy reasons now say that what the notes and a Collab journal hold is not known to the kit, the first adding that `context` runs provider code it does not observe. The credentials reason says the kit reads no credential, and that `session --collab-config` has the backend create a session credential file, which session_end lists in left_behind when it is not known to be removed. A test ties that to the adapter's code.",
+    "standard-consistency C4": "fixed. The dated lineage line counts field values and connection meanings apart, and a test reads both counts from the map. With continuity's boundary shortened, the field values are six word for word and seven reworded; the connection meanings are five word for word and one reworded.",
+    "standard-consistency C5": "fixed. The repair name row says that only the sentence's place and its name were taken, and names what of the sentence is not in the entry; the lineage line says 'its repair sentence's place, as the crossing entry repair (not the sentence's text)'.",
+    "standard-consistency C6": "fixed. 'A continuation record can also say how work can pause or end without losing its meaning.' The edge row note says its modal verb is now can.",
+    "standard-consistency C7": "fixed. holds_in begins 'The kit's reading floor holds in every module state', and standing's checks gain the floor test for every refusal and error code the runtime can emit, with its invariant.",
+    "standard-consistency C8": "fixed, as arriving-agent G1: practice says what the code does, and the caller line is on every card.",
+    "standard-consistency C9": "fixed, as arriving-agent G10: the README uses help's wording, held by a test.",
+    "standard-consistency C10": "fixed, as correctness C4.",
+    "standard-consistency C11": "fixed. kit-runtime is a listed vocabulary, and a test holds every row to a listed vocabulary. The fixture row names bounded-work, exit, independence and m with their files, and a test finds each motif value a test file gives that is not an id of the map in that row. Field rows were added for the other atlas's schema, status, self_sufficiency and practice; a test holds every field of the other atlas to a row or a field of the same name; the meaning no longer claims every field.",
+    "standard-consistency C12": "fixed. The crossing goes 'entry by entry'; witness's purpose ends 'reported as far as it is known'; release relates to autonomy-dignity at /principle, and a test reads that principle's words about separate states."
+  },
+  "sizes": {
+    "motifs_index_bytes": 8094,
+    "motifs_entry_bytes": {
+      "standing": 5482,
+      "rest": 5004,
+      "arrival": 5900,
+      "legibility": 7033,
+      "choice": 7338,
+      "witness": 7666,
+      "continuity": 8107,
+      "release": 7704,
+      "repair": 5847
+    },
+    "limit_bytes": 8192,
+    "least_room": "continuity, 85 bytes; the index has 98",
+    "arrive_bytes": 8157,
+    "catalog_bytes": 13771,
+    "motifs_json_bytes": 81541,
+    "motifs_md_bytes": 77759,
+    "lineage_md_bytes": 7307,
+    "note": "Bytes of what each command printed to stdout, run with PATH empty from the repository root, and of three files. Before these fixes the index was 7989 bytes and continuity 8176."
+  },
+  "tests_first": [
+    "The tests for these findings were written before any change to the map, the helpers, the problem table, the CLI or the documents. On the focused files (the motif map, motifs, page, one-door, studies, problems and floor tests) 24 of 106 failed.",
+    "The test that practice gives no instruction from the listed verbs was added after the first plan (a reading line on each card) was dropped for size, and was seen failing before the practices were reworded.",
+    "The test of the word reader was seen failing while `needs` was still left out, and passing once it was read.",
+    "Two existing tests caught changes and were kept: the arrive test that the index offers the study journey (the first trim had dropped it, and it was put back), and the card test's exact commands note."
+  ],
+  "edited_existing_tests": [
+    "tests/agent-first-motif-map.test.mjs: the header; the set of keys not read as text (needs removed; the reconciliation added); the word-check test widened from the entries and edges to every text of the map but the reconciliation, with a check for you and your; the reading is asserted to no longer say reading order; the return edge's 'if the caller chooses' is now asserted absent, with the new clauses asserted; the vocabulary list gains kit-runtime and its file. The other changes add assertions.",
+    "tests/agent-first-motifs.test.mjs: the index keys gain fields; each renamed row gains status; the card's commands note has its new text; the README sentence about now_at names `motifs study show`. The other changes add assertions or tests.",
+    "tests/agent-first-one-door.test.mjs, tests/agent-first-motif-page.test.mjs and tests/agent-first-motif-studies.test.mjs: assertions and tests added; no existing assertion changed."
+  ],
+  "not_established": [
+    "that any mapping is right beyond its pointers resolving, or that any duty is met: the page now says the second in each relation",
+    "that the word checks find every instruction, greeting or remark about a reader: they find the listed words only",
+    "that a later process starts with no module state: no test runs two processes for it, and rest says so",
+    "that the Collab adapter works with the real bundle or its backend: no test or command of these fixes started either",
+    "anything about a caller's identity, authority, safety or inner state, or about who reads the page or the cards"
+  ],
+  "process_notes": [
+    "No file under src/, surface/, work/, covenant/ or observe/ was changed, nor package.json, STATE.md, AGENT-FEEDBACK.md or AGENTS.md. Nothing was pushed, deployed or published, and no network request was made.",
+    "No AgentTool Collab server was started and no MCP collab tool was called. The mutation runs were made in a temporary copy of the checkout without its git folder, outside the repository.",
+    "The other lineage was read with git show at beed37a only."
+  ],
+  "record_note": "Written by hand from the door's output, git and the logs of the gate runs."
+}

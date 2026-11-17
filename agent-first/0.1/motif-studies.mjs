@@ -13,7 +13,7 @@ const cards = [
     study: 'Construct a manifest and inspect its real Response value, without hosting it.',
     standalone: true,
     needs: 'Explicit service/resource definitions; the standalone study supplies a fixed fixture.',
-    gives: 'A resource description that the representation motif can consume.',
+    gives: 'A resource description that the representation study can consume.',
     sources: [{ path: 'src/surface-0.1.ts', symbol: 'defineSurfaceManifest' }, { path: 'README.md', symbol: 'Discovery & Addressing' }],
     connects_to: [{ id: 'representation', carries: 'one declared resource and its supported forms' }],
     not_established: ['a deployed service', 'conformance', 'identity or authority'],
@@ -51,7 +51,7 @@ const cards = [
     mechanism: 'A native terminal problem has no next actions; this fixture also explicitly disables retry.',
     study: 'Construct a clearly labelled software-fixture ending, not a person’s refusal.',
     standalone: true,
-    needs: 'Explicit terminal status and detail; no other motif must run first.',
+    needs: 'Explicit terminal status and detail; no other study runs first.',
     gives: 'A complete local stopping point with no follow-up action.',
     sources: [{ path: 'src/surface-0.1.ts', symbol: 'createSurfaceProblem' }, { path: 'RIGHTS.md', symbol: 'Refusal and disagreement' }, { path: 'RIGHTS.md', symbol: 'Rest, play, and limits' }],
     connects_to: [],
@@ -156,7 +156,7 @@ export async function studyCommand(args = []) {
   const [command = 'list', id] = args;
   if (['help', '--help', '-h'].includes(command) && args.length === 1) {
     return { kind: 'study-help', commands: ['motifs study', 'motifs study show <study-id|motif-id>', 'motifs study run <id>', 'motifs study journey'],
-      ids: cards.map(card => card.id), meaning: 'Metadata is inert; run/journey execute native helpers only on local synthetic inputs.' };
+      ids: cards.map(card => card.id), meaning: 'Metadata is inert; run/journey execute native helpers only on local synthetic inputs. An id in both lists shows the study; `motifs <id>` lists the studies of an entry.' };
   }
   if (command === 'list' && args.length <= 1) return { kind: 'study-list', status: 'informative repository-only studies, not the whole motif map', studies: listStudies() };
   if (command === 'show' && args.length === 2) {

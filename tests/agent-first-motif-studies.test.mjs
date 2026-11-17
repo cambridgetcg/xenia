@@ -218,3 +218,19 @@ test('a study names itself as a study: its kinds and codes are study words, not 
   assert.equal(/MOTIF_(INVALID_ARGUMENTS|NATIVE_CONTRACT_CHANGED|STUDY_FAILED|STUDY_UNAVAILABLE)/.test(cli), false, 'the CLI uses the study codes');
   assert.match(cli, /'STUDY_FAILED'/);
 });
+
+test('a study card calls a study a study and uses no must, shall or should; the help says which answers when an id is in both lists', async () => {
+  const { listStudies, studyCommand } = await motifs();
+  const cards = listStudies();
+  for (const card of cards) {
+    const text = JSON.stringify(card);
+    assert.doesNotMatch(text, /\b(must|shall|should)\b/i, card.id);
+    // The map's entries are motifs; the other cards here are studies.
+    for (const other of cards) assert.equal(new RegExp(`\\b${other.id} motif\\b`).test(text), false, `${card.id} names the ${other.id} study`);
+    assert.doesNotMatch(text, /\bother motif\b/, card.id);
+  }
+  assert.equal(cards.find(card => card.id === 'arrival').gives, 'A resource description that the representation study can consume.');
+  assert.equal(cards.find(card => card.id === 'ending').needs, 'Explicit terminal status and detail; no other study runs first.');
+  const help = await studyCommand(['help']);
+  assert.match(help.meaning, /An id in both lists shows the study; `motifs <id>` lists the studies of an entry\./);
+});
