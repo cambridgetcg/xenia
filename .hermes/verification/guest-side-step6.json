@@ -1,0 +1,211 @@
+{
+  "scope": "Guest-side step 6 (one motif map): the kit's motif map rewritten in place as ground, a path of six cards and a crossing, with typed edges, tables of studies, commands and modules, a cross-index and a reconciliation of the earlier vocabularies (atlas-data); `motifs` as an index and `motifs <id>` as one entry, each under 8192 bytes, with earlier names answered (atlas-wired); and the page MOTIFS.md generated from the map and checked by npm test, the documents that still used retired names, a dated line in the lineage note, and this record (atlas-page-and-record). Local execution only.",
+  "observed_at": "2026-11-17",
+  "date_note": "The first two tasks were committed on 2026-11-16 (UTC). The third task, the gate runs and the walk recorded here are of 2026-11-17, by the clock of the machine that ran them.",
+  "base_revision": "0f73c108b28608103b27693ccaa37c303c523c81",
+  "base_note": "The commit this step started from: the end of step 5 and its fixes.",
+  "head_before_record": "c5bca37e11cbcabff1989997cb47f46273af03dc",
+  "commits": [
+    {
+      "task": "atlas-data",
+      "commit": "e84e8b5a7e9f10db793d79e0cc2a7c7f3a279bbd"
+    },
+    {
+      "task": "atlas-wired",
+      "commit": "c5bca37e11cbcabff1989997cb47f46273af03dc"
+    },
+    {
+      "task": "atlas-page-and-record",
+      "commit": "the commit that carries this file"
+    }
+  ],
+  "gate": {
+    "node": "v24.18.1",
+    "default_run": {
+      "command": "npm test",
+      "exit_code": 0,
+      "note": "npm test runs three test groups; totals per group in order: library (tests/*.test.mjs), surface, observe. The library group includes tests/agent-first-motif-page.test.mjs, which runs node tools/render-motifs.mjs --check.",
+      "groups": [
+        {
+          "tests": 611,
+          "pass": 604,
+          "fail": 0,
+          "skipped": 7,
+          "cancelled": 0
+        },
+        {
+          "tests": 47,
+          "pass": 47,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        },
+        {
+          "tests": 10,
+          "pass": 10,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        }
+      ]
+    },
+    "with_real_starter": {
+      "command": "XENIA_STARTER_TEST_PACKAGE=<reviewed-local-package> npm test",
+      "env_var": "XENIA_STARTER_TEST_PACKAGE",
+      "exit_code": 0,
+      "note": "The same gate with the opt-in variable set to a reviewed local copy of the Local Starter release the lock pins. The path of that copy is not written here. The default run skips seven tests: the six that need that variable, and the Skills inspector's real-provider test, which needs XENIA_AGENTTOOL_SKILLS_MODULE. With the variable set, only the last is skipped; XENIA_AGENTTOOL_SKILLS_MODULE was not set.",
+      "groups": [
+        {
+          "tests": 611,
+          "pass": 610,
+          "fail": 0,
+          "skipped": 1,
+          "cancelled": 0
+        },
+        {
+          "tests": 47,
+          "pass": 47,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        },
+        {
+          "tests": 10,
+          "pass": 10,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        }
+      ]
+    },
+    "generated_checks": [
+      {
+        "command": "node tools/render-motifs.mjs --check",
+        "exit_code": 0
+      },
+      {
+        "command": "node tools/render-covenant.mjs --check",
+        "exit_code": 0
+      },
+      {
+        "command": "node tools/render-adoption-schema.mjs --check",
+        "exit_code": 0
+      }
+    ],
+    "generated_checks_note": "Each was run on its own from the repository root after the last change to a file it reads; each also runs inside npm test."
+  },
+  "sha256": {
+    "agent-first/0.1/LINEAGE.md": "406f95784e98a519c98776b115749d7d4b041b97b7dd7d11bacebf915544eec7",
+    "agent-first/0.1/MOTIF-STUDIES.md": "49e1ddf3a60b196a6acfceaae74791ee8975f8016610731da8e76570cc921130",
+    "agent-first/0.1/MOTIFS.md": "f0e4ea40770dd9c978fd58a362569e4b09648d1898fbbc150f4073b57f4f7053",
+    "agent-first/0.1/README.md": "5675c7cee757caf4259b6d0170a3dc34fb3146814a5266b18d7ae5c04bf6faa1",
+    "agent-first/0.1/adapters/agenttool-collab/card.json": "6a292c9c802ec8e45a396421746788c2349da5049d2301ffc9007923a9e24802",
+    "agent-first/0.1/adapters/telescope/README.md": "7c84879b0c2bbf87fb3f1e83de77d15522600f72322567d64c5c5569d26ebf9f",
+    "agent-first/0.1/arrive.mjs": "a2702ff555bf0790355c0adef941f7d111230d1c992ba36b1c795dee747a1cbb",
+    "agent-first/0.1/cli.mjs": "b31c8604e11705a039edc8f5cfb8ac061e53c9939bba221b60dc17a8a12772d1",
+    "agent-first/0.1/modules.mjs": "928a436b336ac58ce227267a1d5c9bfbd3ba6d7456f7bc2a89efdfa83d4c3aaf",
+    "agent-first/0.1/motif-map.mjs": "5a7eccaca81caeaa8d8f3b4cc331cc2f6350179187389df994c5da757a4a72c3",
+    "agent-first/0.1/motif-studies.mjs": "9b29e3e9e414556bd2cd6f06a463330ef05ec016fb840cece03b12418a308d61",
+    "agent-first/0.1/motifs.json": "d7acac10530a5b4f0f9e8ec4b07f004ec68bd207c60eb91d0a1d762cca76a4ee",
+    "agent-first/0.1/problems.mjs": "842faed000fdf29f93e0989b8ef5cd6887956c9d45dfd160d8f791157adfd751",
+    "tests/agent-first-floor.test.mjs": "dbc28cb0d80939eeb511bd768bb0155bd0f1363142a8efffeb2d0d015de2e842",
+    "tests/agent-first-motif-map.test.mjs": "dc84e089515cd3bd42865f5d23cb2a09dd943f66ac9b9b2d8e852c7a61a47a88",
+    "tests/agent-first-motif-page.test.mjs": "83e20bb46a4ace85051d072dec9957d06bd94e01d54aa53123e9ddad8e307828",
+    "tests/agent-first-motif-studies.test.mjs": "960d58c6c4305c87a54a3f0d88d5fa57d13bc05dce3607851dfa19d205cb6d7f",
+    "tests/agent-first-motifs.test.mjs": "f2387c2acc729d939fb028e61c61f32a07af0de6c7cb40689a78300d561958f2",
+    "tests/agent-first-one-door.test.mjs": "16ff94a30d477b43d9188e7f239f9ef588d482aad6c76e0a6cb0c9e69d90f2c0",
+    "tests/agent-first-problems.test.mjs": "46f304334bee2e0a756fdae831e4fd7f19347dc9206d566a8406366fbda2efc1",
+    "tools/render-motifs.mjs": "9a75970a36a0b2474a3ec08bb67fbd40d3ab42d14921fc1897e2a420187947e8"
+  },
+  "sha256_note": "Every file changed since base_revision, by all three tasks, as it stands in the tree of the commit that carries this file. This file is not in its own map. tests/agent-first-motif-page.test.mjs compares the list and each digest with git where git has that commit.",
+  "sizes": {
+    "motifs_index_bytes": 7989,
+    "motifs_entry_bytes": {
+      "standing": 5012,
+      "rest": 4813,
+      "arrival": 5717,
+      "legibility": 6845,
+      "choice": 7267,
+      "witness": 7613,
+      "continuity": 8176,
+      "release": 7485,
+      "repair": 5742
+    },
+    "limit_bytes": 8192,
+    "motifs_json_bytes": 78521,
+    "motifs_md_bytes": 73926,
+    "lineage_md_bytes": 7162,
+    "arrive_bytes": 8157,
+    "note": "Bytes of what each command printed to stdout, run with PATH empty from the repository root, and of three files. The page has no stated bound; the note has one of 8192 bytes, held by tests/agent-first-one-door.test.mjs."
+  },
+  "tests_first": {
+    "atlas-data": "Reported by that task, not re-run for this record: tests/agent-first-motif-map.test.mjs was written first and failed 25 of its 27 tests on the old map.",
+    "atlas-wired": "Reported by that task, not re-run for this record: 17 of 63 focused tests failed before the change.",
+    "atlas-page-and-record": [
+      "tests/agent-first-motif-page.test.mjs (12 tests), one new test in tests/agent-first-one-door.test.mjs and the `page` assertions in tests/agent-first-motifs.test.mjs were written before renderMotifs, the generator, the page, the document changes, the lineage line and this record. On those three files, 13 of 30 tests failed.",
+      "One new test passed when written: that the helpers import nothing and read no file, clock, environment or network. motif-map.mjs imported nothing before this task; the test holds that for the renderer added to it.",
+      "The retired-name test was corrected after the page existed: it had counted release's title, which release kept from the kit map's exit, as retired. It passed before and after the correction, so the corrected form was never seen failing.",
+      "The record test failed in the full gate run made before this file existed (library group: 611 tests, 603 pass, 1 fail, 7 skipped; npm test exit 1)."
+    ]
+  },
+  "edited_existing_tests": {
+    "note": "Tests that existed before a task and were edited by it, not only extended. Listed so that a weakened assertion cannot hide among additions.",
+    "by_earlier_tasks_read_from_their_diffs": [
+      "tests/agent-first-floor.test.mjs (atlas-data): the assertions on the old Standing pointers, the test of Bounded work and the test of Exit were removed; assertions on standing, witness, continuity's faces and release replace them.",
+      "tests/agent-first-motifs.test.mjs and tests/agent-first-problems.test.mjs (atlas-data): old ids and study relations changed to the new ones.",
+      "tests/agent-first-motif-map.test.mjs (atlas-wired): a card's not_established no longer has to list each limit of the entry, which the card prints in full.",
+      "tests/agent-first-motif-studies.test.mjs and tests/agent-first-problems.test.mjs (atlas-wired): the study kinds, the key study_card and the STUDY_ codes; the assertion that `motifs` prints motifs.json plus next was removed, because `motifs` now prints an index.",
+      "tests/agent-first-motifs.test.mjs (atlas-wired): rewritten for the index and the card."
+    ],
+    "this_task": [
+      "tests/agent-first-motifs.test.mjs: the index's key list gains `page`, and its value is asserted. No assertion was removed.",
+      "tests/agent-first-one-door.test.mjs: one test added; no existing assertion changed."
+    ]
+  },
+  "walk": {
+    "path": "As an arriving caller with the door's output only: arrive, then motifs, then motifs witness and motifs rest, then motifs continuity/replaced and motifs change to follow up on the index.",
+    "read": [
+      "arrive",
+      "motifs",
+      "motifs witness",
+      "motifs rest",
+      "motifs continuity/replaced",
+      "motifs change"
+    ],
+    "guessed": [
+      "Paths in the index (`use` names agent-first/0.1/motifs.json, `page` names agent-first/0.1/MOTIFS.md) were taken to be relative to the repository root; neither output says so.",
+      "`renamed` gives continuity/replaced as where change went. Nothing in the index says that the part after the slash is a face of continuity, not an id; `motifs continuity/replaced` is MOTIF_NOT_FOUND (exit 2, with the valid ids). `motifs change` answers with `motifs continuity` as its next action.",
+      "A card's covenant[].via is a test title with no path. Its file was found by matching it against the entry's checks[].test. That a via is a check on the entry, and does not show the duty met, is said in the map's cross_index.meaning, which neither the card nor the index prints.",
+      "dimensions[].part (for witness /patterns/5) was taken to be a JSON Pointer into the spec.json dimension of that id; the card does not name the file, and what rest's /patterns/8 of legible-exchange-no-scoreboard says could be read only in spec.json.",
+      "`from` sources such as kit-map#/motifs/2/name name vocabularies that are defined in the map's reconciliation and on the page, not in the card or the index.",
+      "A command row lists the entries it touches, but no output says what touching means; `does` is glossed and that relation is not."
+    ],
+    "read_without_guessing": [
+      "What to run next: `use` gives motifs <id>.",
+      "That rest and repair have no edges, and that release leaves only by the optional return.",
+      "What witness's first check holds: its invariant is printed beside the test title.",
+      "That a command's `does` says what it does, not what it establishes."
+    ]
+  },
+  "not_established": [
+    "that any duty of the Covenant is met: a related id names a duty or limit whose subject a mechanism touches, with a check of that mechanism",
+    "conformance of this kit, of any host, or of the whole framework",
+    "that any mapping in the map is right beyond its pointers resolving: the tests show that each file, symbol, heading and test title named is there, and that each from claim matches its source where git has the revision",
+    "that an entry describes a running service: the index, the cards and the page describe code in this checkout",
+    "that a passing check establishes a motif",
+    "anything about a caller's identity, authority, safety or inner state, or about who reads the page",
+    "that the Collab adapter works with the real bundle or its backend: no test or command of this step started either",
+    "that the page reads as intended in any particular Markdown viewer: it was read as text, and its links and anchors were checked against this checkout with the slug rule of tests/own-door.test.mjs only",
+    "that the retired-name test finds every use of an earlier name: it looks for the listed names in tracked Markdown and in the kit's code and data, not in .hermes/ records, test fixtures or the other lineage",
+    "that the walk recorded here is how another reader would read the door: it is one reading, by the agent that wrote the step"
+  ],
+  "process_notes": [
+    "No file under src/, surface/, work/, covenant/ or observe/ was changed by this step, nor package.json, STATE.md, AGENT-FEEDBACK.md, AGENTS.md or CLAUDE.md. Nothing was pushed, deployed or published.",
+    "No network request was made. No AgentTool Collab server was started and no MCP collab tool was called.",
+    "The other lineage was read with git show only, at beed37a: modules/0.1/motifs.mjs and modules/0.1/motifs.test.mjs. The shape of its renderer and its first test were ported; no file of it is loaded.",
+    "npm test deletes and rebuilds dist/, which git ignores.",
+    "The new tests write only in temporary folders outside the checkout.",
+    "Session test fixtures that use the free-text motifs bounded-work and exit were left as they are, as the map's reconciliation says."
+  ],
+  "record_note": "Written by a script kept outside the repository, from git, from the door's own output and from the logs of the two gate runs."
+}

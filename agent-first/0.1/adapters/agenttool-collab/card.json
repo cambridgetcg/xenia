@@ -12,7 +12,7 @@
     "version": "0.1.0-dev.0",
     "contract": "xenia.module.agenttool-collab/0.1-development",
     "title": "A shared local journal",
-    "motif": "bounded-work",
+    "motif": "witness",
     "description": "Optional: tasks, claims, reports and an event page in one AgentTool Collab journal on this device, through a backend process that open starts. A claim is a note in the journal, not a lock and not permission.",
     "source": "agent-first/0.1/adapters/agenttool-collab/index.mjs. The backend is separate AgentTool code (Apache-2.0) that this kit does not contain."
   },

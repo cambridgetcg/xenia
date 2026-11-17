@@ -5,7 +5,7 @@
 export const ARRIVE_LIMIT_BYTES=8192;
 export const READ_ONLY=[
   {argv:['help'],what:'List every command and its exit codes.'},
-  {argv:['motifs'],what:'Read the motif map: six questions the pieces keep answerable.'},
+  {argv:['motifs'],what:'Read the motif map: which file and test hold each concern.'},
   {argv:['motifs','study','list'],what:'List the small studies that examine a motif.'},
   {argv:['catalog'],what:'List the core modules and the adapters, with their declared effects.'},
   {argv:['explain','xenia.surface'],what:'Describe one module: each operation\'s card (what to send, an example, what comes back, who checks the input) and its refusals. An adapter id works in place of the module id.'},

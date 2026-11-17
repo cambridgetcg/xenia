@@ -158,41 +158,46 @@ test('the same reads succeed after the door has refused something',()=>{
 
 test('the Standing motif points at this floor, with the covenant draft as secondary',()=>{
   const standing=motifs.motifs.find(motif=>motif.id==='standing');
-  assert.equal(standing.implementation[0],'agent-first/0.1/runtime.mjs');
-  assert.equal(standing.checks[0],'tests/agent-first-floor.test.mjs');
-  assert.ok(standing.implementation.includes('agent-first/0.1/modules.mjs'),'the covenant-draft pointer stays, as secondary');
-  assert.ok(standing.checks.includes('tests/agent-first-modules.test.mjs'));
-  assert.match(standing.practice,/describe|catalog|read/i);
+  assert.equal(standing.place,'ground');
+  assert.equal(standing.implementation[0].path,'agent-first/0.1/runtime.mjs');
+  assert.equal(standing.checks[0].path,'tests/agent-first-floor.test.mjs');
+  assert.ok(standing.implementation.some(item=>item.path==='agent-first/0.1/modules.mjs'),'the covenant-draft pointer stays, as secondary');
+  assert.ok(standing.checks.some(check=>check.path==='tests/covenant-starter.test.mjs'));
+  assert.match(standing.holds_in.join(' '),/describe|catalog|read/i);
 });
 
 test('every motif pointer resolves to a real file or heading',()=>{
   const root=new URL('../',import.meta.url);
+  const faces=motif=>Object.values(motif.faces??{});
   for(const motif of motifs.motifs){
-    for(const pointer of [...motif.implementation,...motif.checks,...motif.sources]){
+    const paths=[...(motif.implementation??[]),...(motif.checks??[]),...faces(motif).flatMap(face=>[...face.implementation,...face.checks]),
+      ...(motif.where??[]).map(row=>row.shown_by)].map(item=>item.path);
+    for(const pointer of [...paths,...motif.sources]){
       const [file]=pointer.split('#');
       assert.ok(fs.existsSync(new URL(file,root)),`${motif.id}: ${pointer}`);
     }
   }
 });
 
-test('Bounded work points at the mechanism that separates gate, attempt and outcome',()=>{
-  const bounded=motifs.motifs.find(motif=>motif.id==='bounded-work');
-  assert.ok(bounded.implementation.includes('agent-first/0.1/runtime.mjs'));
-  assert.ok(bounded.implementation.includes('agent-first/0.1/command-state.mjs'));
-  assert.ok(bounded.implementation.includes('work/0.1/check.mjs'),'the Work record checker stays');
-  assert.match(bounded.limit,/deadline|cancel/i,'the limit says there is no deadline or cancellation');
+test('Witness points at the mechanism that separates gate, attempt and outcome',()=>{
+  const witness=motifs.motifs.find(motif=>motif.id==='witness');
+  const paths=witness.implementation.map(item=>item.path);
+  assert.ok(paths.includes('agent-first/0.1/runtime.mjs'));
+  assert.ok(paths.includes('agent-first/0.1/command-state.mjs'));
+  assert.ok(paths.includes('work/0.1/check.mjs'),'the Work record checker stays');
+  assert.match(witness.limit,/deadline|cancel/i,'the limit says there is no deadline or cancellation');
 });
 
 test('Continuity names the provider as the owner of freshness and budgets',()=>{
-  const continuity=motifs.motifs.find(motif=>motif.id==='continuity');
-  assert.match(continuity.practice,/provider/i);
-  assert.match(continuity.limit,/provider/i);
+  const {carried}=motifs.motifs.find(motif=>motif.id==='continuity').faces;
+  assert.match(carried.practice,/provider/i);
+  assert.match(carried.limit,/provider/i);
 });
 
-test('Exit does not promise a return the runtime does not provide',()=>{
-  const exit=motifs.motifs.find(motif=>motif.id==='exit');
-  assert.equal(exit.name.includes('room to return'),false);
-  assert.match(exit.limit,/cannot be (?:re)?activated|never come back|new (?:process|runtime)/i);
+test('Release does not promise a return the runtime does not provide',()=>{
+  const release=motifs.motifs.find(motif=>motif.id==='release');
+  assert.equal(release.title.includes('room to return'),false);
+  assert.match(release.limit,/cannot be (?:re)?activated|never come back|new (?:process|runtime)/i);
 });
 
 test('every registered module and every adapter names a motif that exists in the map',async()=>{
@@ -209,6 +214,11 @@ test('every registered module and every adapter names a motif that exists in the
     assert.ok(found.length>0,file);
     for(const motif of found)assert.ok(ids.has(motif),`${file} uses motif ${motif}`);
   }
+  // The Collab adapter's card, and the synthetic module the demo upgrades and retires.
+  const card=JSON.parse(fs.readFileSync(new URL('adapters/agenttool-collab/card.json',kit),'utf8'));
+  assert.ok(ids.has(card.module.motif),`card.json uses motif ${card.module.motif}`);
+  const echo=/id:'example\.echo'[^}]*?motif:'([^']+)'/.exec(fs.readFileSync(new URL('cli.mjs',kit),'utf8'));
+  assert.ok(echo&&ids.has(echo[1]),`the demo echo uses motif ${echo?.[1]}`);
 });
 
 test('the catalog at the door shows motif ids that are in the map',()=>{

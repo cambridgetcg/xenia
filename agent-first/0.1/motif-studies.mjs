@@ -7,13 +7,13 @@ import { readFileSync } from 'node:fs';
 const cards = [
   {
     id: 'arrival', title: 'An arrival can orient',
-    relates_to: [{ id: 'legibility', relation: 'partial-illustration', limit: 'Constructing a manifest is not observing a hosted door.' }],
+    relates_to: [{ id: 'arrival', relation: 'partial-illustration', limit: 'Constructing a manifest is not observing a hosted door.' }],
     question: 'What is here, and what remains unestablished?',
     mechanism: 'A native Surface manifest names resources, representations and coverage limits.',
     study: 'Construct a manifest and inspect its real Response value, without hosting it.',
     standalone: true,
     needs: 'Explicit service/resource definitions; the standalone study supplies a fixed fixture.',
-    gives: 'A resource description that the representation motif can consume.',
+    gives: 'A resource description that the representation study can consume.',
     sources: [{ path: 'src/surface-0.1.ts', symbol: 'defineSurfaceManifest' }, { path: 'README.md', symbol: 'Discovery & Addressing' }],
     connects_to: [{ id: 'representation', carries: 'one declared resource and its supported forms' }],
     not_established: ['a deployed service', 'conformance', 'identity or authority'],
@@ -33,7 +33,7 @@ const cards = [
   },
   {
     id: 'recovery', title: 'An error can orient',
-    relates_to: [{ id: 'legibility', relation: 'partial-illustration', limit: 'A recovery link is neither an instruction to execute nor authority.' }],
+    relates_to: [{ id: 'repair', relation: 'partial-illustration', limit: 'A recovery link is neither an instruction to execute nor authority. It shows Surface\'s problem shape, not the kit\'s.' }],
     question: 'What relevant next read can be offered without executing it?',
     mechanism: 'Native 404/406 problem constructors offer bounded GET guidance instead of a bare dead end.',
     study: 'Inspect actual problem objects and headers; retain suggestions as data.',
@@ -46,12 +46,12 @@ const cards = [
   },
   {
     id: 'ending', title: 'An ending can be complete',
-    relates_to: [{ id: 'exit', relation: 'contrast', limit: 'A terminal problem does not retire a module, revoke access, or erase records.' }],
+    relates_to: [{ id: 'release', relation: 'contrast', limit: 'A terminal problem does not retire a module, revoke access, or erase records.' }],
     question: 'Can this interaction stop without inventing another obligation?',
     mechanism: 'A native terminal problem has no next actions; this fixture also explicitly disables retry.',
     study: 'Construct a clearly labelled software-fixture ending, not a person’s refusal.',
     standalone: true,
-    needs: 'Explicit terminal status and detail; no other motif must run first.',
+    needs: 'Explicit terminal status and detail; no other study runs first.',
     gives: 'A complete local stopping point with no follow-up action.',
     sources: [{ path: 'src/surface-0.1.ts', symbol: 'createSurfaceProblem' }, { path: 'RIGHTS.md', symbol: 'Refusal and disagreement' }, { path: 'RIGHTS.md', symbol: 'Rest, play, and limits' }],
     connects_to: [],
@@ -125,7 +125,7 @@ async function represent(api, resource, accept) {
 
 function study(id, fields) {
   return {
-    kind: 'motif-study', motif: describeStudy(id),
+    kind: 'study-run', study_card: describeStudy(id),
     basis: 'native-helper-execution-with-synthetic-inputs',
     ...fields, external_actions_executed: false, not_established: [...limits],
   };
@@ -142,7 +142,7 @@ export function studiesForMotif(id) {
   const related = cards.flatMap(card => card.relates_to.filter(r => r.id === id)
     .map(r => ({ id: card.id, title: card.title, relation: r.relation, limit: r.limit })));
   return {
-    kind: 'motif-studies', motif_id: id, studies: related, none_exist_yet: related.length === 0,
+    kind: 'studies-for-motif', motif_id: id, studies: related, none_exist_yet: related.length === 0,
     meaning: related.length ? 'These studies relate to the motif; each states its own limit.'
       : 'No study relates to this motif yet. The motif map still describes it: motifs <motif-id>.',
     not_established: ['that these are all the ways to examine the motif', 'that a study demonstrates the whole motif'],
@@ -151,21 +151,21 @@ export function studiesForMotif(id) {
 
 export async function studyCommand(args = []) {
   if (!Array.isArray(args) || args.length > 2 || args.some(arg => typeof arg !== 'string')) {
-    throw problem('MOTIF_INVALID_ARGUMENTS');
+    throw problem('STUDY_INVALID_ARGUMENTS');
   }
   const [command = 'list', id] = args;
   if (['help', '--help', '-h'].includes(command) && args.length === 1) {
-    return { kind: 'motif-help', commands: ['motifs study', 'motifs study show <study-id|motif-id>', 'motifs study run <id>', 'motifs study journey'],
-      ids: cards.map(card => card.id), meaning: 'Metadata is inert; run/journey execute native helpers only on local synthetic inputs.' };
+    return { kind: 'study-help', commands: ['motifs study', 'motifs study show <study-id|motif-id>', 'motifs study run <id>', 'motifs study journey'],
+      ids: cards.map(card => card.id), meaning: 'Metadata is inert; run/journey execute native helpers only on local synthetic inputs. An id in both lists shows the study; `motifs <id>` lists the studies of an entry.' };
   }
-  if (command === 'list' && args.length <= 1) return { kind: 'motif-study-catalog', status: 'informative repository-only studies, not the whole motif map', studies: listStudies() };
+  if (command === 'list' && args.length <= 1) return { kind: 'study-list', status: 'informative repository-only studies, not the whole motif map', studies: listStudies() };
   if (command === 'show' && args.length === 2) {
     if (!cards.some(card => card.id === id) && motifIds().includes(id)) return studiesForMotif(id);
-    return { kind: 'motif-description', motif: describeStudy(id) };
+    return { kind: 'study-card', study_card: describeStudy(id) };
   }
   if (command === 'run' && args.length === 2) return runStudy(id);
   if (command === 'journey' && args.length === 1) return composeJourney();
-  throw problem('MOTIF_INVALID_ARGUMENTS');
+  throw problem('STUDY_INVALID_ARGUMENTS');
 }
 
 export async function runStudy(id) {
@@ -194,7 +194,7 @@ export async function runStudy(id) {
     });
   }
   if (id === 'ending') return study(id, { output: await endingValue(api) });
-  throw problem('MOTIF_STUDY_UNAVAILABLE');
+  throw problem('STUDY_UNAVAILABLE');
 }
 
 async function endingValue(api) {
@@ -211,32 +211,32 @@ export async function composeJourney() {
   const manifest = fixtureManifest(api);
   const missing = await observeValue(api.createSurfaceProblemResponse(api.createSurfaceRouteNotFoundProblem({ manifestUrl })));
   const discovery = missing.body.next_actions.find(action => action.rel === 'discover');
-  if (discovery?.href !== manifestUrl || discovery.method !== 'GET') throw problem('MOTIF_NATIVE_CONTRACT_CHANGED');
+  if (discovery?.href !== manifestUrl || discovery.method !== 'GET') throw problem('STUDY_NATIVE_CONTRACT_CHANGED');
 
   // Construct local values; never fetch or execute an advertised link. The
   // choices below belong to this fixed fixture, not to a human or live agent.
   const arrival = await observeValue(api.createSurfaceManifestResponse(manifest));
   const resource = arrival.body.resources[0];
   const incompatible = await represent(api, resource, 'application/xml');
-  if (incompatible.selected !== 'not-acceptable') throw problem('MOTIF_NATIVE_CONTRACT_CHANGED');
+  if (incompatible.selected !== 'not-acceptable') throw problem('STUDY_NATIVE_CONTRACT_CHANGED');
   const recovery = await observeValue(api.createSurfaceProblemResponse(api.createSurfaceNotAcceptableProblem({ resource })));
   const proposal = recovery.body.next_actions[0];
-  if (proposal?.href !== resource.href || proposal.method !== 'GET') throw problem('MOTIF_NATIVE_CONTRACT_CHANGED');
+  if (proposal?.href !== resource.href || proposal.method !== 'GET') throw problem('STUDY_NATIVE_CONTRACT_CHANGED');
   const recovered = await represent(api, resource, proposal.accept);
-  if (!recovered.output) throw problem('MOTIF_NATIVE_CONTRACT_CHANGED');
+  if (!recovered.output) throw problem('STUDY_NATIVE_CONTRACT_CHANGED');
   const alternate = await represent(api, resource, 'application/json;q=0, */*;q=1');
-  if (!alternate.output) throw problem('MOTIF_NATIVE_CONTRACT_CHANGED');
+  if (!alternate.output) throw problem('STUDY_NATIVE_CONTRACT_CHANGED');
   const ending = await endingValue(api);
 
   return {
-    kind: 'motif-journey', basis: 'native-helper-execution-with-synthetic-inputs',
+    kind: 'study-journey', basis: 'native-helper-execution-with-synthetic-inputs',
     steps: [
-      { id: 'wrong-door', motif: 'recovery', output: missing },
-      { id: 'arrival', motif: 'arrival', chosen_proposal: discovery, output: arrival },
-      { id: 'unsupported-shape', motif: 'representation', resource, requested_accept: incompatible.requested_accept, output: recovery },
-      { id: 'recovered-json', motif: 'recovery', chosen_proposal: proposal, choice_basis: 'explicit authored fixture choice, not external authority', output: recovered.output },
-      { id: 'alternate-html', motif: 'representation', resource, requested_accept: alternate.requested_accept, output: alternate.output },
-      { id: 'clear-ending', motif: 'ending', output: ending },
+      { id: 'wrong-door', study: 'recovery', output: missing },
+      { id: 'arrival', study: 'arrival', chosen_proposal: discovery, output: arrival },
+      { id: 'unsupported-shape', study: 'representation', resource, requested_accept: incompatible.requested_accept, output: recovery },
+      { id: 'recovered-json', study: 'recovery', chosen_proposal: proposal, choice_basis: 'explicit authored fixture choice, not external authority', output: recovered.output },
+      { id: 'alternate-html', study: 'representation', resource, requested_accept: alternate.requested_accept, output: alternate.output },
+      { id: 'clear-ending', study: 'ending', output: ending },
     ],
     connections: [
       { from: 'wrong-door', to: 'arrival', kind: 'dataflow', carries: discovery, meaning: 'Guidance names the discovery value; it does not authorize an action.' },

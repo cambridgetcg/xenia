@@ -132,15 +132,19 @@ test('module and study not-found errors list the valid ids',()=>{
 test('"motifs study show <motif-id>" answers with the related studies, or says none exist yet',()=>{
   const some=run(['motifs','study','show','legibility']);
   assert.equal(some.status,0);
-  assert.equal(some.value.kind,'motif-studies');
+  assert.equal(some.value.kind,'studies-for-motif');
   assert.equal(some.value.motif_id,'legibility');
-  assert.deepEqual(some.value.studies.map(s=>s.id).sort(),['arrival','recovery','representation']);
+  assert.deepEqual(some.value.studies.map(s=>s.id).sort(),['representation']);
   assert.ok(some.value.studies.every(s=>s.relation&&s.limit));
+  // An entry of the map that is not a study id: repair is illustrated by the recovery study.
+  const repair=run(['motifs','study','show','repair']);
+  assert.equal(repair.status,0);assert.equal(repair.value.kind,'studies-for-motif');
+  assert.deepEqual(repair.value.studies.map(s=>s.id),['recovery']);
   const none=run(['motifs','study','show','standing']);
   assert.equal(none.status,0);
   assert.deepEqual(none.value.studies,[]);assert.equal(none.value.none_exist_yet,true);
   assert.ok(none.value.not_established.length>0);
-  assert.equal(run(['motifs','study','show','arrival']).value.motif.id,'arrival','a study id still shows its card');
+  assert.equal(run(['motifs','study','show','arrival']).value.study_card.id,'arrival','a study id still shows its card');
 });
 
 test('"motifs <id>" returns one card; an unknown id lists the valid ones',()=>{

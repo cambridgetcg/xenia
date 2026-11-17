@@ -8,9 +8,10 @@ npm run --silent xenia -- motifs study journey
 ```
 
 This is one small connection inside the existing CLI, not another framework or
-service. The broader `npm run --silent xenia -- motifs` map remains unchanged. These four
-studies make part of its **legibility** motif tangible and contrast a terminal
-response with its broader **exit** motif.
+service. The studies do not change [the motif map](MOTIFS.md), which
+`npm run --silent xenia -- motifs` indexes. Three of these four studies partially
+illustrate its **arrival**, **legibility** and **repair** entries, and the fourth
+contrasts a terminal response with its **release** entry.
 
 ## Four questions
 
@@ -43,7 +44,7 @@ does not copy the referenced sources.
 
 `run` and `journey` use the existing compiled Surface library, the same ordinary
 Xenia preparation already needed by the local reference demo. If it is missing,
-the CLI reports `MOTIF_BUILD_REQUIRED`; it does not install or initialize anything.
+the CLI reports `BUILD_REQUIRED`; it does not install or initialize anything.
 Run the normal repository build when wanted. No new dependency is introduced.
 
 Every study starts with its own small fixture. `ending` does not require a prior
@@ -132,7 +133,8 @@ participant choices remain distinct.
   error path and useful continuation.
 - [Rights baseline](../../RIGHTS.md): standing, refusal, limits and truthful
   self-description. The study neither changes nor automatically adopts it.
-- [Broader motif map](motifs.json): conceptual neighbors, not a workflow engine.
+- [The motif map](MOTIFS.md), generated from [motifs.json](motifs.json): where each
+  concern sits and which test shows its mechanism; not a workflow engine.
 
 Focused checks:
 

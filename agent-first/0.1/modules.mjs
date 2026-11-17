@@ -49,7 +49,7 @@ export function createXeniaModules() {
     },
     {
       id:'xenia.work',version:'0.1.0-dev.0',contract:'xenia.module.work/0.1-development',
-      title:'Finite work, honest closure',motif:'bounded-work',
+      title:'Finite work, honest closure',motif:'witness',
       description:'Check an in-memory Work 0.1 draft record with the existing checker. This is not a Work executor or proof of authority.',
       source:'Xenia work/0.1/check.mjs / validateWorkRun',
       operations:{check:{description:'Check schema and cross-record consistency; no provider action or evidence retrieval.',effects:[],refusals:invalidInput,

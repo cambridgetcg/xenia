@@ -5,7 +5,10 @@ A small, repository-only XENIA module that uses AgentTool's actual XENIA Surface
 manifest parser. It joins the existing `createModuleRuntime` interface; it is
 not another kernel, scheduler, identity system, host or conformance checker.
 
-## Motif → behavior
+## Behavior
+
+The module declares the motif `legibility`. Where each concern of the kit sits,
+and which test shows its mechanism, is on [the motif map](../../MOTIFS.md).
 
 - **A door can be understood without entering it.** Supply manifest text; no URL,
   resource, evidence link or schema is fetched.
@@ -14,7 +17,7 @@ not another kernel, scheduler, identity system, host or conformance checker.
   authority unestablished.
 - **Choice precedes action.** Importing the factory and registering its definition
   do not invoke the parser. The host explicitly activates the module.
-- **Change stays attributable.** The factory captures the selected parser function.
+- **A replacement stays attributable.** The factory captures the selected parser function.
   Replacing a namespace property does not silently change the registered module.
   Use the shared runtime's explicit, revision-bound upgrade operation.
 - **Retire the capability, not its users.** Retirement prevents new calls through

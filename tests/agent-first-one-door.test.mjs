@@ -220,6 +220,38 @@ test('the note about the other lineage says where it is kept, that it is superse
   }
 });
 
+// The line about the motif atlas stays as it was written, and a dated line under it says what step 6 took. Where git
+// has 0f73c10, the line is compared with that revision of the note.
+test('the note keeps its line about the motif atlas, with a dated line under it that says what step 6 took',()=>{
+  const ATLAS_LINE='- **The motif atlas** (`motifs.json`, `motifs.mjs`, and the `MOTIFS.md` rendered from it). The kit has its own [motifs.json](motifs.json).';
+  const lines=read('agent-first/0.1/LINEAGE.md').split('\n');
+  const at=lines.indexOf(ATLAS_LINE);
+  assert.equal(at,37,'the line about the motif atlas is line 38, as it was');
+  const git=args=>spawnSync('git',['-C',root,...args],{encoding:'utf8'});
+  const base='0f73c108b28608103b27693ccaa37c303c523c81';
+  if(git(['cat-file','-e',`${base}^{commit}`]).status===0)assert.equal(git(['show',`${base}:agent-first/0.1/LINEAGE.md`]).stdout.split('\n')[37],ATLAS_LINE);
+  const dated=lines[at+1];
+  assert.match(dated,/^  - 2026-\d\d-\d\d, step 6: /,'a dated line under it');
+  for(const phrase of ['[MOTIFS.md](MOTIFS.md)','[motifs.json](motifs.json)','tools/render-motifs.mjs','tests/agent-first-motif-page.test.mjs','no file of it','reconciliation'])
+    assert.ok(dated.includes(phrase),phrase);
+  for(const id of ['arrival','choice','witness','release','repair'])assert.ok(dated.includes(id),id);
+  // The counts are read from the map: the field values its entries name in `from` with the other atlas as source, and
+  // the connection meanings its reconciliation says were kept word for word or reworded.
+  const map=JSON.parse(read('agent-first/0.1/motifs.json'));
+  const claims=map.motifs.flatMap(entry=>Object.values(entry.from??{})).filter(claim=>claim.source.startsWith('other-atlas#'));
+  const edges=map.reconciliation.edge_rows.filter(row=>row.vocabulary==='other-atlas');
+  const word=['no','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen'];
+  const of=(list,test)=>list.filter(test).length;
+  const verbatim=of(claims,claim=>claim.as==='verbatim'),reworded=of(claims,claim=>claim.as==='reworded');
+  assert.equal(verbatim+reworded,claims.length,'each value taken from the other atlas is verbatim or reworded');
+  const exact=of(edges,row=>/word for word/.test(row.note)),changed=of(edges,row=>/is reworded/.test(row.note));
+  const cap=text=>text[0].toUpperCase()+text.slice(1);
+  assert.ok(dated.includes(`${cap(word[claims.length])} field values were taken (${word[verbatim]} word for word, ${word[reworded]} reworded), each named in the \`from\` of its entry`),'the field values');
+  assert.ok(dated.includes(`and ${word[exact+changed]} connection meanings (${word[exact]} word for word, ${word[changed]} reworded), each in the reconciliation's edge_rows`),'the connection meanings');
+  // The repair sentence gave its place as the crossing, and the entry's name; not its text.
+  assert.ok(dated.includes('its repair sentence\'s place, as the crossing entry repair'));
+});
+
 test('every command the kit README shows is a command the door has',()=>{
   const text=read('agent-first/0.1/README.md');
   const shown=[...text.matchAll(/^(?:[A-Z_]+="[^"]*" )?npm run --silent xenia -- (.+)$/gm)].map(match=>match[1].trim().split(/\s+/));

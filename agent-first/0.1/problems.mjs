@@ -201,7 +201,11 @@ export function checkRequest(request,needs=[]){
 export const COMMANDS={
   arrive:{usage:'arrive',summary:'Read one bounded orientation document. Expects no reply; activates nothing.',probe:['arrive']},
   help:{usage:'help [command]',summary:'Show this help, or the usage of one command. Words after the command name are not read: `help door plan` gives the usage of `door`, which covers each of its operations.',probe:['help']},
-  motifs:{usage:'motifs [motif-id]',summary:'Read the motif map, or one motif card.',probe:['motifs']},
+  motifs:{usage:'motifs [motif-id]',summary:'Read the motif index, or one entry with the edges, commands, modules and studies that touch it. Each is at most 8192 bytes.',probe:['motifs'],
+    rules:['The index gives each entry\'s id, place, title and question, what boundary, limit and not_covered mean, the edges and their kinds, the studies, the path line, and the ids of the earlier kit map that are not ids now, with their status and where each went. It is at most 8192 bytes. The whole map, every field, is the file agent-first/0.1/motifs.json.',
+      '`motifs <motif-id>` prints the entry exactly as the file has it, with the edges, commands, modules and studies that name it, in at most 8192 bytes.',
+      'An id that is not in the map is MOTIF_NOT_FOUND (exit 2), with valid. An earlier name also gets now_at, the ids it went to, and a next action for each; a study id gets the command that shows the study. In now_at, a/b names face b of entry a, and `motifs a/b` answers with `motifs a` as its first next action. Other text is not repeated.',
+      '`motifs study` lists the small studies; `motifs study help` lists its forms.']},
   catalog:{usage:'catalog',summary:'List the registered modules, each operation with its card (what to send, what comes back, who checks the input), and the adapters. Activates nothing.',probe:['catalog']},
   explain:{usage:'explain <module-id>',summary:'Describe one module: each operation\'s card (what to send, an example, what comes back, who checks the input) and the refusals it declares.',probe:['explain','xenia.surface']},
   demo:{usage:'demo [--full]',summary:'Run the local reference tools; a step list by default, complete bodies with --full. Needs the Xenia build.',probe:['demo']},
@@ -261,7 +265,7 @@ export const COMMANDS={
 export const COMMAND_NAMES=Object.keys(COMMANDS);
 export const EXIT_CODES={0:'ran; no finding (a `door` or `feedback` body says what its 0 covers)',1:'operation failure or refusal: see error and problem',2:'usage error: the command line was not understood',
   3:'ran, reports a finding',4:'ran, could not determine'};
-export const USAGE_CODES=['UNKNOWN_COMMAND','INVALID_ARGUMENTS','MOTIF_INVALID_ARGUMENTS','STUDY_NOT_FOUND','MOTIF_NOT_FOUND','MODULE_NOT_FOUND','INVALID_TARGET'];
+export const USAGE_CODES=['UNKNOWN_COMMAND','INVALID_ARGUMENTS','STUDY_INVALID_ARGUMENTS','STUDY_NOT_FOUND','MOTIF_NOT_FOUND','MODULE_NOT_FOUND','INVALID_TARGET'];
 
 // A command body may carry its own process exit (3 or 4, or a stated 0). The
 // exit is kept beside the body, not in it, so a body that never asked for one
@@ -440,6 +444,14 @@ const catalogAction={argv:['catalog'],why:'List the registered modules and their
 const retiredOrBusy=(text,retryable=false)=>(e,c)=>({detail:text,next:[moduleAction(e,c)],retryable});
 const pinWhere=m=>m?.file?`file ${m.file}${m.aspect?` (${m.aspect})`:''}`:m?.field?`field ${m.field}`:'an unrecorded point';
 
+// now_at, a study id and a face's entry come from the map, never from the word given; each is held to the form the map
+// gives ids (an entry id, or <entry id>/<face>). went: the entries now_at names, once each.
+const isMapId=value=>typeof value==='string'&&/^[a-z][a-z-]*$/.test(value);
+function nowAt(e){
+  const now=Array.isArray(e.now_at)?e.now_at.filter(item=>typeof item==='string'&&item.split('/').every(isMapId)):undefined;
+  return {now,went:[...new Set((now??[]).map(item=>item.split('/')[0]))]};
+}
+
 const TABLE={
   UNKNOWN_COMMAND:(e,c)=>{
     const word=c.word;
@@ -465,12 +477,25 @@ const TABLE={
       ...(missing.length?{missing}:{}),...(nameable?{valid:nameable}:{}),
       next:[known?{argv:['help',known],why:`Read the usage of ${known}.`}:{argv:['help'],why:'List the commands and their usage.'}]};
   },
-  MOTIF_INVALID_ARGUMENTS:()=>({detail:'The motifs study arguments do not match its usage. Nothing was run.',
+  STUDY_INVALID_ARGUMENTS:()=>({detail:'The motifs study arguments do not match its usage. Nothing was run.',
     next:[{argv:['motifs','study','help'],why:'Read the study commands.'}]}),
-  STUDY_NOT_FOUND:(e)=>({valid:e.valid,detail:`That is not a study id.${e.valid?` Valid study ids: ${e.valid.join(', ')}.`:''} A motif id works with "motifs study show <motif-id>", which lists the studies that relate to it. Nothing was run.`,
-    next:[{argv:['motifs','study'],why:'List the studies.'}]}),
-  MOTIF_NOT_FOUND:(e)=>({valid:e.valid,detail:`That is not a motif id.${e.valid?` Valid motif ids: ${e.valid.join(', ')}.`:''} Nothing was run.`,
-    next:[{argv:['motifs'],why:'Read the motif map.'}]}),
+  STUDY_NOT_FOUND:(e)=>{
+    const {now,went}=nowAt(e);
+    const what=now?' It is an earlier motif name: now_at lists where to read now, which does not say the meaning stayed the same.':'';
+    return {valid:e.valid,...(now?{now_at:now}:{}),detail:`That is not a study id.${e.valid?` Valid study ids: ${e.valid.join(', ')}.`:''}${what} An entry id of the motif map works with "motifs study show <motif-id>", which lists the studies that relate to it. An id in both lists shows the study, and \`motifs <id>\` lists the studies of an entry. Nothing was run.`,
+      next:[...went.map(item=>({argv:['motifs','study','show',item],why:'List the studies that relate to the entry it went to.'})),{argv:['motifs','study'],why:'List the studies.'}]};
+  },
+  MOTIF_NOT_FOUND:(e)=>{
+    const {now,went}=nowAt(e);
+    const study=isMapId(e.study)?e.study:undefined;
+    const face=isMapId(e.face_of)?e.face_of:undefined;
+    const what=now?' It is an earlier name: now_at lists where to read now, which does not say the meaning stayed the same.':study?' It is a study id: the first next action shows that study.':
+      face?' It names a face of an entry: the first next action prints that entry, which holds the face.':e.valid?` Valid motif ids: ${e.valid.join(', ')}.`:'';
+    return {valid:e.valid,...(now?{now_at:now}:{}),detail:`That is not a motif id.${what} Nothing was run.`,
+      next:[...went.map(item=>({argv:['motifs',item],why:'Read the entry it went to.'})),...(study?[{argv:['motifs','study','show',study],why:'Read the study card.'}]:[]),
+        ...(face?[{argv:['motifs',face],why:'Read the entry that holds this face.'}]:[]),
+        {argv:['motifs'],why:'Read the motif index: every id in the map.'}]};
+  },
   MODULE_NOT_FOUND:(e,c)=>({valid:c.moduleIds,detail:`That is not a registered module id.${c.moduleIds?` Valid module ids: ${c.moduleIds.join(', ')}.`:''} Nothing was activated.`,
     next:[catalogAction]}),
   INVALID_TARGET:(e)=>{
@@ -486,9 +511,9 @@ const TABLE={
     next:[{argv:['help','door'],why:'Read what the door command does; reading needs only the kit.'}]}),
   BUILD_REQUIRED:(e,c)=>({detail:'This needs the compiled Xenia library and its development dependencies, which are not present. Nothing was started. From the Xenia checkout run `npm ci --ignore-scripts`, then `npm run build`, then repeat the command.',
     next:[(c.argv??[])[0]==='demo'?{argv:['catalog'],why:'Listing modules needs no build; use it while you prepare.'}:{argv:['motifs','study'],why:'Listing studies needs no build; use it while you prepare.'}]}),
-  MOTIF_STUDY_UNAVAILABLE:()=>({detail:'This study is described but has no runner yet. Nothing was run.',next:[{argv:['motifs','study'],why:'List the studies.'}]}),
-  MOTIF_NATIVE_CONTRACT_CHANGED:()=>({detail:'The compiled library no longer matches what this study expects, so the study stopped. It runs on synthetic input only and contacted nothing. Rebuild with `npm run build`; if it persists the study is out of date.',terminal:true}),
-  MOTIF_STUDY_FAILED:()=>({detail:'The study failed unexpectedly. It runs on synthetic input only and contacted nothing outside this process.',terminal:true}),
+  STUDY_UNAVAILABLE:()=>({detail:'This study is described but has no runner yet. Nothing was run.',next:[{argv:['motifs','study'],why:'List the studies.'}]}),
+  STUDY_NATIVE_CONTRACT_CHANGED:()=>({detail:'The compiled library no longer matches what this study expects, so the study stopped. It runs on synthetic input only and contacted nothing. Rebuild with `npm run build`; if it persists the study is out of date.',terminal:true}),
+  STUDY_FAILED:()=>({detail:'The study failed unexpectedly. It runs on synthetic input only and contacted nothing outside this process.',terminal:true}),
   CLI_FAILED:(e,c)=>({detail:'An unexpected failure that this CLI has no specific code for. Whether anything changed is not known; do not repeat a write before reading the current state.',
     ...(usesContext(c)?{next:[contextAction(c,'status','Read the current notes state.')]}:{terminal:true})}),
   OPERATION_FAILED:(e,c)=>e.reason==='output_write_incomplete'?
@@ -651,6 +676,7 @@ export function buildProblem(error,ctx={}){
     retryable:Boolean(made.retryable||error?.retryable)};
   if(made.valid)problem.valid=[...made.valid];
   if(made.missing)problem.missing=[...made.missing];
+  if(made.now_at)problem.now_at=[...made.now_at];
   return problem;
 }
 
