@@ -20,5 +20,17 @@
       "NOTICE": "a14d8585de84fc67c785229278bbb701a5fcb4442fcfccb70729cc3499befb7c"
     },
     "scope": "Public GitHub prerelease artifact. Checksum consistency is not authorship, authority, or whole-framework conformance. Source templates may differ from these immutable distribution bytes."
+  },
+  "collab": {
+    "name": "@agenttool/collab",
+    "license": "Apache-2.0",
+    "server_name": "agenttool-collab",
+    "server_version": "0.5.0",
+    "mcp_protocol": "2025-11-25",
+    "bundle_file": "agenttool-collab-mcp.js",
+    "bundle_bytes": 1333379,
+    "bundle_sha256": "fdfd99b20fa21a69c368a8027bb972fd1a3509c8e5f90882c5742cd9ebe053cd",
+    "source": "As recorded on the other lineage's card (modules/0.1/adapters/agenttool-collab/module.json at origin/hermes/agent-first-modules, beed37a): packages/collab/dist/agenttool-collab-mcp.js, built from the agenttool_source revision above. That build was not repeated here.",
+    "scope": "Release-candidate bytes, not a verified 0.5.0 publication. No download for these bytes is known to this kit, and the kit never downloads them: the caller supplies the file, and the adapter compares its sha256 with this one before anything is started. A match says the bytes are these bytes. It is not authorship, authority, or a statement about what the code does. Bun and git, which the backend needs, are not pinned."
   }
 }

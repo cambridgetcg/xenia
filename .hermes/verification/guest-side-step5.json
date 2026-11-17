@@ -1,0 +1,1154 @@
+{
+ "scope": "Guest-side step 5 (one kernel): operation cards the runtime enforces, the `session` door, the Collab adapter on the kit runtime, the reading of its backend's refusals, and one door: one host, one command line, one npm script. Local execution only. Every Collab test runs a stand-in backend written in this repository. The pinned bundle was read as text for the refusal table and was never run.",
+ "observed_at": "2026-11-16",
+ "date_note": "The first two tasks were committed on 2026-11-13. The third was begun that day, cut off before it committed, and finished on 2026-11-16. The fourth task, the gate runs, the commands run by hand, the reading of the bundle and the walk recorded here are of 2026-11-16, by the clock of the machine that ran them.",
+ "base_revision": "63df2c1af6eb27efb11988c5336a2d914bee0e50",
+ "merge_base_with_origin_main": "415980f48aa52b329dd4d0fee9b6031f0907d61e",
+ "merge_base_note": "As this checkout knew origin/main when the record was written; nothing was fetched for it.",
+ "head_before_record": "bb117a84b2c7376a43e3576c53ab4986a6e6bc5a",
+ "commits": [
+  {
+   "task": "cards and validator",
+   "commit": "8433d9a9aea1778dce6bbf14fa62df0e5d19d5a4"
+  },
+  {
+   "task": "session door",
+   "commit": "f71870a3a71f78f1c83b793e95e4c55845afe2c9"
+  },
+  {
+   "task": "Collab adapter",
+   "commit": "bb117a84b2c7376a43e3576c53ab4986a6e6bc5a"
+  },
+  {
+   "task": "refusal reading, lineage note, one door",
+   "commit": "the commit that carries this file"
+  }
+ ],
+ "gate": {
+  "node": "v24.18.1",
+  "default_run": {
+   "command": "npm test",
+   "exit_code": 0,
+   "note": "npm test runs three test groups; totals per group in order: library (tests/*.test.mjs), surface, observe",
+   "groups": [
+    {
+     "tests": 538,
+     "pass": 531,
+     "fail": 0,
+     "skipped": 7,
+     "cancelled": 0
+    },
+    {
+     "tests": 47,
+     "pass": 47,
+     "fail": 0,
+     "skipped": 0,
+     "cancelled": 0
+    },
+    {
+     "tests": 10,
+     "pass": 10,
+     "fail": 0,
+     "skipped": 0,
+     "cancelled": 0
+    }
+   ]
+  },
+  "with_real_starter": {
+   "command": "XENIA_STARTER_TEST_PACKAGE=<reviewed-local-package> npm test",
+   "env_var": "XENIA_STARTER_TEST_PACKAGE",
+   "exit_code": 0,
+   "groups": [
+    {
+     "tests": 538,
+     "pass": 537,
+     "fail": 0,
+     "skipped": 1,
+     "cancelled": 0
+    },
+    {
+     "tests": 47,
+     "pass": 47,
+     "fail": 0,
+     "skipped": 0,
+     "cancelled": 0
+    },
+    {
+     "tests": 10,
+     "pass": 10,
+     "fail": 0,
+     "skipped": 0,
+     "cancelled": 0
+    }
+   ]
+  },
+  "skip_explained": "The default run skips the six opt-in real Local Starter tests and the optional Skills provider test. With the package supplied only the Skills provider test (no XENIA_AGENTTOOL_SKILLS_MODULE) is skipped. No Collab test and no test in tests/agent-first-one-door.test.mjs was skipped in these runs; where git does not have the two commits LINEAGE.md names, one part of one test there is left out without being counted as a skip. In these runs git had both, so that part ran.",
+  "render_checks": {
+   "node tools/render-covenant.mjs --check": 0,
+   "node tools/render-adoption-schema.mjs --check": 0
+  },
+  "runs": "Both runs and both render checks were made on the tree of the commit that carries this file, with this file in place. The library group had 528 tests at the third task's commit; this task added 10: six in tests/agent-first-one-door.test.mjs, three in tests/agent-first-collab.test.mjs and one in tests/agent-first-problems.test.mjs.",
+  "not_run": "Node 22, which package.json allows, was not run: one machine, macOS, the Node version above."
+ },
+ "sha256": {
+  "agent-first/0.1/LINEAGE.md": "a2fc2c0a170769ac8107dddbe4649eaad647385840a4d7584e3b5e7bb60cdbc3",
+  "agent-first/0.1/README.md": "80612ea11126a152ff4b0391e5c64b76bfed7a8f5c5bf8994affe90f74602840",
+  "agent-first/0.1/adapter-catalog.mjs": "92e8029025cb0e72c204a1382f6e78708766a9022aadcd1b9f0dc5829adafc98",
+  "agent-first/0.1/adapters/agenttool-collab/README.md": "56a947262d325bad556b4c43c1a4fb8ae090e79b745238e99c0aa14ff346b1cb",
+  "agent-first/0.1/adapters/agenttool-collab/card.json": "d93ea820a4212f15877d482ca23debca7425d1d49a8770325b75d9a3969d75a4",
+  "agent-first/0.1/adapters/agenttool-collab/index.mjs": "c2b46b5313bde1d238c4f6ad01dce4acd312504fecbad1da7b21c1762f2a0d01",
+  "agent-first/0.1/adapters/agenttool-collab/stdio.mjs": "2a0d8f867a0af2c2e726e76cb320c95dee1d707efa7bad18615d8dfcda5b2d73",
+  "agent-first/0.1/agenttool.lock.json": "af201b066f57ed820167bb8cc97cf7ff749ff01a1d3d42aa8b09c606b5aea655",
+  "agent-first/0.1/arrive.mjs": "2632e0f12c91445ca1188f000eff9fa2dd483f767261e96c54c1b29abc306e26",
+  "agent-first/0.1/cli.mjs": "4cc8596694df1ff9bef100d7dafe80ac5289985fc388c8e1ad76938d5ca9844a",
+  "agent-first/0.1/command-state.mjs": "0b8b907b894560c2de2c5196b1382e9f39355758c651ed08cbea54d5af1f98e7",
+  "agent-first/0.1/invoke.mjs": "5107e057d4a677ce3662207081a4ba424ac0d5af850b92225880f692d6dfe4d4",
+  "agent-first/0.1/modules.mjs": "555d32f011b9952a1f7430769714d94447472c917813e722a77daa869a91161a",
+  "agent-first/0.1/motifs.json": "90edd631b4ad725ce65d372cebaebca48db2e438a4948be3e0b9dd40f6e24083",
+  "agent-first/0.1/problems.mjs": "2c916d235fd261fc095a7366f46aa32b55184675efad758348be581b20e3057d",
+  "agent-first/0.1/runtime.mjs": "045f92daec5b81e63d9ce9078b36e154c7d42c44d2d8409b172f194b4533883c",
+  "agent-first/0.1/schema.mjs": "0d55f68d5492c4de029746b3a6b41f89e183984d2547eab431d12ee1315d419c",
+  "agent-first/0.1/session.mjs": "5a00e17b2b6f52ed256d6245229851b5296cd48976a14011d008bc639b2a3555",
+  "tests/agent-first-arrive.test.mjs": "1647987fa36dd6b6201a4458eb96a5e7a827ee69a4ccff09a9448e8d71a93a17",
+  "tests/agent-first-cards.test.mjs": "34eb0f8a94fb5147edae47651034238931cb2f2e5f0483e7a6317616ec997580",
+  "tests/agent-first-collab-stdio.test.mjs": "a578fa604f65147e33be145abbe9776cda5a6b597ceee7b56b0695cedb15f557",
+  "tests/agent-first-collab.test.mjs": "e45247fd40a17109ca6b4e273a882a75e4ab4e33fd3d91aba22ca86ae47bf90d",
+  "tests/agent-first-door.test.mjs": "ebe01f6de10caa33822f24f894f0186026ede2bce31985d1d122409f437f9db0",
+  "tests/agent-first-floor.test.mjs": "75f8a41293cd7c956c7b1bd16d48a4df37aa233e1aece2a3cd2818e17b0703c4",
+  "tests/agent-first-motif-studies.test.mjs": "f1aaf2617274f5d4f81698d59f462b37c8ae8d3d3eb89e86907b95f0facc5c51",
+  "tests/agent-first-one-door.test.mjs": "ba7fbfc7049518d68cbb455c0e7690810a123d5c090e0d8920bab2a82850ad10",
+  "tests/agent-first-problems.test.mjs": "f3443c32ccb8fcd17b70ca24c1ef3d301801a3ce88b4574fcb5af8eb63036133",
+  "tests/agent-first-schema.test.mjs": "6220d4a00aef4b770cc913e62d94c917445cd5b6f578c5c139c4950c80e11305",
+  "tests/agent-first-session.test.mjs": "28d7ae6f8920d9b8e8ef7308164cc94964ecf6c988f6e33d247efb779e37ddff",
+  "tests/fixtures/agent-first-collab-standin.cjs": "08b6ce3a49764d24f3216612e47a1045e5013f78703522d040216ed1bd0008f4",
+  "tests/fixtures/agent-first-schema-cases.json": "0ea9737c550dcea3429efc54481c4793fe308cdf2afc680ff737c34b02e48076"
+ },
+ "sha256_note": "Every file changed since base_revision, by all four tasks, as it stands in the tree of the commit that carries this file. This file is not in its own map.",
+ "sizes": {
+  "arrive_bytes": 8106,
+  "arrive_limit_bytes": 8192,
+  "help_bytes": 3209,
+  "help_session_bytes": 7128,
+  "catalog_bytes": 13722,
+  "catalog_limit_bytes": 16384,
+  "explain_collab_bytes": 57257,
+  "session_start_bytes": 5432,
+  "session_start_bytes_with_adapter": 6856,
+  "session_start_limit_bytes": 8192,
+  "module_inspect_bytes_with_adapter": {
+   "agenttool.collab": 3897,
+   "xenia.covenant": 1140,
+   "xenia.surface": 1118,
+   "xenia.work": 1118
+  },
+  "module_inspect_limit_bytes": 8192,
+  "operation_inspect_bytes": {
+   "agenttool.collab task-claim": 8490
+  },
+  "card_json_bytes": 55068,
+  "lineage_md_bytes": 6122,
+  "note": "Bytes of what each command prints. A session line is counted with its newline. The session with the adapter was bound to a config whose paths are in a temporary folder; inspect of the bound module grows with those paths, and the session refuses to start when it could pass 8192 bytes. Inspect of one operation and explain have no stated bound."
+ },
+ "refusal_reading": {
+  "what": "Which refusals of the AgentTool Collab backend the adapter passes on as declared refusals (DECLINED, not_applied), and which it leaves unknown. One row for each operation, native tool and code that was read.",
+  "bundle": {
+   "file": "agenttool-collab-mcp.js",
+   "sha256": "fdfd99b20fa21a69c368a8027bb972fd1a3509c8e5f90882c5742cd9ebe053cd",
+   "bytes": 1333379,
+   "lines": 34073,
+   "where": "A copy on the machine that made this record, outside this repository. Its sha256 was computed before the reading and equals the `collab` pin in agent-first/0.1/agenttool.lock.json. The file is not minified. It is not in this repository, and this kit knows no download for it."
+  },
+  "method": "Read as text, by searching for each code and reading the lines around every match and every function on the way to it. The bundle was never run, no Collab server was started and no MCP collab tool was called. Line numbers are lines of the bundle, not of the source it was built from.",
+  "rule": "A code is listed on an operation only when every place the tool can raise it, called as this adapter calls it (after open, in a bound native session, with no actor argument), comes before the commit of the journal change. A code with one place after a commit is not listed. Whatever is not listed is answered as failed with an unknown effect.",
+  "as_called": "After open returned: the tool handlers then take their bound-session branch (the store methods named ...ForSession). The adapter never sends an `actor` argument, and the environment it gives the backend has no session file to resume from (lines 34037 to 34045 read AGENTOOL_COLLAB_SESSION_FILE).",
+  "how_a_refusal_is_answered": "Lines 29431 to 29445: every handler runs inside one wrapper that catches any error. An error of the backend's own class becomes {error: <code>, message, ...details} with isError true; anything else becomes internal_error. The answer carries no mark of where it was raised, so a place before a commit and a place after one cannot be told apart from outside.",
+  "transactions": {
+   "mutateAsSession": {
+    "used_by": [
+     "collab_report_append",
+     "collab_task_create",
+     "collab_task_claim",
+     "collab_task_release"
+    ],
+    "steps": "The key is checked (32728). Then one immediate transaction: the session is checked (32730), a receipt for the key is looked up and compared (32733 to 32743), a write-guard row is inserted (32745), the tool's own work runs (32747), the receipt is inserted (32748) and the session is stamped as seen (32754); the guard row is deleted on the way out (32757).",
+    "commit_line": 32760,
+    "after_commit": "tightenFileModes (32761), which can raise database_sidecar_unsafe (30725)"
+   },
+   "acknowledgeSessionCursor": {
+    "used_by": [
+     "collab_cursor_ack"
+    ],
+    "steps": "One immediate transaction (31120 to 31154): the session is checked (31121), the anchor is validated, the cursor version is compared (31137), the cursor row is updated (31144) and the change is counted (31150).",
+    "commit_line": 31154,
+    "after_commit": "tightenFileModes (31155); then, in the handler, the session's credential file is rewritten (28914)"
+   },
+   "nextForSession": {
+    "used_by": [
+     "collab_next"
+    ],
+    "steps": "A first immediate transaction (32403 to 32435) checks the session (32404) and stamps it as seen (32430). Then elapsed handoffs are marked expired in a transaction of their own (32437). Then a second, reading transaction (32438 to 32471) checks the session again (32439).",
+    "commit_line": 32435,
+    "after_commit": "everything from line 32437 on, the second session check among it"
+   },
+   "getTask": {
+    "used_by": [
+     "collab_task_get"
+    ],
+    "steps": "No transaction and no write statement: one SELECT for the task (33414) and one for its artifacts. The handler (28990) does not check the native session.",
+    "commit_line": null
+   }
+  },
+  "stages": {
+   "no_transaction": "The tool opens no transaction and runs no write statement on this path.",
+   "before_transaction": "Raised before the transaction that would change the journal begins.",
+   "in_transaction_before_write": "Raised inside that transaction, before its first write statement.",
+   "in_transaction_after_write": "Raised inside that transaction after a write statement it had not committed: the write-guard row (line 32745), and in a few places the row being changed. That nothing of it stays rests on the rollback.",
+   "after_commit": "Raised after a transaction of this call has committed. A code with such a place is not listed. This word is used in rows that are not listed; the card has no such stage."
+  },
+  "handler_lines": {
+   "open": 28813,
+   "status": 28869,
+   "next": 28881,
+   "acknowledge": 28898,
+   "report": 29169,
+   "task-create": 28963,
+   "task-get": 28990,
+   "task-claim": 29003,
+   "task-release": 29053
+  },
+  "table": [
+   {
+    "operation": "acknowledge",
+    "tool": "collab_cursor_ack",
+    "code": "cursor_version_conflict",
+    "listed": true,
+    "commit_line": 31154,
+    "sites": [
+     {
+      "line": 31138,
+      "through": [
+       28900
+      ],
+      "stage": "in_transaction_before_write"
+     },
+     {
+      "line": 31151,
+      "through": [
+       28900
+      ],
+      "stage": "in_transaction_after_write"
+     }
+    ]
+   },
+   {
+    "operation": "acknowledge",
+    "tool": "collab_cursor_ack",
+    "code": "session_auth_failed",
+    "listed": true,
+    "commit_line": 31154,
+    "sites": [
+     {
+      "line": 32769,
+      "through": [
+       28900,
+       31121
+      ],
+      "stage": "in_transaction_before_write"
+     },
+     {
+      "line": 32777,
+      "through": [
+       28900,
+       31121
+      ],
+      "stage": "in_transaction_before_write"
+     }
+    ]
+   },
+   {
+    "operation": "report",
+    "tool": "collab_report_append",
+    "code": "idempotency_conflict",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 32739,
+      "through": [
+       29172,
+       31996
+      ],
+      "stage": "in_transaction_before_write"
+     }
+    ]
+   },
+   {
+    "operation": "report",
+    "tool": "collab_report_append",
+    "code": "session_auth_failed",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 32769,
+      "through": [
+       29172,
+       31996,
+       32730
+      ],
+      "stage": "in_transaction_before_write"
+     },
+     {
+      "line": 32777,
+      "through": [
+       29172,
+       31996,
+       32730
+      ],
+      "stage": "in_transaction_before_write"
+     }
+    ]
+   },
+   {
+    "operation": "report",
+    "tool": "collab_report_append",
+    "code": "task_not_found",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 33419,
+      "through": [
+       29172,
+       31996,
+       32747,
+       31997,
+       33056
+      ],
+      "stage": "in_transaction_after_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-create",
+    "tool": "collab_task_create",
+    "code": "idempotency_conflict",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 32739,
+      "through": [
+       28968,
+       31313
+      ],
+      "stage": "in_transaction_before_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-create",
+    "tool": "collab_task_create",
+    "code": "session_auth_failed",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 32769,
+      "through": [
+       28968,
+       31313,
+       32730
+      ],
+      "stage": "in_transaction_before_write"
+     },
+     {
+      "line": 32777,
+      "through": [
+       28968,
+       31313,
+       32730
+      ],
+      "stage": "in_transaction_before_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-get",
+    "tool": "collab_task_get",
+    "code": "task_not_found",
+    "listed": true,
+    "commit_line": null,
+    "sites": [
+     {
+      "line": 33419,
+      "through": [
+       28990,
+       31751,
+       33423
+      ],
+      "stage": "no_transaction"
+     }
+    ]
+   },
+   {
+    "operation": "task-claim",
+    "tool": "collab_task_claim",
+    "code": "idempotency_conflict",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 32720,
+      "through": [
+       29005,
+       31364
+      ],
+      "stage": "before_transaction"
+     },
+     {
+      "line": 32739,
+      "through": [
+       29005,
+       31368
+      ],
+      "stage": "in_transaction_before_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-claim",
+    "tool": "collab_task_claim",
+    "code": "recovery_required",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 31373,
+      "through": [
+       29005,
+       31368,
+       32747
+      ],
+      "stage": "in_transaction_after_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-claim",
+    "tool": "collab_task_claim",
+    "code": "session_auth_failed",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 32769,
+      "through": [
+       29005,
+       31364,
+       32710
+      ],
+      "stage": "before_transaction"
+     },
+     {
+      "line": 32777,
+      "through": [
+       29005,
+       31364,
+       32710
+      ],
+      "stage": "before_transaction"
+     },
+     {
+      "line": 32769,
+      "through": [
+       29005,
+       31367,
+       32801
+      ],
+      "stage": "before_transaction"
+     },
+     {
+      "line": 32777,
+      "through": [
+       29005,
+       31367,
+       32801
+      ],
+      "stage": "before_transaction"
+     },
+     {
+      "line": 32769,
+      "through": [
+       29005,
+       31368,
+       32730
+      ],
+      "stage": "in_transaction_before_write"
+     },
+     {
+      "line": 32777,
+      "through": [
+       29005,
+       31368,
+       32730
+      ],
+      "stage": "in_transaction_before_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-claim",
+    "tool": "collab_task_claim",
+    "code": "task_blocked",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 31383,
+      "through": [
+       29005,
+       31368,
+       32747
+      ],
+      "stage": "in_transaction_after_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-claim",
+    "tool": "collab_task_claim",
+    "code": "task_claimed",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 31388,
+      "through": [
+       29005,
+       31368,
+       32747
+      ],
+      "stage": "in_transaction_after_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-claim",
+    "tool": "collab_task_claim",
+    "code": "task_completed",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 31378,
+      "through": [
+       29005,
+       31368,
+       32747
+      ],
+      "stage": "in_transaction_after_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-claim",
+    "tool": "collab_task_claim",
+    "code": "task_not_found",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 33419,
+      "through": [
+       29005,
+       31368,
+       32747,
+       31369
+      ],
+      "stage": "in_transaction_after_write"
+     },
+     {
+      "line": 33419,
+      "through": [
+       29005,
+       31368,
+       32747,
+       31375,
+       33254
+      ],
+      "stage": "in_transaction_after_write"
+     },
+     {
+      "line": 33419,
+      "through": [
+       29005,
+       31368,
+       32747,
+       31427,
+       33423
+      ],
+      "stage": "in_transaction_after_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-claim",
+    "tool": "collab_task_claim",
+    "code": "version_conflict",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 33335,
+      "through": [
+       29005,
+       31368,
+       32747,
+       31370
+      ],
+      "stage": "in_transaction_after_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-release",
+    "tool": "collab_task_release",
+    "code": "idempotency_conflict",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 32739,
+      "through": [
+       29055,
+       31589
+      ],
+      "stage": "in_transaction_before_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-release",
+    "tool": "collab_task_release",
+    "code": "lease_expired",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 33014,
+      "through": [
+       29055,
+       31589,
+       32747,
+       31592
+      ],
+      "stage": "in_transaction_after_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-release",
+    "tool": "collab_task_release",
+    "code": "lease_not_active",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 33011,
+      "through": [
+       29055,
+       31589,
+       32747,
+       31592
+      ],
+      "stage": "in_transaction_after_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-release",
+    "tool": "collab_task_release",
+    "code": "lease_not_holder",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 33019,
+      "through": [
+       29055,
+       31589,
+       32747,
+       31592
+      ],
+      "stage": "in_transaction_after_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-release",
+    "tool": "collab_task_release",
+    "code": "session_auth_failed",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 32769,
+      "through": [
+       29055,
+       31589,
+       32730
+      ],
+      "stage": "in_transaction_before_write"
+     },
+     {
+      "line": 32777,
+      "through": [
+       29055,
+       31589,
+       32730
+      ],
+      "stage": "in_transaction_before_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-release",
+    "tool": "collab_task_release",
+    "code": "task_not_found",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 33419,
+      "through": [
+       29055,
+       31589,
+       32747,
+       31590
+      ],
+      "stage": "in_transaction_after_write"
+     },
+     {
+      "line": 33419,
+      "through": [
+       29055,
+       31589,
+       32747,
+       31593,
+       33040,
+       33423
+      ],
+      "stage": "in_transaction_after_write"
+     }
+    ]
+   },
+   {
+    "operation": "task-release",
+    "tool": "collab_task_release",
+    "code": "version_conflict",
+    "listed": true,
+    "commit_line": 32760,
+    "sites": [
+     {
+      "line": 33335,
+      "through": [
+       29055,
+       31589,
+       32747,
+       31591
+      ],
+      "stage": "in_transaction_after_write"
+     }
+    ]
+   },
+   {
+    "operation": "next",
+    "tool": "collab_next",
+    "code": "session_auth_failed",
+    "listed": false,
+    "sites": [
+     {
+      "line": 32769,
+      "through": [
+       28883,
+       32404
+      ],
+      "stage": "in_transaction_before_write"
+     },
+     {
+      "line": 32777,
+      "through": [
+       28883,
+       32404
+      ],
+      "stage": "in_transaction_before_write"
+     },
+     {
+      "line": 32769,
+      "through": [
+       28883,
+       32439
+      ],
+      "stage": "after_commit"
+     },
+     {
+      "line": 32777,
+      "through": [
+       28883,
+       32439
+      ],
+      "stage": "after_commit"
+     }
+    ],
+    "why_not": "The tool checks the session twice. The first check (through line 32404) is the first statement of a transaction that then stamps the session as seen (line 32430) and commits (line 32435). After that the tool reaps elapsed handoffs in a transaction of its own (line 32437), and only then makes the second check (line 32439). A refusal from the second check comes after a commit, and the answer does not say which check raised it."
+   },
+   {
+    "operation": "task-create",
+    "tool": "collab_task_create",
+    "code": "task_not_found",
+    "listed": false,
+    "sites": [
+     {
+      "line": 33419,
+      "through": [
+       28968,
+       31313,
+       32747,
+       31321
+      ],
+      "stage": "in_transaction_after_write"
+     },
+     {
+      "line": 33419,
+      "through": [
+       28968,
+       31313,
+       32747,
+       31356,
+       33423
+      ],
+      "stage": "in_transaction_after_write"
+     }
+    ],
+    "why_not": "Both places are before the commit, so the rule would allow it. It is left out because, called as this adapter calls the tool, neither is reached in ordinary running: the first is in a loop over dependencies, and the adapter sends none; the second is a re-read of the row the same transaction has just inserted. An answer with this code would mean the reading is wrong somewhere, so it stays unknown."
+   }
+  ],
+  "git_before_a_claim": "claimTaskForSession (31359) looks up a receipt (31364), then calls captureSessionWorktree (31367), which checks the session (32801) and then inspects the repository (32825): git rev-parse, status, ls-files, diff HEAD, and a digest of untracked file content (lines 29497 to 29600). Only then does the transaction begin (31368). So six of the eight listed codes of task-claim are raised after git ran; idempotency_conflict (at 32720) and session_auth_failed (through 32710 or 32801) can be raised before it. The adapter sets GIT_OPTIONAL_LOCKS=0 for the backend; what git itself wrote, if anything, was not looked at.",
+  "raise_statements_in_bundle": {
+   "note": "How many statements raise each candidate code anywhere in the bundle (lines matching `new CollabError(\"<code>\"`). Other lines that hold the same word are comparisons or the reason of an event, not raises.",
+   "task_not_found": 1,
+   "version_conflict": 1,
+   "task_claimed": 2,
+   "task_completed": 2,
+   "task_blocked": 2,
+   "idempotency_conflict": 3,
+   "recovery_required": 1,
+   "lease_not_active": 2,
+   "lease_expired": 2,
+   "lease_not_holder": 2,
+   "cursor_version_conflict": 4,
+   "session_auth_failed": 6
+  },
+  "other_places_not_reached": [
+   {
+    "codes": [
+     "task_completed",
+     "task_blocked",
+     "task_claimed"
+    ],
+    "lines": [
+     31780,
+     31782,
+     31784
+    ],
+    "in": "claimTask (31764), the branch collab_task_claim takes when no session is bound",
+    "why": "After open a session is bound. Without one the handler asks for an `actor` argument first, which the adapter never sends."
+   },
+   {
+    "codes": [
+     "idempotency_conflict"
+    ],
+    "lines": [
+     32691
+    ],
+    "in": "mutate (32681), used by the methods for a caller without a bound session",
+    "why": "Same as above."
+   },
+   {
+    "codes": [
+     "lease_not_active",
+     "lease_expired",
+     "lease_not_holder"
+    ],
+    "lines": [
+     33322,
+     33325,
+     33328
+    ],
+    "in": "requireActiveLease (33320), used by the methods for a caller without a bound session",
+    "why": "Same as above."
+   },
+   {
+    "codes": [
+     "cursor_version_conflict"
+    ],
+    "lines": [
+     31166,
+     31186
+    ],
+    "in": "resetSessionCursor (31158), reached from the tool collab_cursor_reset",
+    "why": "The adapter never calls that tool."
+   },
+   {
+    "codes": [
+     "session_auth_failed"
+    ],
+    "lines": [
+     29324
+    ],
+    "in": "the handler of collab_events_wait",
+    "why": "The adapter never calls that tool."
+   },
+   {
+    "codes": [
+     "session_auth_failed"
+    ],
+    "lines": [
+     31039,
+     32796
+    ],
+    "in": "resumeSession (30971) and authenticateResumeToken (32791)",
+    "why": "Run only when the process starts with a session file to resume, which the adapter's environment does not give it."
+   },
+   {
+    "codes": [
+     "session_auth_failed"
+    ],
+    "lines": [
+     31098
+    ],
+    "in": "endSession (31060), reached from collab_session_end",
+    "why": "The adapter calls that tool only when a session ends, and passes nothing on from its answer."
+   }
+  ],
+  "dynamic_codes": "Seven statements build a code from a variable or a choice (lines 28596, 29421, 32309, 33552, 33559, 33561, 33563). They yield session_file_unsafe or session_file_exists, handoff_expired or handoff_resolved, and invalid_<field>. None can yield a candidate code.",
+  "after_commit_places": [
+   {
+    "code": "database_sidecar_unsafe",
+    "line": 30725,
+    "reached": "tightenFileModes (30717), called after the commit of every write through mutateAsSession (32761), after an acknowledgement (31155) and after handoffs are reaped in next (33297)"
+   },
+   {
+    "codes": [
+     "session_file_unsafe",
+     "session_file_exists",
+     "session_file_write_failed"
+    ],
+    "lines": [
+     28596,
+     28624,
+     28645
+    ],
+    "reached": "writeSessionCredentialFile (28582), called by the handler of collab_cursor_ack (28914) after the cursor change is committed"
+   },
+   {
+    "code": "session_auth_failed",
+    "line": 32439,
+    "reached": "the second session check of nextForSession, after its first transaction has committed"
+   }
+  ],
+  "after_commit_note": "These are answered in the same shape as any refusal. It is why the adapter never passes a refusal on by its shape alone, and why a code that is not listed for the operation stays unknown.",
+  "stays_unknown": [
+   "Whether the backend behaves as its text reads. The bundle was never run.",
+   "Whether a refused call leaves nothing where it had begun to write. The transaction wrapper is imported from bun:sqlite (line 29451) and is not defined in the bundle; that it rolls back when the function throws is behaviour of the Bun program, which is not pinned.",
+   "Whether the reading is complete. It was done once, by the author of this record, following calls by hand from each handler. Nobody read it a second time, and no test can check it: the bundle is not in the repository.",
+   "What the MCP library between a handler and the wire does to an answer. Only the handlers' own wrapper (29431 to 29445) was read, and the place where an input the tool's schema refuses is answered with isError and no structuredContent (27688 to 27702).",
+   "SQLite itself: a commit that fails, a database that is busy, a trigger that aborts (lines 30298 to 30340). These are not errors of the backend's own class; the wrapper answers them as internal_error, which no card lists.",
+   "next: which of its two session checks raised session_auth_failed. It is never passed on.",
+   "open: every refusal of collab_session_start. The start runs git, may create or migrate the journal, and commits twice (30781, 30967) before the handler writes the credential file (28820). None of it was read for listing, and the adapter passes none of it on.",
+   "Codes that are not candidates of this step, among them dependencies_incomplete, path_scope_conflict, edit_scope_required, worktree_unavailable, worktree_identity_changed, worktree_observation_stale, expected_base_mismatch, cursor_mismatch, cursor_ahead, cursor_fork_detected, cursor_epoch_mismatch, cursor_regression, cursor_recovery_required, session_not_bound, session_workspace_mismatch, workspace_not_found and every invalid_<field>. They were seen on these paths and not read for listing. An answer with one of them is unknown; for a write the binding then sends no more writes.",
+   "What git did before a refused claim, and what else the backend's process touched outside the journal."
+  ],
+  "what_the_adapter_does_with_it": "A listed code is passed on only when the answer also has the plain refusal shape (error and message are strings) and does not carry the key a success carries. The tests show this against the stand-in, which leaves its journal file untouched on a refusal because it was written to. They show nothing about the real backend."
+ },
+ "lineage": {
+  "note": "agent-first/0.1/LINEAGE.md",
+  "kept_at": {
+   "origin/hermes/agent-first-modules": "beed37ac9b1d8282c8566aa657572578d953ffc6",
+   "origin/hermes/agent-first-modules-compose": "4119d4dec7f6b198f5538bef75912e8fb511c842"
+  },
+  "common_base": "7a6794e1e17dc80770a6ad4294d55cf7171e3de5",
+  "compared": "With git show in this worktree, on 2026-11-16: the code of agent-first/0.1/adapters/agenttool-collab/stdio.mjs below its header comment is byte for byte that of modules/0.1/adapters/agenttool-collab/stdio.mjs at both revisions; adapter.mjs and stdio.mjs are the same bytes at both; module.json differs between them in one line (one effect fewer in the fork). The test in tests/agent-first-one-door.test.mjs repeats the stdio comparison where git has those two commits; it asks for them by their full names and does not check where the branches point.",
+  "read_only": "The other lineage was read with git show and git ls-tree from this worktree. Nothing was edited, committed or run in its checkouts, and its own tests were not run."
+ },
+ "tests_first": {
+  "this_task": [
+   "tests/agent-first-one-door.test.mjs was written before LINEAGE.md and this record existed. Of its first five tests two failed (the two that need those files) and three passed, because they pin what was already so: one script, the sizes, the README's commands.",
+   "A sixth test there (an input that misses a card, through the command line) passed when written. Its assertion about the order of `explain` was added later and seen failing before adapter-catalog.mjs was changed. Its assertion about the stated length of `explain` was written after the hint and never seen failing.",
+   "tests/agent-first-collab.test.mjs was changed before the card, the adapter and the catalog were: six tests failed. Once the card and the check of `sites` were in place, one more existing test failed because it pinned the old list of refusals of task-claim; it was edited.",
+   "The test in tests/agent-first-problems.test.mjs for the cut of a long meaning was written after the walk showed half a sentence in problem.detail, and seen failing before problems.mjs was changed.",
+   "Not test-first: the wording of help session, the README, the adapter's README and LINEAGE.md; the line about idempotency keys and the length hint on the card; one sentence of the interpretation `explain` prints."
+  ],
+  "earlier_tasks": "What the first three tasks did test-first is in their commit messages. It was not observed by this task."
+ },
+ "edited_existing_tests": {
+  "note": "Tests that existed before a task and were edited by it, not only extended. Listed so that a weakened assertion cannot hide among additions.",
+  "by_earlier_tasks_read_from_their_diffs": [
+   "tests/agent-first-motif-studies.test.mjs (first task): schema.mjs added to the list of kit files a study may read.",
+   "tests/agent-first-floor.test.mjs (second and third tasks): `help session` and `explain agenttool.collab` added to the commands that run in every state.",
+   "tests/agent-first-problems.test.mjs (second and third tasks): session.mjs and the adapter added to the files scanned for codes; agenttool.collab added to the valid module ids.",
+   "tests/agent-first-arrive.test.mjs (third task): four adapter ids in place of three; agenttool-collab added to the adapter folders that reading must not import.",
+   "tests/agent-first-door.test.mjs (third task): the network sentence, word for word, now names the backend process `session --collab-config` can start."
+  ],
+  "by_this_task_in_tests_agent_first_collab_test_mjs": [
+   "\"each operation declares the refusals the adapter itself raises, and the card lists no backend refusal yet\": renamed, and the assertion that every backend list is empty removed; the lists are now held by a test of their own.",
+   "\"the card is data ...\": the refusals the runtime holds are compared with the adapter's own and the backend's together, and must carry no `sites`.",
+   "\"a card that lists a refusal the adapter does not raise ...\": its two backend cases now carry `sites`, so that each fails for the reason it names; seven cases were added.",
+   "cardWith (a helper): a test card now starts from the shipped card with every backend list emptied, and its entries carry `sites`.",
+   "\"with the card as it is, a refusal by the backend is unknown ...\": renamed; it now uses a code the card does not list (path_scope_conflict, by a control of the stand-in) in place of a stale version, which the card now lists.",
+   "\"a read that fails does not latch writes ...\": it now uses an unlisted code on task-get (workspace_not_found, by a control) in place of task_not_found, which the card now lists.",
+   "\"the door lists the bound module ...\": the refusal codes of task-claim are the adapter's five and the backend's eight.",
+   "\"at the door the gate decides ...\": extended with one listed refusal through a session line, and the operation card a session shows.",
+   "\"the adapter is listed as not bound ...\": explain's backend_refusals are compared with the card (they were compared with an empty list), and backend_reading is compared too."
+  ]
+ },
+ "readme_commands": {
+  "note": "Every command agent-first/0.1/README.md shows was run by hand from the repository root through `npm run --silent xenia --`, with the exceptions listed. stderr was empty for each.",
+  "ran": [
+   "arrive",
+   "node agent-first/0.1/cli.mjs arrive",
+   "motifs",
+   "motifs study list",
+   "motifs standing",
+   "motifs study",
+   "motifs study journey",
+   "motifs study run arrival",
+   "help",
+   "help door plan",
+   "help session",
+   "help invoke",
+   "session --help",
+   "catalog",
+   "explain xenia.surface",
+   "explain agenttool.collab",
+   "explain agenttool.local-context",
+   "invoke xenia.covenant draft --input <file>",
+   "demo",
+   "demo --full",
+   "door plan --origin https://example.org",
+   "door rights --input ./adoption.json",
+   "door rights --input ./adoption.json --as-of 2026-11-13T00:00:00Z --origin https://example.org --full",
+   "feedback new",
+   "feedback new --out \"$PWD/my-entry.md\"",
+   "feedback check --input ./my-entry.md (exit 3: the blank entry)",
+   "context init",
+   "context status",
+   "context render",
+   "context handoff --input <file> --expect <hash>",
+   "starter-smoke",
+   "session (its input ended at once)",
+   "node tools/render-covenant.mjs --check",
+   "node tools/render-adoption-schema.mjs --check",
+   "XENIA_STARTER_TEST_PACKAGE=<reviewed-local-package> npm test"
+  ],
+  "as_shown_and_refused": [
+   {
+    "command": "session --collab-config /absolute/path/collab.json --allow agenttool.collab:open,agenttool.collab:status",
+    "result": "One line, session_not_started, INVALID_INPUT with reason missing, exit 1: the path in the README stands for a file the caller writes.",
+    "also": "With a config file in a scratch folder that names places with nothing in them: the session started, activate returned, open was DECLINED bundle_unavailable, status was DECLINED not_open, exit 0."
+   },
+   {
+    "command": "invoke agenttool.collab status --input <file>",
+    "result": "HOST_GATE_REQUIRED, exit 1, pointing to help session, as the README says."
+   },
+   {
+    "command": "motifs study run legibility",
+    "result": "STUDY_NOT_FOUND, exit 2, listing the four study ids; legibility is a motif id, not a study id."
+   }
+  ],
+  "not_run_as_shown": [
+   {
+    "command": "door check --origin https://example.org --max-requests 1 --total-timeout-ms 5000",
+    "why": "It sends a request to a host outside the machine, and this step was to make no network request.",
+    "instead": "The same flags with --allow-local-target against a door on 127.0.0.1 made for the purpose, which answers 404: one request received, manifest not_found, exit 3."
+   },
+   {
+    "command": "npm ci --ignore-scripts, then npm run build",
+    "why": "Installing was outside this step. The build ran as the first part of npm test."
+   }
+  ],
+  "temporary_files": "adoption.json and my-entry.md were made in the repository root for the commands that name them and removed afterwards; notes roots and the Collab config were outside the repository.",
+  "fixed": [
+   "README, Operation cards: \"no command at this door reaches a schema today\" and \"the adapter rows in catalog ... carry no card\" were true before the third task. The text now says which module carries schemas and how it is reached.",
+   "README, The Collab adapter: \"the card lists none yet\". It now says what is listed, on what ground, and where the table is.",
+   "README, Verification: \"No test reaches a schema through a command of the door\", \"No test runs an operation that declares effects through the command line, because the command registers none\" and \"No binding with a real backend exists yet\" were true of earlier tasks. Each now says what holds.",
+   "README, Failure: the sizes sentence said catalog was \"somewhat larger\" with no bound; a test now holds it to 16384 bytes, and the sentence gives the length of the one long document, explain agenttool.collab.",
+   "README, Verification: the pointer to the record named step 2 as \"this step\". It now names both records and what each covers.",
+   "The adapter's README: \"The card lists none yet\", and the reading \"is not done\".",
+   "help session: said nothing about which refusals of the backend are passed on.",
+   "problem.detail of a declined call cut a long meaning at 200 characters, in the middle of a sentence, and then added a full stop. It now keeps whole sentences and says where the whole meaning is.",
+   "`explain agenttool.collab` printed the nine cards before the config keys. What a caller has to supply now comes first, and arrive says how long the document is."
+  ]
+ },
+ "cli_walk": {
+  "path": "As a caller with the door's output only. arrive; explain xenia.covenant; `session` with nothing sent, to read the first line; then one session with six lines: inspect of the operation, an invoke before activation, activate, an invoke with {} (refused), an invoke with no operation (invalid), an invoke with the card's example (returned), end of input. Then the adapter: explain agenttool.collab; a config file in a scratch folder; `session --collab-config <file> --allow` naming open, status and task-get, with seven lines.",
+  "core_session": [
+   "inspect of xenia.covenant draft: the card, allowed true, deadline 10000",
+   "invoke before activate: MODULE_INACTIVE, nothing ran, next request activate",
+   "activate: registered to active",
+   "invoke with {}: DECLINED invalid_input, not_applied, with the native function's own sentence; next request inspect of the operation",
+   "invoke with no operation: INVALID_REQUEST, does_not_match_request, pointer \"\", keyword required, expected operation",
+   "invoke with the example: returned, a draft of 18,741 bytes",
+   "end of input: session_end, three modules retired, cleanup complete, exit 0"
+  ],
+  "adapter_session": [
+   "inspect of agenttool.collab: nine operations, three allowed; look.step not_opened; bound_to shows the scratch paths",
+   "activate: registered to active",
+   "invoke task-get with {}: INVALID_INPUT does_not_match_card, pointer \"\", keyword required, expected task_id; the gate was not asked",
+   "invoke task-claim, which the allow list does not name: POLICY_BLOCKED",
+   "invoke open: DECLINED bundle_unavailable, because nothing is at the bundle path",
+   "invoke status: DECLINED not_open",
+   "end of input: session_end, cleanup complete, exit 0; nothing was created in the scratch folder"
+  ],
+  "a_listed_backend_refusal": "Seen once outside the tests, with a scratch script that binds the adapter to the stand-in and runs one session in memory: a claim with a stale version came back DECLINED version_conflict with the card's meaning, and the next claim was admitted. This is the stand-in, not the backend.",
+  "still_had_to_guess": [
+   "Where the pinned bundle comes from. The door says it knows no download. Without those bytes no operation of agenttool.collab can succeed, so the one successful invoke of the walk was on xenia.covenant.",
+   "Which Bun to put at bunPath: no version is named, and none is checked.",
+   "Which operations to name in --allow before seeing them: the allow list is fixed at the start, and the operations are listed by the first line of a session, by catalog and by explain. A first session without --allow, or a refused start, shows them. It costs a second start.",
+   "What operation_started: true means on a refusal the adapter makes before it sends anything (bundle_unavailable, not_open): the handler was entered. The effect, not_applied, and the meaning say that nothing was sent; the field alone reads as if something had begun.",
+   "Whether an idempotency key may be used again after a refusal. The card now says what a key is and each next step says to use one not used before, which is always allowed; whether the old one would also be accepted is not said.",
+   "What a claim is for when nothing else at this door acts on it: the card says it is a note in the journal, not a lock and not permission. What another session does on seeing it is outside this kit.",
+   "How to read `does` and `sites` from inside a session: a session shows an operation's card without them, and they are printed only by explain, at the command line."
+  ],
+  "no_longer_a_guess": [
+   "The request forms: all six are on the first line with an example each.",
+   "That a module has to be activated: the first line says nothing was activated, and MODULE_INACTIVE gives the request to send.",
+   "Which field of a request or an input missed: pointer, keyword and expected name it without repeating what was sent."
+  ]
+ },
+ "mutations": "Six single changes were made by hand, one at a time, each restored from a copy afterwards, and the test file for the changed source was run. Each made at least one test fail. They are listed under process_notes. Six is a sample, not a measure of the tests.",
+ "not_established": [
+  "that the adapter works with the real bundle: no test and no command of this step started it, and every Collab test runs a stand-in written in this repository",
+  "that the stand-in behaves as the backend does: it was written from a reading of the pinned bundle and never checked against it",
+  "that a refusal marked not_applied was observed to change nothing: for the adapter's own refusals it is how the code is written, and for the backend's it is the reading recorded above",
+  "that the reading missed no place: a missed one could report a written change as not applied",
+  "that Bun or git is a particular program or version, or that Bun rolls a refused transaction back: neither is pinned, and neither was run",
+  "that a deadline or a timeout stops code: a deadline ends a wait, and a timeout stops the backend process, not a write it had begun",
+  "anything about a caller: who sends requests, whether they may, or what they intend. The gate reads an allow list and nothing else",
+  "that the schema checker implements JSON Schema: it reads three types and ten keywords and refuses the rest",
+  "that an agent other than the author of this record can follow the door without guessing: the walk was made by the author, who had also read the source",
+  "that the two branches named in LINEAGE.md still exist on the remote or are still at those revisions: nothing was fetched",
+  "that the totals hold on another machine, on Linux or Windows, or on Node 22",
+  "that the hashes describe any later tree, or that the earlier tasks were built test-first as their commits say",
+  "that nothing is left behind after a session that opened a real backend: left_behind lists what the binding knows of, and the rest is reported as not surveyed"
+ ],
+ "process_notes": [
+  "No file under src/, surface/, work/, covenant/ or observe/ was changed by this step, nor package.json, STATE.md, AGENT-FEEDBACK.md, AGENTS.md or CLAUDE.md. Nothing was pushed, deployed or published.",
+  "No network request was made. `door check` was run against 127.0.0.1 only.",
+  "No AgentTool Collab server was started and no MCP collab tool was called. The pinned bundle was opened as a text file, outside this repository.",
+  "The Collab card was changed by a script kept outside the repository: it adds the entries, checks that each meaning is at most 512 characters and that its words fit the stages of its places, and writes the table used here.",
+  "Mutations, each made by hand in the working tree, run against the test file that covers it, and restored: (1) session_auth_failed added to next on the card; (2) the check for a success key removed from the adapter; (3) any stage accepted for a site; (4) the cut of a long meaning put back; (5) one line number changed on the card; (6) backend_reading dropped from explain. Each made a test fail: three tests for the first, one test for each of the others."
+ ],
+ "record_note": "Written by a script from the logs of the two gate runs, from git, and from the door's own output. The refusal table is the same data the card was written from."
+}

@@ -27,7 +27,7 @@ const synthetic=(code,extra={})=>({code,operation_started:false,effect_outcome:'
 
 test('the problem table covers every code the sources can throw',()=>{
   const found=new Set();
-  const files=['cli.mjs','invoke.mjs','input-file.mjs','command-state.mjs','context.mjs','door.mjs','door-rights.mjs','feedback.mjs','modules.mjs','motif-studies.mjs','provider.mjs','runtime.mjs','adapters/local-starter.mjs'];
+  const files=['cli.mjs','invoke.mjs','input-file.mjs','command-state.mjs','context.mjs','door.mjs','door-rights.mjs','feedback.mjs','modules.mjs','motif-studies.mjs','provider.mjs','runtime.mjs','session.mjs','adapters/local-starter.mjs','adapters/agenttool-collab/index.mjs'];
   for(const file of files){
     const text=fs.readFileSync(new URL(file,dir),'utf8');
     for(const m of text.matchAll(/ModuleError\('([A-Z_]+)'/g))found.add(m[1]);
@@ -121,7 +121,7 @@ test('module and study not-found errors list the valid ids',()=>{
   const m=run(['explain','nope.module']);
   assert.equal(m.status,2);
   assert.equal(m.value.error.code,'MODULE_NOT_FOUND');
-  assert.deepEqual([...m.value.problem.valid].sort(),['agenttool.local-context','agenttool.skills-inspector','agenttool.telescope-surface','xenia.covenant','xenia.surface','xenia.work']);
+  assert.deepEqual([...m.value.problem.valid].sort(),['agenttool.collab','agenttool.local-context','agenttool.skills-inspector','agenttool.telescope-surface','xenia.covenant','xenia.surface','xenia.work']);
   const s=run(['motifs','study','run','private-untrusted-value']);
   assert.equal(s.status,2);assert.equal(s.value.error.code,'STUDY_NOT_FOUND');
   assert.deepEqual([...s.value.problem.valid].sort(),['arrival','ending','recovery','representation']);
@@ -166,6 +166,32 @@ test('declined results name the refusal, not_applied, and a next action specific
   // After earlier operations returned the overall outcome is unknown, and the detail must not claim otherwise.
   const later=decline('write_conflict',{effect_outcome:'unknown',returned_operations:['init']});
   assert.match(later.detail,/unknown/i);
+});
+
+test('a declined result keeps whole sentences of a long meaning, never half of one, and says where the rest is',()=>{
+  const first='The backend answered version_conflict: the task\'s version is not the expected_version that was sent.';
+  const second='Read in the pinned bundle, not observed: every place this call can raise the code comes before the journal change is committed.';
+  const long=`${first} ${second} Undoing what the call had begun is left to the Bun program, which is not pinned.`;
+  assert.ok(first.length<200&&`${first} ${second}`.length>200&&long.length<=512);
+  const decline=(meaning,ctx)=>buildProblem(synthetic('DECLINED',{operation_started:true,effect_outcome:'not_applied',module:'agenttool.collab',operation:'task-claim',
+    refusal:{code:'a_code_the_door_has_no_words_for',meaning}}),ctx);
+  for(const ctx of [{session:true,moduleIds:['agenttool.collab'],state:'active'},{argv:['invoke','x','y']}]){
+    const at=ctx.session?'in a session':'at the command line';
+    // Short: the whole meaning, as before, with one full stop.
+    assert.equal(decline('Nothing was sent.',ctx).detail,'The operation declined, and its module declares that nothing was applied: Nothing was sent.',at);
+    // The lead states a declaration, not an observation: no part of it says that nothing changed.
+    assert.equal(decline(long,ctx).detail.includes('before any change'),false,at);
+    // Long: the sentences that fit in 200 characters, whole, and a pointer to the rest.
+    const {detail}=decline(long,ctx);
+    assert.equal(detail,`The operation declined, and its module declares that nothing was applied: ${first} The whole meaning is in error.refusal.meaning.`,at);
+    assert.equal(detail.includes('comes before the'),false,`${at}: no half sentence`);
+    // A name with dots in it is not taken for the end of a sentence.
+    const dotted=`${'The file agenttool.lock.json names it by collab.bundle_sha256, and a longer first clause follows here so that the end of this sentence falls past the limit of two hundred characters, which is where it would be cut'}. Second.`;
+    const cut=decline(dotted,ctx).detail;
+    assert.ok(cut.startsWith('The operation declined, and its module declares that nothing was applied: The file agenttool.lock.json names it by collab.bundle_sha256'),at);
+    assert.match(cut,/… The whole meaning is in error\.refusal\.meaning\.$/,`${at}: a first sentence that does not fit is cut and marked`);
+    assert.ok(cut.length<330,at);
+  }
 });
 
 test('a missing build is BUILD_REQUIRED with the exact prepare commands and nothing started',()=>{

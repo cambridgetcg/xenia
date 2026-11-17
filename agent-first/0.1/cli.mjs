@@ -5,11 +5,11 @@ import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 import {createModuleRuntime,ModuleError,MODULE_INPUT_LIMITS} from './runtime.mjs';
 import {createXeniaModules} from './modules.mjs';
-import {commandFailure,finishProvider} from './command-state.mjs';
-import {adapterRows,describeAdapter,ADAPTER_IDS} from './adapter-catalog.mjs';
+import {commandFailure,errorProjection,failureNotEstablished,finishProvider} from './command-state.mjs';
+import {adapterRows,describeAdapter,ADAPTER_IDS,ADAPTERS_NOT_LISTED} from './adapter-catalog.mjs';
 import {buildArrival} from './arrive.mjs';
 import {runInvoke} from './invoke.mjs';
-import {COMMANDS,EXIT_CODES,NETWORK_NOTE,REPORT_ROUTE,USAGE_CODES,buildProblem,exitOf,usageHelp} from './problems.mjs';
+import {CARD_NOTE,COMMANDS,EXIT_CODES,NETWORK_NOTE,REPORT_ROUTE,USAGE_CODES,buildProblem,exitOf,usageHelp,wasWritten} from './problems.mjs';
 
 const makeRuntime=()=>{const runtime=createModuleRuntime();for(const module of createXeniaModules())runtime.register(module);return runtime;};
 const exampleOf=(runtime,id)=>runtime.describe(id).operations[0].input.example;
@@ -108,7 +108,7 @@ async function starterSmoke(args){
 }
 
 const isHelp=arg=>arg==='-h'||arg==='--help';
-const GENERAL_HELP=['arrive','help [command]','motifs [motif-id]','motifs study [list|show <study-id|motif-id>|run <study-id>|journey]','catalog','explain <module-id>','invoke <module-id> <operation-id> --input <file>','demo [--full]',
+const GENERAL_HELP=['arrive','help [command]','motifs [motif-id]','motifs study [list|show <study-id|motif-id>|run <study-id>|journey]','catalog','explain <module-id>','invoke <module-id> <operation-id> --input <file>','session [--allow <module:operation,...>] [--collab-config <absolute-file>]','demo [--full]',
   'door plan --origin <origin> [--allow-local-target]',
   'door check --origin <origin> --max-requests <1..66> --total-timeout-ms <100..120000> [--allow-local-target] [--full]',
   'door rights --input <file> [--as-of <rfc3339>] [--origin <origin>] [--full]',
@@ -147,8 +147,8 @@ export async function main(args){
     return envelope({title:'Xenia agent-first module kit',status:'repository-only development',commands:GENERAL_HELP,
       start_here:'Run: arrive. It is one read-only orientation document and expects no reply.',
       principle:'Inspect → activate deliberately → invoke through the host gate → pause, upgrade or retire.',
-      exit_codes:EXIT_CODES,output:'stdout is one JSON document; stderr is silent. A failure has error (what happened) and problem (what you may do next). A `door` or `feedback` document states its own exit as exit_code, exit_reason and exit_meaning.',
-      network:NETWORK_NOTE,limits:MODULE_INPUT_LIMITS,notes:['No automatic installs, services, host hooks, accounts, publication or model calls.','Runtime state is in-process; the caller owns persistence.','Trusted module code is not an OS sandbox.'],
+      exit_codes:EXIT_CODES,output:'stdout is one JSON document; stderr is silent. A failure has error (what happened) and problem (what you may do next). A `door` or `feedback` document states its own exit as exit_code, exit_reason and exit_meaning. `session` is the one exception: its stdout is JSON Lines, one JSON object per line, and its exit is 0 only when its end was complete; see `help session`.',
+      network:NETWORK_NOTE,cards:CARD_NOTE,limits:MODULE_INPUT_LIMITS,notes:['No automatic installs, services, host hooks, accounts, publication or model calls.','Runtime state is in-process; the caller owns persistence.','Trusted module code is not an OS sandbox.'],
       not_established:['that any listed command will succeed here','that this list is every capability of the host']});
   }
   if(command==='motifs'&&!rest.length)return {...JSON.parse(fs.readFileSync(new URL('./motifs.json',import.meta.url),'utf8')),next:[
@@ -177,17 +177,23 @@ export async function main(args){
     const {runContextCommand}=await import('./context.mjs');
     return envelope(await runContextCommand(rest));
   }
+  if(command==='session'){
+    // Loaded only for this command. It reads standard input and writes its own lines, one compact JSON object each, as it goes;
+    // it does not throw, and what it returns is marked as already written.
+    const {runSessionCommand}=await import('./session.mjs');
+    return runSessionCommand(rest);
+  }
   const runtime=makeRuntime();
   if(command==='arrive'&&!rest.length){
     const lock=JSON.parse(fs.readFileSync(new URL('./agenttool.lock.json',import.meta.url),'utf8')).local_starter;
     const core=runtime.catalog().map(({id,title,operations})=>({id,title,effects:[...new Set(operations.flatMap(op=>op.effects))]}));
-    return buildArrival({lock,core,adapters:adapterRows(),networkNote:NETWORK_NOTE,report:REPORT_ROUTE});
+    return buildArrival({lock,core,adapters:adapterRows(),notListed:ADAPTERS_NOT_LISTED,networkNote:NETWORK_NOTE,report:REPORT_ROUTE});
   }
-  if(command==='catalog'&&!rest.length)return envelope({modules:runtime.catalog(),adapters:adapterRows(),
+  if(command==='catalog'&&!rest.length)return envelope({modules:runtime.catalog(),adapters:adapterRows(),...(ADAPTERS_NOT_LISTED.length?{adapters_not_listed:ADAPTERS_NOT_LISTED}:{}),
     runtime:{scope:'this process only',note:'state, revision and in_flight describe a runtime this command just created; they are not live shared state. Every module here starts as registered, revision 1, nothing in flight.',
       not_established:['the state of any runtime in another process or host']},
-    adapters_note:'Adapters are present in this checkout but not bound: no provider was imported and none is registered here. Each lists what must be supplied.',
-    network:NETWORK_NOTE,limits:MODULE_INPUT_LIMITS});
+    adapters_note:'Adapters are present in this checkout but not bound: no provider was imported and none is registered here. Each lists what must be supplied, and `bound_by` says which command, if any, binds it.',
+    cards:CARD_NOTE,network:NETWORK_NOTE,limits:MODULE_INPUT_LIMITS});
   if(command==='explain'&&rest.length===1){
     const adapter=describeAdapter(rest[0]);
     if(adapter)return envelope(adapter);
@@ -197,7 +203,8 @@ export async function main(args){
     return envelope({module,example:first?.example??(first?.example_ref?{reference:first.example_ref,note:'A path relative to the repository root; it is a file you can pass as --input.'}:undefined),
       ...(runnable?{next:[{argv:['invoke',module.id,runnable.id],needs:['--input <file>'],why:'Run this operation once on your own JSON file; prints a receipt.'}]}:{}),
       runtime_note:'state, revision and in_flight describe a runtime this command just created, not live shared state.',
-      interpretation:'Descriptions and examples are informative. Native profile functions validate their own inputs; reading does not activate anything. A refusal an operation lists is the module’s own declaration that it applied nothing; the runtime does not observe that.'});
+      cards:CARD_NOTE,
+      interpretation:'Descriptions, summaries and examples are informative; a schema on a card is enforced. Where input_checked_by is handler, the native profile function validates its own input. Reading does not activate anything. A refusal an operation lists is the module’s own declaration that it applied nothing; the runtime does not observe that.'});
   }
   if(command==='invoke')return envelope(await runInvoke(rest,{runtime,adapters:adapterRows()}));
   if(command==='demo'&&!rest.length)return demo(false);
@@ -216,21 +223,17 @@ function failureEnvelope(error,argv){
     try{ctx.moduleIds=[...makeRuntime().catalog().map(module=>module.id),...ADAPTER_IDS];}catch{}
   }
   const problem=buildProblem(safe,ctx);
-  const not_established=['that a suggested next action will succeed'];
-  if(safe.effect_outcome==='unknown')not_established.push('whether the failed operation changed anything');
-  if(safe.effect_outcome==='not_applied')not_established.push('anything about state beyond this one declined operation',
-    'that the operation did nothing before declining: not_applied is the module’s own declaration, and the runtime did not observe or verify it');
+  // The projection of the error and what it leaves open are in command-state.mjs.
   return {exit:USAGE_CODES.includes(safe.code)?2:1,
-    body:envelope({error:{code:safe.code,operation_started:safe.operation_started,effect_outcome:safe.effect_outcome,retryable:problem.retryable,module:safe.module,operation:safe.operation,
-      module_version:safe.module_version,module_revision:safe.module_revision,refusal:safe.refusal,reason:safe.reason,
-      phase:safe.phase,returned_operations:safe.returned_operations,verification:safe.verification,snapshot_cleanup:safe.snapshot_cleanup},
-      problem,...(safe.receipt?{receipt:safe.receipt}:{}),not_established})};
+    body:envelope({error:errorProjection(safe,problem.retryable),problem,...(safe.receipt?{receipt:safe.receipt}:{}),not_established:failureNotEstablished(safe)})};
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){
   const argv=process.argv.slice(2);
   try{
     const body=await main(argv);
+    // `session` wrote its own lines. The process is ended here, so that a handler still running past its deadline cannot keep it open.
+    if(wasWritten(body))process.exit(exitOf(body)??0);
     console.log(JSON.stringify(body,null,2));
     // Only a body that set its own exit (door, feedback) changes it; every other success stays 0.
     const exit=exitOf(body);

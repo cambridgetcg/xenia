@@ -7,20 +7,47 @@
 // surface/0.1/problem.schema.json: codes are UPPER_SNAKE, and a next action is
 // an argv array the caller can run plus a one-line reason (`why`), not a link.
 // An action with `needs` is a command prefix: the caller adds the named flags.
+// Inside a `session` a problem is terminal or its next actions are requests for
+// that session ({request, needs, why}), never an argv; the forms a request can
+// take, and checkRequest beside checkArgv, are below.
+import {compileSchema} from './schema.mjs';
 
 // Which rule an unusable input file broke; input-file.mjs sets the `reason` key.
+// does_not_match_card is about the value and not the file: the runtime sets
+// it when an input does not match the schema on an operation's card. The
+// collab_config_ reasons are about the config file `session --collab-config`
+// names; the Collab adapter sets them, with `pointer` naming the key at fault.
 export const INPUT_REASONS=Object.freeze({
   missing:'The input file is missing (no file at that path).',
   not_regular_file:'The input path is not a regular file (a directory or special file).',
   symbolic_link:'The input path is a symbolic link; this reader never follows links.',
   unreadable:'The input file could not be read.',
-  too_large:'The input file is over its size limit (1 MiB for invoke and for feedback check, 16 KiB for a handoff, 2,000,000 bytes for door rights).',
+  too_large:'The input file is over its size limit (1 MiB for invoke and for feedback check, 16 KiB for a handoff, 2,000,000 bytes for door rights, 16384 bytes for a Collab config).',
   not_utf8:'The input file is not valid UTF-8.',
   byte_order_mark:'The input file starts with a byte-order mark; remove it.',
   not_json:'The input file is not exactly one JSON value.',
   duplicate_key:'An object in the input file repeats a key.',
   beyond_limits:'The input is nested or large beyond the input limits (32 levels deep, 65536 values, 1 MiB).',
   not_an_adoption_record:'The input file is JSON, but it does not say it is a Covenant adoption record: it is not an object whose schema_version begins with xenia.covenant.adoption/.',
+  does_not_match_card:'The input is JSON data, but it does not match the schema on the operation\'s card.',
+  collab_config_does_not_match:'The Collab config is JSON, but it is not the config form: one object with the keys bundlePath, bunPath, databasePath, homeDir, workspace, actor and journal, optionally timeoutMs, and no others.',
+  collab_config_path_not_absolute:'A path in the Collab config is not an absolute path in its plain form: no `.` or `..` part, no doubled or trailing separator, no control character.',
+  collab_config_home_is_user_home:'homeDir in the Collab config is this user\'s home directory, or a folder that holds it, compared as folders (device and inode) as well as by spelling. It becomes the backend\'s HOME, so it has to be a folder of its own.',
+  collab_config_workspace_not_apart:'The workspace in the Collab config is not apart from homeDir and from the folder of databasePath: one of them is the other, inside it or around it, compared as folders (device and inode) as well as by spelling.',
+  collab_config_too_long:'The paths and the actor in the Collab config are too long together: written as JSON, what a session shows of a binding must fit in 2560 bytes.',
+});
+// The keys a Collab config has. A refusal names one of these and nothing the config held.
+const COLLAB_CONFIG_KEYS=Object.freeze(['bundlePath','bunPath','databasePath','homeDir','workspace','actor','journal','timeoutMs']);
+
+// Why a module definition was refused for its card; the runtime sets the `reason` key.
+export const MODULE_REASONS=Object.freeze({
+  input_schema_not_usable:'An operation\'s input schema is not usable: it is not bounded JSON data, or it holds something this kit\'s checker does not read. When the checker refused it, error.schema_refusal says why and where in the schema.',
+  input_example_does_not_match_schema:'An operation\'s input example does not match its own input schema; error.pointer, error.keyword and error.expected say where.',
+  binding_not_usable:'A binding handed to a session is not usable. It is {module, look, close, deadlines, at_end, bound_to} and nothing else: look and close are functions when given; deadlines gives a whole number of milliseconds from 1 to 30000 for operations the module has; at_end is at most 8 lines of 1 to 512 characters; bound_to is a JSON object of at most 2560 bytes.',
+  collab_card_not_usable:'The Collab adapter\'s card or pin does not match the adapter\'s code: card.json and index.mjs in agent-first/0.1/adapters/agenttool-collab, or the `collab` entry of agent-first/0.1/agenttool.lock.json. The module was not made.',
+  module_view_over_limit:'A module is too large for the session to describe in one inspect line of 8192 bytes: its title, description, contract, source, version or operation descriptions are too long, or what its binding says it is bound to is.',
+  session_start_over_limit:'The modules of this session cannot be listed within the 8192 bytes of its first line.',
+  session_has_no_module:'A session needs at least one module.',
 });
 
 // Which argument of a known command could not be read. What was typed is never
@@ -31,6 +58,25 @@ export const ARGUMENT_REASONS=Object.freeze({
   max_requests_out_of_range:'--max-requests must be a whole number from 1 to 66, written in digits only, for example 1.',
   total_timeout_ms_out_of_range:'--total-timeout-ms must be a whole number of milliseconds from 100 to 120000, written in digits only, for example 5000.',
   required_flag_missing:'A flag this command requires was not given.',
+  allow_entry_not_readable:'Each --allow entry must be <module-id>:<operation-id>, in the lower-case form module and operation ids have, with entries separated by commas.',
+  allow_names_no_effect_declaring_operation:'An --allow entry names no operation in this session that declares effects. Only such an operation is gated, so only such an operation can be named.',
+  end_ms_out_of_range:'The end limit a host gives a session must be a whole number of milliseconds from 1 to 15000.',
+  collab_config_not_absolute:'--collab-config must be the absolute path of the config file; a relative path would be read from whatever directory the command runs from.',
+});
+
+// Why a line sent to a session was not run; the session sets the `reason` key.
+// The line itself is never copied into the output. With does_not_match_request
+// the error also carries pointer, keyword and expected, read from the request
+// form; none of the three repeats anything the line held.
+export const REQUEST_REASONS=Object.freeze({
+  line_too_long:'The line is longer than 1 MiB (1048576 bytes) and was discarded unread.',
+  not_utf8:'The line is not valid UTF-8.',
+  byte_order_mark:'The line starts with a byte-order mark; remove it.',
+  not_json:'The line is not exactly one JSON value.',
+  duplicate_key:'An object in the line repeats a key.',
+  does_not_match_request:'The line is JSON, but it does not match the request form of its method.',
+  operation_needs_module:'An inspect request that names an operation must name its module too.',
+  resume_needs_paused:'resume reopens a paused module only, and this module is not paused.',
 });
 
 // Why `feedback new --out` wrote nothing. The path given is never copied into the output.
@@ -63,7 +109,11 @@ export const TARGET_REASONS=Object.freeze({
 });
 
 // One sentence, used word for word in arrive, help, catalog, the README and motifs.json.
-export const NETWORK_NOTE='`door check` is the only command in which this kit\'s own code sends requests; provider code run by `context` and `starter-smoke` is not observed by this kit.';
+export const NETWORK_NOTE='`door check` is the only command in which this kit\'s own code sends network requests; provider code run by `context` and `starter-smoke`, and the backend process `session --collab-config` can start, are not observed by this kit, which speaks to that backend over stdio only.';
+
+// What an operation's card is and who checks an input. Used word for word in
+// catalog, explain, help and the README.
+export const CARD_NOTE='An operation\'s card is its `input` (a summary; an example or the path of one; and a schema, when the module declares one), its `returns` (a summary) and its `refusals`. `input_checked_by` says who checks the input: `runtime` means the runtime holds the input to `input.schema` before the host gate is asked and before the handler runs; `handler` means the runtime checks only that the input is bounded JSON data, and the handler checks the rest. Nothing checks a returned value against `returns`.';
 
 // Where a report can go. One constant: `arrive` and both `feedback` commands
 // print it as it is. It names routes; it promises none of them.
@@ -96,16 +146,84 @@ export const FEEDBACK_FLAGS=Object.freeze({
   check:{required:['--input']},
 });
 
+// The flags `session` takes; checkArgv and session.mjs both read this.
+export const SESSION_FLAGS=Object.freeze({optional:['--allow','--collab-config']});
+
+// The request forms of a session: one closed schema per method, in the small
+// reading of JSON Schema that schema.mjs checks. `input` is not in the invoke
+// form: it is any JSON value, taken out before the form is checked and left
+// to the operation's card. An id is repeated on the response, so it is held
+// to a short plain alphabet; a module or operation name is held to the form
+// the runtime gives ids.
+const REQUEST_ID={type:'string',minLength:1,maxLength:128,pattern:'^[A-Za-z0-9._:-]+$'};
+const REQUEST_NAME={type:'string',minLength:1,maxLength:80,pattern:'^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$'};
+const requestForm=(method,required,more={})=>({type:'object',additionalProperties:false,required:['id','method',...required],
+  properties:{id:REQUEST_ID,method:{type:'string',enum:[method]},...more}});
+export const REQUEST_SCHEMAS=frozen({
+  inspect:requestForm('inspect',[],{module:REQUEST_NAME,operation:REQUEST_NAME}),
+  activate:requestForm('activate',['module'],{module:REQUEST_NAME}),
+  invoke:requestForm('invoke',['module','operation'],{module:REQUEST_NAME,operation:REQUEST_NAME,deadline_ms:{type:'integer',minimum:1,maximum:30000}}),
+  pause:requestForm('pause',['module'],{module:REQUEST_NAME}),
+  resume:requestForm('resume',['module'],{module:REQUEST_NAME}),
+  retire:requestForm('retire',['module'],{module:REQUEST_NAME}),
+});
+export const REQUEST_METHODS=Object.freeze(Object.keys(REQUEST_SCHEMAS));
+const REQUEST_CHECKS=Object.fromEntries(REQUEST_METHODS.map(method=>[method,compileSchema(REQUEST_SCHEMAS[method]).check]));
+const idMiss=compileSchema(REQUEST_ID).check,nameMiss=compileSchema(REQUEST_NAME).check,methodMiss=compileSchema({type:'string',enum:[...REQUEST_METHODS]}).check;
+const REQUEST_FILL={id:'id',module:'module',operation:'operation',input:null,deadline_ms:1};
+// Does a session accept this request? `needs` names the fields the sender
+// still adds (a suggested request leaves out `id`). Returns {ok: true, id,
+// method}, or {ok: false, id, method} with a `reason` or with the first miss
+// {pointer, keyword, expected}. `id` is the request's own id when that is
+// usable, and null when it is not; nothing else of the request is returned.
+export function checkRequest(request,needs=[]){
+  if(request===null||typeof request!=='object'||Array.isArray(request))return {ok:false,id:null,pointer:'',keyword:'type',expected:'object'};
+  const full={...request};
+  for(const need of needs??[])if(Object.hasOwn(REQUEST_FILL,need)&&!Object.hasOwn(full,need))full[need]=REQUEST_FILL[need];
+  if(!Object.hasOwn(full,'id'))return {ok:false,id:null,pointer:'',keyword:'required',expected:'id'};
+  const id=idMiss(full.id)?null:full.id;
+  if(!Object.hasOwn(full,'method'))return {ok:false,id,pointer:'',keyword:'required',expected:'method'};
+  const unknown=methodMiss(full.method);
+  if(unknown)return {ok:false,id,pointer:'/method',keyword:unknown.keyword,expected:unknown.expected};
+  const method=full.method;
+  const form={...full};
+  if(method==='invoke')delete form.input;
+  const miss=REQUEST_CHECKS[method](form);
+  if(miss){
+    // The invoke form is checked without `input`, so the names it accepts are the form's own and `input`.
+    const expected=method==='invoke'&&miss.pointer===''&&miss.keyword==='additionalProperties'?[...miss.expected,'input']:miss.expected;
+    return {ok:false,id,method,pointer:miss.pointer,keyword:miss.keyword,expected};
+  }
+  if(method==='inspect'&&Object.hasOwn(full,'operation')&&!Object.hasOwn(full,'module'))return {ok:false,id,method,reason:'operation_needs_module'};
+  return {ok:true,id,method};
+}
+
 export const COMMANDS={
   arrive:{usage:'arrive',summary:'Read one bounded orientation document. Expects no reply; activates nothing.',probe:['arrive']},
   help:{usage:'help [command]',summary:'Show this help, or the usage of one command. Words after the command name are not read: `help door plan` gives the usage of `door`, which covers each of its operations.',probe:['help']},
   motifs:{usage:'motifs [motif-id]',summary:'Read the motif map, or one motif card.',probe:['motifs']},
-  catalog:{usage:'catalog',summary:'List the registered modules. Activates nothing.',probe:['catalog']},
-  explain:{usage:'explain <module-id>',summary:'Describe one module and give an input example.',probe:['explain','xenia.surface']},
+  catalog:{usage:'catalog',summary:'List the registered modules, each operation with its card (what to send, what comes back, who checks the input), and the adapters. Activates nothing.',probe:['catalog']},
+  explain:{usage:'explain <module-id>',summary:'Describe one module: each operation\'s card (what to send, an example, what comes back, who checks the input) and the refusals it declares.',probe:['explain','xenia.surface']},
   demo:{usage:'demo [--full]',summary:'Run the local reference tools; a step list by default, complete bodies with --full. Needs the Xenia build.',probe:['demo']},
   invoke:{usage:'invoke <module-id> <operation-id> --input <file>',
     summary:'Register, activate, invoke once and retire a core module in this process, with your JSON file as input; prints a receipt. Only operations that declare no effects run here.',probe:['help','invoke'],
-    rules:['The input file must be a regular file, not a symbolic link, at most 1 MiB.','It must be valid UTF-8 with no byte-order mark, exactly one JSON value, with no repeated object key.','Nesting is limited to 32 levels and 65536 values.','`explain <module-id>` shows an input example for each module; a path in example_ref is relative to the repository root.']},
+    rules:['The input file must be a regular file, not a symbolic link, at most 1 MiB.','It must be valid UTF-8 with no byte-order mark, exactly one JSON value, with no repeated object key.','Nesting is limited to 32 levels and 65536 values.','`explain <module-id>` shows an input example for each module; a path in example_ref is relative to the repository root.',
+      'When an operation\'s card carries a schema, the runtime holds the input to it before anything runs. A miss is INVALID_INPUT with reason does_not_match_card, a JSON pointer to the place in the input, the schema keyword that missed and what the card expected; nothing from the input is repeated. The three core operations carry no schema: their native functions check the input. The Surface and Covenant functions answer an input they do not accept with DECLINED invalid_input, and the Work checker returns a report with valid false.']},
+  session:{usage:'session [--allow <module:operation,...>] [--collab-config <absolute-file>]',
+    summary:'Open one process that reads requests as JSON lines on standard input and answers each with one JSON line: inspect, activate, invoke, pause, resume and retire, on the modules this kit registers and, with --collab-config, on the Collab adapter. Nothing is activated at the start.',probe:['help','session'],
+    rules:['Every line this command prints is one compact JSON object, and stderr is silent. The first line is session_start (at most 8192 bytes): the modules and their states, each operation with its declared effects and whether the gate will let it run, one request form per method with an example, the limits, and what the line does not establish. The last line is session_end. A session that could not start prints one line, session_not_started, with error and problem, and reads nothing. `session --help` is answered as `help session`, which is a help document and not a session line.',
+      'A request is one line: {id, method, module, operation, input, deadline_ms}. id is a string of 1 to 128 of A-Z a-z 0-9 . _ : - and is repeated on the response. The methods are inspect, activate, invoke, pause, resume (from paused only) and retire; each has one closed form, and a field the form does not name is refused. `input` is any JSON value: the operation\'s card says what, and the runtime or the handler checks it. No request registers or upgrades a module.',
+      'Requests are run one at a time, in input order. Each line that is not blank gets one response: {id, line, ok, method, receipt, state}, then {outcome: "returned", result} or {error, problem}, then not_established. `line` counts input lines from 1. The receipt names the module (id, version, contract, revision), the operation, its declared effects, the deadline, and the bytes and sha256 of the request line. A returned value that is not JSON data, or is beyond the input limits, is still `returned`, with result {included: false, reason}.',
+      'A line that is not a usable request is answered INVALID_REQUEST with a reason, or with a pointer, a keyword and what the form expects there; the line itself is never repeated. A line over 1 MiB (1048576 bytes) is discarded unread and answered the same way. A blank line is counted and not answered.',
+      'The gate is default-deny. An operation that declares no effects is not gated; one that declares effects runs only when --allow names it, as <module-id>:<operation-id>, with entries separated by commas. The list is fixed at the start, and an entry that names no operation declaring effects refuses the start. The three core operations declare no effects, so without --collab-config --allow has nothing to name.',
+      '--collab-config <absolute-file> binds one more module, agenttool.collab: tasks, claims, reports and an event page in one AgentTool Collab journal on this device, through a backend process that its `open` operation starts. The file is a regular file of at most 16384 bytes, valid UTF-8, one JSON object with no repeated key, and it names every path; `explain agenttool.collab` lists its keys. Which bundle may run is not the caller\'s to state: the pin in agent-first/0.1/agenttool.lock.json names it by sha256, and `open` compares the file with the pin before anything is copied or started. Binding starts nothing and writes nothing. Every operation of the module declares effects, so each runs only when --allow names it.',
+      'A bound module shows more. Its row in session_start has `at_end`: the writes its end makes without asking the gate. For agenttool.collab these are the release of each claim the binding still holds and the end of its native session, and only when the backend is still running and no call has an outcome that is unknown or still pending. `inspect` of the module adds `look`, what the binding holds in memory (the step open reached, whether the backend process was running when last asked, calls whose outcome is unknown, claims, the last page read), and `bound_to`: the paths and the actor from the config, and the sha256 of the config file.',
+      'What agenttool.collab answers when the backend refuses: DECLINED, with the effect not_applied, only for the codes the operation\'s card lists. Which codes those are was read in the text of the pinned bundle, place by place, and never observed; `explain agenttool.collab` shows the places under backend_refusals and backend_reading. Any other failed write is OPERATION_FAILED with an unknown effect. A write whose outcome is not known is never sent again, and the binding then sends no more writes; status, task-get and inspect stay available while the backend runs.',
+      'A call has a deadline: 10 seconds, unless the request sets deadline_ms (1 to 30000) or a bound module states another default for the operation. At the deadline the call is answered DEADLINE_EXCEEDED: it had started, and whether it changed anything is not known. The deadline ends the wait; it does not stop the handler, which runs on. `inspect` lists such calls under `late` with how each settled (pending, returned, declined, failed), and no late result is kept. The deadline is a timer in the same process: a handler that keeps the process busy without yielding is answered only when it lets go.',
+      'Inside a session a problem is terminal, or its next_actions are requests for the same session ({request, needs, why}) and never a command line. `needs: ["id"]` means the sender adds an id.',
+      'Without the Xenia build, a call to xenia.surface or xenia.work is answered BUILD_REQUIRED before anything starts; session_start shows `build` for each module.',
+      'The session ends when its input ends: the lines already read are answered first. SIGINT, SIGTERM or SIGHUP ends it too: the call in flight is answered, lines read but not started are answered SESSION_ENDING, and nothing more is read. An output that stops taking lines ends it at once, and nothing more is started. Then every module is retired, each binding is closed once, and calls still running are waited for, within 15 seconds in all. session_end gives each module\'s state, the calls still running, and cleanup {complete, did, did_not, left_behind}. An error thrown outside any call ends the session the same way, with ended_by uncaught_error and exit 1.',
+      'The exit is 0 only when that end was complete; 1 when it was not, when the output stopped taking lines, when a module could not be registered, or when the file --collab-config names could not be used; 2 when the command line was not understood, an --allow entry could not be used, or --collab-config was not an absolute path. A request that failed does not change the exit: its own line says how it went.']},
   context:{usage:'context <init|status|render> --package <reviewed-package-dir> --dir <notes-dir>',
     also:['context handoff --package <reviewed-package-dir> --dir <notes-dir> --input <chosen-file> --expect <current-sha256>'],
     summary:'Run one explicit command on chosen local notes.',probe:['help','context'],
@@ -152,6 +270,11 @@ const EXITS=new WeakMap();
 export function withExit(body,code){EXITS.set(body,code);return body;}
 export const exitOf=body=>body!==null&&typeof body==='object'?EXITS.get(body):undefined;
 export const exitFields=(code,reason)=>({exit_code:code,exit_reason:reason,exit_meaning:EXIT_CODES[code]});
+// A command that wrote its own output (`session` writes JSON lines as it goes)
+// marks what it returns, so the CLI prints nothing more for it.
+const WRITTEN=new WeakSet();
+export function asWritten(body){WRITTEN.add(body);return body;}
+export const wasWritten=body=>body!==null&&typeof body==='object'&&WRITTEN.has(body);
 
 // Every flag a `door` or `feedback` operation requires. A missing one is named in the refusal.
 const REQUIRED_FLAGS=[...new Set([...Object.values(DOOR_FLAGS),...Object.values(FEEDBACK_FLAGS)].flatMap(spec=>spec.required??[]))];
@@ -223,6 +346,7 @@ export function checkArgv(argv,needs=[]){
     if(!Object.hasOwn(FEEDBACK_FLAGS,op??''))return bad('unknown feedback operation');
     return parseFlags(flags,FEEDBACK_FLAGS[op])?{ok:true}:bad('feedback flags');
   }
+  if(command==='session')return parseFlags(rest,SESSION_FLAGS)?{ok:true}:bad('session flags');
   if(command==='context'){
     const [op,...flags]=rest;
     if(!['init','status','render','handoff'].includes(op))return bad('unknown context operation');
@@ -264,10 +388,32 @@ const helpInvoke={argv:['help','invoke'],why:'Read the usage of the invoke comma
 const helpContext={argv:['help','context'],why:'Read the usage of the context command.'};
 const helpFeedback={argv:['help','feedback'],why:'Read the usage of the feedback command and its input rules.'};
 const printBlank={argv:['feedback','new'],why:'Print the blank entry instead; that writes nothing.'};
+const helpSession={argv:['help','session'],why:'Read how a session works and what its lines mean.'};
+// The one adapter the `session` command can bind (with --collab-config). A refusal about it points there.
+const SESSION_BOUND='agenttool.collab';
+const explainCollab={argv:['explain',SESSION_BOUND],why:'Read the keys of the config file, and what each operation of the module does and refuses.'};
 const moduleAction=(error,ctx)=>ctx.moduleIds?.includes(error.module)?
   {argv:['explain',error.module],why:'Read what this module declares it does and refuses.'}:
   {argv:['catalog'],why:'List the registered modules and their states.'};
+const cardAction=(error,ctx)=>ctx.moduleIds?.includes(error.module)?
+  {argv:['explain',error.module],why:'Read the operation\'s card: what to send, an example, and the schema the input is held to.'}:
+  {argv:['catalog'],why:'List the registered modules, each operation with its card.'};
 
+// What a problem's detail keeps of a refusal's meaning, which is the card's own text and can be 512 characters long:
+// its whole sentences, as many as fit in 200 characters, and never half of one. When the first sentence alone does
+// not fit, its first 199 characters and a mark. Whenever something is left out the detail says where the whole is;
+// the meaning itself is always on the same output, as error.refusal.meaning. A full stop inside a name
+// (agenttool.lock.json) is not the end of a sentence: only one that is followed by a space is.
+// The lead is a declaration, not an observation: that nothing was applied is what the module declares (effect
+// not_applied), and the runtime did not observe it.
+function declinedWords(meaning){
+  if(typeof meaning!=='string'||!meaning)return 'The operation declined, and its module declares that nothing was applied.';
+  const lead='The operation declined, and its module declares that nothing was applied: ';
+  if(meaning.length<=200)return `${lead}${meaning.replace(/\.$/,'')}.`;
+  const ends=[...meaning.slice(0,200).matchAll(/[.!?](?= )/g)].map(match=>match.index+1);
+  const kept=ends.length?meaning.slice(0,ends.at(-1)):`${meaning.slice(0,199)}…`;
+  return `${lead}${kept} The whole meaning is in error.refusal.meaning.`;
+}
 const REFUSALS={
   write_conflict:{text:'The handoff file changed since the hash you gave, so it was not replaced. Read the current hash, then repeat with it as --expect.',
     next:(e,c)=>contextAction(c,'status','Read the current handoff hash.')},
@@ -310,8 +456,13 @@ const TABLE={
     // Only a flag one of these commands defines is named; anything else in `missing` is dropped, so nothing typed is repeated.
     const missing=e.reason==='required_flag_missing'&&Array.isArray(e.missing)?e.missing.filter(flag=>REQUIRED_FLAGS.includes(flag)):[];
     const why=typeof e.reason==='string'&&Object.hasOwn(ARGUMENT_REASONS,e.reason)?`${ARGUMENT_REASONS[e.reason]} `:'';
-    return {detail:`${why}${missing.length?`Missing: ${missing.join(', ')}. `:''}The command is known but its arguments do not match its usage. Nothing was run.`,
-      ...(missing.length?{missing}:{}),
+    // An --allow entry is named by its place in the list, never by its text; the operations it could name are the session's own words.
+    const entry=Number.isInteger(e.entry)?`It is entry ${e.entry} of the list. `:'';
+    const nameable=e.reason==='allow_names_no_effect_declaring_operation'&&Array.isArray(e.valid)?e.valid.filter(name=>typeof name==='string'):undefined;
+    const names=!nameable?'':nameable.length?`Operations that declare effects here: ${nameable.slice(0,8).join(', ')}${nameable.length>8?`, and ${nameable.length-8} more (all are in valid)`:''}. `:
+      'No operation in this session declares effects, so --allow has nothing to name. ';
+    return {detail:`${why}${entry}${names}${missing.length?`Missing: ${missing.join(', ')}. `:''}The command is known but its arguments do not match its usage. Nothing was run.`,
+      ...(missing.length?{missing}:{}),...(nameable?{valid:nameable}:{}),
       next:[known?{argv:['help',known],why:`Read the usage of ${known}.`}:{argv:['help'],why:'List the commands and their usage.'}]};
   },
   MOTIF_INVALID_ARGUMENTS:()=>({detail:'The motifs study arguments do not match its usage. Nothing was run.',
@@ -354,7 +505,20 @@ const TABLE={
     'The notes root (--dir) must be an absolute path; a relative path would put the notes in whatever directory the command runs from. Nothing was read or written.':
     'The notes root is not a usable directory path (it must be an absolute path to a regular directory, or a new name in an existing parent). Nothing was read or written.',next:[helpContext]}),
   INVALID_INPUT:(e,c)=>{
+    if(e.reason==='does_not_match_card'){
+      // The pointer holds only names the card declares, and the keyword is the card's; neither is the caller's text.
+      const at=typeof e.pointer!=='string'?'a place that was not recorded':e.pointer===''?'the top of the input':e.pointer.slice(0,200);
+      const keyword=typeof e.keyword==='string'?`, keyword ${e.keyword.slice(0,40)}`:'';
+      return {detail:`${INPUT_REASONS.does_not_match_card} The first miss is at ${at}${keyword}; error.expected is the card's own word for it. Nothing was run, and the host gate was not asked.`,
+        next:[cardAction(e,c)]};
+    }
     const why=INPUT_REASONS[e.reason];
+    if((c.argv??[])[0]==='session'){
+      // The file --collab-config names. A key is named only when it is one the config form has; nothing the file held is repeated.
+      const key=typeof e.pointer==='string'&&COLLAB_CONFIG_KEYS.includes(e.pointer.slice(1))?e.pointer.slice(1):undefined;
+      const where=e.reason==='collab_config_does_not_match'?` ${key?`The miss is at the key ${key}`:'The miss is at the top of the config'}${typeof e.keyword==='string'?`, keyword ${e.keyword.slice(0,40)}`:''}; error.expected is what the form allows there.`:key?` The key is ${key}.`:'';
+      return {detail:`${why??'The config file is not usable.'}${where} This is about the file --collab-config names. No session was started, and nothing was copied, started or written.`,next:[helpSession,explainCollab]};
+    }
     if((c.argv??[])[0]==='door')return {detail:`${why??'The input file is not usable.'}${e.reason==='not_an_adoption_record'&&e.holds==='record_in_receipt_result'?
       ' This file is a receipt printed by `invoke`, and its `result` says it is an adoption record: save that `result` to a file of its own and give that file.':''} Nothing was checked. The input rules are in help door.`,
       next:[{argv:['help','door'],why:'Read the usage of the door command and its input rules.'}]};
@@ -371,13 +535,17 @@ const TABLE={
     next:[helpContext]}),
   HOST_GATE_REQUIRED:(e,c)=>{
     const effects=Array.isArray(e.effects)&&e.effects.length?` (${e.effects.join(', ')})`:'';
-    const dedicated=e.module==='agenttool.local-context';
-    return {detail:`This operation declares effects${effects}. The invoke command has no host gate to consult, so it never runs an operation that has effects. Nothing was run.${dedicated?' The dedicated command for this module is `context`, which takes an explicit reviewed package and notes directory.':' A host that supplies its own gate can run it programmatically.'}`,
-      next:[...(dedicated?[helpContext]:[]),moduleAction(e,c)]};
+    const dedicated=e.module==='agenttool.local-context',door=e.module===SESSION_BOUND;
+    return {detail:`This operation declares effects${effects}. The invoke command has no host gate to consult, so it never runs an operation that has effects. Nothing was run.${dedicated?' The dedicated command for this module is `context`, which takes an explicit reviewed package and notes directory.':
+      door?' The `session` command has a gate, and binds this module when it is given --collab-config <absolute-file>.':' A host that supplies its own gate can run it programmatically.'}`,
+      next:[...(dedicated?[helpContext]:[]),...(door?[helpSession]:[]),moduleAction(e,c)]};
   },
-  MODULE_NOT_BOUND:(e,c)=>({detail:'This module is described by the catalog but is not bound by this command line: it needs a provider that a programmatic host supplies. Nothing was run.',next:[moduleAction(e,c)]}),
+  MODULE_NOT_BOUND:(e,c)=>e.module===SESSION_BOUND?
+    {detail:'This module is described by the catalog but is not bound by this command line. The `session` command binds it when it is given --collab-config <absolute-file>. Nothing was run.',next:[helpSession,moduleAction(e,c)]}:
+    {detail:'This module is described by the catalog but is not bound by this command line: it needs a provider that a programmatic host supplies. Nothing was run.',next:[moduleAction(e,c)]},
   MODULE_EXISTS:retiredOrBusy('A module with that id is already registered. Nothing was changed.'),
-  INVALID_MODULE:()=>({detail:'The module definition is not valid. Nothing was registered.',next:[catalogAction]}),
+  INVALID_MODULE:(e,c)=>({detail:`${typeof e.reason==='string'&&Object.hasOwn(MODULE_REASONS,e.reason)?MODULE_REASONS[e.reason]:'The module definition is not valid.'} ${(c.argv??[])[0]==='session'?'No session was started.':'Nothing was registered.'}`,
+    next:[...((c.argv??[])[0]==='session'?[helpSession]:[]),catalogAction]}),
   MODULE_INACTIVE:retiredOrBusy('The module is registered but not active, so the call was not admitted. Nothing ran.'),
   OPERATION_NOT_FOUND:(e,c)=>({valid:e.valid,detail:`The module has no such operation.${e.valid?` Valid operations: ${e.valid.join(', ')}.`:''} Nothing ran.`,next:[moduleAction(e,c)]}),
   POLICY_BLOCKED:retiredOrBusy('The host gate did not allow this operation. This is an admission result, not a person’s refusal. Nothing ran.'),
@@ -385,11 +553,11 @@ const TABLE={
   MODULE_BUSY:retiredOrBusy('The module has calls in flight, so replacement was refused. Nothing changed. Retry after they drain.',true),
   STALE_REVISION:retiredOrBusy('The revision you named is not the current one. Nothing changed. Read the current revision and repeat.',true),
   ADMISSION_CHANGED:retiredOrBusy('The module changed state while the call was waiting for admission. Nothing ran. Read its state and repeat.',true),
-  CONTRACT_MISMATCH:retiredOrBusy('The replacement does not match the declared contract or its operations, effects and refusals. Nothing changed.'),
+  CONTRACT_MISMATCH:retiredOrBusy('The replacement does not match the declared contract or its operations, effects, refusals and cards (input summary, input schema, what each returns). Nothing changed.'),
   DECLINED:(e,c)=>{
     const r=e.refusal??{},known=REFUSALS[r.code];
     const prior=e.effect_outcome==='unknown';
-    const base=known?(typeof known.text==='function'?known.text(e,c):known.text):`The operation declined before any change${r.meaning?`: ${String(r.meaning).slice(0,200)}`:''}.`;
+    const base=known?(typeof known.text==='function'?known.text(e,c):known.text):declinedWords(r.meaning);
     const lead=prior?'Earlier operations in this command had already returned, so the overall effect is unknown; the refusal itself applied no change. ':'';
     const extra=typeof r.detail==='string'&&r.detail?` Reported: ${r.detail.slice(0,200)}`:'';
     const out={detail:lead+base+extra,retryable:Boolean(known?.retryable)};
@@ -398,12 +566,86 @@ const TABLE={
     if(prior&&!known?.terminal&&usesContext(c))out.next=[contextAction(c,'status','Read the current notes state.')];
     return out;
   },
+  // The three codes only a session produces. Outside one they point at its help; inside one, SESSION_TABLE below answers.
+  INVALID_REQUEST:()=>({detail:'A line sent to a session was not a usable request, and was not run. Inside the session the response says which rule the line broke.',next:[helpSession]}),
+  DEADLINE_EXCEEDED:()=>({detail:'A call in a session did not answer within its deadline. It had started, and its handler was not stopped; whether anything changed is not known.',next:[helpSession]}),
+  SESSION_ENDING:()=>({detail:'A session was closed to new requests before a line was started, so the line was not run.',next:[helpSession]}),
 };
 export const PROBLEM_CODES=Object.keys(TABLE).sort();
 
+// ---- Inside a session ----
+// A session answers on a line, so what it suggests next is a request for the
+// same session, never a command line: {request, needs, why}. A suggested
+// request leaves out `id`; `needs` says the sender adds one. A request names
+// a module only when that module is in the session (ctx.moduleIds), so a name
+// that was sent is not handed back as advice.
+const ask=(request,why)=>({request,needs:['id'],why});
+const askSession=why=>ask({method:'inspect'},why);
+const inSession=(e,c)=>typeof e.module==='string'&&Array.isArray(c.moduleIds)&&c.moduleIds.includes(e.module);
+const askModule=(e,c,why)=>inSession(e,c)?ask({method:'inspect',module:e.module},why):askSession('List the modules in this session and their states.');
+const askCard=(e,c,why)=>inSession(e,c)&&typeof e.operation==='string'&&!nameMiss(e.operation)?ask({method:'inspect',module:e.module,operation:e.operation},why):
+  askModule(e,c,'Read the module and its operations.');
+const SESSION_TABLE={
+  INVALID_REQUEST:(e,c)=>{
+    const why=typeof e.reason==='string'&&Object.hasOwn(REQUEST_REASONS,e.reason)?REQUEST_REASONS[e.reason]:'The line is not a usable request.';
+    let where='';
+    if(e.reason==='does_not_match_request'){
+      // The pointer holds only names the request form declares, and the keyword is the form's; neither is the sender's text.
+      const at=typeof e.pointer!=='string'?'a place that was not recorded':e.pointer===''?'the top of the request':e.pointer.slice(0,200);
+      where=` The first miss is at ${at}${typeof e.keyword==='string'?`, keyword ${e.keyword.slice(0,40)}`:''}; error.expected is what the form allows there.`;
+    }
+    const repeated=e.reason==='resume_needs_paused'?'Of the line, only its id, method and module are repeated.':'Of the line, only its id and method are repeated, each only when it matches its form.';
+    const next=e.reason!=='resume_needs_paused'?askSession('Read the request forms this session accepts, and its modules.'):
+      inSession(e,c)&&c.state==='registered'?ask({method:'activate',module:e.module},'The module was never activated: activate opens it to calls.'):askModule(e,c,'Read the module\'s state.');
+    return {detail:`${why}${where} The line was not run and nothing changed. ${repeated}`,next:[next]};
+  },
+  SESSION_ENDING:()=>({detail:'This session was closed to new requests before this line was started, so the line was not run. Nothing changed.',terminal:true}),
+  DEADLINE_EXCEEDED:()=>({detail:'The call had started and did not answer within its deadline. The deadline ends the wait; it does not stop the handler, which is still running. Whether anything changed is not known. Read the current state before repeating a write. A session that ends while the call is still running can leave a bound module\'s end writes unsent: its at_end says when.',
+    next:[askSession('Read `late`: how this call settled, once it has.')]}),
+  MODULE_NOT_FOUND:(e,c)=>({valid:c.moduleIds,detail:`No module with that id is in this session.${Array.isArray(c.moduleIds)?` Its modules: ${c.moduleIds.slice(0,16).join(', ')}.`:''} Nothing changed.`,
+    next:[askSession('List the modules in this session and their states.')]}),
+  MODULE_INACTIVE:(e,c)=>({detail:`The module is ${c.state==='paused'?'paused':c.state==='registered'?'registered and has not been activated':'not active'}, so the call was not admitted. Nothing ran.`,
+    next:[inSession(e,c)&&c.state==='registered'?ask({method:'activate',module:e.module},'Open the module to calls.'):
+      inSession(e,c)&&c.state==='paused'?ask({method:'resume',module:e.module},'Reopen the paused module.'):askModule(e,c,'Read the module\'s state.')]}),
+  OPERATION_NOT_FOUND:(e,c)=>({valid:e.valid,detail:`The module has no such operation.${Array.isArray(e.valid)?` Its operations: ${e.valid.slice(0,32).join(', ')}.`:''} Nothing ran.`,
+    next:[askModule(e,c,'Read the module and its operations.')]}),
+  INVALID_INPUT:(e,c)=>{
+    if(e.reason==='does_not_match_card'){
+      const at=typeof e.pointer!=='string'?'a place that was not recorded':e.pointer===''?'the top of the input':e.pointer.slice(0,200);
+      return {detail:`${INPUT_REASONS.does_not_match_card} The first miss is at ${at}${typeof e.keyword==='string'?`, keyword ${e.keyword.slice(0,40)}`:''}; error.expected is the card's own word for it. Nothing was run, and the gate was not asked.`,
+        next:[askCard(e,c,'Read the operation\'s card: what to send, an example, and the schema the input is held to.')]};
+    }
+    return {detail:`${INPUT_REASONS.beyond_limits} Nothing was run.`,next:[askCard(e,c,'Read the operation\'s card: what to send.')]};
+  },
+  POLICY_BLOCKED:()=>({detail:'This operation declares effects, and the allow list this session was started with does not name it. The list is fixed for the whole session, so no request here changes this. Only a session started with this operation on its allow list runs it. This is an admission result, not a person’s refusal. Nothing ran.',
+    terminal:true}),
+  ADMISSION_CHANGED:(e,c)=>({detail:'The module changed state while the call was waiting for admission. Nothing ran. Read its state and repeat.',retryable:true,next:[askModule(e,c,'Read the module\'s state.')]}),
+  MODULE_RETIRED:()=>({detail:'This module is retired in this session and takes no new calls; it cannot be activated again here. That is complete. A new session starts with every module registered.',terminal:true}),
+  OPERATION_FAILED:(e,c)=>({detail:'The operation started and failed in a way the module did not declare. Whether it changed anything is not known. Read the current state before repeating a write.',
+    next:[askModule(e,c,'Read the module\'s state and, for a bound module, what its binding holds in memory.')]}),
+  DECLINED:(e,c)=>{
+    const r=e.refusal??{};
+    const extra=typeof r.detail==='string'&&r.detail?` Reported: ${r.detail.slice(0,200)}`:'';
+    // The Collab binding opens once, with its own operation: before it has, that is the step that moves a caller on.
+    const first=r.code==='not_open'&&e.module===SESSION_BOUND&&inSession(e,c)&&e.operation!=='open'?
+      // open's card takes an empty object, so the request carries it: sent with only an id added, it is a request the card accepts.
+      [ask({method:'invoke',module:SESSION_BOUND,operation:'open',input:{}},'Open the binding first. open declares effects, so it runs only if the allow list names it.')]:[];
+    return {detail:`${declinedWords(r.meaning)}${extra}`,
+      next:[...first,askCard(e,c,'Read the operation\'s card and the refusals it declares.')]};
+  },
+  BUILD_REQUIRED:()=>({detail:'This operation needs the compiled Xenia library and its development dependencies, which are not present. Nothing was started, and no request in this session supplies them. Outside the session, from the Xenia checkout: `npm ci --ignore-scripts`, then `npm run build`.',terminal:true}),
+  CLI_FAILED:()=>({detail:'An unexpected failure that this session has no specific code for. Whether anything changed is not known; read the current state before repeating a write.',terminal:true}),
+};
+export const SESSION_PROBLEM_CODES=Object.keys(SESSION_TABLE).sort();
+
+// ctx.session: the problem is for a response line of a session. Every code is
+// then terminal or gives requests; a code no session request produces is terminal.
 export function buildProblem(error,ctx={}){
-  const code=typeof error?.code==='string'&&TABLE[error.code]?error.code:undefined;
-  const made=code?TABLE[code](error,ctx):{detail:'An unrecognised failure code. Whether anything changed is not known.',terminal:true};
+  const code=typeof error?.code==='string'&&Object.hasOwn(TABLE,error.code)?error.code:undefined;
+  const made=!code?{detail:'An unrecognised failure code. Whether anything changed is not known.',terminal:true}:
+    !ctx.session?TABLE[code](error,ctx):
+    Object.hasOwn(SESSION_TABLE,code)?SESSION_TABLE[code](error,ctx):
+    {detail:'A failure that a request in a session is not expected to produce. Whether anything changed is not known.',terminal:true};
   const next=made.terminal?[]:made.next??[];
   const problem={code:code??'CLI_FAILED',detail:made.detail,terminal:next.length===0,next_actions:next,
     retryable:Boolean(made.retryable||error?.retryable)};

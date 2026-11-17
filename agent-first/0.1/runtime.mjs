@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Repository-only module composition, not a Xenia conformance/authority claim.
 import { isProxy } from 'node:util/types';
+import { compileSchema, SchemaError } from './schema.mjs';
 
 // Retryable means: the same call may succeed after the caller re-reads module
 // state (catalog/describe). A failure with an unknown effect is never retryable.
@@ -50,17 +51,45 @@ function prepareRefusals(list){
   }
   return Object.freeze(out.sort((a,b)=>a.code<b.code?-1:1));
 }
-// An operation may describe what it expects: a short summary, and optionally an
-// example value and/or a repository path to a larger example. Informative only:
-// the native function still validates. The summary (not the example) is part
-// of the upgrade signature, because it is what a caller relies on.
+// An operation's card says what it expects: a short summary, optionally an
+// example value and/or a repository path to a larger example, and optionally a
+// schema. The summary, the example and example_ref are informative. A schema
+// is enforced: schema.mjs compiles it here, once, and invoke holds every input
+// to it before the host gate is asked. A schema schema.mjs does not read, or
+// an example that does not match its own schema, refuses the whole module.
+// The summary and the schema (not the example) are part of the upgrade
+// signature, because they are what a caller relies on.
+// Returns {note, check}: the frozen note that describe copies, and beside it
+// the compiled checker, or undefined when the card has no schema.
+const refusedCard=(reason,fields={})=>Object.assign(new ModuleError('INVALID_MODULE'),{reason,...fields});
 function prepareInputNote(note){
-  if(note===undefined)return undefined;
-  record(note,['summary','example','example_ref']);
+  if(note===undefined)return {};
+  record(note,['summary','example','example_ref','schema']);
   if(!text(note.summary,512)||(note.example_ref!==undefined&&!text(note.example_ref,256)))throw new ModuleError('INVALID_MODULE');
-  let example;
+  let example,schema,check;
   if(note.example!==undefined){try{example=freezeData(snapshotInput(note.example));}catch{throw new ModuleError('INVALID_MODULE');}}
-  return Object.freeze({summary:note.summary,...(example===undefined?{}:{example}),...(note.example_ref===undefined?{}:{example_ref:note.example_ref})});
+  if(note.schema!==undefined){
+    // The schema is copied as bounded JSON data first, so no accessor or proxy on it is ever run.
+    try{schema=freezeData(snapshotInput(note.schema));}catch{throw refusedCard('input_schema_not_usable');}
+    try{check=compileSchema(schema).check;}
+    catch(error){
+      throw refusedCard('input_schema_not_usable',error instanceof SchemaError?{schema_refusal:{reason:error.reason,pointer:error.pointer}}:{});
+    }
+    if(example!==undefined){
+      const miss=check(example);
+      if(miss)throw refusedCard('input_example_does_not_match_schema',miss);
+    }
+  }
+  return {check,note:Object.freeze({summary:note.summary,...(example===undefined?{}:{example}),
+    ...(note.example_ref===undefined?{}:{example_ref:note.example_ref}),...(schema===undefined?{}:{schema})})};
+}
+// What an operation says comes back: one short summary. Informative only: the
+// runtime never holds a returned value to it. Part of the upgrade signature.
+function prepareReturnsNote(note){
+  if(note===undefined)return undefined;
+  record(note,['summary']);
+  if(!text(note.summary,512))throw new ModuleError('INVALID_MODULE');
+  return Object.freeze({summary:note.summary});
 }
 function prepareDefinition(input){
   record(input,['id','version','contract','title','motif','description','source','operations']);
@@ -73,17 +102,27 @@ function prepareDefinition(input){
   record(input.operations,names);
   const operations={};
   for(const name of names.sort()){
-    const op=input.operations[name];record(op,['description','effects','run','refusals','input']);
+    const op=input.operations[name];record(op,['description','effects','run','refusals','input','returns']);
     if(!text(op.description)||typeof op.run!=='function'||!Array.isArray(op.effects)||isProxy(op.effects)||
       op.effects.some(effect=>!['local-read','local-write'].includes(effect))||new Set(op.effects).size!==op.effects.length)throw new ModuleError('INVALID_MODULE');
+    let card;
+    // A module refused for its card names the module and the operation; both were checked as identifiers above.
+    try{card=prepareInputNote(op.input);}
+    catch(error){if(error instanceof ModuleError&&error.reason!==undefined){error.module=input.id;error.operation=name;}throw error;}
+    // `check` is kept beside the note, not in it: describe copies the note, never the checker.
     operations[name]={description:op.description,effects:Object.freeze([...op.effects].sort()),run:op.run,
-      refusals:prepareRefusals(op.refusals),input:prepareInputNote(op.input)};
+      refusals:prepareRefusals(op.refusals),input:card.note,check:card.check,returns:prepareReturnsNote(op.returns)};
     Object.freeze(operations[name]);
   }
   return {id:input.id,version:input.version,contract:input.contract,title:input.title,
     motif:input.motif,description:input.description,...(input.source===undefined?{}:{source:input.source}),operations};
 }
-const signature=definition=>JSON.stringify(Object.entries(definition.operations).map(([id,op])=>[id,op.effects,op.refusals.map(r=>[r.code,r.effect]),op.input?.summary??null]));
+// A schema enters the signature with its object keys in sorted order, so the
+// same schema written in another key order is the same; a list (enum,
+// required) is compared in the order written.
+const sortedKeys=(key,value)=>plain(value)?Object.fromEntries(Object.keys(value).sort().map(name=>[name,value[name]])):value;
+const signature=definition=>JSON.stringify(Object.entries(definition.operations).map(([id,op])=>[id,op.effects,op.refusals.map(r=>[r.code,r.effect]),
+  op.input?.summary??null,op.input?.schema===undefined?null:JSON.stringify(op.input.schema,sortedKeys),op.returns?.summary??null]));
 
 export const MODULE_INPUT_LIMITS=Object.freeze({maxBytes:1024*1024,maxDepth:32,maxNodes:65536});
 function freezeData(value){
@@ -93,7 +132,11 @@ function freezeData(value){
   }
   return value;
 }
-function snapshotInput(value){
+// A copy of `value` when it is bounded JSON data (plain objects, arrays, strings, finite numbers, booleans and
+// null, within MODULE_INPUT_LIMITS); INVALID_INPUT when it is not. invoke holds every input to this. It is
+// exported so that the session door can hold what a handler returned, or what a binding shows, to the same rule
+// before writing it on a line; the runtime itself still returns a handler's value as it is.
+export function snapshotInput(value){
   let nodes=0,bytes=0;
   const ancestors=new Set();
   const add=count=>{bytes+=count;if(bytes>MODULE_INPUT_LIMITS.maxBytes)throw new ModuleError('INVALID_INPUT');};
@@ -136,7 +179,10 @@ export function createModuleRuntime({authorize=()=>false}={}) {
     return {id:d.id,version:d.version,contract:d.contract,title:d.title,motif:d.motif,
       description:d.description,state:entry.state,revision:entry.revision,in_flight:entry.inFlight,
       ...(d.source===undefined?{}:{source:d.source}),
-      operations:[...entry.operations].map(([id,op])=>({id,description:op.description,effects:[...op.effects],refusals:op.refusals.map(r=>({...r})),...(op.input?{input:structuredClone(op.input)}:{})}))};
+      // input_checked_by: `runtime` when the card carries a schema, which invoke holds the input to before the
+      // gate; otherwise `handler`, and the runtime checks only that the input is bounded JSON data.
+      operations:[...entry.operations].map(([id,op])=>({id,description:op.description,effects:[...op.effects],refusals:op.refusals.map(r=>({...r})),
+        ...(op.input?{input:structuredClone(op.input)}:{}),...(op.returns?{returns:{...op.returns}}:{}),input_checked_by:op.check?'runtime':'handler'}))};
   };
   return {
     register(input){
@@ -176,6 +222,12 @@ export function createModuleRuntime({authorize=()=>false}={}) {
       const epoch=entry.epoch;
       let args;
       try {args=freezeData(snapshotInput(input));} catch {throw fail('INVALID_INPUT');}
+      // When the card carries a schema, the frozen snapshot is held to it here: before the host gate is asked
+      // and before the handler. A miss names a place, a keyword and the card's own word; nothing from the input.
+      if(op.check){
+        const miss=op.check(args);
+        if(miss)throw Object.assign(fail('INVALID_INPUT'),{reason:'does_not_match_card',pointer:miss.pointer,keyword:miss.keyword,expected:miss.expected});
+      }
       if(op.effects.length){
         let allowed=false;
         const request=freezeData({module:{...module},operation,effects:[...op.effects],input:args});

@@ -19,21 +19,21 @@
       "id": "legibility",
       "name": "A door that explains itself",
       "question": "Can a caller discover what is offered without accidentally using it?",
-      "practice": "Describe contracts, operations, declared effects, versions and examples before activation. Reuse Surface's existing manifest builder rather than invent another discovery protocol.",
-      "limit": "Registration is not readiness; discovery is not authorization. A constructed manifest is not an observed service.",
+      "practice": "Describe contracts, operations, declared effects, versions and each operation's card (what to send, an example, what comes back, who checks the input) before activation. Reuse Surface's existing manifest builder rather than invent another discovery protocol.",
+      "limit": "Registration is not readiness; discovery is not authorization. A constructed manifest is not an observed service. An operation card's summaries and examples are informative; only a schema on one is enforced, and no core operation carries one.",
       "sources": ["README.md#how-to-read-this-standard", "surface/0.1/README.md"],
-      "implementation": ["agent-first/0.1/cli.mjs", "agent-first/0.1/runtime.mjs", "src/surface-0.1.ts"],
-      "checks": ["tests/agent-first-cli.test.mjs", "tests/agent-first-motifs.test.mjs"]
+      "implementation": ["agent-first/0.1/cli.mjs", "agent-first/0.1/runtime.mjs", "agent-first/0.1/schema.mjs", "src/surface-0.1.ts"],
+      "checks": ["tests/agent-first-cli.test.mjs", "tests/agent-first-motifs.test.mjs", "tests/agent-first-cards.test.mjs", "tests/agent-first-schema.test.mjs"]
     },
     {
       "id": "bounded-work",
       "name": "Work that can reach an ending",
       "question": "What was offered, attempted, returned, observed, or left unresolved?",
       "practice": "Keep a plan, a host gate, an attempted operation and evidence of its effect separate: the runtime records whether an operation started and what is known of its effect, and a composite command names the phase it reached. Reuse the Work reference checker for finite records; do not replay a record as instructions.",
-      "limit": "This kit checks records and calls trusted local handlers. It has no deadline or cancellation: a handler that never settles leaves its module retiring. It is not the roadmap's durable Work execution engine or an authority verifier.",
+      "limit": "This kit checks records and calls trusted local handlers. The runtime has no deadline, and nothing here cancels a call: a handler that never settles leaves its module retiring. The `session` door ends its wait for an answer at a deadline and does not stop the handler. It is not the roadmap's durable Work execution engine or an authority verifier.",
       "sources": ["work/0.1/README.md", "MICROSOFT-ROADMAP.md"],
-      "implementation": ["agent-first/0.1/runtime.mjs", "agent-first/0.1/command-state.mjs", "agent-first/0.1/modules.mjs", "work/0.1/check.mjs"],
-      "checks": ["tests/agent-first-runtime.test.mjs", "tests/agent-first-modules.test.mjs", "tests/work-0.1.test.mjs"]
+      "implementation": ["agent-first/0.1/runtime.mjs", "agent-first/0.1/command-state.mjs", "agent-first/0.1/modules.mjs", "agent-first/0.1/session.mjs", "work/0.1/check.mjs"],
+      "checks": ["tests/agent-first-runtime.test.mjs", "tests/agent-first-modules.test.mjs", "tests/agent-first-session.test.mjs", "tests/work-0.1.test.mjs"]
     },
     {
       "id": "continuity",
@@ -59,11 +59,11 @@
       "id": "exit",
       "name": "An exit that takes nothing with it",
       "question": "Can this capability stop without taking unrelated capabilities or retained records with it?",
-      "practice": "Close new admission immediately, let admitted work drain, and keep notes independently readable. Remove code and retained data only through their separate, explicit lifecycles.",
+      "practice": "Close new admission immediately, let admitted work drain, and keep notes independently readable. Remove code and retained data only through their separate, explicit lifecycles. A `session` ends the same way and says in its last line what was and was not cleaned up.",
       "limit": "Retirement is terminal in this runtime: a retired module cannot be reactivated, upgraded or registered again under the same id. Any return is a new process with a new runtime, reading the notes that were kept. It does not kill arbitrary JavaScript, revoke external credentials, erase backups, or retire a being's rights.",
       "sources": ["RIGHTS.md#rights-permissions-consent-and-covenants", "covenant/0.1/covenant.json"],
-      "implementation": ["agent-first/0.1/runtime.mjs", "agent-first/0.1/context.mjs"],
-      "checks": ["tests/agent-first-runtime.test.mjs", "tests/agent-first-context.test.mjs"]
+      "implementation": ["agent-first/0.1/runtime.mjs", "agent-first/0.1/context.mjs", "agent-first/0.1/session.mjs"],
+      "checks": ["tests/agent-first-runtime.test.mjs", "tests/agent-first-context.test.mjs", "tests/agent-first-session.test.mjs"]
     }
   ],
   "connections": [
@@ -78,8 +78,10 @@
     "motifs_and_catalog": "Node 22+ and this checkout; no provider or build required.",
     "reference_demo": "The normal prepared Xenia build and the Work checker's installed development dependencies.",
     "chosen_context": "An explicitly supplied, locally pinned Local Starter distribution and a separately selected notes directory.",
+    "collab_adapter": "Only for `session --collab-config`: a config file naming a bundle whose bytes match the kit's pin, a Bun executable, a journal path, and an `--allow` list naming the operations to run. Its backend keeps a database and speaks MCP over stdio.",
     "not_required": ["hosted account", "model call", "database", "MCP", "network after local preparation"],
-    "network": "`door check` is the only command in which this kit's own code sends requests; provider code run by `context` and `starter-smoke` is not observed by this kit.",
+    "not_required_note": "Not required by the kit. The optional Collab adapter needs a database (its backend's journal) and an MCP backend.",
+    "network": "`door check` is the only command in which this kit's own code sends network requests; provider code run by `context` and `starter-smoke`, and the backend process `session --collab-config` can start, are not observed by this kit, which speaks to that backend over stdio only.",
     "not_promised": ["OS sandbox", "durable workflow scheduling", "automatic host activation", "whole-framework conformance"]
   }
 }

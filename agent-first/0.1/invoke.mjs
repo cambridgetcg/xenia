@@ -9,7 +9,9 @@ import {createHash} from 'node:crypto';
 import {ModuleError,MODULE_INPUT_LIMITS} from './runtime.mjs';
 import {readBoundedBytes,parseStrictJson} from './input-file.mjs';
 
-const NEEDS_BUILD={
+// Which core modules need the Xenia build before their handler can run, and how to see whether it is there.
+// session.mjs reads this table too.
+export const NEEDS_BUILD={
   'xenia.surface':()=>fs.existsSync(new URL('../../dist/surface-0.1.js',import.meta.url)),
   'xenia.work':()=>fs.existsSync(new URL('../../node_modules/ajv/package.json',import.meta.url)),
 };

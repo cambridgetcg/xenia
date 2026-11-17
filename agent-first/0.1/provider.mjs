@@ -14,9 +14,9 @@ const FILES=['package.json','dist/core.mjs','dist/files.mjs','LICENSE','NOTICE']
 // Containment is decided by filesystem identity (device and inode of each
 // ancestor), not by spelling. Letter case, symlinks and bind-style aliases
 // then cannot make one directory look like two. Both paths must be real paths
-// of existing directories.
-const identity=p=>{const stat=fs.statSync(p,{bigint:true});return `${stat.dev}:${stat.ino}`;};
-const lineage=p=>{
+// of existing directories. The Collab adapter's path guards use the same two.
+export const identity=p=>{const stat=fs.statSync(p,{bigint:true});return `${stat.dev}:${stat.ino}`;};
+export const lineage=p=>{
   const ids=new Set();
   for(let current=p;;){
     ids.add(identity(current));
