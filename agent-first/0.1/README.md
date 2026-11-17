@@ -114,24 +114,9 @@ So an exit of 0 covers little: the file has five labelled parts and a section wi
 
 ## The motifs
 
-| Motif | The question it keeps answerable | Concrete behavior |
-|---|---|---|
-| **Standing** | What remains when a capability is unavailable? | Rights remain a floor. Reading what a door offers (describe, catalog, explain, motifs, help, arrive) works in every module state and after every refusal, never asks the host gate and takes no caller identity; `tests/agent-first-floor.test.mjs` runs that. The Covenant helper makes an all-unknown draft, not an active undertaking. |
-| **Legibility** | Can I understand a door before using it? | Describe contracts, versions, effects and each operation's card (what to send, an example, what comes back, who checks the input) without invoking a handler. |
-| **Bounded work** | What was offered, attempted, returned or observed? | Reuse Work's checker; do not execute a document merely because it records work. |
-| **Continuity** | What do I choose to carry? | Use Local Starter's ordinary files, selection, freshness, budgets and guarded handoffs. |
-| **Change** | Which implementation answered, and what changed? | Revision-bound replacement, declared contract/effect checks, in-flight protection and admission-time attribution. |
-| **Exit** | Can this stop without taking the records with it? | Close new calls, drain admitted work, leave retained files independently readable. |
+Ground: standing, rest. Cards, in a reading order that nothing enforces: arrival → legibility → choice → witness → continuity → release. Back: witness → choice, continuity → choice. Optional return: release → arrival. Crossing: repair.
 
-Their connection is not an automatic workflow:
-
-```text
-standing → legible choices → bounded work → chosen context
-    ↑                                      ↓
-    └──── exit without erasure ← attributable change
-```
-
-Understanding here is practical: each piece should explain what it does, what it needs, what it changes, what its evidence establishes, what remains unknown, and how to stop or replace it. The map is an interpretation of the linked Xenia sources, not proof of experience, authority or conformance.
+[MOTIFS.md](MOTIFS.md) shows every entry in full: the files that hold it, the tests that show its mechanisms, what it does not mean and what this kit does not do, the commands, modules and studies that touch it, a cross-index to the eight dimensions and the Covenant's duties, and where each earlier name went. It is generated from [motifs.json](motifs.json) with `node tools/render-motifs.mjs --write`, from the helpers in [motif-map.mjs](motif-map.mjs), and `npm test` checks that the two match. The map is an interpretation of the linked Xenia sources, not proof of experience, authority or conformance.
 
 ## Small pieces and their ownership
 

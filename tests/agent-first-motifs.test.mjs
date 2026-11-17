@@ -62,7 +62,9 @@ test('motifs prints an index of the map under 8192 bytes, without activation, a 
   assert.deepEqual(index.not_established,map.not_established);
   assert.ok(Array.isArray(index.next)&&index.next.length>=1&&index.next.length<=4);
   for(const item of index.next){assert.deepEqual(checkArgv(item.argv,item.needs),{ok:true},JSON.stringify(item));assert.equal(typeof item.why,'string');}
-  assert.deepEqual(Object.keys(index),['schema','kind','status','use','reading','path','entries','edges','edge_kinds','studies','without_study','renamed','self_sufficiency','next','not_established']);
+  // The page rendered from the whole map, by its path in the checkout; tests/agent-first-motif-page.test.mjs holds it.
+  assert.equal(index.page,'agent-first/0.1/MOTIFS.md');
+  assert.deepEqual(Object.keys(index),['schema','kind','status','use','reading','path','page','entries','edges','edge_kinds','studies','without_study','renamed','self_sufficiency','next','not_established']);
 });
 
 test('the path line is built from the map: ground, the then edges in order, the back edges, the optional return and the crossing',async()=>{
