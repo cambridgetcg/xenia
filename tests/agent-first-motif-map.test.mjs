@@ -341,7 +341,7 @@ test('the word checks read every text of an entry, an entry\'s needs and a check
   assert.deepEqual(texts.sort(),['A needed thing.','A product.','A variable.','an invariant']);
 });
 
-test('the map\'s text holds no greeting, no remark about or to the reader, no excluded register, no must, shall or should, and none of the other host\'s words',()=>{
+test('the map\'s text, the reconciliation\'s own prose among it, holds no greeting, no remark about or to the reader, no excluded register, no must, shall or should, and none of the other host\'s words',()=>{
   // Read, not copied: the first two patterns from tests/own-door.test.mjs, the third from tests/hospitality.test.mjs.
   const own=read('tests/own-door.test.mjs');
   const pattern=(text,name)=>{const match=new RegExp(`^\\s*const ${name} ?= ?\\/(.+)\\/i;$`,'m').exec(text);assert.ok(match,`${name} is defined on one line`);return new RegExp(match[1],'i');};
@@ -350,9 +350,17 @@ test('the map\'s text holds no greeting, no remark about or to the reader, no ex
   // ABOUT_READER lists what is said of a reader; a sentence addressed to one is caught here.
   const TO_READER=/\b(you|your|yours)\b/i;
   const OTHER_HOST=/\bpreview\b|upgrade-plan|planUpgrade|outcome_unknown|cleanup_pending|host\.mjs/i;
-  // Every text of the map but the reconciliation: the entries and edges, and what the index and the cards print
-  // beside them (reading, places, fields, the edge kinds, the studies' limits, the commands, the cross-index).
-  const texts=textsOf(map);
+  // Every text of the map: the entries and edges, and what the index and the cards print beside them (reading,
+  // places, fields, the edge kinds, the studies' limits, the commands, the cross-index). The reconciliation is the
+  // kit's own prose too, and MOTIFS.md prints it: its meaning, what each vocabulary is, every row's note and the
+  // provenance are read. Left out are only what it quotes or records: the earlier questions as they were asked, and
+  // the names, sources and statuses of its rows.
+  const rec=map.reconciliation;
+  const recorded=[rec.meaning,rec.provenance,...rec.vocabularies.map(item=>item.what),
+    ...['name_rows','edge_rows','field_rows'].flatMap(key=>rec[key].map(row=>row.note))];
+  assert.ok(recorded.every(text=>typeof text==='string'&&text.length>0));
+  assert.ok(recorded.length>=50,`${recorded.length} reconciliation texts`);
+  const texts=[...textsOf(map),...recorded];
   for(const entry of map.motifs)for(const need of entry.needs??[])assert.ok(texts.includes(need),`${entry.id}: needs are read`);
   for(const text of [map.reading,...Object.values(map.fields),...map.edge_kinds.map(kind=>kind.meaning)])assert.ok(texts.includes(text),text);
   assert.ok(texts.length>=200,`${texts.length} texts`);
@@ -560,6 +568,12 @@ test('repair names where a wrong step is met, with a test or a plain statement t
   assert.match(repair.boundary,/wrong step at this door/);
   assert.match(repair.boundary,/not the Covenant's repair of a harm/);
   assert.match(repair.boundary,/repair\.\*/);
+  // The starter test's stub provider throws write_conflict; it shows how the kit maps that code, not that the kit
+  // judged a hash stale. Whether a hash is current is the provider's decision, so the row says the provider refused.
+  const stale=repair.where.find(row=>row.shown_by.path==='tests/agent-first-starter.test.mjs');
+  assert.ok(stale,'the stale-handoff row');
+  assert.match(stale.what,/the provider refuses/);assert.match(stale.what,/write_conflict/);assert.match(stale.what,/DECLINED/);
+  assert.doesNotMatch(stale.what,/is declined as write_conflict/);
 });
 
 const EARLIER={

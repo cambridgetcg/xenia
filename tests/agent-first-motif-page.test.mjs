@@ -190,7 +190,8 @@ test('the page\'s own words hold no greeting, no remark about the reader, no exc
   const pattern=(text,name)=>{const match=new RegExp(`^\\s*const ${name} ?= ?\\/(.+)\\/i;$`,'m').exec(text);assert.ok(match,`${name} is defined on one line`);return new RegExp(match[1],'i');};
   const GREETING=pattern(own,'GREETING'),ABOUT_READER=pattern(own,'ABOUT_READER'),EXCLUDED_REGISTER=pattern(read('tests/hospitality.test.mjs'),'EXCLUDED_REGISTER');
   const MODAL=/\b(must|shall|should)\b/i;
-  // What the page quotes is held elsewhere: the map's strings by tests/agent-first-motif-map.test.mjs, the titles by
+  // What the page quotes is held elsewhere: the map's strings by tests/agent-first-motif-map.test.mjs (all but the
+  // reconciliation's quoted questions and recorded names), the titles by
   // their own files. What is left is what the generator adds.
   const quoted=[...strings(map),...spec.dimensions.flatMap(item=>[item.id,item.title]),
     ...covenant.rights.flatMap(right=>[right.id,right.title,...right.requirements.map(duty=>duty.id)]),...covenant.protective_limits.flatMap(item=>[item.id,item.title])];

@@ -79,7 +79,7 @@
       "witness": 7666,
       "continuity": 8107,
       "release": 7704,
-      "repair": 5847
+      "repair": 5850
     },
     "limit_bytes": 8192,
     "least_room": "continuity, 85 bytes; the index has 98",
@@ -101,6 +101,29 @@
     "tests/agent-first-motifs.test.mjs: the index keys gain fields; each renamed row gains status; the card's commands note has its new text; the README sentence about now_at names `motifs study show`. The other changes add assertions or tests.",
     "tests/agent-first-one-door.test.mjs, tests/agent-first-motif-page.test.mjs and tests/agent-first-motif-studies.test.mjs: assertions and tests added; no existing assertion changed."
   ],
+  "final_check_fixes": {
+    "note": "An independent final check of db5efce said land, with two minor findings. Both were reproduced and closed, test first, by the session that directs this work, in the commit after db5efce.",
+    "findings": {
+      "F1": "fixed. No word check read the reconciliation, whose notes are this step's own prose and are printed on MOTIFS.md. The word-check test now reads its meaning, what each vocabulary is, every row's note and the provenance; it leaves out only the earlier questions it quotes and the names, sources and statuses it records. A sentence with you, must and should planted in a note, which passed before, now fails it. The page test's comment says the same.",
+      "F2": "fixed. Repair's stale-handoff row said the kit declines a stale hash, but its test's stub provider throws write_conflict and the test shows only how the kit maps that code. The row now says the provider refuses the handoff and the kit returns DECLINED with not_applied declared; a test holds that wording. MOTIFS.md is regenerated. The repair answer is 5,850 bytes."
+    },
+    "gate": "npm test exit 0 (623 tests, 616 pass, 0 fail, 7 opt-in skips; 47 of 47; 10 of 10); with the reviewed Local Starter package, 623 tests, 622 pass, 1 skip; render-motifs, render-covenant and render-adoption-schema --check exit 0.",
+    "sha256_since_a0289d5": {
+      "agent-first/0.1/LINEAGE.md": "fc2fb1333a8844af02eb927616a47e83d48fdccddb4c90f874af9aba90fd6638",
+      "agent-first/0.1/MOTIFS.md": "47aab6326a658f58118e3573ab1c26d7370ea66cf126eba70a6e4943aa925b19",
+      "agent-first/0.1/README.md": "62c2894bad19a2d93497da058665a895dba37941baa843b27373c198fad12c93",
+      "agent-first/0.1/cli.mjs": "f1db5a61592bc516365480f6f18548553c25617ffc1ac33ef9bf24667952ce70",
+      "agent-first/0.1/motif-map.mjs": "be37029bd582bb7a3ea26ad84c605ca970dcdc19583e1aefc1a9b5091310d7b9",
+      "agent-first/0.1/motif-studies.mjs": "d707594df80c3c4f91afc187d30ddda3733921f6c97b3d20d6fd03375fe732bb",
+      "agent-first/0.1/motifs.json": "f5d40411a61635bcc552836d7725a5bd3187b82c43a563cd5fd9c422228594c1",
+      "agent-first/0.1/problems.mjs": "9950b1ee29e3d04b76e0182e2256ed89a6a0043957476162922026ac42493c04",
+      "tests/agent-first-motif-map.test.mjs": "589b278584622d890b0ef4496357b21c0f97495025e7fdf42e41382adbc84c65",
+      "tests/agent-first-motif-page.test.mjs": "56bb24382ef19a09bf05b82d15e84022721667a81dc13579f344c0148b3bffbf",
+      "tests/agent-first-motif-studies.test.mjs": "6236670ef0c4eb56bb8804f0d32db4a6e86b726e5769e832ca432788977f377b",
+      "tests/agent-first-motifs.test.mjs": "374c22b5013a2481554de16e6f6d77d81600f77057fa32375781a73bf80699ad",
+      "tests/agent-first-one-door.test.mjs": "a3b6bfed51e8e83bb2c66d06830ccd57759b9b1b9ee44f9b2ea656a2bacd0bb4"
+    }
+  },
   "not_established": [
     "that any mapping is right beyond its pointers resolving, or that any duty is met: the page now says the second in each relation",
     "that the word checks find every instruction, greeting or remark about a reader: they find the listed words only",

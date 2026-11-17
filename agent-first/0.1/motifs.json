@@ -900,7 +900,7 @@
         },
         {
           "motif": "continuity",
-          "what": "A handoff sent with a hash that is no longer current is declined as write_conflict, with the effect not_applied.",
+          "what": "A handoff the provider refuses as write_conflict (a stale hash) is returned as DECLINED, with not_applied declared.",
           "shown_by": {
             "path": "tests/agent-first-starter.test.mjs",
             "test": "provider failure codes map to declared refusals; unnamed failures stay unknown"
