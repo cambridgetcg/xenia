@@ -484,7 +484,8 @@ export function bindCollab({config:given,configSha256,pin:givenPin,card=loadColl
       fs.writeFileSync(copy,bytes,{flag:'wx',mode:0o400});
       reach('bundle_copied');
       // A start that fails is named as that. The port rejects with a code of its own, or with the runtime's error when
-      // the file at bunPath is not a program; nothing of either is kept but the port's code.
+      // the file at bunPath is not a program (on macOS; on Linux such a file can be started by /bin/sh and fail one step
+      // later); nothing of either is kept but the port's code.
       try{
         endpoint=await connect({command:bunPath,args:['--no-env-file','--no-install',`--config=${devNull}`,copy],cwd:homeDir,
           env:{PATH:process.env.PATH??'/usr/bin:/bin',HOME:homeDir,AGENTOOL_COLLAB_DB:databasePath,GIT_OPTIONAL_LOCKS:'0'},
