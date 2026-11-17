@@ -725,19 +725,47 @@ test('a failure of open after its first write is unknown, the step reached is ke
   }
 });
 
-test('a program at bunPath that cannot be started leaves open unknown, and look says the start failed',async t=>{
-  // The file passes the check before any write (it is a file this process may execute) and is not a program.
+test('a file at bunPath that is not a program leaves open unknown, and look says how far open got',async t=>{
+  // The file passes the check before any write (it is a file this process may execute) and is not a program. Where it
+  // stops depends on the platform's C library. On macOS spawn itself fails (ENOEXEC). On Linux in CI the start
+  // succeeded: execvp can hand a file it cannot execute to /bin/sh, which reads it, answers nothing and exits, so open
+  // fails one step later. Either way open is unknown, no backend made a journal, and the end is not complete.
   const dirs=place();
   const notProgram=path.join(dirs.root,'not-a-program');
   fs.writeFileSync(notProgram,'\u0000\u0001 this is not a program\n',{mode:0o755});
   const {call,binding}=rig(t,{dirs,config:{bunPath:notProgram},connect:options=>spawnStdioEndpoint(options)});
   await unknown(call('open'),'a start that fails');
   const look=binding.look();
-  assert.equal(look.step,'bundle_copied');assert.equal(look.open_failed_before,'spawned');assert.equal(look.transport,'not_started');
-  assert.deepEqual(look.unknown_calls,[{operation:'open',why:'spawn_failed'}]);
+  if(look.step==='bundle_copied'){
+    assert.equal(look.open_failed_before,'spawned');assert.equal(look.transport,'not_started');
+    assert.deepEqual(look.unknown_calls,[{operation:'open',why:'spawn_failed'}]);
+  }else{
+    assert.notEqual(process.platform,'darwin','on macOS spawn itself fails');
+    assert.equal(look.step,'spawned');assert.equal(look.open_failed_before,'initialized');assert.equal(look.transport,'closed');
+    assert.equal(look.unknown_calls.length,1);assert.equal(look.unknown_calls[0].operation,'open');
+  }
   assert.equal(fs.existsSync(dirs.databasePath),false,'no backend ran, so no journal was made');
   const report=await binding.close();
   assert.equal(report.complete,false);
+  assert.ok(report.did.some(line=>/removed the copy/.test(line)));
+  assert.deepEqual(copiesOf(dirs),[]);
+});
+
+test('a program at bunPath that starts and exits without answering leaves open unknown at the step spawned, on any platform',async t=>{
+  if(process.platform==='win32'){t.skip('a #! script is not a program on Windows');return;}
+  const dirs=place();
+  const quiet=path.join(dirs.root,'quiet-program');
+  fs.writeFileSync(quiet,'#!/bin/sh\nexit 0\n',{mode:0o755});
+  const {call,binding}=rig(t,{dirs,config:{bunPath:quiet},connect:options=>spawnStdioEndpoint(options)});
+  await unknown(call('open'),'a program that answers nothing');
+  const look=binding.look();
+  assert.equal(look.step,'spawned');assert.equal(look.open_failed_before,'initialized');assert.equal(look.transport,'closed');
+  assert.equal(look.unknown_calls.length,1);assert.equal(look.unknown_calls[0].operation,'open');
+  assert.match(look.unknown_calls[0].why,/^transport_(closed|error)$/);
+  assert.equal(fs.existsSync(dirs.databasePath),false,'the program wrote no journal');
+  const report=await binding.close();
+  assert.equal(report.complete,false);
+  assert.ok(report.did_not.some(line=>/stopped before the step initialized/.test(line)),JSON.stringify(report.did_not));
   assert.ok(report.did.some(line=>/removed the copy/.test(line)));
   assert.deepEqual(copiesOf(dirs),[]);
 });

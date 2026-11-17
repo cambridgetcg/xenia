@@ -250,7 +250,7 @@
       "does": [
         "Reads the file at bundlePath and compares its sha256 with the kit's pin; checks bunPath, homeDir, the workspace and the journal against the config. Up to here nothing is written, and each thing found wrong is a declared refusal.",
         "Creates homeDir if it is missing, and in it one new private folder holding a read-only copy of the checked bytes. A homeDir that cannot be created, where nothing was made, is the refusal home_dir_unavailable.",
-        "Starts that copy with the program at bunPath: no shell, working directory homeDir, and four environment variables: PATH as this process has it, HOME set to homeDir, AGENTOOL_COLLAB_DB set to databasePath, GIT_OPTIONAL_LOCKS set to 0.",
+        "Starts that copy with the program at bunPath, asking for no shell (on Linux the C library can still hand a file that is not a program to /bin/sh), working directory homeDir, and four environment variables: PATH as this process has it, HOME set to homeDir, AGENTOOL_COLLAB_DB set to databasePath, GIT_OPTIONAL_LOCKS set to 0.",
         "As read in the pinned bundle, the backend opens the journal when it starts: it creates the file and its folder when they are missing, and may migrate an older journal.",
         "Sends initialize and tools/list, and compares the server's name and version with the pin and the input bounds each tool states with this card.",
         "Starts one native session for the configured actor in the workspace. As read in the pinned bundle, the backend runs git for this: where the workspace is inside a git repository it takes that repository's top level as the root it works at, and where there is a commit it reads the untracked files there to hash them.",

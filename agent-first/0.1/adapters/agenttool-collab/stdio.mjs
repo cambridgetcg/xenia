@@ -17,7 +17,10 @@
 // One case rejects with the runtime's own error instead of an EndpointError:
 // a command that is a file and not a program makes spawn itself throw (seen
 // on Node 24 on macOS, as ENOEXEC). The adapter (index.mjs) catches it, calls
-// it spawn_failed and keeps nothing else of it.
+// it spawn_failed and keeps nothing else of it. On Linux in CI the same file
+// was started instead: the C library's execvp can hand a file it cannot
+// execute to /bin/sh. shell:false below asks Node for no shell; it does not
+// stop that fallback.
 import {spawn} from 'node:child_process';
 
 export class EndpointError extends Error {
