@@ -592,6 +592,11 @@ From the repository root, check one finite run with:
 node work/0.1/check.mjs <run.json>
 ```
 
+A clean-room Python 3 second implementation and cross-implementation comparison
+harness live in [`python/`](python/README.md) (`check_work.py` and
+`compare_implementations.py`, built from this document and the schemas without
+reading `check.mjs`).
+
 The checker validates the current development schemas and the cross-record
 relationships it implements, including ordering, references, bounded counts,
 terminal-state agreement, repair reserve, projection equality, digest
