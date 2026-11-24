@@ -17,11 +17,11 @@ participation path.
 Beta.4 added the Rights and Covenant files, subpath exports, semantic validator,
 and packed-consumer checks. Beta.5 added the explicit `rights-0.1` runtime
 snapshot and drift checker, release-tag-pinned Covenant source identities, and
-structured release-verification boundaries. Beta.6 adds the dependency-free
+structured release-verification boundaries. Beta.6 added the dependency-free
 all-unknown Covenant draft generator, shared strict RFC 3339 chronology checks,
 packed Worker-example dependencies, and clearer historical-observation and
-continuity boundaries. Beta.7 publishes the Microsoft interoperability research
-roadmap as package documentation and adds clean-room adapter contribution
+continuity boundaries. Beta.7 published the Microsoft interoperability research
+roadmap as package documentation and added clean-room adapter contribution
 boundaries. Beta.8 makes the Covenant `validate-adoption.mjs` and
 `create-adoption.mjs` command lines run when reached through a symlinked path,
 such as pnpm's default layout, an isolated linker, a manual link, or macOS
