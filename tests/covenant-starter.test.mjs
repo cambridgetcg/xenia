@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
+import { execFile, spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 
 import Ajv2020 from "ajv/dist/2020.js";
@@ -16,6 +19,17 @@ import { validateCovenantAdoption } from "../covenant/0.1/validate-adoption.mjs"
 
 const execFileAsync = promisify(execFile);
 const root = new URL("../", import.meta.url);
+const covenantDirectory = fileURLToPath(new URL("covenant/0.1", root));
+const STARTER_ARGUMENTS = [
+  "--host-name",
+  "Example host",
+  "--canonical-url",
+  "https://example.com/",
+  "--speaker-id",
+  "https://example.com/#operator",
+  "--reviewed-at",
+  "2026-07-31T12:00:00Z",
+];
 const adoptionSchema = JSON.parse(await readFile(
   new URL("covenant/0.1/adoption.schema.json", root),
   "utf8",
@@ -36,6 +50,26 @@ function createFixture() {
 function assertValid(adoption) {
   assert.equal(validateAdoption(adoption), true, JSON.stringify(validateAdoption.errors));
   assert.deepEqual(validateCovenantAdoption(adoption), { valid: true, issues: [] });
+}
+
+// Node resolves symlinks for the main module, so a CLI reached through a
+// linked file or directory (pnpm, isolated linkers, a manual link, or macOS
+// /tmp) has a process.argv[1] that differs from its own import.meta.url.
+function covenantCliPaths(t, name) {
+  const temporary = mkdtempSync(join(tmpdir(), "xenia-covenant-cli-"));
+  t.after(() => rmSync(temporary, { recursive: true, force: true }));
+  const linkedFile = join(temporary, name);
+  const linkedDirectory = join(temporary, "linked-covenant");
+  symlinkSync(join(covenantDirectory, name), linkedFile);
+  symlinkSync(covenantDirectory, linkedDirectory, "dir");
+  return {
+    temporary,
+    scripts: [join(covenantDirectory, name), linkedFile, join(linkedDirectory, name)],
+  };
+}
+
+function runNode(args) {
+  return spawnSync(process.execPath, args, { encoding: "utf8" });
 }
 
 test("creates a complete all-unknown Covenant draft without implied authority or evidence", () => {
@@ -82,19 +116,59 @@ test("prints the same safe draft from the stdout-only CLI", async () => {
   const script = fileURLToPath(new URL("covenant/0.1/create-adoption.mjs", root));
   const { stdout, stderr } = await execFileAsync(process.execPath, [
     script,
-    "--host-name",
-    "Example host",
-    "--canonical-url",
-    "https://example.com/",
-    "--speaker-id",
-    "https://example.com/#operator",
-    "--reviewed-at",
-    "2026-07-31T12:00:00Z",
+    ...STARTER_ARGUMENTS,
   ]);
   assert.equal(stderr, "");
   const adoption = JSON.parse(stdout);
   assert.deepEqual(adoption, createFixture());
   assertValid(adoption);
+});
+
+test("prints the same safe draft through real, linked-file, and linked-directory CLI paths", (t) => {
+  const { scripts } = covenantCliPaths(t, "create-adoption.mjs");
+  for (const script of scripts) {
+    const printed = runNode([script, ...STARTER_ARGUMENTS]);
+    assert.equal(printed.status, 0, `${script}\n${printed.stderr}`);
+    assert.equal(printed.stderr, "", script);
+    assert.notEqual(printed.stdout, "", `${script} printed no draft`);
+    assert.deepEqual(JSON.parse(printed.stdout), createFixture(), script);
+  }
+});
+
+test("the adoption validator CLI fails closed through real, linked-file, and linked-directory paths", (t) => {
+  const { temporary, scripts } = covenantCliPaths(t, "validate-adoption.mjs");
+  const invalid = createFixture();
+  invalid.covenant.sha256 = `sha256:${"0".repeat(64)}`;
+  const invalidPath = join(temporary, "invalid-adoption.json");
+  const validPath = join(temporary, "valid-adoption.json");
+  writeFileSync(invalidPath, JSON.stringify(invalid));
+  writeFileSync(validPath, JSON.stringify(createFixture()));
+
+  for (const script of scripts) {
+    const rejected = runNode([script, invalidPath]);
+    assert.equal(rejected.status, 1, `${script}\n${rejected.stderr}`);
+    const result = JSON.parse(rejected.stdout);
+    assert.equal(result.valid, false, script);
+    assert.ok(result.issues.some(({ code }) => code === "source_pin_mismatch"), script);
+
+    const accepted = runNode([script, validPath]);
+    assert.equal(accepted.status, 0, `${script}\n${accepted.stderr}`);
+    assert.deepEqual(JSON.parse(accepted.stdout), { valid: true, issues: [] }, script);
+  }
+});
+
+test("importing the Covenant CLI modules never runs either command", (t) => {
+  const { temporary } = covenantCliPaths(t, "create-adoption.mjs");
+  const importer = join(temporary, "import-covenant-modules.mjs");
+  writeFileSync(importer, [
+    `import ${JSON.stringify(pathToFileURL(join(covenantDirectory, "validate-adoption.mjs")).href)};`,
+    `import ${JSON.stringify(pathToFileURL(join(temporary, "linked-covenant", "create-adoption.mjs")).href)};`,
+    "",
+  ].join("\n"));
+  const imported = runNode([importer, join(temporary, "adoption.json")]);
+  assert.equal(imported.status, 0, imported.stderr);
+  assert.equal(imported.stdout, "");
+  assert.equal(imported.stderr, "");
 });
 
 test("rejects ambiguous or unsafe starter inputs", () => {
