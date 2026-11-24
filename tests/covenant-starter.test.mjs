@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import { execFile, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -52,9 +52,11 @@ function assertValid(adoption) {
   assert.deepEqual(validateCovenantAdoption(adoption), { valid: true, issues: [] });
 }
 
-// Node resolves symlinks for the main module, so a CLI reached through a
-// linked file or directory (pnpm, isolated linkers, a manual link, or macOS
-// /tmp) has a process.argv[1] that differs from its own import.meta.url.
+// By default Node resolves symlinks for the main module, so a CLI reached
+// through a linked file or directory (pnpm, isolated linkers, a manual link,
+// or macOS /tmp) has a process.argv[1] that differs from its own
+// import.meta.url. Under --preserve-symlinks-main, import.meta.url keeps the
+// linked path instead, so the CLI guard compares real paths on both sides.
 function covenantCliPaths(t, name) {
   const temporary = mkdtempSync(join(tmpdir(), "xenia-covenant-cli-"));
   t.after(() => rmSync(temporary, { recursive: true, force: true }));
@@ -154,6 +156,41 @@ test("the adoption validator CLI fails closed through real, linked-file, and lin
     const accepted = runNode([script, validPath]);
     assert.equal(accepted.status, 0, `${script}\n${accepted.stderr}`);
     assert.deepEqual(JSON.parse(accepted.stdout), { valid: true, issues: [] }, script);
+  }
+});
+
+test("both Covenant CLIs still run when Node preserves a linked main-module path", (t) => {
+  const { temporary } = covenantCliPaths(t, "validate-adoption.mjs");
+  const farm = join(temporary, "linked-file-farm");
+  mkdirSync(farm);
+  for (const name of readdirSync(covenantDirectory)) {
+    symlinkSync(join(covenantDirectory, name), join(farm, name));
+  }
+  const invalid = createFixture();
+  invalid.covenant.sha256 = `sha256:${"0".repeat(64)}`;
+  const invalidPath = join(temporary, "invalid-adoption.json");
+  writeFileSync(invalidPath, JSON.stringify(invalid));
+
+  for (const { flags, directory } of [
+    { flags: ["--preserve-symlinks-main"], directory: join(temporary, "linked-covenant") },
+    { flags: ["--preserve-symlinks", "--preserve-symlinks-main"], directory: farm },
+  ]) {
+    const validator = [...flags, join(directory, "validate-adoption.mjs")];
+    const rejected = runNode([...validator, invalidPath]);
+    assert.equal(
+      rejected.status,
+      1,
+      `${validator.join(" ")} exited ${rejected.status} with stdout ${JSON.stringify(rejected.stdout)}\n${rejected.stderr}`,
+    );
+    const result = JSON.parse(rejected.stdout);
+    assert.equal(result.valid, false, validator.join(" "));
+    assert.ok(result.issues.some(({ code }) => code === "source_pin_mismatch"), validator.join(" "));
+
+    const generator = [...flags, join(directory, "create-adoption.mjs")];
+    const printed = runNode([...generator, ...STARTER_ARGUMENTS]);
+    assert.equal(printed.status, 0, `${generator.join(" ")}\n${printed.stderr}`);
+    assert.notEqual(printed.stdout, "", `${generator.join(" ")} printed no draft`);
+    assert.deepEqual(JSON.parse(printed.stdout), createFixture(), generator.join(" "));
   }
 });
 

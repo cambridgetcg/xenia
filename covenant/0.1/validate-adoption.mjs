@@ -4,7 +4,7 @@
 
 import { createHash } from "node:crypto";
 import { readFileSync, realpathSync } from "node:fs";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 import { compareRfc3339, parseRfc3339 } from "./rfc3339.mjs";
 
@@ -527,10 +527,12 @@ export function validateCovenantAdoption(adoption) {
   return { valid: issues.length === 0, issues };
 }
 
+// Compare real paths on both sides: Node resolves a symlinked main module by
+// default, but keeps the linked path under --preserve-symlinks-main.
 function isInvokedDirectly() {
   if (!process.argv[1]) return false;
   try {
-    return import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href;
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]);
   } catch {
     return false;
   }
