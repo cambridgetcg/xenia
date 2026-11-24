@@ -360,6 +360,7 @@ test("verifies an approved beta without npm mutation authority", async () => {
   );
 
   assert.match(workflow, /permissions:\n  contents: read/);
+  assert.match(workflow, /inputs\.version == '0\.1\.0-beta\.8'/);
   assert.match(workflow, /ref: npm-xenia-v\$\{\{ inputs\.version \}\}/);
   assert.match(workflow, /git cat-file -t "\$expected_tag"/);
   assert.match(workflow, /test "\$tagged_commit" = "\$\(git rev-parse HEAD\)"/);
