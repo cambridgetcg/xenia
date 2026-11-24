@@ -6,8 +6,8 @@ parts of that standard.
 
 ## Current status
 
-The package manifest is versioned `0.1.0-beta.7`. Its release identity is the
-annotated `npm-xenia-v0.1.0-beta.7` tag; earlier npm versions and tags remain
+The package manifest is versioned `0.1.0-beta.8`. Its release requires the
+annotated `npm-xenia-v0.1.0-beta.8` tag; earlier npm versions and tags remain
 immutable. Registry availability is established by npm, not by this source
 document. Everyone may read, use, test, fork, adapt, discuss, and build with it
 under the [repository license map](LICENSES.md). See
@@ -17,12 +17,19 @@ participation path.
 Beta.4 added the Rights and Covenant files, subpath exports, semantic validator,
 and packed-consumer checks. Beta.5 added the explicit `rights-0.1` runtime
 snapshot and drift checker, release-tag-pinned Covenant source identities, and
-structured release-verification boundaries. Beta.6 adds the dependency-free
+structured release-verification boundaries. Beta.6 added the dependency-free
 all-unknown Covenant draft generator, shared strict RFC 3339 chronology checks,
 packed Worker-example dependencies, and clearer historical-observation and
-continuity boundaries. Beta.7 publishes the Microsoft interoperability research
-roadmap as package documentation and adds clean-room adapter contribution
-boundaries. The Work 0.1 source remains a development draft outside the npm
+continuity boundaries. Beta.7 published the Microsoft interoperability research
+roadmap as package documentation and added clean-room adapter contribution
+boundaries. Beta.8 makes the Covenant `validate-adoption.mjs` and
+`create-adoption.mjs` command lines run when reached through a symlinked path,
+such as pnpm's default layout, an isolated linker, a manual link, or macOS
+`/tmp`, instead of silently exiting 0; moves the development lockfile's
+transitive `fast-uri` to 3.1.9; and carries the informative hospitality
+principle, patterns, and Care guidance merged into README.md, CONFORMANCE.md,
+and `spec.json` after beta.7, while HOSPITALITY.md stays repository-only.
+The Work 0.1 source remains a development draft outside the npm
 tarball until its independent-implementation gate passes. Earlier tarballs
 remain immutable; npm versions are never overwritten.
 
@@ -33,7 +40,7 @@ The source tree also carries the instruction-only
 [`practise-xenia-rights`](skills/practise-xenia-rights/SKILL.md) Agent Skill.
 It helps an agent apply an adopted baseline and report evidence, gaps, and
 authority boundaries. The skill is not an npm export, is not installed or
-activated by `@agenttool/xenia@0.1.0-beta.7`, and does not itself establish
+activated by `@agenttool/xenia@0.1.0-beta.8`, and does not itself establish
 adoption, permission, consent, or conformance.
 
 The personal `@agenttool` scope is the selected release channel and steward; it
@@ -43,7 +50,7 @@ or transfer ownership of contributors' work.
 After npm approves the staged release, install this exact beta with:
 
 ```sh
-npm install @agenttool/xenia@0.1.0-beta.7
+npm install @agenttool/xenia@0.1.0-beta.8
 ```
 
 From a clone, the naive path is:
@@ -257,7 +264,7 @@ gate implementations, forks, experiments, local installs, or contributions.
 The maintainer explicitly selected the controlled `@agenttool` npm scope for
 this beta. Each release still needs clean supported-Node test runs, packed
 consumer checks, inspection of the exact tarball, and the non-default `beta`
-tag. The beta.7 workflow requires annotated `npm-xenia-v0.1.0-beta.7` at the
+tag. The beta.8 workflow requires annotated `npm-xenia-v0.1.0-beta.8` at the
 exact workflow commit and refuses to overwrite an existing npm version. The
 distinct immutable `covenant-v0.1.0-rc.1` tag remains at its original reviewed
 commit; the local Covenant verifier checks that the current canonical source

@@ -13,7 +13,7 @@ test("publishes through the authorized scope without narrowing software licensin
   );
 
   assert.equal(packageJson.name, "@agenttool/xenia");
-  assert.equal(packageJson.version, "0.1.0-beta.7");
+  assert.equal(packageJson.version, "0.1.0-beta.8");
   assert.equal("private" in packageJson, false);
   assert.deepEqual(packageJson.publishConfig, {
     access: "public",
@@ -223,7 +223,7 @@ test("the packaged Worker example names its producer and external checker", asyn
     "utf8",
   );
 
-  assert.equal(example.dependencies["@agenttool/xenia"], "0.1.0-beta.7");
+  assert.equal(example.dependencies["@agenttool/xenia"], "0.1.0-beta.8");
   assert.equal(
     example.devDependencies["@agenttool/xenia-surface"],
     "0.1.0-rc.1",
@@ -233,7 +233,7 @@ test("the packaged Worker example names its producer and external checker", asyn
   assert.match(readme, /Do not run or edit an example in place inside `node_modules`/);
 });
 
-test("stages beta.7 only from a caught-up tokenless beta channel", async () => {
+test("stages beta.8 only from a caught-up tokenless beta channel", async () => {
   const workflow = await readFile(
     new URL(".github/workflows/stage-xenia.yml", root),
     "utf8",
@@ -242,7 +242,7 @@ test("stages beta.7 only from a caught-up tokenless beta channel", async () => {
   assert.match(workflow, /id-token: write/);
   assert.match(workflow, /environment: npm-bootstrap/);
   assert.match(workflow, /npm@11\.18\.0/);
-  assert.match(workflow, /inputs\.version == '0\.1\.0-beta\.7'/);
+  assert.match(workflow, /inputs\.version == '0\.1\.0-beta\.8'/);
   assert.match(workflow, /npm-xenia-v\$\{EXPECTED_VERSION\}/);
   assert.match(workflow, /git cat-file -t "\$expected_tag"/);
   assert.match(workflow, /npm run verify:covenant-release/);
@@ -302,6 +302,55 @@ test("stages beta.7 only from a caught-up tokenless beta channel", async () => {
     runGuard(["0.1.0-beta.7"], { beta: "0.1.0-beta.7" }, "0.1.0-beta.7").status,
     0,
   );
+
+  const publishedThroughBeta7 = [
+    "0.1.0-beta.2",
+    "0.1.0-beta.3",
+    "0.1.0-beta.4",
+    "0.1.0-beta.5",
+    "0.1.0-beta.6",
+    "0.1.0-beta.7",
+  ];
+  const beta8CaughtUp = runGuard(
+    publishedThroughBeta7,
+    { latest: "0.1.0-beta.5", beta: "0.1.0-beta.7" },
+    "0.1.0-beta.8",
+  );
+  assert.equal(beta8CaughtUp.status, 0, beta8CaughtUp.stderr);
+  const beta8StaleTag = runGuard(
+    publishedThroughBeta7,
+    { latest: "0.1.0-beta.5", beta: "0.1.0-beta.6" },
+    "0.1.0-beta.8",
+  );
+  assert.notEqual(beta8StaleTag.status, 0);
+  assert.match(
+    beta8StaleTag.stderr,
+    /beta must point to the highest published beta 0\.1\.0-beta\.7 before staging 0\.1\.0-beta\.8; got 0\.1\.0-beta\.6/,
+  );
+  const beta8WithoutBeta7 = runGuard(
+    publishedThroughBeta7.slice(0, -1),
+    { latest: "0.1.0-beta.5", beta: "0.1.0-beta.6" },
+    "0.1.0-beta.8",
+  );
+  assert.notEqual(beta8WithoutBeta7.status, 0);
+  assert.match(beta8WithoutBeta7.stderr, /immediate predecessor 0\.1\.0-beta\.7 must be public/);
+  const beta8BelowNewerBeta = runGuard(
+    [...publishedThroughBeta7, "0.1.0-beta.9"],
+    { latest: "0.1.0-beta.5", beta: "0.1.0-beta.9" },
+    "0.1.0-beta.8",
+  );
+  assert.notEqual(beta8BelowNewerBeta.status, 0);
+  assert.match(
+    beta8BelowNewerBeta.stderr,
+    /immediate predecessor 0\.1\.0-beta\.7 must also be the highest published beta/,
+  );
+  const beta8Republished = runGuard(
+    [...publishedThroughBeta7, "0.1.0-beta.8"],
+    { latest: "0.1.0-beta.5", beta: "0.1.0-beta.8" },
+    "0.1.0-beta.8",
+  );
+  assert.notEqual(beta8Republished.status, 0);
+  assert.match(beta8Republished.stderr, /0\.1\.0-beta\.8 is already published/);
 });
 
 test("verifies an approved beta without npm mutation authority", async () => {
@@ -311,6 +360,7 @@ test("verifies an approved beta without npm mutation authority", async () => {
   );
 
   assert.match(workflow, /permissions:\n  contents: read/);
+  assert.match(workflow, /inputs\.version == '0\.1\.0-beta\.8'/);
   assert.match(workflow, /ref: npm-xenia-v\$\{\{ inputs\.version \}\}/);
   assert.match(workflow, /git cat-file -t "\$expected_tag"/);
   assert.match(workflow, /test "\$tagged_commit" = "\$\(git rev-parse HEAD\)"/);

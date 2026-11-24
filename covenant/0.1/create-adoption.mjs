@@ -2,7 +2,8 @@
 
 // SPDX-License-Identifier: MPL-2.0
 
-import { pathToFileURL } from "node:url";
+import { realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 import {
   canonicalAdoptionSchema,
@@ -239,8 +240,18 @@ function parseArgs(args) {
   return options;
 }
 
-const invokedPath = process.argv[1] === undefined ? undefined : pathToFileURL(process.argv[1]).href;
-if (invokedPath === import.meta.url) {
+// Compare real paths on both sides: Node resolves a symlinked main module by
+// default, but keeps the linked path under --preserve-symlinks-main.
+function isInvokedDirectly() {
+  if (!process.argv[1]) return false;
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]);
+  } catch {
+    return false;
+  }
+}
+
+if (isInvokedDirectly()) {
   try {
     const options = parseArgs(process.argv.slice(2));
     if (options.help) {

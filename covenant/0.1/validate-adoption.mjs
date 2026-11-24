@@ -3,8 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { compareRfc3339, parseRfc3339 } from "./rfc3339.mjs";
@@ -528,8 +527,18 @@ export function validateCovenantAdoption(adoption) {
   return { valid: issues.length === 0, issues };
 }
 
-const invokedPath = process.argv[1] ? resolve(process.argv[1]) : "";
-if (invokedPath === fileURLToPath(import.meta.url)) {
+// Compare real paths on both sides: Node resolves a symlinked main module by
+// default, but keeps the linked path under --preserve-symlinks-main.
+function isInvokedDirectly() {
+  if (!process.argv[1]) return false;
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]);
+  } catch {
+    return false;
+  }
+}
+
+if (isInvokedDirectly()) {
   const inputPath = process.argv[2];
   if (!inputPath || process.argv.length !== 3) {
     console.error("usage: validate-adoption.mjs <adoption.json>");

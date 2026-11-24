@@ -18,7 +18,7 @@ import, and says at which test level each piece stands.
 ## Status
 
 - **Informative and repository-only.** This file is not part of the
-  `0.1.0-beta.7` npm artifact and is not listed in `package.json` `files`. It is
+  `0.1.0-beta.8` npm artifact and is not listed in `package.json` `files`. It is
   not part of Surface 0.1, Covenant 0.1, or Work 0.1, and it adds no right,
   duty, or conformance level.
 - **Not a conformance result.** Nothing here is a badge, score, or verdict for

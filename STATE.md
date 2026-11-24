@@ -13,7 +13,7 @@ reviewed: 2026-08-03
   `/.well-known/agent.json`
 - Covenant: candidate `xenia-covenant/0.1`, 38 right duties and 5
   protective-limit duties
-- JavaScript producer library: source version `0.1.0-beta.7`
+- JavaScript producer library: source version `0.1.0-beta.8`
 - Surface external checker: separately versioned `0.1.0-rc.1`
 - Work: public development draft `xenia-work/0.1-development`; it is not a
   release and is not included in the root npm package
