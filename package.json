@@ -39,6 +39,8 @@
     "dist",
     "src",
     "examples/cloudflare-worker",
+    "!examples/cloudflare-worker/node_modules/**",
+    "!examples/cloudflare-worker/.wrangler/**",
     "README.md",
     "ADOPTION.md",
     "AGENT-FEEDBACK.md",

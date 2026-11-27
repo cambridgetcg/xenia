@@ -62,6 +62,8 @@ test("publishes through the authorized scope without narrowing software licensin
   assert.ok(packageJson.files.includes("RIGHTS.md"));
   assert.ok(packageJson.files.includes("covenant/0.1"));
   assert.ok(packageJson.files.includes("examples/cloudflare-worker"));
+  assert.ok(packageJson.files.includes("!examples/cloudflare-worker/node_modules/**"));
+  assert.ok(packageJson.files.includes("!examples/cloudflare-worker/.wrangler/**"));
   assert.ok(!packageJson.files.some((path) => path === "work" || path.startsWith("work/")));
   assert.ok(!Object.keys(packageJson.exports).some((key) => key.includes("work")));
   assert.equal(packageJson.license.includes("UNLICENSED"), false);
