@@ -1,0 +1,386 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:xenia:work:provider-manifest:0.1:development-draft",
+  "$comment": "SPDX-License-Identifier: CC-BY-SA-4.0",
+  "title": "XENIA Work 0.1 provider capability manifest development draft",
+  "type": "object",
+  "required": [
+    "$schema",
+    "schema_version",
+    "profile",
+    "provider",
+    "product",
+    "service",
+    "api_version",
+    "terms",
+    "preview_status",
+    "customer_agreement_override",
+    "policy_review",
+    "licenses_and_costs",
+    "permissions",
+    "customer_data_use",
+    "supported_actor_modes",
+    "data_lifecycle",
+    "operations",
+    "authorization_requirements",
+    "execution_rules",
+    "credential_reference",
+    "governance",
+    "non_endorsement_notice",
+    "not_established"
+  ],
+  "properties": {
+    "$schema": { "const": "urn:xenia:work:provider-manifest:0.1:development-draft" },
+    "schema_version": { "const": "xenia.work.provider-manifest/0.1-development" },
+    "profile": { "const": "xenia-work/0.1-development" },
+    "provider": { "$ref": "#/$defs/nonEmptyString" },
+    "product": { "$ref": "#/$defs/nonEmptyString" },
+    "service": { "$ref": "#/$defs/nonEmptyString" },
+    "api_version": { "$ref": "#/$defs/nonEmptyString" },
+    "terms": {
+      "type": "object",
+      "required": [
+        "url",
+        "reviewed_body_digest",
+        "observed_date",
+        "stated_effective_date",
+        "stated_last_updated_date",
+        "accompanying_terms"
+      ],
+      "properties": {
+        "url": { "$ref": "#/$defs/safeLocator" },
+        "reviewed_body_digest": { "$ref": "#/$defs/sha256" },
+        "observed_date": { "$ref": "#/$defs/isoDate" },
+        "stated_effective_date": { "$ref": "#/$defs/isoDateOrUnknown" },
+        "stated_last_updated_date": { "$ref": "#/$defs/isoDateOrUnknown" },
+        "accompanying_terms": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "required": ["name", "url", "section_references"],
+            "properties": {
+              "name": { "$ref": "#/$defs/nonEmptyString" },
+              "url": { "$ref": "#/$defs/safeLocator" },
+              "section_references": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 32,
+                "items": { "$ref": "#/$defs/nonEmptyString" }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "preview_status": {
+      "type": "string",
+      "enum": ["ga", "preview", "deprecated", "offline_mock", "unknown"]
+    },
+    "customer_agreement_override": {
+      "type": "object",
+      "required": ["applicable", "precedence_note"],
+      "properties": {
+        "applicable": { "enum": [true, false, "unknown"] },
+        "precedence_note": { "$ref": "#/$defs/nonEmptyString" }
+      },
+      "additionalProperties": false
+    },
+    "policy_review": {
+      "type": "object",
+      "required": [
+        "reviewer",
+        "decision",
+        "rationale",
+        "decision_evidence",
+        "recheck_cadence_days",
+        "next_review_date",
+        "change_triggers",
+        "disable_on_change"
+      ],
+      "properties": {
+        "reviewer": { "$ref": "#/$defs/nonEmptyString" },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "allowed_with_gates",
+            "read_only_only",
+            "offline_mock_only",
+            "disabled_pending_terms",
+            "prohibited"
+          ]
+        },
+        "rationale": { "$ref": "#/$defs/longString" },
+        "decision_evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "required": ["locator", "digest", "observed_date"],
+            "properties": {
+              "locator": { "$ref": "#/$defs/safeLocator" },
+              "digest": { "$ref": "#/$defs/sha256" },
+              "observed_date": { "$ref": "#/$defs/isoDate" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "recheck_cadence_days": { "type": "integer", "minimum": 1, "maximum": 365 },
+        "next_review_date": { "$ref": "#/$defs/isoDate" },
+        "change_triggers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "disable_on_change": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "licenses_and_costs": {
+      "type": "object",
+      "required": ["required_product_licenses", "metered_costs"],
+      "properties": {
+        "required_product_licenses": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "metered_costs": {
+          "type": "object",
+          "required": ["state", "summary"],
+          "properties": {
+            "state": { "enum": ["none", "metered", "unknown"] },
+            "summary": { "$ref": "#/$defs/longString" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "permissions": {
+      "type": "object",
+      "required": [
+        "delegated",
+        "application",
+        "admin_consent_expected",
+        "conditional_access_expected"
+      ],
+      "properties": {
+        "delegated": {
+          "type": "array",
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "application": {
+          "type": "array",
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "admin_consent_expected": { "enum": [true, false, "unknown"] },
+        "conditional_access_expected": { "enum": [true, false, "unknown"] }
+      },
+      "additionalProperties": false
+    },
+    "customer_data_use": {
+      "type": "object",
+      "required": ["purpose", "scope", "term", "evidence_requirement", "withdrawal_path"],
+      "properties": {
+        "purpose": { "$ref": "#/$defs/longString" },
+        "scope": { "$ref": "#/$defs/longString" },
+        "term": { "$ref": "#/$defs/nonEmptyString" },
+        "evidence_requirement": { "$ref": "#/$defs/nonEmptyString" },
+        "withdrawal_path": { "$ref": "#/$defs/longString" }
+      },
+      "additionalProperties": false
+    },
+    "supported_actor_modes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["human", "human_delegated_agent", "autonomous_agent"]
+      }
+    },
+    "data_lifecycle": {
+      "type": "object",
+      "required": [
+        "data_classes",
+        "source_acls",
+        "destination_acls",
+        "correction",
+        "restriction",
+        "retention",
+        "export",
+        "deletion",
+        "abandonment",
+        "uninstall",
+        "account_closure"
+      ],
+      "properties": {
+        "data_classes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "source_acls": { "$ref": "#/$defs/longString" },
+        "destination_acls": { "$ref": "#/$defs/longString" },
+        "correction": { "$ref": "#/$defs/longString" },
+        "restriction": { "$ref": "#/$defs/longString" },
+        "retention": { "$ref": "#/$defs/longString" },
+        "export": { "$ref": "#/$defs/longString" },
+        "deletion": { "$ref": "#/$defs/longString" },
+        "abandonment": { "$ref": "#/$defs/longString" },
+        "uninstall": { "$ref": "#/$defs/longString" },
+        "account_closure": { "$ref": "#/$defs/longString" }
+      },
+      "additionalProperties": false
+    },
+    "operations": {
+      "type": "object",
+      "required": ["read", "effectful_write"],
+      "properties": {
+        "read": {
+          "type": "array",
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/operationSpec" }
+        },
+        "effectful_write": {
+          "type": "array",
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/operationSpec" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "authorization_requirements": {
+      "type": "object",
+      "required": [
+        "provider_grant",
+        "customer_data_permission",
+        "runtime_policy",
+        "exact_execution_approval"
+      ],
+      "properties": {
+        "provider_grant": { "$ref": "#/$defs/longString" },
+        "customer_data_permission": { "$ref": "#/$defs/longString" },
+        "runtime_policy": { "$ref": "#/$defs/longString" },
+        "exact_execution_approval": { "$ref": "#/$defs/longString" }
+      },
+      "additionalProperties": false
+    },
+    "execution_rules": {
+      "type": "object",
+      "required": [
+        "automatic_retry_allowed",
+        "max_local_attempts",
+        "idempotency_rule",
+        "timeout_ms",
+        "compensation_rule"
+      ],
+      "properties": {
+        "automatic_retry_allowed": { "const": false },
+        "max_local_attempts": { "const": 1 },
+        "idempotency_rule": { "$ref": "#/$defs/longString" },
+        "timeout_ms": { "type": "integer", "minimum": 100, "maximum": 600000 },
+        "compensation_rule": { "$ref": "#/$defs/longString" }
+      },
+      "additionalProperties": false
+    },
+    "credential_reference": {
+      "type": "object",
+      "required": ["broker_type", "locator_scheme", "contains_secret"],
+      "properties": {
+        "broker_type": { "$ref": "#/$defs/nonEmptyString" },
+        "locator_scheme": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9+.-]{1,31}:$"
+        },
+        "contains_secret": { "const": false }
+      },
+      "additionalProperties": false
+    },
+    "governance": {
+      "type": "object",
+      "required": [
+        "privacy_notice_locator",
+        "revocation_instructions_locator",
+        "incident_contact",
+        "audit_readiness",
+        "brake_owner",
+        "off_switch_tested",
+        "uninstall_path"
+      ],
+      "properties": {
+        "privacy_notice_locator": { "$ref": "#/$defs/safeLocator" },
+        "revocation_instructions_locator": { "$ref": "#/$defs/safeLocator" },
+        "incident_contact": { "$ref": "#/$defs/nonEmptyString" },
+        "audit_readiness": { "$ref": "#/$defs/longString" },
+        "brake_owner": { "$ref": "#/$defs/nonEmptyString" },
+        "off_switch_tested": { "type": "boolean" },
+        "uninstall_path": { "$ref": "#/$defs/longString" }
+      },
+      "additionalProperties": false
+    },
+    "non_endorsement_notice": { "$ref": "#/$defs/longString" },
+    "not_established": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/nonEmptyString" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "longString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "isoDate": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "isoDateOrUnknown": {
+      "oneOf": [
+        { "$ref": "#/$defs/isoDate" },
+        { "const": "unknown" }
+      ]
+    },
+    "safeLocator": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?:https://|urn:)[^\\s?#]+$"
+    },
+    "operationSpec": {
+      "type": "object",
+      "required": ["id", "method", "summary", "reversibility"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "method": { "$ref": "#/$defs/nonEmptyString" },
+        "summary": { "$ref": "#/$defs/longString" },
+        "reversibility": {
+          "type": "string",
+          "enum": ["read_only", "reversible", "partially_reversible", "irreversible", "unknown"]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

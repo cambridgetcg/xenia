@@ -15,8 +15,10 @@ reviewed: 2026-08-03
   protective-limit duties
 - JavaScript producer library: source version `0.1.0-beta.7`
 - Surface external checker: separately versioned `0.1.0-rc.1`
-- Work: public development draft `xenia-work/0.1-development`; it is not a
-  release and is not included in the root npm package
+- Work: public development draft `xenia-work/0.1-development` (with the Node
+  reference checker, clean-room Python 3 verifier and 35-case comparison record
+  in `work/0.1/python/README.md`, and draft `provider-manifest.schema.json`); it
+  is not a release and is not included in the root npm package
 - Microsoft interoperability: public research roadmap; optional provider work
   remains unimplemented and disabled
 - Hospitality notebook: `HOSPITALITY.md`, an informative source reading dated
@@ -63,6 +65,7 @@ npm test
 node --test tests/work-0.1.test.mjs
 node work/0.1/check.mjs work/0.1/examples/completed-effect.json
 node work/0.1/check.mjs work/0.1/examples/declined.json
+python3 -B -m unittest discover -s work/0.1/python -v
 node tools/render-covenant.mjs --check
 node tools/render-adoption-schema.mjs --check
 npm run verify:xenia-package
@@ -85,5 +88,6 @@ git diff --check
   proposed-speaker values instead of reusing schema-required draft placeholders;
 - bind any future Surface checker result identity to an exact source or
   distribution revision before releasing a new checker;
-- have a second independent implementation reproduce the Work fixture digests
-  and recorded relationships before considering a Work release candidate.
+- review the clean-room Python Work 0.1 verifier and specification findings in
+  `work/0.1/python/README.md`, and decide whether an external-party
+  implementation is also desired before considering a Work release candidate.

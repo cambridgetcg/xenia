@@ -342,7 +342,11 @@ function buildResult({ artifact, observedAt, checks, issues, run }) {
     schema_version: WORK_RESULT_VERSION,
     profile: WORK_PROFILE,
     artifact,
-    verifier: { name: "xenia-work-check", version: WORK_CHECKER_VERSION },
+    verifier: {
+      name: "xenia-work-check",
+      version: WORK_CHECKER_VERSION,
+      implementation: `xenia-work-check-node/${WORK_CHECKER_VERSION}`,
+    },
     observed_at: observedAt,
     result: resultState(counts),
     scope: RESULT_SCOPE,

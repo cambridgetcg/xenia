@@ -459,25 +459,39 @@ or replay.
 
 `execution.receipt` records what the named provider returned, including its
 version, stated outcome, actual cost, summary, and any provider-receipt
-evidence. Run ceilings, estimates, handoff budgets, and proposals use
-`maximum_amount`; a known receipt uses the exact reported `amount`. An actual
-amount is still a recorded provider claim, not proof of settlement or a final
-invoice. A provider response of `pass` is not automatically proof of the
-proposed real-world effect.
+evidence. Every ID in `provider_receipt_evidence_ids` MUST reference a declared
+evidence record of kind `provider_receipt` observed no earlier than
+`execution.started.at` and no later than `execution.receipt.at`. Run ceilings,
+estimates, handoff budgets, and proposals use `maximum_amount`; a known receipt
+uses the exact reported `amount`. An actual amount is still a recorded provider
+claim, not proof of settlement or a final invoice. A provider response of `pass`
+is not automatically proof of the proposed real-world effect.
 
 `effect.observed` is separate. One or more observations may record that the
 effect was confirmed, not observed, contradicted, or remains unknown, together
 with evidence state, scoped evidence, limitations, and a separately labelled
-causal claim. `confirmed` requires `tested` or `attested` evidence state and at
-least one evidence reference. This is still a bounded record claim: an
-observation does not become authority over an affected actor, and an asserted
-causal relationship does not become tested merely by repetition.
-Evidence for a `tested` or `attested` causal claim MUST be relevant to that
-causal relationship, recorded after the referenced provider response, and
-recorded no later than the observation. Earlier consent or permission evidence
-does not establish causation. Each relied-on evidence record MUST carry a
-structured `causal_scope` binding the run, proposal and digest, execution,
-receipt, target, expected effect, and observed outcome and summary.
+causal claim. Every ID in `effect.observed.payload.evidence_ids` MUST reference
+a declared evidence record of kind `observation` observed no earlier than
+`execution.receipt.at` and no later than `effect.observed.at`. `confirmed`
+requires `tested` or `attested` evidence state and at least one evidence
+reference. This is still a bounded record claim: an observation does not become
+authority over an affected actor, and an asserted causal relationship does not
+become tested merely by repetition. Evidence for a `tested` or `attested` causal
+claim (`causal_claim.evidence_ids`) MUST have kind `observation`, `test_result`,
+or `attestation`, MUST be recorded strictly after the referenced provider
+response, and MUST be recorded no later than the observation. Earlier consent or
+permission evidence does not establish causation. Each relied-on evidence record
+MUST carry a structured `causal_scope` binding the run, proposal and digest,
+execution, receipt, target, expected effect, and observed outcome and summary.
+
+For every top-level record in `evidence[]`, `observed_at` MUST NOT postdate
+`run.updated_at`. In addition, whenever a top-level evidence record declares a
+`causal_scope` — even if no `effect.observed` event references that evidence
+record — `causal_scope.run_id` MUST equal `run.run_id`, its
+`proposal_event_id`, `execution_event_id`, and `receipt_event_id` MUST resolve
+to matching `action.proposed`, `execution.started`, and `execution.receipt`
+events in the run, and every `expected_effect.affected_actor_ids` entry MUST
+resolve to a declared actor.
 
 ### Correction and appeal
 
@@ -591,6 +605,47 @@ From the repository root, check one finite run with:
 ```sh
 node work/0.1/check.mjs <run.json>
 ```
+
+A clean-room Python 3 second implementation and cross-implementation comparison
+harness live in [`python/`](python/README.md) (`check_work.py` and
+`compare_implementations.py`, built from this document and the schemas without
+reading `check.mjs`).
+
+In `result.schema.json`, `verifier.name` (`"xenia-work-check"`) and
+`verifier.version` (`"0.1.0-development"`) identify the profile checker
+contract; independent checkers SHOULD also emit the optional
+`verifier.implementation` string (for example
+`"xenia-work-check-node/0.1.0-development"` or
+`"xenia-work-check-python/0.1.0-development"`) so distinct implementations can
+self-identify in-band. The `expected_check` identifiers (`R.REFERENCES`,
+`R.AUTHORITY`, `R.APPROVALS`, `R.STATE`, `R.EFFECTS`, `R.PROBLEMS`, `R.REPAIR`)
+and `expected_issue` codes listed in
+[`fixtures/conformance.json`](fixtures/conformance.json) form the shared
+cross-implementation conformance vocabulary; additional parse, input, or
+structural check IDs and non-fixture diagnostic issue codes are
+implementation-chosen within `result.schema.json`'s lexical bounds.
+
+## Provider capability manifest (development draft)
+
+[`provider-manifest.schema.json`](provider-manifest.schema.json) defines a
+development-draft JSON Schema for provider adapter capability manifests,
+capturing the provider-neutral fields outlined in
+[`MICROSOFT-ROADMAP.md`](../../MICROSOFT-ROADMAP.md#provider-capability-manifest):
+terms URL and exact reviewed terms-body digest, explicit `unknown` date support,
+reviewer decision and `disable_on_change: true` brake, delegated vs. application
+permissions, customer data-use scope and withdrawal path, supported actor modes,
+data lifecycle rules, separated authorization gates, `automatic_retry_allowed:
+false`, secret-free credential broker references (`contains_secret: false`), and
+governance/off-switch ownership.
+
+Two repository-only examples illustrate the shape without claiming endorsement,
+live dispatch authority, or tenant configuration:
+
+- [`examples/local-provider-manifest.json`](examples/local-provider-manifest.json)
+  — a local, non-Microsoft fixture provider; and
+- [`examples/mock-graph-read-manifest.json`](examples/mock-graph-read-manifest.json)
+  — an offline mock read-only Microsoft Graph adapter marked
+  `disabled_pending_terms` / offline-mock only.
 
 The checker validates the current development schemas and the cross-record
 relationships it implements, including ordering, references, bounded counts,
