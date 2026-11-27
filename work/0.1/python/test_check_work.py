@@ -182,7 +182,42 @@ class TestConformanceAndCrossImplementation(unittest.TestCase):
             report["all_agreed"],
             msg=f"Disagreements found: {json.dumps(report['disagreements'], indent=2)}",
         )
-        self.assertEqual(report["total_cases"], 32)
+        self.assertEqual(report["total_cases"], 35)
+
+    def test_verifier_implementation_and_provider_manifests_validate(self) -> None:
+        completed_bytes = (WORK_DIR / "examples" / "completed-effect.json").read_bytes()
+        py_res = check_work_bytes(completed_bytes, observed_at="2026-11-27T10:30:00Z", work_dir=WORK_DIR)
+        self.assertEqual(py_res["verifier"]["name"], "xenia-work-check")
+        self.assertEqual(py_res["verifier"]["version"], "0.1.0-development")
+        self.assertEqual(py_res["verifier"]["implementation"], "xenia-work-check-python/0.1.0-development")
+
+        doc = load_base_example(WORK_DIR)
+        doc["evidence"][0]["observed_at"] = "2026-08-03T11:59:00Z"
+        res_after = check_work_bytes(json.dumps(doc).encode("utf-8"), observed_at="2026-11-27T10:30:00Z", work_dir=WORK_DIR)
+        self.assertEqual(res_after["result"], "nonconformant")
+        self.assertIn("evidence_after_update", [i["code"] for i in res_after["issues"]])
+
+        ajv_script = (
+            "import Ajv2020 from 'ajv/dist/2020.js';"
+            "import addFormats from 'ajv-formats';"
+            "import { readFileSync } from 'node:fs';"
+            "const ajv = new Ajv2020({ strict: true, allErrors: true });"
+            "addFormats(ajv);"
+            f"const schema = JSON.parse(readFileSync({json.dumps(str(WORK_DIR / 'provider-manifest.schema.json'))}, 'utf8'));"
+            "const validate = ajv.compile(schema);"
+            f"for (const p of [{json.dumps(str(WORK_DIR / 'examples' / 'local-provider-manifest.json'))}, {json.dumps(str(WORK_DIR / 'examples' / 'mock-graph-read-manifest.json'))}]) {{"
+            "  const data = JSON.parse(readFileSync(p, 'utf8'));"
+            "  if (!validate(data)) { console.error(p, validate.errors); process.exit(1); }"
+            "}"
+        )
+        proc = subprocess.run(
+            ["node", "--input-type=module", "-e", ajv_script],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 0, msg=proc.stderr)
 
     def test_phase1_summary_agrees_on_published_examples(self) -> None:
         completed_bytes = (WORK_DIR / "examples" / "completed-effect.json").read_bytes()

@@ -192,6 +192,27 @@
       "expected_check": "R.AUTHORITY",
       "expected_issue": "authority_resource_mismatch",
       "description": "Opaque identifiers and protected input values do not reappear in checker output."
+    },
+    {
+      "id": "provider-receipt-evidence-kind-mismatch",
+      "expected_result": "nonconformant",
+      "expected_check": "R.REFERENCES",
+      "expected_issue": "evidence_kind_mismatch",
+      "description": "An execution.receipt cites non-provider_receipt evidence in provider_receipt_evidence_ids."
+    },
+    {
+      "id": "effect-evidence-kind-mismatch",
+      "expected_result": "nonconformant",
+      "expected_check": "R.REFERENCES",
+      "expected_issue": "evidence_kind_mismatch",
+      "description": "An effect.observed event cites non-observation evidence in payload.evidence_ids."
+    },
+    {
+      "id": "unused-causal-scope-missing-event",
+      "expected_result": "nonconformant",
+      "expected_check": "R.REFERENCES",
+      "expected_issue": "event_reference_missing",
+      "description": "A top-level evidence record declares a causal_scope referencing an absent event even though no effect.observed event cites it."
     }
   ]
 }

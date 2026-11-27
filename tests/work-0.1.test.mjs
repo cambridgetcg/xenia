@@ -28,10 +28,13 @@ async function json(path) {
 const runSchema = await json("work/0.1/run.schema.json");
 const problemSchema = await json("work/0.1/problem.schema.json");
 const resultSchema = await json("work/0.1/result.schema.json");
+const providerManifestSchema = await json("work/0.1/provider-manifest.schema.json");
 const completed = await json("work/0.1/examples/completed-effect.json");
 const declined = await json("work/0.1/examples/declined.json");
 const approvalRequired = await json("work/0.1/examples/approval-required.problem.json");
 const authorityUnknown = await json("work/0.1/examples/authority-unknown.problem.json");
+const localProviderManifest = await json("work/0.1/examples/local-provider-manifest.json");
+const mockGraphReadManifest = await json("work/0.1/examples/mock-graph-read-manifest.json");
 const conformanceFixtures = await json("work/0.1/fixtures/conformance.json");
 const checkerPath = fileURLToPath(new URL("work/0.1/check.mjs", root));
 const completedPath = fileURLToPath(new URL("work/0.1/examples/completed-effect.json", root));
@@ -45,6 +48,7 @@ ajv.addSchema(problemSchema);
 const validateRunSchema = ajv.compile(runSchema);
 const validateProblemSchema = ajv.getSchema(problemSchema.$id);
 const validateResultSchema = ajv.compile(resultSchema);
+const validateProviderManifestSchema = ajv.compile(providerManifestSchema);
 
 function clone(value) {
   return structuredClone(value);
@@ -223,6 +227,9 @@ test("the conformance fixture manifest names every hardened boundary", () => {
       "rejection-after-execution",
       "repair-reserve-consumed",
       "result-output-privacy",
+      "provider-receipt-evidence-kind-mismatch",
+      "effect-evidence-kind-mismatch",
+      "unused-causal-scope-missing-event",
     ]),
   );
   for (const fixture of conformanceFixtures.cases) {
@@ -1047,4 +1054,60 @@ test("the checker has no network, credential or environment dependency", async (
   assert.doesNotMatch(source, /\bfetch\s*\(/);
   assert.doesNotMatch(source, /process\.env/);
   assert.doesNotMatch(source, /child_process/);
+});
+
+test("evidence kind, unused causal scope, and verifier implementation boundaries hold", async () => {
+  const bytes = await readFile(new URL("work/0.1/examples/completed-effect.json", root));
+  const result = checkWorkRunBytes(bytes, { now: fixedNow });
+  assert.equal(result.verifier.name, "xenia-work-check");
+  assert.equal(result.verifier.version, "0.1.0-development");
+  assert.equal(result.verifier.implementation, "xenia-work-check-node/0.1.0-development");
+  assert.equal(validateResultSchema(result), true, JSON.stringify(validateResultSchema.errors));
+
+  const receiptKind = clone(completed);
+  event(receiptKind, "execution.receipt").payload.provider_receipt_evidence_ids = [
+    "urn:xenia:example:evidence:observation-1",
+  ];
+  assertFailedCheck(receiptKind, "R.REFERENCES", "evidence_kind_mismatch");
+
+  const effectKind = clone(completed);
+  event(effectKind, "effect.observed").payload.evidence_ids = [
+    "urn:xenia:example:evidence:receipt-1",
+  ];
+  assertFailedCheck(effectKind, "R.REFERENCES", "evidence_kind_mismatch");
+
+  const unusedCausal = clone(completed);
+  const extra = clone(
+    unusedCausal.evidence.find(({ id }) => id === "urn:xenia:example:evidence:observation-1"),
+  );
+  extra.id = "urn:xenia:example:evidence:unused-causal-1";
+  extra.causal_scope.receipt_event_id = "missing-receipt-99";
+  unusedCausal.evidence.push(extra);
+  assertFailedCheck(unusedCausal, "R.REFERENCES", "event_reference_missing");
+
+  const afterUpdate = clone(completed);
+  afterUpdate.evidence[0].observed_at = "2026-08-03T11:59:00Z";
+  assertFailedCheck(afterUpdate, "R.CHAIN_TIME", "evidence_after_update");
+});
+
+test("provider capability manifest schema validates drafts and enforces fail-closed brakes", () => {
+  for (const sample of [localProviderManifest, mockGraphReadManifest]) {
+    assert.equal(
+      validateProviderManifestSchema(sample),
+      true,
+      JSON.stringify(validateProviderManifestSchema.errors),
+    );
+  }
+
+  const noDisableBrake = clone(localProviderManifest);
+  noDisableBrake.policy_review.disable_on_change = false;
+  assert.equal(validateProviderManifestSchema(noDisableBrake), false);
+
+  const retryEnabled = clone(localProviderManifest);
+  retryEnabled.execution_rules.automatic_retry_allowed = true;
+  assert.equal(validateProviderManifestSchema(retryEnabled), false);
+
+  const secretInCredRef = clone(localProviderManifest);
+  secretInCredRef.credential_reference.contains_secret = true;
+  assert.equal(validateProviderManifestSchema(secretInCredRef), false);
 });

@@ -16,9 +16,9 @@ reviewed: 2026-08-03
 - JavaScript producer library: source version `0.1.0-beta.7`
 - Surface external checker: separately versioned `0.1.0-rc.1`
 - Work: public development draft `xenia-work/0.1-development` (with the Node
-  reference checker and a clean-room Python 3 verifier and comparison record in
-  `work/0.1/python/README.md`); it is not a release and is not included in the
-  root npm package
+  reference checker, clean-room Python 3 verifier and 35-case comparison record
+  in `work/0.1/python/README.md`, and draft `provider-manifest.schema.json`); it
+  is not a release and is not included in the root npm package
 - Microsoft interoperability: public research roadmap; optional provider work
   remains unimplemented and disabled
 - Hospitality notebook: `HOSPITALITY.md`, an informative source reading dated

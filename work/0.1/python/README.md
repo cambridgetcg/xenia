@@ -122,3 +122,26 @@ relaxes the contract:
      (`causal_evidence_kind_mismatch`).
    Stating those three rules directly in `work/0.1/README.md` before a release
    candidate will make them unambiguous to future clean-room implementers.
+
+## Resolution addendum (`2026-11-27`)
+
+Following the findings above (appended without rewriting the 2026-11-18 clean-room
+observation record):
+
+1. **`work/0.1/README.md` tightened:** explicitly states the `evidence[].observed_at <= run.updated_at`
+   bound, top-level `evidence[].causal_scope` event/run/actor resolution even for unreferenced
+   evidence records, `provider_receipt` / `observation` kind and timestamp bounds on
+   `execution.receipt` and `effect.observed`, and the boundary between shared conformance IDs
+   (`fixtures/conformance.json`) and implementation-chosen diagnostic IDs.
+2. **`result.schema.json` verifier self-identification:** added optional `verifier.implementation`
+   while preserving the pinned profile-contract anchor (`name: "xenia-work-check"`,
+   `version: "0.1.0-development"`). Both `check.mjs` (`xenia-work-check-node/0.1.0-development`)
+   and `check_work.py` (`xenia-work-check-python/0.1.0-development`) now emit it.
+3. **Conformance & comparison expanded to 35 cases:** added three shared-vocabulary conformance
+   fixtures (`provider-receipt-evidence-kind-mismatch`, `effect-evidence-kind-mismatch`,
+   `unused-causal-scope-missing-event`), bringing cross-implementation agreement to **35 / 35**
+   (`0` disagreements).
+4. **Provider capability manifest draft added:** `work/0.1/provider-manifest.schema.json` plus
+   local and offline-mock Microsoft Graph examples (`examples/local-provider-manifest.json`,
+   `examples/mock-graph-read-manifest.json`), validated in strict Ajv with `disable_on_change: true`,
+   `automatic_retry_allowed: false`, and `contains_secret: false` invariants.

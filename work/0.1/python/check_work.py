@@ -1335,6 +1335,13 @@ def _check_semantics(doc: dict[str, Any], tracker: _RunCheckTracker) -> None:
                     )
         if "causal_scope" in ev:
             cscope = ev["causal_scope"]
+            if cscope.get("run_id") != doc["run_id"]:
+                tracker.fail(
+                    "R.REFERENCES",
+                    "evidence_causal_scope_run_mismatch",
+                    f"/evidence/{idx}/causal_scope/run_id",
+                    "Causal scope run_id must match this run's run_id.",
+                )
             for field_name, expected_type in (
                 ("proposal_event_id", "action.proposed"),
                 ("execution_event_id", "execution.started"),
@@ -1899,9 +1906,25 @@ def _check_semantics(doc: dict[str, Any], tracker: _RunCheckTracker) -> None:
                 if ev_obj is None:
                     tracker.fail("R.REFERENCES", "unknown_evidence_reference", f"{p_base}/provider_receipt_evidence_ids/{eidx}", "Receipt evidence ID is not declared.")
                 else:
+                    if ev_obj["kind"] != "provider_receipt":
+                        tracker.fail(
+                            "R.REFERENCES",
+                            "evidence_kind_mismatch",
+                            f"{p_base}/provider_receipt_evidence_ids/{eidx}",
+                            "Provider-receipt evidence must have kind provider_receipt.",
+                        )
                     ev_obs_ts = parse_utc_timestamp(ev_obj["observed_at"])
                     if ev_obs_ts is not None and ev_obs_ts > ev_ts:
                         tracker.fail("R.EXECUTION", "receipt_evidence_after_receipt", f"{p_base}/provider_receipt_evidence_ids/{eidx}", "Receipt evidence was observed after the receipt event.")
+                    if xentry is not None and ev_obs_ts is not None:
+                        start_ts = event_timestamps[xentry[0]]
+                        if start_ts is not None and ev_obs_ts < start_ts:
+                            tracker.fail(
+                                "R.EXECUTION",
+                                "provider_receipt_evidence_before_execution",
+                                f"{p_base}/provider_receipt_evidence_ids/{eidx}",
+                                "Provider-receipt evidence cannot predate its execution start.",
+                            )
             receipts_by_id[ev_id] = (idx, ev)
             receipts_by_proposal.setdefault(pid, []).append(idx)
 
@@ -1931,9 +1954,25 @@ def _check_semantics(doc: dict[str, Any], tracker: _RunCheckTracker) -> None:
                 if ev_obj is None:
                     tracker.fail("R.REFERENCES", "unknown_evidence_reference", f"{p_base}/evidence_ids/{eidx}", "Observation evidence ID is not declared.")
                 else:
+                    if ev_obj["kind"] != "observation":
+                        tracker.fail(
+                            "R.REFERENCES",
+                            "evidence_kind_mismatch",
+                            f"{p_base}/evidence_ids/{eidx}",
+                            "Effect-observation evidence must have kind observation.",
+                        )
                     ev_obs_ts = parse_utc_timestamp(ev_obj["observed_at"])
                     if ev_obs_ts is not None and ev_obs_ts > ev_ts:
                         tracker.fail("R.EFFECTS", "observation_evidence_after_event", f"{p_base}/evidence_ids/{eidx}", "Observation evidence was recorded after the effect.observed event.")
+                    if rentry is not None and ev_obs_ts is not None:
+                        receipt_ts_obs = event_timestamps[rentry[0]]
+                        if receipt_ts_obs is not None and ev_obs_ts < receipt_ts_obs:
+                            tracker.fail(
+                                "R.EFFECTS",
+                                "effect_evidence_before_receipt",
+                                f"{p_base}/evidence_ids/{eidx}",
+                                "Effect-observation evidence cannot predate its provider receipt.",
+                            )
 
             causal = payload["causal_claim"]
             for eidx, eid in enumerate(causal["evidence_ids"]):
@@ -2486,6 +2525,7 @@ def _finalize_result(
         "verifier": {
             "name": VERIFIER_NAME,
             "version": VERIFIER_VERSION,
+            "implementation": IMPLEMENTATION_ID,
         },
         "observed_at": observed_at,
         "result": overall,

@@ -506,6 +506,26 @@ def _mutate_result_output_privacy(doc: dict[str, Any]) -> dict[str, Any]:
     return sync_projections_and_digests(mutated)
 
 
+def _mutate_provider_receipt_evidence_kind_mismatch(doc: dict[str, Any]) -> dict[str, Any]:
+    receipt = _find_event(doc, "receipt-1")
+    receipt["payload"]["provider_receipt_evidence_ids"] = ["urn:xenia:example:evidence:observation-1"]
+    return doc
+
+
+def _mutate_effect_evidence_kind_mismatch(doc: dict[str, Any]) -> dict[str, Any]:
+    obs = _find_event(doc, "observation-1")
+    obs["payload"]["evidence_ids"] = ["urn:xenia:example:evidence:receipt-1"]
+    return doc
+
+
+def _mutate_unused_causal_scope_missing_event(doc: dict[str, Any]) -> dict[str, Any]:
+    obs_ev = copy.deepcopy(_find_evidence(doc, "urn:xenia:example:evidence:observation-1"))
+    obs_ev["id"] = "urn:xenia:example:evidence:unused-causal-1"
+    obs_ev["causal_scope"]["receipt_event_id"] = "missing-receipt-99"
+    doc["evidence"].append(obs_ev)
+    return doc
+
+
 MUTATORS_BY_CASE_ID: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
     "evidence-record-mutation": _mutate_evidence_record_mutation,
     "authority-evidence-after-claim": _mutate_authority_evidence_after_claim,
@@ -534,6 +554,9 @@ MUTATORS_BY_CASE_ID: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
     "rejection-after-execution": _mutate_rejection_after_execution,
     "repair-reserve-consumed": _mutate_repair_reserve_consumed,
     "result-output-privacy": _mutate_result_output_privacy,
+    "provider-receipt-evidence-kind-mismatch": _mutate_provider_receipt_evidence_kind_mismatch,
+    "effect-evidence-kind-mismatch": _mutate_effect_evidence_kind_mismatch,
+    "unused-causal-scope-missing-event": _mutate_unused_causal_scope_missing_event,
 }
 
 

@@ -56,7 +56,13 @@
       "required": ["name", "version"],
       "properties": {
         "name": { "const": "xenia-work-check" },
-        "version": { "const": "0.1.0-development" }
+        "version": { "const": "0.1.0-development" },
+        "implementation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/@:-]{0,127}$"
+        }
       },
       "additionalProperties": false
     },

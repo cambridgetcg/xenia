@@ -1,0 +1,119 @@
+{
+  "$schema": "urn:xenia:work:provider-manifest:0.1:development-draft",
+  "schema_version": "xenia.work.provider-manifest/0.1-development",
+  "profile": "xenia-work/0.1-development",
+  "provider": "xenia-local-fixture",
+  "product": "Local Offline Fixture Store",
+  "service": "local-file-fixture",
+  "api_version": "0.1-development",
+  "terms": {
+    "url": "urn:xenia:example:terms:local-fixture:0.1",
+    "reviewed_body_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000001",
+    "observed_date": "2026-11-27",
+    "stated_effective_date": "2026-11-27",
+    "stated_last_updated_date": "unknown",
+    "accompanying_terms": []
+  },
+  "preview_status": "offline_mock",
+  "customer_agreement_override": {
+    "applicable": false,
+    "precedence_note": "Local repository fixture; no external commercial service terms apply."
+  },
+  "policy_review": {
+    "reviewer": "local-development-review",
+    "decision": "offline_mock_only",
+    "rationale": "Demonstrates a provider-neutral Work 0.1 capability manifest with zero cloud dependencies.",
+    "decision_evidence": [
+      {
+        "locator": "urn:xenia:example:review:local-fixture:0.1",
+        "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000002",
+        "observed_date": "2026-11-27"
+      }
+    ],
+    "recheck_cadence_days": 90,
+    "next_review_date": "2027-02-25",
+    "change_triggers": [
+      "Schema contract change",
+      "Local fixture format change"
+    ],
+    "disable_on_change": true
+  },
+  "licenses_and_costs": {
+    "required_product_licenses": [],
+    "metered_costs": {
+      "state": "none",
+      "summary": "No paid or metered external service is used."
+    }
+  },
+  "permissions": {
+    "delegated": ["fixture.read"],
+    "application": [],
+    "admin_consent_expected": false,
+    "conditional_access_expected": false
+  },
+  "customer_data_use": {
+    "purpose": "Deterministic offline conformance testing of Work 0.1 run ledgers.",
+    "scope": "Synthetic test fixtures inside a temporary directory only.",
+    "term": "Ephemeral per test invocation.",
+    "evidence_requirement": "Local command invocation by operator or CI runner.",
+    "withdrawal_path": "Stop invoking the local test runner; remove temporary test directory."
+  },
+  "supported_actor_modes": ["human", "human_delegated_agent"],
+  "data_lifecycle": {
+    "data_classes": ["public_fixture"],
+    "source_acls": "Read-only local fixture bytes.",
+    "destination_acls": "Ephemeral owner-only temp directory.",
+    "correction": "Append correction event to a new local Work run.",
+    "restriction": "Do not supply real customer or credential data to fixture tests.",
+    "retention": "Deleted at end of test run; OS temp layer retention not separately guaranteed.",
+    "export": "Plain JSON files readable without proprietary tools.",
+    "deletion": "Remove local temp directory; filesystem wear-leveling layers remain outside handler scope.",
+    "abandonment": "No background processes remain after process exit.",
+    "uninstall": "Remove repository checkout.",
+    "account_closure": "Not applicable; no external account exists."
+  },
+  "operations": {
+    "read": [
+      {
+        "id": "fixture.read_item",
+        "method": "LOCAL_READ",
+        "summary": "Read one synthetic fixture record by ID without side effects.",
+        "reversibility": "read_only"
+      }
+    ],
+    "effectful_write": []
+  },
+  "authorization_requirements": {
+    "provider_grant": "Local filesystem read access to repository fixtures.",
+    "customer_data_permission": "Not applicable to synthetic repository fixtures.",
+    "runtime_policy": "Offline-only execution with network disabled.",
+    "exact_execution_approval": "Not required for read-only fixture lookup; required for any effectful operation."
+  },
+  "execution_rules": {
+    "automatic_retry_allowed": false,
+    "max_local_attempts": 1,
+    "idempotency_rule": "Read-only local lookups are deterministic; writes remain disabled.",
+    "timeout_ms": 5000,
+    "compensation_rule": "No external state is mutated."
+  },
+  "credential_reference": {
+    "broker_type": "none-required",
+    "locator_scheme": "xenia-cred:",
+    "contains_secret": false
+  },
+  "governance": {
+    "privacy_notice_locator": "urn:xenia:example:privacy:local-fixture:0.1",
+    "revocation_instructions_locator": "urn:xenia:example:revoke:local-fixture:0.1",
+    "incident_contact": "repository-maintainers",
+    "audit_readiness": "All inputs and outputs are deterministic local files.",
+    "brake_owner": "local-operator",
+    "off_switch_tested": true,
+    "uninstall_path": "Delete local checkout."
+  },
+  "non_endorsement_notice": "XENIA is an independent open-source framework and is not affiliated with, endorsed by, or sponsored by any third-party cloud or model vendor.",
+  "not_established": [
+    "This manifest is a development-draft fixture and does not authorize any live dispatch.",
+    "Schema validity does not verify terms digests, legal compliance, or runtime enforcement.",
+    "No external provider, tenant, or account was contacted."
+  ]
+}

@@ -1,0 +1,134 @@
+{
+  "$schema": "urn:xenia:work:provider-manifest:0.1:development-draft",
+  "schema_version": "xenia.work.provider-manifest/0.1-development",
+  "profile": "xenia-work/0.1-development",
+  "provider": "microsoft-graph-mock",
+  "product": "Offline Mock for Documented Microsoft Graph Read Endpoints",
+  "service": "graph-read-mock",
+  "api_version": "v1.0-mock",
+  "terms": {
+    "url": "https://learn.microsoft.com/en-us/legal/microsoft-apis/terms-of-use",
+    "reviewed_body_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "observed_date": "2026-08-03",
+    "stated_effective_date": "unknown",
+    "stated_last_updated_date": "unknown",
+    "accompanying_terms": [
+      {
+        "name": "Microsoft 365 Copilot APIs preview stop-sign note",
+        "url": "https://learn.microsoft.com/en-us/legal/m365-copilot-apis/terms-of-use",
+        "section_references": ["Section 3(b)(18) — autonomous Copilot APIs remain disabled"]
+      }
+    ]
+  },
+  "preview_status": "offline_mock",
+  "customer_agreement_override": {
+    "applicable": "unknown",
+    "precedence_note": "Customer tenant agreements vary; must be reviewed separately before any live tenant opt-in."
+  },
+  "policy_review": {
+    "reviewer": "xenia-phase0-draft-review",
+    "decision": "disabled_pending_terms",
+    "rationale": "Offline mock shape only. Live Microsoft Graph dispatch remains disabled until fresh terms-body digest verification, customer written privacy statement, and tested off-switch drill pass Phase 0/3 gates.",
+    "decision_evidence": [
+      {
+        "locator": "urn:xenia:roadmap:microsoft:2026-08-03",
+        "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "observed_date": "2026-08-03"
+      }
+    ],
+    "recheck_cadence_days": 30,
+    "next_review_date": "2026-09-02",
+    "change_triggers": [
+      "Microsoft API Terms of Use digest change",
+      "Microsoft Graph v1.0 schema or permission model change",
+      "Tenant Conditional Access or admin-consent policy change"
+    ],
+    "disable_on_change": true
+  },
+  "licenses_and_costs": {
+    "required_product_licenses": [
+      "Customer-owned separately licensed Microsoft 365 subscription for any future opted-in tenant test (none used by offline mock)"
+    ],
+    "metered_costs": {
+      "state": "unknown",
+      "summary": "Offline mock has zero cost; any future live Graph metered endpoints must be quoted before activation."
+    }
+  },
+  "permissions": {
+    "delegated": ["Files.Read", "Tasks.Read"],
+    "application": [],
+    "admin_consent_expected": "unknown",
+    "conditional_access_expected": true
+  },
+  "customer_data_use": {
+    "purpose": "Read-only retrieval of explicitly scoped SharePoint/OneDrive files and Planner tasks during delegated human-agent collaboration.",
+    "scope": "Only items reachable under the signed-in user's delegated ACLs within declared XENIA data zones.",
+    "term": "Bounded to the active Work run; no secondary training or advertising use.",
+    "evidence_requirement": "Recorded customer data-use permission with explicit scope and expiry before live enablement.",
+    "withdrawal_path": "Revoke delegated OAuth grant in Entra ID and activate local runtime brake immediately."
+  },
+  "supported_actor_modes": ["human", "human_delegated_agent"],
+  "data_lifecycle": {
+    "data_classes": ["delegated_work_document_metadata", "delegated_task_item"],
+    "source_acls": "Preserve source Microsoft IDs, ETags, sensitivity labels, and ACL references.",
+    "destination_acls": "Restrict stored run artifacts to matching XENIA data_zone audience; never copy confidential items into literals.",
+    "correction": "Append correction.appended event; source tenant items remain authoritative.",
+    "restriction": "Stop reads immediately upon grant revocation or brake activation.",
+    "retention": "Ephemeral local cache only in mock mode; tenant retention remains controlled by customer tenant.",
+    "export": "Versioned JSON run records with explicit omissions for uncopied external artifacts.",
+    "deletion": "Delete local mock cache on run closure; tenant-side deletion is out of scope for read-only adapter.",
+    "abandonment": "Uncompleted runs stop at declared limits without retrying.",
+    "uninstall": "Disable adapter manifest, revoke Entra delegated grant, and remove local adapter configuration.",
+    "account_closure": "Revoke broker credential references and purge local adapter state; report upstream tenant retention separately."
+  },
+  "operations": {
+    "read": [
+      {
+        "id": "graph.drive_item.get_metadata",
+        "method": "GET /v1.0/me/drive/items/{item-id}",
+        "summary": "Fetch documented driveItem metadata, ETag, and webUrl against offline mock fixtures.",
+        "reversibility": "read_only"
+      },
+      {
+        "id": "graph.planner_tasks.list",
+        "method": "GET /v1.0/me/planner/tasks",
+        "summary": "List delegated Planner tasks against offline mock fixtures.",
+        "reversibility": "read_only"
+      }
+    ],
+    "effectful_write": []
+  },
+  "authorization_requirements": {
+    "provider_grant": "Delegated Entra OAuth grant scoped strictly to Files.Read and Tasks.Read (disabled in mock mode).",
+    "customer_data_permission": "Separate customer-granted data-use record binding purpose, scope, retention, and withdrawal path.",
+    "runtime_policy": "PolicyHost brake lowered and current manifest digest pinned before any live call.",
+    "exact_execution_approval": "Explicit execution.approved event bound to proposal_digest before any effectful action (none enabled here)."
+  },
+  "execution_rules": {
+    "automatic_retry_allowed": false,
+    "max_local_attempts": 1,
+    "idempotency_rule": "Deterministic fixture replay; no second local dispatch after execution.started is recorded.",
+    "timeout_ms": 15000,
+    "compensation_rule": "Read-only mock performs no external mutations; ambiguous outcomes stop for observation."
+  },
+  "credential_reference": {
+    "broker_type": "opaque-delegated-token-broker",
+    "locator_scheme": "xenia-cred:",
+    "contains_secret": false
+  },
+  "governance": {
+    "privacy_notice_locator": "urn:xenia:draft:privacy:graph-read-mock:0.1",
+    "revocation_instructions_locator": "urn:xenia:draft:revoke:graph-read-mock:0.1",
+    "incident_contact": "xenia-maintainers-before-live-opt-in",
+    "audit_readiness": "Draft only; live tenant audit readiness must be verified separately prior to Phase 3 exit.",
+    "brake_owner": "tenant-operator-and-local-steward",
+    "off_switch_tested": false,
+    "uninstall_path": "Remove adapter entry from runtime policy and revoke delegated Entra app grant."
+  },
+  "non_endorsement_notice": "XENIA is an independent open-source framework for human-agent work. Planned optional adapters are designed to interoperate with separately licensed Microsoft services through published interfaces. XENIA is not affiliated with, endorsed by, or sponsored by Microsoft.",
+  "not_established": [
+    "This manifest is an offline development draft and does NOT authorize live Microsoft Graph dispatch.",
+    "Placeholder SHA-256 digests do NOT represent a fresh HTTP terms capture or legal review.",
+    "Schema validity does not prove Entra consent, tenant policy compliance, license entitlement, or Microsoft endorsement."
+  ]
+}
